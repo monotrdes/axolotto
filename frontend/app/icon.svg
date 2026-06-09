@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <radialGradient id="bodyGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FF9FCF"/>
+      <stop offset="100%" stop-color="#E869A8"/>
+    </radialGradient>
+    <radialGradient id="bellyGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFD6EC"/>
+      <stop offset="100%" stop-color="#FFBBDD"/>
+    </radialGradient>
+  </defs>
+  <!-- background circle -->
+  <circle cx="32" cy="32" r="30" fill="#1a1a2e" stroke="#E869A8" stroke-width="2"/>
+
+  <!-- left gills -->
+  <path d="M12 22 Q4 16 6 8 Q10 12 16 14" fill="#FF6BA0" stroke="#D44980" stroke-width="1"/>
+  <path d="M12 28 Q3 24 2 16 Q8 20 16 22" fill="#FF8AB8" stroke="#D44980" stroke-width="1"/>
+  <path d="M12 34 Q4 32 3 24 Q9 28 16 30" fill="#FF6BA0" stroke="#D44980" stroke-width="1"/>
+
+  <!-- right gills -->
+  <path d="M52 22 Q60 16 58 8 Q54 12 48 14" fill="#FF6BA0" stroke="#D44980" stroke-width="1"/>
+  <path d="M52 28 Q61 24 62 16 Q56 20 48 22" fill="#FF8AB8" stroke="#D44980" stroke-width="1"/>
+  <path d="M52 34 Q60 32 61 24 Q55 28 48 30" fill="#FF6BA0" stroke="#D44980" stroke-width="1"/>
+
+  <!-- head -->
+  <ellipse cx="32" cy="30" rx="15" ry="12" fill="url(#bodyGrad)"/>
+
+  <!-- eyes -->
+  <ellipse cx="27" cy="28" rx="3.5" ry="4" fill="#1a1a2e"/>
+  <ellipse cx="37" cy="28" rx="3.5" ry="4" fill="#1a1a2e"/>
+  <!-- eye shine -->
+  <circle cx="28.5" cy="26.5" r="1.5" fill="white"/>
+  <circle cx="38.5" cy="26.5" r="1.5" fill="white"/>
+
+  <!-- smile -->
+  <path d="M28 34 Q32 38 36 34" fill="none" stroke="#1a1a2e" stroke-width="1.5" stroke-linecap="round"/>
+
+  <!-- cheeks -->
+  <circle cx="23" cy="33" r="2.5" fill="#FF6BA0" opacity="0.5"/>
+  <circle cx="41" cy="33" r="2.5" fill="#FF6BA0" opacity="0.5"/>
+
+  <!-- body -->
+  <ellipse cx="32" cy="48" rx="10" ry="8" fill="url(#bodyGrad)"/>
+  <!-- belly -->
+  <ellipse cx="32" cy="47" rx="6" ry="5" fill="url(#bellyGrad)"/>
+</svg>

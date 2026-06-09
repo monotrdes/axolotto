@@ -1,0 +1,4 @@
+# Foundry runtime artifacts (NO versionar)
+cache/
+broadcast/
+out/

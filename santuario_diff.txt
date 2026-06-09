@@ -1,0 +1,658 @@
+diff --git a/frontend/components/Santuario.tsx b/frontend/components/Santuario.tsx
+index c6ee00a..19bc938 100644
+--- a/frontend/components/Santuario.tsx
++++ b/frontend/components/Santuario.tsx
+@@ -142,64 +142,27 @@ interface NidoCaveProps {
+   slot: NidoSlot;
+   posStyle: React.CSSProperties;
+   isBack: boolean;
+-  onHeatDirect: (id: number, cPos?: { l: number; b: number }) => void;
+   onOpen: () => void;
+ }
+ 
+-function NidoCave({ slot, posStyle, isBack, onHeatDirect, onOpen }: NidoCaveProps) {
+-  const [tapped, setTapped] = useState(false);
++function NidoCave({ slot, posStyle, isBack, onOpen }: NidoCaveProps) {
+   const W = 70, H = 84;
+   const scale = isBack ? 0.72 : 1.0;
+ 
+-  // Derive glow/border from slot state
++  // Derive glow/border from slot state (sólo "listo" vs incubando)
+   let glowColor = 'transparent';
+   let archBorder = 'rgba(80,50,20,0.18)';
+   let archGlow = '';
+-  let frostPhase: 'frozen' | 'freezing' | 'cool' | 'warm' = 'warm';
+ 
+   if (slot.type === 'egg') {
+-    const { calor, is_frozen, protected_until, horasRestantes } = slot.data;
+-    const tieneEscudo = protected_until && new Date(protected_until) > new Date();
+-    frostPhase = getFrostPhase(calor, is_frozen);
+-
+-    if (frostPhase === 'frozen') {
+-      glowColor = 'rgba(6,182,212,0.55)';
+-      archBorder = 'rgba(6,182,212,0.45)';
+-      archGlow = '0 0 14px rgba(6,182,212,0.4)';
+-    } else if (horasRestantes === 0) {
++    const { horasRestantes } = slot.data;
++    if (horasRestantes === 0) {
+       glowColor = 'rgba(228,0,124,0.65)';
+       archBorder = 'rgba(228,0,124,0.5)';
+       archGlow = '0 0 18px rgba(228,0,124,0.4)';
+-    } else if (frostPhase === 'freezing') {
+-      glowColor = 'rgba(6,182,212,0.22)';
+-      archBorder = 'rgba(6,182,212,0.30)';
+-      archGlow = '0 0 8px rgba(6,182,212,0.18)';
+-    } else if (frostPhase === 'cool') {
+-      glowColor = 'rgba(100,140,200,0.10)';
+-      archBorder = 'rgba(100,140,200,0.22)';
+-    } else if (tieneEscudo) {
+-      glowColor = 'rgba(245,158,11,0.28)';
+-      archBorder = 'rgba(245,158,11,0.38)';
+-    } else if (calor > 70) {
+-      glowColor = `rgba(251,146,60,${0.18 + calor * 0.003})`;
+-      archBorder = 'rgba(251,146,60,0.3)';
+-      archGlow = '0 0 10px rgba(251,146,60,0.22)';
+     }
+   }
+ 
+-  const handleHeatTap = (e: React.MouseEvent) => {
+-    e.stopPropagation();
+-    if (slot.type !== 'egg') return;
+-    // Frozen always gets heat — can't hatch while frozen
+-    if (!slot.data.is_frozen && slot.data.horasRestantes === 0) { onOpen(); return; }
+-    // Pass cave center position so the particle appears near the clicked arch
+-    const cLeft   = parseFloat(String(posStyle.left   ?? '50%')) + 5;
+-    const cBottom = parseFloat(String(posStyle.bottom ?? '30%')) + 12;
+-    onHeatDirect(slot.data.id, { l: cLeft, b: cBottom });
+-    setTapped(true);
+-    setTimeout(() => setTapped(false), 250);
+-  };
+-
+   const renderInner = () => {
+     if (slot.type === 'empty') {
+       return (
+@@ -211,84 +174,41 @@ function NidoCave({ slot, posStyle, isBack, onHeatDirect, onOpen }: NidoCaveProp
+     const inc = slot.data;
+     const estilos = obtenerEstiloHuevo(inc.name);
+     const faseInfo = obtenerFaseHuevo(inc);
+-    const isF = inc.is_frozen;
+     const isReady = inc.horasRestantes === 0;
+ 
+     return (
+       <button
+-        onClick={handleHeatTap}
++        onClick={(e) => { e.stopPropagation(); onOpen(); }}
+         className="relative w-full h-full flex flex-col items-center justify-center focus:outline-none"
+         aria-label={`Webito ${inc.name}`}
+       >
+         <span
+-          className={`text-xl leading-none select-none z-10 transition-transform duration-150 ${
+-            tapped ? 'scale-75' : ''
+-          } ${isF ? 'animate-egg-frozen grayscale-[0.4]' : faseInfo.clase}`}
++          className={`text-xl leading-none select-none z-10 transition-transform duration-150 ${faseInfo.clase}`}
+           style={{
+             '--egg-shadow': estilos.shadow,
+-            filter: isF
+-              ? 'drop-shadow(0 0 6px rgba(6,182,212,0.9))'
+-              : `drop-shadow(0 0 ${3 + inc.calor * 0.06}px ${estilos.aura})`,
++            filter: `drop-shadow(0 0 6px ${estilos.aura})`,
+           } as React.CSSProperties}
+         >
+-          {isReady && !isF ? '🐣' : '🥚'}
++          {isReady ? '🐣' : '🥚'}
+         </span>
+ 
+-        {isF && (
+-          <div className="absolute top-1 text-[5px] text-cyan-300 font-black tabular-nums">
+-            {inc.frozen_clicks_left}❄️
+-          </div>
+-        )}
+-        {!isF && !isReady && (
++        {!isReady && (
+           <div className="absolute top-0.5 right-0.5 text-[7px] text-white/55 font-black">
+-            {Math.round(inc.calor)}%
++            {inc.horasRestantes}h
+           </div>
+         )}
+-
+-        {/* Heat/frost bar at bottom of arch */}
+-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-black/70 rounded-b">
+-          <div
+-            className={`h-full rounded-b transition-all duration-200 ${
+-              isF ? 'bg-cyan-400 animate-pulse' : inc.calor <= 15 ? 'bg-red-400 animate-pulse' : 'bg-orange-400'
+-            }`}
+-            style={{ width: isF ? '100%' : `${Math.max(2, inc.calor)}%` }}
+-          />
+-        </div>
+       </button>
+     );
+   };
+ 
+   // Badge floating above cave
+-  const badge = slot.type === 'egg' ? (
+-    slot.data.horasRestantes === 0 ? (
+-      <div
+-        className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#E4007C] text-[5px] font-black text-white px-2 py-0.5 rounded-full animate-pulse whitespace-nowrap"
+-        style={{ zIndex: 2, pointerEvents: 'none' }}
+-      >
+-        ¡Listo!
+-      </div>
+-    ) : frostPhase === 'frozen' ? (
+-      <div
+-        className="absolute -top-3 left-1/2 -translate-x-1/2 bg-cyan-950 border border-cyan-400/60 text-[5px] font-black text-cyan-300 px-1.5 py-0.5 rounded-full whitespace-nowrap flex items-center gap-0.5"
+-        style={{ zIndex: 2, pointerEvents: 'none' }}
+-      >
+-        <Snowflake size={5} />⏸
+-      </div>
+-    ) : frostPhase === 'freezing' ? (
+-      <div
+-        className="absolute -top-3 left-1/2 -translate-x-1/2 bg-cyan-950/80 border border-cyan-500/40 text-[5px] font-black text-cyan-400 px-1.5 py-0.5 rounded-full whitespace-nowrap animate-pulse"
+-        style={{ zIndex: 2, pointerEvents: 'none' }}
+-      >
+-        🧊
+-      </div>
+-    ) : frostPhase === 'cool' ? (
+-      <div
+-        className="absolute -top-3 left-1/2 -translate-x-1/2 text-[6px] font-black text-slate-400 px-1.5 py-0.5 rounded-full whitespace-nowrap"
+-        style={{ zIndex: 2, pointerEvents: 'none' }}
+-      >
+-        ⚠️
+-      </div>
+-    ) : null
++  const badge = slot.type === 'egg' && slot.data.horasRestantes === 0 ? (
++    <div
++      className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#E4007C] text-[5px] font-black text-white px-2 py-0.5 rounded-full animate-pulse whitespace-nowrap"
++      style={{ zIndex: 2, pointerEvents: 'none' }}
++    >
++      ¡Listo!
++    </div>
+   ) : null;
+ 
+   return (
+@@ -310,27 +230,6 @@ function NidoCave({ slot, posStyle, isBack, onHeatDirect, onOpen }: NidoCaveProp
+     >
+       {badge}
+ 
+-      {/* Heat particles for hot nidos */}
+-      {slot.type === 'egg' && frostPhase === 'warm' && slot.data.calor > 85 && slot.data.horasRestantes !== 0 && (
+-        <>
+-          {([0, 1] as const).map(j => (
+-            <div
+-              key={j}
+-              className="absolute pointer-events-none select-none text-[7px]"
+-              style={{
+-                bottom: '78%',
+-                left: `${28 + j * 30}%`,
+-                animation: `golden-float ${2.2 + j * 0.9}s ${j * 1.3}s infinite ease-out`,
+-                opacity: 0,
+-                zIndex: 5,
+-              }}
+-            >
+-              🔥
+-            </div>
+-          ))}
+-        </>
+-      )}
+-
+       {/* Ambient glow halo behind cave */}
+       <div
+         className="absolute inset-0 pointer-events-none transition-all duration-700"
+@@ -377,7 +276,6 @@ interface NidoSceneProps {
+   axolotitos: any[];
+   clima: any;
+   onSelectNido: (slot: NidoSlot) => void;
+-  onHeatDirect: (id: number, cPos?: { l: number; b: number }) => void;
+   onSelectAxo: (axo: any) => void;
+   selectedAxoId: number | null;
+   particulas: { id: number; incId: number; tipo: string; x: number; y: number; cLeft?: number; cBottom?: number }[];
+@@ -385,7 +283,7 @@ interface NidoSceneProps {
+ }
+ 
+ function NidoScene({
+-  nidoSlots, axolotitos, clima, onSelectNido, onHeatDirect, onSelectAxo, selectedAxoId, particulas, vipTier,
++  nidoSlots, axolotitos, clima, onSelectNido, onSelectAxo, selectedAxoId, particulas, vipTier,
+ }: NidoSceneProps) {
+   const periodTint =
+     clima?.period === 'Madrugada' ? 'rgba(6,182,212,0.04)' :
+@@ -576,7 +474,6 @@ function NidoScene({
+             slot={slot}
+             posStyle={{ left: backPos[i].left, bottom: backPos[i].bottom }}
+             isBack={true}
+-            onHeatDirect={onHeatDirect}
+             onOpen={() => onSelectNido(slot)}
+           />
+         ))}
+@@ -593,7 +490,6 @@ function NidoScene({
+             slot={slot}
+             posStyle={{ left: frontPos[i].left, bottom: frontPos[i].bottom }}
+             isBack={false}
+-            onHeatDirect={onHeatDirect}
+             onOpen={() => onSelectNido(slot)}
+           />
+         ))}
+@@ -714,30 +610,17 @@ function NidoScene({
+ interface EggSheetProps {
+   inc: any;
+   onClose: () => void;
+-  onHeat: (id: number) => void;
+-  onCariño: (id: number, action: string) => void;
+   onHatch: (id: number) => void;
+-  onShield: (id: number) => void;
+   hatchingId: number | null;
+-  interactuando: number | null;
+-  clima: any;
+-  particulas: { id: number; incId: number; tipo: string; x: number; y: number; cLeft?: number; cBottom?: number }[];
+ }
+ 
+-function EggSheet({ inc, onClose, onHeat, onCariño, onHatch, onShield, hatchingId, interactuando, clima, particulas }: EggSheetProps) {
+-  const estilos = obtenerEstiloHuevo(inc.name);
+-  const isF    = inc.is_frozen;
+-  const tieneEscudo = inc.protected_until && new Date(inc.protected_until) > new Date();
+-  const faseInfo    = obtenerFaseHuevo(inc);
+-  const purity      = inc.genetic_purity ?? 100.0;
+-  const heatMult    = clima?.heat_multiplier || 1.0;
+-  const increment   = (0.2 * heatMult).toFixed(1);
+-
+-  const cdAcariciar = Math.max(0, inc.cooldown_acariciar || 0);
+-  const cdCantar    = Math.max(0, inc.cooldown_cantar    || 0);
++function EggSheet({ inc, onClose, onHatch, hatchingId }: EggSheetProps) {
++  const estilos  = obtenerEstiloHuevo(inc.name);
++  const faseInfo = obtenerFaseHuevo(inc);
++  const purity   = inc.genetic_purity ?? 100.0;
++  const isReady  = inc.horasRestantes === 0;
+ 
+   const totalBonos = [
+-    inc.bonus_strength, inc.bonus_agility, inc.bonus_wisdom,
+     inc.bonus_focus, inc.bonus_stamina, inc.bonus_luck,
+   ].reduce((s: number, v: number) => s + (v || 0), 0);
+ 
+@@ -747,115 +630,44 @@ function EggSheet({ inc, onClose, onHeat, onCariño, onHatch, onShield, hatching
+             {/* Header */}
+             <div className="flex items-start justify-between mb-4">
+               <div>
+-                <div className="flex items-center gap-2">
+-                  <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border ${
+-                    isF        ? 'text-cyan-400 border-cyan-500/40 bg-cyan-950/60' :
+-                    tieneEscudo ? 'text-amber-400 border-amber-500/40 bg-amber-950/60' :
+-                                  'text-[#E4007C] border-[#E4007C]/30 bg-pink-950/30'
+-                  }`}>
+-                    {isF ? '❄️ Congelado · Timer ⏸' : (inc.horasRestantes === 0) ? '🐣 ¡Listo!' : tieneEscudo ? '🛡️ Protegido' : `Fase ${faseInfo.fase}`}
+-                  </span>
+-                  {tieneEscudo && (
+-                    <span className="text-[8px] text-amber-400 font-bold">{formatTiempoEscudo(inc.protected_until)}</span>
+-                  )}
+-                </div>
++                <span className="text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full border text-[#E4007C] border-[#E4007C]/30 bg-pink-950/30">
++                  {isReady ? '🐣 ¡Listo!' : `Fase ${faseInfo.fase}`}
++                </span>
+                 <h3 className="text-lg font-black text-white mt-1 leading-tight">{inc.name}</h3>
+-                {!isF ? (
+-                  inc.horasRestantes > 0
+-                    ? <div className="flex items-center gap-1 mt-0.5"><Clock size={9} className="text-slate-500" /><span className="text-[10px] text-slate-400 font-bold">{inc.horasRestantes}h restantes</span></div>
+-                    : <div className="text-[10px] text-pink-400 font-black mt-0.5 animate-pulse">¡Listo para eclosionar!</div>
+-                ) : (
+-                  <div className="text-[10px] text-cyan-400 font-black mt-0.5">⏸️ Timer pausado</div>
+-                )}
++                {isReady
++                  ? <div className="text-[10px] text-pink-400 font-black mt-0.5 animate-pulse">¡Listo para eclosionar!</div>
++                  : <div className="flex items-center gap-1 mt-0.5"><Clock size={9} className="text-slate-500" /><span className="text-[10px] text-slate-400 font-bold">{inc.horasRestantes}h restantes</span></div>
++                }
+               </div>
+               <button onClick={onClose} className="p-2 rounded-full bg-slate-800/60 border border-white/5 text-slate-500 hover:text-white transition-colors mt-1">
+                 <X size={14} />
+               </button>
+             </div>
+ 
+-            {/* Tapeable egg */}
++            {/* Egg */}
+             <div className="relative flex justify-center mb-5">
+               <button
+-                onClick={() => { if (!isF && inc.horasRestantes === 0) onHatch(inc.id); else onHeat(inc.id); }}
+-                disabled={!isF && inc.horasRestantes === 0 && hatchingId === inc.id}
+-                className={`relative text-7xl leading-none select-none transition-transform active:scale-90 ${isF ? 'animate-egg-frozen grayscale-[0.5]' : faseInfo.clase}`}
++                onClick={() => { if (isReady) onHatch(inc.id); }}
++                disabled={isReady && hatchingId === inc.id}
++                className={`relative text-7xl leading-none select-none transition-transform active:scale-90 ${faseInfo.clase}`}
+                 style={{
+                   '--egg-shadow': estilos.shadow,
+-                  filter: isF
+-                    ? 'drop-shadow(0 0 16px rgba(6,182,212,0.9))'
+-                    : `drop-shadow(0 0 12px ${estilos.aura})`,
++                  filter: `drop-shadow(0 0 12px ${estilos.aura})`,
+                 } as React.CSSProperties}
+               >
+-                {inc.horasRestantes === 0 && !isF ? '🐣' : '🥚'}
+-                {/* Particles */}
+-                {particulas.filter(p => p.incId === inc.id).map(p => (
+-                  <div
+-                    key={p.id}
+-                    className="absolute z-50 text-[10px] font-black pointer-events-none animate-float-up whitespace-nowrap bg-black/75 border border-white/10 px-2 py-0.5 rounded-lg text-white"
+-                    style={{ '--x': `${p.x}px`, bottom: '50%', left: '50%', transform: 'translateX(-50%)' } as React.CSSProperties}
+-                  >
+-                    {p.tipo}
+-                  </div>
+-                ))}
+-              </button>
+-
+-              {/* Shield button */}
+-              <button
+-                onClick={() => onShield(inc.id)}
+-                className={`absolute top-0 right-4 p-1.5 rounded-full border transition-all shadow-md active:scale-75 ${
+-                  tieneEscudo
+-                    ? 'bg-amber-500/20 border-amber-500 text-amber-400 animate-pulse'
+-                    : 'bg-slate-800/60 border-slate-700 text-slate-500 hover:text-amber-400 hover:border-amber-500/40'
+-                }`}
+-              >
+-                <Shield size={14} />
++                {isReady ? '🐣' : '🥚'}
+               </button>
+             </div>
+ 
+-            {/* Tap hint */}
++            {/* Hint */}
+             <p className="text-center text-[9px] text-slate-600 font-bold uppercase tracking-widest mb-4">
+-              {isF
+-                ? `Toca para romper el hielo (${inc.frozen_clicks_left} clicks)`
+-                : inc.horasRestantes === 0
+-                  ? '¡Toca el huevo para eclosionar!'
+-                  : `Toca para dar calor (+${increment}%)`}
++              {isReady
++                ? '¡Toca el huevo para eclosionar!'
++                : 'El webito eclosionará solo al cumplir su tiempo de incubación.'}
+             </p>
+ 
+             {/* Bars */}
+             <div className="space-y-3 mb-5">
+-              {/* Barra de calor — solo cuando NO está congelado */}
+-              {!isF && (
+-              <div>
+-                <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase mb-1">
+-                  <span className="flex items-center gap-1"><Flame size={9} /> Calor</span>
+-                  <span className={inc.calor <= 15 ? 'text-red-500 animate-pulse' : 'text-orange-400'}>
+-                    {`${inc.calor.toFixed(0)}%`}
+-                  </span>
+-                </div>
+-                <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+-                  <div
+-                    className={`h-full rounded-full transition-all duration-300 ${inc.calor <= 15 ? 'bg-red-600 animate-pulse' : 'bg-orange-500'}`}
+-                    style={{ width: `${Math.max(2, inc.calor)}%` }}
+-                  />
+-                </div>
+-              </div>
+-              )}
+-
+-              {isF && (
+-                <div>
+-                  <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase mb-1">
+-                    <span className="flex items-center gap-1"><Snowflake size={9} /> Hielo</span>
+-                    <span className="text-cyan-400">{inc.frozen_clicks_left} clicks restantes</span>
+-                  </div>
+-                  <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+-                    <div
+-                      className="h-full bg-cyan-500 rounded-full transition-all duration-300"
+-                      style={{ width: `${Math.max(2, ((inc.frozen_clicks_left || 50) / 50) * 100)}%` }}
+-                    />
+-                  </div>
+-                </div>
+-              )}
+-
+               <div>
+                 <div className="flex justify-between text-[9px] font-black text-slate-400 uppercase mb-1">
+                   <span>🧬 Pureza</span>
+@@ -884,8 +696,8 @@ function EggSheet({ inc, onClose, onHeat, onCariño, onHatch, onShield, hatching
+               )}
+             </div>
+ 
+-            {/* Action buttons */}
+-            {inc.horasRestantes === 0 ? (
++            {/* Action */}
++            {isReady ? (
+               <button
+                 onClick={() => onHatch(inc.id)}
+                 disabled={hatchingId === inc.id}
+@@ -893,40 +705,9 @@ function EggSheet({ inc, onClose, onHeat, onCariño, onHatch, onShield, hatching
+               >
+                 {hatchingId === inc.id ? 'Eclosionando…' : '✨ ¡Eclosionar! ✨'}
+               </button>
+-            ) : isF ? (
+-              <button
+-                onClick={() => onHeat(inc.id)}
+-                className="w-full py-3.5 rounded-2xl font-black uppercase text-sm tracking-widest bg-cyan-900/80 hover:bg-cyan-800 text-cyan-100 border border-cyan-500 shadow-cyan-500/30 shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2"
+-              >
+-                <Zap size={16} className="text-cyan-300" />
+-                Romper escarcha ({inc.frozen_clicks_left})
+-              </button>
+             ) : (
+-              <div className="grid grid-cols-2 gap-2">
+-                <button
+-                  disabled={cdAcariciar > 0 || interactuando === inc.id}
+-                  onClick={() => onCariño(inc.id, 'acariciar')}
+-                  className={`py-3 rounded-2xl font-black uppercase text-[10px] tracking-wider active:scale-95 flex items-center justify-center gap-1.5 border transition-all ${
+-                    cdAcariciar > 0
+-                      ? 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'
+-                      : 'bg-pink-900/40 border-pink-500/50 text-pink-300 hover:bg-pink-800/60 shadow-pink-500/20 shadow-md'
+-                  }`}
+-                >
+-                  <Heart size={12} />
+-                  {cdAcariciar > 0 ? formatCooldown(cdAcariciar) : 'Acariciar 💖'}
+-                </button>
+-                <button
+-                  disabled={cdCantar > 0 || interactuando === inc.id}
+-                  onClick={() => onCariño(inc.id, 'cantar')}
+-                  className={`py-3 rounded-2xl font-black uppercase text-[10px] tracking-wider active:scale-95 flex items-center justify-center gap-1.5 border transition-all ${
+-                    cdCantar > 0
+-                      ? 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'
+-                      : 'bg-purple-900/40 border-purple-500/50 text-purple-300 hover:bg-purple-800/60 shadow-purple-500/20 shadow-md'
+-                  }`}
+-                >
+-                  <Music size={12} />
+-                  {cdCantar > 0 ? formatCooldown(cdCantar) : 'Cantar 🎵'}
+-                </button>
++              <div className="text-center text-[10px] text-slate-500 font-bold py-2">
++                Vuelve cuando el webito esté listo. 🥚
+               </div>
+             )}
+           </div>
+@@ -1831,19 +1612,15 @@ export default function Santuario({
+   // ── Click queue ref ──────────────────────────────────
+   const clicksPendientes = useRef<Record<number, number>>({});
+ 
+-  // ── Fetch incubaciones + weather ─────────────────────
++  // ── Fetch incubaciones ───────────────────────────────
+   useEffect(() => {
+     if (!userId) return;
+     const load = async () => {
+       setCargando(true);
+       try {
+         const headers = token ? { Authorization: `Bearer ${token}` } : {};
+-        const [resInc, resWeather] = await Promise.allSettled([
+-          axios.get(`${API}/incubation/user/${userId}`, { headers }),
+-          axios.get(`${API}/incubation/weather`),
+-        ]);
+-        if (resInc.status === 'fulfilled')     setIncubaciones(resInc.value.data);
+-        if (resWeather.status === 'fulfilled') setClima(resWeather.value.data);
++        const resInc = await axios.get(`${API}/incubation/user/${userId}`, { headers });
++        setIncubaciones(resInc.data);
+       } catch (e) { console.error('Error cargando El Nido:', e); }
+       finally { setCargando(false); }
+     };
+@@ -1900,123 +1677,7 @@ export default function Santuario({
+     return () => clearInterval(t);
+   }, []);
+ 
+-  // ── Click bulk sync (3s) ─────────────────────────────
+-  useEffect(() => {
+-    const interval = setInterval(() => {
+-      Object.entries(clicksPendientes.current).forEach(([idStr, clicks]) => {
+-        if (clicks <= 0) return;
+-        const incId = parseInt(idStr);
+-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+-        axios.post(`${API}/incubation/click/${incId}/bulk`, { clicks }, { headers })
+-          .then(res => {
+-            setIncubaciones(prev => prev.map(inc =>
+-              inc.id === incId ? {
+-                ...inc,
+-                calor:              res.data.calor,
+-                clicks:             res.data.clicks,
+-                horasRestantes:     res.data.horasRestantes,
+-                is_frozen:          res.data.is_frozen || false,
+-                frozen_clicks_left: res.data.frozen_clicks_left || 0,
+-                genetic_purity:     res.data.genetic_purity,
+-                bonus_strength:     res.data.bonus_strength,
+-                bonus_agility:      res.data.bonus_agility,
+-                bonus_wisdom:       res.data.bonus_wisdom,
+-                bonus_focus:        res.data.bonus_focus,
+-                bonus_stamina:      res.data.bonus_stamina,
+-                bonus_luck:         res.data.bonus_luck,
+-              } : inc
+-            ));
+-          })
+-          .catch(e => console.error('Error sync clicks:', e));
+-        clicksPendientes.current[incId] = 0;
+-      });
+-    }, 3_000);
+-    return () => clearInterval(interval);
+-  }, [token]);
+-
+   // ── ACTIONS ──────────────────────────────────────────
+-  const darCariño = async (incId: number, action: string) => {
+-    if (interactuando === incId) return;
+-    setInteractuando(incId);
+-    try {
+-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+-      const res = await axios.post(
+-        `${API}/incubation/interact/${incId}`,
+-        { action, user_id: userId },
+-        { headers },
+-      );
+-      setIncubaciones(prev => prev.map(inc =>
+-        inc.id === incId ? {
+-          ...inc,
+-          calor:              res.data.calor,
+-          horasRestantes:     res.data.horasRestantes,
+-          cooldown_acariciar: res.data.cooldown_acariciar,
+-          cooldown_cantar:    res.data.cooldown_cantar,
+-          bonus_strength:     res.data.bonus_strength,
+-          bonus_agility:      res.data.bonus_agility,
+-          bonus_wisdom:       res.data.bonus_wisdom,
+-          bonus_focus:        res.data.bonus_focus,
+-          bonus_stamina:      res.data.bonus_stamina,
+-          bonus_luck:         res.data.bonus_luck,
+-          genetic_purity:     res.data.genetic_purity,
+-        } : inc
+-      ));
+-      setSelectedSlot(prev =>
+-        prev?.type === 'egg' && prev.data.id === incId
+-          ? { ...prev, data: { ...prev.data, ...res.data } }
+-          : prev
+-      );
+-      if (action === 'acariciar') {
+-        const now = Date.now();
+-        const newPs = [-28, 0, 28].map((x, i) => ({ id: now + i, incId, tipo: '💕', x, y: 0 }));
+-        setParticulas(prev => [...prev, ...newPs]);
+-        newPs.forEach(p => setTimeout(() => setParticulas(prev => prev.filter(pp => pp.id !== p.id)), 1500));
+-      } else {
+-        const newP = { id: Date.now(), incId, tipo: '🎵', x: Math.random() * 40 - 20, y: 0 };
+-        setParticulas(prev => [...prev, newP]);
+-        setTimeout(() => setParticulas(prev => prev.filter(p => p.id !== newP.id)), 1500);
+-      }
+-    } catch (e: any) {
+-      toast.error(e.response?.data?.detail || 'Error al interactuar');
+-    } finally {
+-      setInteractuando(null);
+-    }
+-  };
+-
+-  const darCalorFront = (id: number, cPos?: { l: number; b: number }) => {
+-    if (!clicksPendientes.current[id]) clicksPendientes.current[id] = 0;
+-    clicksPendientes.current[id] += 1;
+-
+-    const inc = incubaciones.find(i => i.id === id);
+-    const heatMult  = clima?.heat_multiplier || 1.0;
+-    const increment = 0.2 * heatMult;
+-    const particle  = inc?.is_frozen
+-      ? `❄️ -1 (${Math.max(0, (inc.frozen_clicks_left || 50) - 1)})`
+-      : `🔥 +${increment.toFixed(1)}%`;
+-
+-    const newP = { id: Math.random(), incId: id, tipo: particle, x: Math.random() * 30 - 15, y: 0, cLeft: cPos?.l, cBottom: cPos?.b };
+-    setParticulas(prev => [...prev, newP]);
+-    setTimeout(() => setParticulas(prev => prev.filter(p => p.id !== newP.id)), 1200);
+-
+-    setIncubaciones(prev => prev.map(inc => {
+-      if (inc.id !== id) return inc;
+-      if (inc.is_frozen) {
+-        const left = Math.max(0, (inc.frozen_clicks_left || 50) - 1);
+-        return { ...inc, frozen_clicks_left: left, is_frozen: left > 0 };
+-      }
+-      return { ...inc, calor: Math.min(100.0, inc.calor + increment) };
+-    }));
+-    setSelectedSlot(prev => {
+-      if (prev?.type !== 'egg' || prev.data.id !== id) return prev;
+-      const d = prev.data;
+-      if (d.is_frozen) {
+-        const left = Math.max(0, (d.frozen_clicks_left || 50) - 1);
+-        return { ...prev, data: { ...d, frozen_clicks_left: left, is_frozen: left > 0 } };
+-      }
+-      return { ...prev, data: { ...d, calor: Math.min(100.0, d.calor + increment) } };
+-    });
+-  };
+-
+   const hatchEgg = async (incId: number) => {
+     setHatchingId(incId);
+     try {
+@@ -2082,16 +1743,12 @@ export default function Santuario({
+         </p>
+       </div>
+ 
+-      {/* Weather chip */}
+-      <WeatherChip clima={clima} />
+-
+       {/* 2.5D Cenote scene */}
+       <NidoScene
+         nidoSlots={nidoSlots}
+         axolotitos={axolotitos}
+         clima={clima}
+         onSelectNido={(slot) => setSelectedSlot(slot)}
+-        onHeatDirect={darCalorFront}
+         onSelectAxo={(axo) => setSelectedSlot({ type: 'axo', data: axo })}
+         selectedAxoId={selectedSlot?.type === 'axo' ? selectedSlot.data.id : null}
+         particulas={particulas}
+@@ -2121,14 +1778,8 @@ export default function Santuario({
+         <EggSheet
+           inc={selectedSlot.data}
+           onClose={() => setSelectedSlot(null)}
+-          onHeat={darCalorFront}
+-          onCariño={darCariño}
+           onHatch={hatchEgg}
+-          onShield={id => { setSelectedSlot(null); setModalEscudoIncId(id); }}
+           hatchingId={hatchingId}
+-          interactuando={interactuando}
+-          clima={clima}
+-          particulas={particulas}
+         />
+       )}
+ 
+@@ -2163,23 +1814,6 @@ export default function Santuario({
+             </div>
+       </BottomSheet>
+ 
+-      {/* ── SHIELD MODAL ── */}
+-      {modalEscudoIncId && (
+-        <ShieldModal
+-          incId={modalEscudoIncId}
+-          incubaciones={incubaciones}
+-          userId={userId}
+-          token={token}
+-          cantidadGotas={cantidadGotas}
+-          cantidadLamparas={cantidadLamparas}
+-          precioGotas={precioGotas}
+-          precioLamparas={precioLamparas}
+-          onClose={() => setModalEscudoIncId(null)}
+-          onSuccess={() => setRecargaTrigger(p => p + 1)}
+-          cambiarTab={cambiarTab}
+-        />
+-      )}
+-
+       {/* ── HATCH SHEET ── */}
+       {nuevoAxolotito && (
+         <HatchSheet

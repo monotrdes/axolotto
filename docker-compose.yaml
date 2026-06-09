@@ -1,0 +1,84 @@
+services:
+  db_axolotto:
+    image: postgres:16-alpine
+    container_name: axolotto_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${AXO_DB_USER}
+      POSTGRES_PASSWORD: ${AXO_DB_PASSWORD}
+      POSTGRES_DB: axolotto_app_db
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - axolotto_data:/var/lib/postgresql/data
+    networks:
+      - axolotto_net
+
+  anvil_axolotto:
+    image: ghcr.io/foundry-rs/foundry:latest
+    container_name: axolotto_anvil
+    restart: always
+    ports:
+      - "8545:8545"
+    entrypoint:
+      - "anvil"
+      - "--host"
+      - "0.0.0.0"
+      - "--port"
+      - "8545"
+      - "--accounts"
+      - "10"
+      - "--balance"
+      - "10000"
+      - "--block-time"
+      - "1"
+    networks:
+      - axolotto_net
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  backend_axolotto:
+    build: ./backend
+    container_name: axolotto_backend
+    restart: always
+    ports:
+      - "8001:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=postgresql://${AXO_DB_USER}:${AXO_DB_PASSWORD}@db_axolotto:5432/axolotto_app_db
+      - PRIVY_APP_ID=${PRIVY_APP_ID}
+      - PRIVY_APP_SECRET=${PRIVY_APP_SECRET}
+      - TRIDY_API_KEY=${TRIDY_API_KEY}
+      - ADMIN_PRIVY_DID=${ADMIN_PRIVY_DID}
+    depends_on:
+      - db_axolotto
+      - anvil_axolotto
+    networks:
+      - axolotto_net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  taskboard:
+    build: ./tools/taskboard
+    container_name: axolotto_taskboard
+    restart: "no"
+    ports:
+      - "8181:8181"
+    volumes:
+      - .:/repo
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
+    networks:
+      - axolotto_net
+
+volumes:
+  axolotto_data:
+
+networks:
+  axolotto_net:

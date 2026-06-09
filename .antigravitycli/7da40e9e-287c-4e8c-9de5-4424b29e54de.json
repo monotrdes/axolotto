@@ -1,0 +1,14 @@
+{
+  "id": "7da40e9e-287c-4e8c-9de5-4424b29e54de",
+  "name": "/home/monotr/axolotto",
+  "projectResources": {
+    "resources": [
+      {
+        "gitFolder": {
+          "folderUri": "file:///home/monotr/axolotto",
+          "allowWrite": true
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+# ─── Dependencias & build ───
+.venv/
+.skills/
+__pycache__/
+*.pyc
+node_modules/
+.next/
+output/
+output_0/
+package-lock.json
+yarn.lock
+poetry.lock
+
+# ─── Logs & OS ───
+*.log
+.DS_Store
+
+# ─── Archivos confidenciales (NUNCA versionar) ───
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env*
+frontend/env*
+!.frontend/env.example
+.claude/settings.local.json
+*.pem
+*.key
+*-key.json
+
+# ─── Bases de datos locales ───
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# ─── Taskboard runtime ───
+tools/taskboard/.taskboard.pid
+tools/taskboard/agent_logs/
+
+# ─── AI agent context (auto-generado) ───
+.fog-context/
+!.fog-context/hints/
+.aider*
+
+# ─── Obsidian vault (auto-generado) ───
+obsidian/
+
+# ─── Librerias externas de contratos ───
+contracts/lib/
+contracts/Microsoft/
+
+# ─── Junk & deprecated ───
+toolstaskboardtasks.db
+tasks.json
+.superpowers/
+scratch/

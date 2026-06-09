@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+sqlmodel
+alembic
+psycopg2-binary
+python-dotenv
+# Para validar los tokens de Privy necesitamos estas dos:
+PyJWT
+cryptography
+pydantic-settings
+web3
+httpx
+slowapi

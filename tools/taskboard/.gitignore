@@ -1,0 +1,5 @@
+# Runtime artifacts
+.taskboard.pid
+tasks.db
+agent_logs/
+__pycache__/

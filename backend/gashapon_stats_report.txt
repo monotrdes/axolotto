@@ -1,0 +1,31 @@
+=== REPORTE ESTADÍSTICO DE GASHAPÓN Y CÁPSULAS ===
+Tiradas Simuladas por Caso: 100000
+
+--- GASHAPÓN ---
+Common Chi-Sq: 1.0172 (Límite: 5.991) - PASSED
+Premium Chi-Sq: 1.1999 (Límite: 5.991) - PASSED
+
+--- CÁPSULAS BASE ---
+Tier COBRE Chi-Sq: 3.9174 (Límite: 9.488) - PASSED
+Tier PLATA Chi-Sq: 2.9777 (Límite: 9.488) - PASSED
+Tier ORO Chi-Sq: 4.3511 (Límite: 9.488) - PASSED
+
+--- CÁPSULAS CON PITY (COMPORTAMIENTO EMPÍRICO REAL) ---
+Tier COBRE (Pity 10):
+  - gal: 42.085%
+  - carta: 27.851%
+  - accesorio: 9.155%
+  - sobre: 9.282%
+  - axolotito: 11.627%
+Tier PLATA (Pity 5):
+  - gal: 17.590%
+  - carta: 39.232%
+  - accesorio: 13.168%
+  - sobre: 8.721%
+  - axolotito: 21.289%
+Tier ORO (Pity 3):
+  - gal: 4.161%
+  - carta: 34.073%
+  - accesorio: 16.645%
+  - sobre: 8.564%
+  - axolotito: 36.557%

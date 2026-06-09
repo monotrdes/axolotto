@@ -1,0 +1,78 @@
+
+======================================================================
+📊  REPORTE FINAL — SIMULADOR AXOLOTTO v3
+======================================================================
+👥  Usuarios creados:          0
+🎟️  Corcholatas canjeadas:     0
+🎁  Corcholatas reclamadas:    0
+💸  AXG comprados (Sim.):      34350 AXG (Pesos: $4342.00 MXN)
+💎  Paquetes GAL comprados:    9
+🃏  Boosters normales:         34
+✨  Boosters foil:             0
+🎯  Boosters extra (abiertos): 0
+🎴  Cartas abiertas total:     196
+🥚  Webitos adoptados:         0
+🐣  Axolotitos eclosionados:   3
+🎓  Tutoriales completados:    3 (Tabla Tutorial creada)
+🧬  Naturalezas obtenidas:     shy: 1, glutton: 1, hyperactive: 1
+😇  Karma Lucky:               2
+🧂  Karma Salty:               1
+💧  Gotas Anti-Escarcha:       0
+🌤️  Clima incubación:          cold_fog
+🎉  Evento de prueba creado:   No
+----------------------------------------------------------------------
+🎰  Gashapon rolls:            7
+💊  Cápsulas reclamadas:       0
+🌟  Triple Suerte:             0
+📋  Tableros creados:          6  (0 manuales)
+🏪  Tableros en venta P2P:     0
+🏠  Tableros en renta:         1
+📈  Slots desbloqueados:       0
+🦎  Axos en venta P2P:         0
+----------------------------------------------------------------------
+👑  VIP activados:             2
+🔄  VIP Auto-Renovación:       0
+🌿  GAL VIP reclamados:        0
+💸  Ahorro jugadores (VIP):    76.62 AXF  ← ingresos perdidos por la casa
+----------------------------------------------------------------------
+🎮  Partidas individuales:     12
+  🏆 Victorias:               6  (50.0%)
+  💔 Derrotas:                6
+  🤖 Autojuego:               3 partidas
+  💰 GAL obtenidas:           991.34
+  🍽️  Alimentaciones:          0
+  😴 Ciclos sueño:            0
+  🔧 Cave items equipados:    0
+  💍 Accesorios equipados:    4
+----------------------------------------------------------------------
+⚔️  Salas multijugador:        0
+  📞 Recall pasó:             1
+  💵 Axos liquidados:         0
+  💰 Jackpots ganados:        0
+----------------------------------------------------------------------
+----------------------------------------------------------------------
+🚫  Tests de errores:
+  ✅ Pasaron:                 5
+  ❌ Fallaron:                2
+======================================================================
+
+⚠️  ERRORES (24):
+  x4  egg_buy_after_expand did:privy:cmnn1tv0o02au0ckzho9ugkb2: Límite de 3 unidades por wallet alcanzado para este ítem.
+  x2  booster_buy did:privy:cmnn1tv0o02au0ckzho9ugkb2: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x2  board_random did:privy:sim_player_1: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 14.
+  x2  acc_equip did:privy:cmnn1tv0o02au0ckzho9ugkb2/body: No posees este accesorio en tu inventario.
+  x1  egg_buy_after_expand did:privy:sim_player_2: Límite alcanzado. Ya tienes 2 webitos/axolotitos (límite: 2).
+  x1  gashapon did:privy:cmnn1tv0o02au0ckzho9ugkb2: Saldo de FRJ insuficiente para lanzar el Gashapón (cuesta 1000.0 FRJ, tienes 150.0 FRJ).
+  x1  capsule_roll did:privy:cmnn1tv0o02au0ckzho9ugkb2: FRJ insuficientes. Necesitas 1500.0 FRJ, tienes 150.0 FRJ.
+  x1  board_manual did:privy:cmnn1tv0o02au0ckzho9ugkb2: Saldo insuficiente. Crear un tablero manual cuesta 50 GAL.
+  x1  board_random did:privy:sim_player_2: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 14.
+  x1  board_manual did:privy:sim_player_2: Un tablero de Lotería no puede contener cartas duplicadas.
+  x1  play did:privy:cmnn1tv0o02au0ckzho9ugkb2 Mixcoatl Duradero: Saldo insuficiente. Entrar a Fosa del Campeón (1x) cuesta 500.0 GAL.
+  x1  acc_equip did:privy:cmnn1tv0o02au0ckzho9ugkb2/eyes: No posees este accesorio en tu inventario.
+  x1  f2p_forge_egg did:privy:sim_player_1: 400: Límite alcanzado. Ya tienes 1 Axolotito(s) eclosionados (límite: 1). Por favor expande tu Cenote antes de eclosionar nuevos huevos.
+  x1  acc_equip did:privy:sim_player_2/eyes: No posees este accesorio en tu inventario.
+  x1  acc_equip did:privy:sim_player_2/body: No posees este accesorio en tu inventario.
+  x1  multi_register did:privy:cmnn1tv0o02au0ckzho9ugkb2: Presupuesto insuficiente. Requieres al menos 100.0 GAL para jugar 1 tablas.
+  x1  multi_register did:privy:sim_player_2: Presupuesto insuficiente. Requieres al menos 100.0 GAL para jugar 1 tablas.
+  x1  error_test_wrong_code_compra_sin_saldo_400
+======================================================================

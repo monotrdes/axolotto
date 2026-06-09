@@ -1,0 +1,199 @@
+{
+  "main": {
+    "id": "982dd7a7845d9639",
+    "type": "split",
+    "children": [
+      {
+        "id": "8a1bcc4171c91a5e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "55a30862cbf6b809",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "d44e66dd8f682bae",
+    "type": "split",
+    "children": [
+      {
+        "id": "098e80d69cd3e446",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "0529b0dff58dc5dd",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "5303f2371261d226",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "b7076926f87f9f5a",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "5044d2f540b0b45f",
+    "type": "split",
+    "children": [
+      {
+        "id": "95d258d83f076427",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "a272498389d0a44f",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "c30663e8db83b682",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "606d52720f8e85b8",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "2fbe6884e97f00e2",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "07fb147dab32272d",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "55a30862cbf6b809",
+  "lastOpenFiles": [
+    "scripts/build-obsidian-vault.ps1.tmp.6368.caeeacb263cf",
+    "tools/taskboard/tasks.db-shm",
+    "tools/taskboard/tasks.db-wal",
+    "contracts/cache/Deploy.s.sol/31337/run-1780976344726.json",
+    "contracts/broadcast/Deploy.s.sol/31337/run-1780976344726.json",
+    "backend/app/api/v1/endpoints/cave_expansion.py.tmp.6368.e9c0a069dd9b",
+    "backend/app/api/v1/endpoints/cave_expansion.py.tmp.6368.fc893372eafe",
+    "backend/app/api/v1/endpoints/cave_expansion.py.tmp.6368.aacbc846ce0a",
+    "contracts/cache/Deploy.s.sol/31337/run-1780976202000.json",
+    "contracts/broadcast/Deploy.s.sol/31337/run-1780976202000.json",
+    "contracts/cache/solidity-files-cache.json",
+    "docs/plan_task-1780928574-56_renombrar-monedas-contratos-legacy.md",
+    "docs/plan_task-1780919882-56_ajustar-paneles-de-agentes-en-taskboard.md",
+    "docs/plan_task-1780918089-55_cambiar-el-logo-a-un-emoji-random-cada-vez-que-se-.md",
+    "docs/plan_task-1780916644-55_cambiar-logo-del-taskboard-axolotl-favicon-svg.md",
+    "axolotto/Untitled.canvas",
+    "wiki/plan-unified-agent-orchestration.md"
+  ]
+}

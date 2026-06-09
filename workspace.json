@@ -1,0 +1,125 @@
+{
+  "version": "2.0",
+  "gateway": {
+    "port": 8642,
+    "watch": ["backend/", "frontend/", "contracts/", "tools/taskboard/", "docs/", "wiki/"],
+    "ignore": ["node_modules/", ".next/", "__pycache__/", "*.pyc", ".git/", "dist/", "output/", ".venv/"]
+  },
+  "providers": {
+    "gemini": {
+      "display_name": "Gemini (Google Antigravity)",
+      "binary": "agy",
+      "auth": "oauth",
+      "default_model": "gemini-3.5-flash-medium",
+      "models": { "flash-medium": "gemini-3.5-flash-medium", "flash-high": "gemini-3.5-flash-high", "pro": "gemini-3.1-pro-high" },
+      "rate_limit_rpm": 1500,
+      "cost_per_1k_input": 0.000075,
+      "cost_per_1k_output": 0.00030
+    },
+    "claude": {
+      "display_name": "Claude (Anthropic)",
+      "binary": "claude",
+      "auth": "api_key",
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "default_model": "claude-sonnet-4-6",
+      "models": { "opus": "claude-opus-4-8", "sonnet": "claude-sonnet-4-6", "haiku": "claude-haiku-4-5" },
+      "rate_limit_rpm": 100,
+      "cost_per_1k_input": 0.003,
+      "cost_per_1k_output": 0.015
+    },
+    "deepseek": {
+      "display_name": "DeepSeek (Anthropic-compatible)",
+      "binary": "claude",
+      "auth": "api_key",
+      "api_key_env": "DEEPSEEK_API_KEY",
+      "env_overrides": {
+        "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic",
+        "ANTHROPIC_MODEL": "deepseek-v4-pro[1m]"
+      },
+      "default_model": "deepseek-v4-pro[1m]",
+      "models": { "v4_pro": "deepseek-v4-pro[1m]", "v4_flash": "deepseek-v4-flash" },
+      "rate_limit_rpm": 500,
+      "cost_per_1k_input": 0.00014,
+      "cost_per_1k_output": 0.00028
+    },
+    "ollama": {
+      "display_name": "Ollama (Local RTX 3070)",
+      "api_base": "http://localhost:11434",
+      "auth": "none",
+      "default_model": "qwen2.5-coder:7b",
+      "models": { "qwen_coder": "qwen2.5-coder:7b" },
+      "rate_limit_rpm": 999999,
+      "cost_per_1k_input": 0,
+      "cost_per_1k_output": 0
+    }
+  },
+  "specializations": {
+    "orchestrator": {
+      "provider": "gemini", "model_key": "flash-medium",
+      "description": "Orquestador central — descompone tareas, rutea a especialistas, mantiene contexto global",
+      "strengths": ["routing", "context-analysis", "task-decomposition", "coordination"]
+    },
+    "orchestrator_fallback_b": {
+      "provider": "claude", "model_key": "sonnet",
+      "description": "Fallback de orquestación — cuando Gemini está rate-limited o agy gateway caído"
+    },
+    "orchestrator_fallback_deepseek": {
+      "provider": "deepseek", "model_key": "v4_pro",
+      "description": "Fallback de orquestación — cuando Gemini y Claude están rate-limited"
+    },
+    "orchestrator_fallback_local": {
+      "provider": "ollama", "model_key": "qwen_coder",
+      "description": "Fallback local — Qwen 2.5 Coder 7B (GPU RTX 3070). Solo como último recurso."
+    },
+    "critical_worker": {
+      "provider": "claude", "model_key": "opus",
+      "description": "Especialista en bugs estructurales, refactors del core, seguridad — NO restringido, preferido para alta complejidad",
+      "strengths": ["complex-reasoning", "architecture", "refactoring", "debugging", "security"],
+      "preferred_for": ["bug.critical", "security", "blockchain", "refactor.core"]
+    },
+    "frontend_ux": {
+      "provider": "claude", "model_key": "sonnet",
+      "description": "Especialista en frontend, UI/UX, estética kawaii-tech — NO restringido, preferido para visual",
+      "strengths": ["frontend", "ui", "design", "css", "react", "nextjs", "tailwind", "animation"],
+      "preferred_for": ["frontend", "ui", "design", "ux"]
+    },
+    "simulation_math": {
+      "provider": "deepseek", "model_key": "v4_pro",
+      "description": "Especialista en simulaciones económicas, optimización DB, backend pesado — NO restringido, preferido para datos",
+      "strengths": ["backend", "simulation", "math", "database", "performance", "economy", "api"],
+      "preferred_for": ["backend", "finance", "economy", "database", "infra", "api"]
+    },
+    "micro_tasks": {
+      "provider": "deepseek", "model_key": "v4_flash",
+      "description": "Micro-tareas, boilerplate, webhooks, fixes simples — alta velocidad, bajo costo",
+      "strengths": ["boilerplate", "webhooks", "simple-fixes", "refactoring", "scripts"],
+      "preferred_for": ["tools", "scripts", "boilerplate", "docs.minor"]
+    },
+    "local_qa": {
+      "provider": "ollama", "model_key": "qwen_coder",
+      "description": "QA local (GPU) + validador lógico — linters, formateo, commits, tests, sanity-checks — sin costo API",
+      "strengths": ["linting", "formatting", "commits", "testing", "code-review", "reasoning", "sanity-check", "validation"]
+    }
+  },
+  "agent_mappings": {
+    "backend-dev": { "primary": "simulation_math", "fallback": "critical_worker" },
+    "frontend-dev": { "primary": "frontend_ux", "fallback": "micro_tasks" },
+    "contrato-dev": { "primary": "critical_worker", "fallback": "simulation_math" },
+    "devops": { "primary": "simulation_math", "fallback": "micro_tasks" },
+    "economy-analyst": { "primary": "simulation_math", "fallback": "critical_worker" },
+    "security-reviewer": { "primary": "critical_worker", "fallback": "simulation_math" },
+    "game-designer": { "primary": "orchestrator", "fallback": "critical_worker" },
+    "qa-tester": { "primary": "local_qa", "fallback": "micro_tasks" }
+  },
+  "routing": {
+    "strategy": "weighted_scoring",
+    "weights": {
+      "specialization_match": 3,
+      "availability": 2,
+      "cost_efficiency": 1,
+      "current_load_penalty": -1,
+      "complexity_match": 2
+    },
+    "fallback_chain": ["orchestrator", "orchestrator_fallback_b", "orchestrator_fallback_deepseek", "orchestrator_fallback_local"]
+  }
+}

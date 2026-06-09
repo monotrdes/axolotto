@@ -1,0 +1,282 @@
+======================================================================
+AXOLOTTO PROJECT CONTEXT — AI Agent Knowledge Base
+Generated: 2026-06-09 14:48 UTC
+Branch: develop
+======================================================================
+
+## 1. ARCHITECTURE OVERVIEW
+
+Axolotto is a Web3 metaverse lottery game with 4 main areas:
+
+  backend/     — FastAPI + SQLModel + PostgreSQL 16  (Docker :8001)
+                Auth: Privy JWT (X-Privy-Token header)
+                Blockchain: Web3.py -&gt; Anvil/Plasma Testnet
+                Key services: bank, game, multiplayer, shop, checkout, incubation
+
+  frontend/    — Next.js 16.2 App Router + React 19 + Tailwind CSS 4 (PM2 :3000)
+                Auth: @privy-io/react-auth (social login + self-custodial wallets)
+                Web3: Viem 2.47 (NO ethers.js)
+                Payments: MoonPay widget for USDC onramp
+                Key components: PlayMode, LoteriaBoard, Store, MultiplayerLobby,
+                Criadero, Santuario, Inventory, VipModal, CryptoCheckout, MarketP2P
+
+  contracts/   — Solidity + Foundry (Anvil :8545 local / Plasma Testnet chain 9746)
+                14 contracts: Frijolito(FRJ), Axoficha(AXF), Webitos(ERC-721),
+                Axolotitos(DNA), CartasLoteria, TablasLoteria(escrow),
+                Boosters, Consumables, GameController(orchestrator), Frijolito
+
+  tools/       — Self-hosted AI Kanban taskboard (Python stdlib + vanilla JS)
+                Path: tools/taskboard/ (SELF-CONTAINED, do not touch other areas)
+
+## 2. CURRENCY SYSTEM (renamed June 2026)
+
+  AXF = Axofichas  (formerly AXG/Axogemas)  — primary coin, ERC-20
+  FRJ = Frijolitos (formerly GAL/Gemas Alga) — secondary coin, ERC-20
+
+  Key prices (from backend/app/core/config.py):
+    Easy game (classic):      10 AXF
+    Hard game / 5 boards:     50 AXF
+    Booster pure (cheap):     60 AXF + 800 FRJ
+    Booster regular:         100 AXF + 1300 FRJ
+    Board creation (random):  25 FRJ
+    Board creation (custom):  50 FRJ
+    Board dissolution:        50 FRJ
+
+  VIP tiers: coral (100 AXF), dorado (250 AXF), axolite (500 AXF)
+  AXF-&gt;FRJ packs: 10-&gt;100, 50-&gt;600, 100-&gt;1500, 250-&gt;4000
+
+## 3. BACKEND — Key Files & Purposes
+
+  [API Endpoints] (backend/app/api/v1/endpoints/)
+    bank.py         — Wallet balance, deposit, withdraw, dual-currency ops
+    game.py         — Game lifecycle: create, play, resolve, rewards
+    multiplayer.py  — Room creation, lobby, real-time game coordination
+    shop.py         — Store items, boosters, currency packs
+    checkout.py     — Crypto onramp / MoonPay checkout flow
+    incubation.py   — Axolotito breeding, egg hatching, DNA combination
+    board.py        — Lottery board CRUD, customization
+    market.py       — P2P marketplace (listings, trades, offers)
+    ranking.py      — Leaderboards, player rankings
+    codes.py        — Promo code creation, validation, redemption
+    user.py         — User profile, preferences, stats
+    metadata.py     — NFT metadata generation, token URIs
+    rewards.py      — Daily rewards, achievement payouts
+    admin.py        — Admin panel data, management endpoints
+    f2p.py          — Free-to-play features, daily free games
+    tutorial.py     — Tutorial state, onboarding progress
+    whitelist.py    — Feature-gating, beta access control
+
+  [Services] (backend/app/services/)
+    bank_service.py        — Wallet logic, balance checks, ledger writes
+    game_logic.py          — Core lottery game rules engine
+    web3_service.py        — Blockchain RPC, contract interactions, tx tracking
+    shop_service.py        — Inventory management, purchase validation
+    checkout_service.py    — Crypto payment processing flow
+    multiplayer_service.py — Room state machine, turn management, WebSocket sync
+    incubation_service.py  — Breeding logic, DNA mixing, rarity calculation
+    vip_scheduler.py       — VIP tier checks, benefit distribution
+    rarity_service.py      — Item/axolotito rarity tiers and probabilities
+    promo_service.py       — Promo code validation, kit granting
+    user_service.py        — Profile management, stats aggregation
+
+  [Models] (backend/app/models/)
+    economy.py   — AxfPurchaseRecord, TransactionLedger, TreasuryVault, JackpotVault
+    user.py      — User, Wallet (with balance fields)
+    axolotito.py — Axolotito NFT data, DNA, stats
+    board.py     — PlayerBoard, lottery board config
+    items.py     — Inventory items, consumables, boosters
+    promo.py     — PromoCode, PromoBatch
+    lobby_models.py — GameRoom, room state, player slots
+
+## 4. FRONTEND — Key Files & Purposes
+
+  [Pages & Layout]
+    frontend/app/layout.tsx  — Root layout: PrivyProvider, RealtimeContext, ToastContext
+    frontend/app/page.tsx    — Main game UI: tab switcher, screen routing
+
+  [Core Components] (frontend/components/)
+    PlayMode.tsx          — Core lottery gameplay (board selection, card draw)
+    LoteriaBoard.tsx      — 4×4 card grid renderer (ui/LoteriaBoard.tsx)
+    BoardEditor.tsx       — Custom board creation/editing UI
+    Store.tsx             — In-game store (boosters, items, currency packs)
+    Inventory.tsx         — Player inventory management
+    MultiplayerLobby.tsx  — Room browser, create/join flow
+    Criadero/             — Breeding/incubation screens
+    Santuario.tsx         — Axolotito sanctuary/collection view
+    VipModal.tsx          — VIP tier purchase/benefits modal
+    CryptoCheckout.tsx    — MoonPay onramp integration
+    MarketP2P.tsx         — Peer-to-peer marketplace UI
+    Rankings.tsx          — Leaderboards display
+    Gashapon.tsx          — Gashapon/loot box opening
+    CodeEntryPanel.tsx    — Promo code redemption UI
+
+  [Hooks] (frontend/hooks/)
+    useBlockchainEvents.ts — Listen to on-chain contract events
+    useMoonPayWidget.ts    — MoonPay integration hook
+    useInventory.ts        — Inventory state management
+    useStore.ts            — Store state, purchase flow
+    useVip.ts              — VIP status, tier checks
+    useTabVisibility.ts    — Tab focus/visibility tracking
+
+## 5. SMART CONTRACTS (contracts/src/)
+
+  Frijolito.sol       — FRJ token (ERC-20), minting, burning
+  Axoficha.sol        — AXF token (ERC-20), minting, burning
+  Webitos.sol        — Egg NFTs (ERC-721), hatching triggers
+  Axolotitos.sol     — Axolotito NFTs with on-chain DNA encoding
+  CartasLoteria.sol  — Individual lottery card NFTs (mint, burn)
+  TablasLoteria.sol  — Lottery board management, escrow for rewards
+  Sobrecito.sol       — Booster pack minting with rarity probabilities
+  Consumables.sol    — In-game consumable item tracking on-chain
+  GameController.sol — Central orchestrator: game creation, resolution, payouts
+  Frijolito.sol      — FRJ secondary logic, staking hooks
+  Axoficha.sol       — AXF primary logic, staking hooks
+  Counter.sol        — Test/development counter contract
+
+  Deployment: contracts/script/Deploy.s.sol (Foundry script)
+  Tests:      contracts/test/GameContracts.t.sol
+
+## 6. CRITICAL RULES (violating these breaks production)
+
+  1. CONCURRENCY: SELECT FOR UPDATE on Wallet/Inventory before any mutation.
+     Never trust a stale read — pessimistic locking is mandatory.
+  2. REPLAY PROTECTION: Every on-chain tx hash -&gt; ProcessedTransaction (UNIQUE).
+     Insert BEFORE crediting. If insert fails, tx was already processed — skip.
+  3. RANDOMNESS: random.SystemRandom() ONLY. Never random.random()/choice().
+  4. LEDGER: Every balance change MUST write a TransactionLedger row. No exceptions.
+  5. BLOCKCHAIN_MODE: Check settings.BLOCKCHAIN_MODE before choosing RPC/addresses.
+  6. CONTRACT ADDRESSES: Always from env (NEXT_PUBLIC_*) or settings. Never hardcode.
+  7. PRIVY AUTH: Check authenticated before any wallet/backend mutation.
+  8. NEVER PUSH TO MAIN/MASTER. Work on feature branches -&gt; merge to dev.
+  9. CONVENTIONAL COMMITS: feat(scope): desc | fix(scope): desc | docs: | refactor:
+ 10. IDEMPOTENT MIGRATIONS: DB has renamed columns. Use DO $$ blocks in Alembic.
+
+## 7. ACTIVE CONTEXT (current sprint / recent changes)
+
+  Currency rename in progress: AXG-&gt;AXF (Axofichas), GAL-&gt;FRJ (Frijolitos)
+  Economy models have compatibility aliases: AxgPurchaseRecord = AxfPurchaseRecord
+  Alembic merge migration: bb01d2e3f4a5 (two heads merged)
+  Landing page 'Flujo Corcholata' in planning: promo code redemption flow
+  Multiplayer game rooms: stabilization in progress
+
+  Recent commits (on develop):
+    3573112 fix(security): remove tracked confidential files + harden .gitignore
+    ccf028e feat(obsidian): add vault builder script + wiki conceptos multi-language
+    9416a43 @ fix(cave): reparar expansiÃ³n del Cenote â€” JSON contains, huevos, dormitorios, simulaciÃ³n
+    3a560bd refactor: renombrar AXG->AXF, GAL->FRJ, Boosters->Sobrecito en todo el sistema
+    2f27a33 fix(taskboard): ajustar paneles de agentes en una sola fila + gateway en header
+
+## 8. DIRECTORY MAP (for file location reference)
+
+  ./.agents
+  ./.agents/skills
+  ./.agents/skills/cavecrew
+  ./.agents/skills/caveman
+  ./.agents/skills/caveman-commit
+  ./.agents/skills/caveman-compress
+  ./.agents/skills/caveman-help
+  ./.agents/skills/caveman-review
+  ./.agents/skills/caveman-stats
+  ./.antigravitycli
+  ./.claude
+  ./.claude/agents
+  ./.claude/context
+  ./.claude/skills
+  ./.fog-context
+  ./.fog-context/hints
+  ./.git
+  ./.next
+  ./.obsidian
+  ./.pytest_cache
+  ./.pytest_cache/v
+  ./.pytest_cache/v/cache
+  ./Microsoft
+  ./Microsoft/Windows
+  ./Microsoft/Windows/PowerShell
+  ./axolotto
+  ./axolotto/.obsidian
+  ./axolotto/Untitled
+  ./axolotto/Untitled 1
+  ./backend
+  ./backend/.pytest_cache
+  ./backend/.pytest_cache/v
+  ./backend/alembic
+  ./backend/alembic/__pycache__
+  ./backend/alembic/versions
+  ./backend/app
+  ./backend/app/__pycache__
+  ./backend/app/api
+  ./backend/app/core
+  ./backend/app/models
+  ./backend/app/scripts
+  ./backend/app/services
+  ./backend/scripts
+  ./backend/tests
+  ./backend/tests/__pycache__
+  ./backend/tests/simulation
+  ./backend/tests/unit
+  ./cache
+  ./contracts
+  ./contracts/Microsoft
+  ./contracts/Microsoft/Windows
+  ./contracts/broadcast
+  ./contracts/broadcast/Deploy.s.sol
+  ./contracts/cache
+  ./contracts/cache/Deploy.s.sol
+  ./contracts/lib
+  ./contracts/lib/forge-std
+  ./contracts/lib/openzeppelin-contracts
+  ./contracts/out
+  ./contracts/out/Arrays.sol
+  ./contracts/out/Axoficha.sol
+  ./contracts/out/Axogema.sol
+  ./contracts/out/Axolotitos.sol
+  ./contracts/out/Base.sol
+  ./contracts/out/Bytes.sol
+  ./contracts/out/CartasLoteria.sol
+  ./contracts/out/Comparators.sol
+  ./contracts/out/Consumables.sol
+  ./contracts/out/Context.sol
+  ./contracts/out/Counter.s.sol
+  ./contracts/out/Counter.sol
+  ./contracts/out/Counter.t.sol
+  ./contracts/out/Deploy.s.sol
+  ./contracts/out/ERC1155.sol
+  ./contracts/out/ERC1155Holder.sol
+  ./contracts/out/ERC1155Utils.sol
+  ./contracts/out/ERC165.sol
+  ./contracts/out/ERC20.sol
+  ./contracts/out/ERC721.sol
+
+## 9. COMMON PATTERNS (code conventions)
+
+  Backend endpoint pattern:
+    router = APIRouter()
+    @router.post('/path')
+    async def endpoint(payload: Schema, user=Depends(get_current_user)):
+    -&gt; validate -&gt; service call -&gt; commit -&gt; return response
+
+  Frontend component pattern:
+    'use client'
+    export default function Component() {
+    -&gt; hooks (useState, usePrivy, custom hooks)
+    -&gt; handlers (async with try/catch)
+    -&gt; JSX with Tailwind classes
+    }
+
+  Service layer pattern:
+    async def service_operation(db: AsyncSession, user_id: UUID, ...):
+    -&gt; SELECT FOR UPDATE where needed
+    -&gt; business logic
+    -&gt; db.add(ledger_entry)
+    -&gt; await db.commit()
+
+## 10. KEY ENVIRONMENT FILES
+
+  backend/.env      — DB connection, BLOCKCHAIN_MODE, Privy keys, Web3 RPC
+  frontend/.env.local — NEXT_PUBLIC_API_URL, contract addresses, chain ID
+  .env              — Docker compose vars (AXO_DB_USER, AXO_DB_PASSWORD)
+
+======================================================================
+END OF PROJECT CONTEXT — This knowledge replaces ~50K tokens of exploration
+======================================================================

@@ -1,0 +1,468 @@
+@import "tailwindcss";
+
+/* ========== DESIGN TOKENS ========== */
+:root {
+  /* World */
+  --world-void:    #060610;
+  --world-deep:    #0D0D1F;
+  --world-mid:     #141428;
+  --world-surface: #1C1C35;
+  /* Brand */
+  --brand-hot:     #E4007C;
+  --brand-deep:    #B30062;
+  --brand-glow:    rgba(228, 0, 124, 0.35);
+  /* System */
+  --background:    #060610;
+  --foreground:    #f1f5f9;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ========== WORLD BACKGROUND ========== */
+
+.world-bg {
+  background-color: var(--world-void);
+}
+
+@keyframes orb-drift-1 {
+  0%, 100% { transform: translate(0px,   0px)  scale(1);    }
+  33%       { transform: translate(80px, -60px) scale(1.08); }
+  66%       { transform: translate(-40px, 40px) scale(0.94); }
+}
+
+@keyframes orb-drift-2 {
+  0%, 100% { transform: translate(0px,   0px)  scale(1);    }
+  50%       { transform: translate(-70px, 55px) scale(1.12); }
+}
+
+@keyframes orb-drift-3 {
+  0%, 100% { transform: translate(0px,   0px)  scale(1);    }
+  40%       { transform: translate(50px,  80px) scale(1.06); }
+  80%       { transform: translate(-60px,-30px) scale(0.92); }
+}
+
+.world-orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(100px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ========== EARNINGS FLOAT ========== */
+
+@keyframes floatUp {
+  0%   { transform: translate(var(--x, 0px),  0px) scale(0.6);  opacity: 0; }
+  15%  { transform: translate(var(--x, 0px), -15px) scale(1.1); opacity: 1; }
+  100% { transform: translate(var(--x, 0px), -75px) scale(0.85);opacity: 0; }
+}
+
+.animate-float-up {
+  animation: floatUp 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+/* ========== HOLOGRAPHIC CARDS ========== */
+
+@keyframes holo-shift {
+  0%   { background-position: 0% 0%;     filter: hue-rotate(0deg);   }
+  50%  { background-position: 100% 100%; filter: hue-rotate(180deg); }
+  100% { background-position: 0% 0%;     filter: hue-rotate(360deg); }
+}
+
+@keyframes holo-sparkle {
+  0%, 100% { opacity: 0.55; }
+  50%       { opacity: 0.90; }
+}
+
+@keyframes shiny-flash {
+  0%   { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.holo-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    125deg,
+    rgba(255,  0,128,0.45)  0%,
+    rgba(255,165,  0,0.45) 15%,
+    rgba(255,255,  0,0.45) 30%,
+    rgba(  0,255,128,0.45) 45%,
+    rgba(  0,200,255,0.45) 60%,
+    rgba(128,  0,255,0.45) 75%,
+    rgba(255,  0,200,0.45) 90%,
+    rgba(255,  0,128,0.45)100%
+  );
+  background-size: 400% 400%;
+  animation: holo-shift 4s linear infinite, holo-sparkle 2s ease-in-out infinite;
+  mix-blend-mode: color-dodge;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.holo-border {
+  border-color: rgba(200,150,255,0.9) !important;
+  box-shadow: 0 0 20px rgba(180,100,255,0.6), 0 0 40px rgba(100,200,255,0.3) !important;
+}
+
+/* ========== BOARD RARITY FRAMES ========== */
+
+.board-frame-comun {
+  border-color: rgba(148,163,184,0.35) !important;
+}
+
+.board-frame-poco-comun {
+  border-color: rgba(16,185,129,0.55) !important;
+  box-shadow: 0 0 8px rgba(16,185,129,0.2) !important;
+}
+
+.board-frame-rara {
+  border-color: rgba(34,211,238,0.65) !important;
+  box-shadow: 0 0 12px rgba(34,211,238,0.3), 0 0 20px rgba(34,211,238,0.12) !important;
+}
+
+.board-frame-epica {
+  border-color: rgba(217,70,239,0.75) !important;
+  box-shadow: 0 0 14px rgba(217,70,239,0.35), 0 0 28px rgba(217,70,239,0.15) !important;
+}
+
+.board-frame-legendaria {
+  border-color: rgba(251,191,36,0.85) !important;
+  box-shadow: 0 0 16px rgba(251,191,36,0.5), 0 0 32px rgba(251,191,36,0.2),
+              inset 0 0 6px rgba(251,191,36,0.08) !important;
+}
+
+/* Shiny board holo overlay — inside the board container */
+.board-shiny-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    125deg,
+    rgba(255,  0,128,0.28)  0%,
+    rgba(255,165,  0,0.28) 15%,
+    rgba(255,255,  0,0.28) 30%,
+    rgba(  0,255,128,0.28) 45%,
+    rgba(  0,200,255,0.28) 60%,
+    rgba(128,  0,255,0.28) 75%,
+    rgba(255,  0,200,0.28) 90%,
+    rgba(255,  0,128,0.28)100%
+  );
+  background-size: 400% 400%;
+  animation: holo-shift 4s linear infinite, holo-sparkle 2s ease-in-out infinite;
+  mix-blend-mode: color-dodge;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ========== STORE TICKER ========== */
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.ticker-track {
+  animation: ticker-scroll 28s linear infinite;
+  will-change: transform;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+/* ========== EL NIDO — HABITAT ANIMATIONS ========== */
+
+/* Axolotito alive: gentle body-bob with slight lean */
+@keyframes axo-bob {
+  0%, 100% { transform: translateY(0px)   rotate(-1deg) scaleX(1);    }
+  25%       { transform: translateY(-4px)  rotate(0deg)  scaleX(1.02); }
+  50%       { transform: translateY(-7px)  rotate(1.5deg) scaleX(1);   }
+  75%       { transform: translateY(-3px)  rotate(0.5deg) scaleX(0.99);}
+}
+
+/* Axolotito idle walk cycle (horizontal sway) */
+@keyframes axo-wander {
+  0%, 100% { transform: translateX(0px)  scaleX(1);  }
+  30%       { transform: translateX(6px)  scaleX(1);  }
+  50%       { transform: translateX(6px)  scaleX(-1); }
+  80%       { transform: translateX(-6px) scaleX(-1); }
+}
+
+/* Egg: slow warm pulse when incubating — usa --egg-shadow inline para color dinámico */
+@keyframes egg-pulse {
+  0%, 100% { transform: scale(1);    filter: drop-shadow(0 0 8px  var(--egg-shadow, rgba(228,0,124,0.4))); }
+  50%       { transform: scale(1.04); filter: drop-shadow(0 0 20px var(--egg-shadow, rgba(228,0,124,0.75))) brightness(1.1); }
+}
+
+/* Egg: icy shimmer when frozen */
+@keyframes egg-frozen {
+  0%, 100% { filter: hue-rotate(0deg)   brightness(0.85); }
+  50%       { filter: hue-rotate(30deg)  brightness(0.75); }
+}
+
+/* Nest slot: barely perceptible ambient sway when empty */
+@keyframes nest-idle {
+  0%, 100% { transform: rotate(0deg);   }
+  33%       { transform: rotate(0.6deg); }
+  66%       { transform: rotate(-0.6deg);}
+}
+
+/* Bubble rising from ground (atmosphere flair) */
+@keyframes bubble-rise {
+  0%   { transform: translateY(0px)   scale(0.6); opacity: 0;   }
+  15%  { opacity: 0.5; }
+  80%  { opacity: 0.3; }
+  100% { transform: translateY(-70px) scale(1.2); opacity: 0;   }
+}
+
+/* Hatch crack glow */
+@keyframes hatch-crack {
+  0%   { box-shadow: 0 0 0px   rgba(255,200,50,0);   }
+  50%  { box-shadow: 0 0 18px  rgba(255,200,50,0.9);  }
+  100% { box-shadow: 0 0 0px   rgba(255,200,50,0);   }
+}
+
+/* Bottom sheet slide-up */
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0);    }
+}
+
+.animate-axo-bob    { animation: axo-bob    2.4s ease-in-out infinite; }
+.animate-axo-wander { animation: axo-wander 6s   ease-in-out infinite; }
+.animate-egg-pulse  { animation: egg-pulse  2.2s ease-in-out infinite; }
+.animate-egg-frozen { animation: egg-frozen 3s   ease-in-out infinite; }
+.animate-nest-idle  { animation: nest-idle  5s   ease-in-out infinite; }
+.animate-bubble     { animation: bubble-rise 3s  ease-out  infinite;   }
+.animate-hatch      { animation: hatch-crack 0.6s ease-in-out infinite; }
+.animate-sheet-up   { animation: sheet-up   0.32s cubic-bezier(0.32,0.72,0,1) both; }
+
+/* Tab section fade-in — se activa cuando React reasigna key={tabActiva} */
+@keyframes tab-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+.animate-tab-fade { animation: tab-fade-in 0.18s ease-out both; }
+
+/* Toast slide-down desde arriba (se aplica a la card individual, no al contenedor) */
+@keyframes toast-slide-down {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0);     }
+}
+.animate-toast-in { animation: toast-slide-down 0.22s cubic-bezier(0.2,0.7,0.3,1) both; }
+
+/* Toast slide desde la izquierda (VIP) */
+@keyframes toast-slide-left {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0);     }
+}
+.animate-toast-left { animation: toast-slide-left 0.25s cubic-bezier(0.2,0.7,0.3,1) both; }
+
+/* Toast slide desde la derecha (game) */
+@keyframes toast-slide-right {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0);    }
+}
+.animate-toast-right { animation: toast-slide-right 0.25s cubic-bezier(0.2,0.7,0.3,1) both; }
+
+/* VIP animations */
+@keyframes shimmer-vip {
+  0%   { background-position: -200% center; }
+  100% { background-position:  200% center; }
+}
+
+@keyframes vip-coral-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(45,212,191,0); border-color: rgba(45,212,191,0.5); }
+  50%       { box-shadow: 0 0 10px 2px rgba(45,212,191,0.3); border-color: rgba(45,212,191,0.9); }
+}
+@keyframes vip-dorado-shimmer {
+  0%   { box-shadow: 0 0 8px 1px rgba(251,191,36,0.3); border-color: rgba(251,191,36,0.6); }
+  50%  { box-shadow: 0 0 16px 4px rgba(251,191,36,0.5); border-color: rgba(251,191,36,1); }
+  100% { box-shadow: 0 0 8px 1px rgba(251,191,36,0.3); border-color: rgba(251,191,36,0.6); }
+}
+@keyframes vip-axolite-rotate {
+  0%   { border-color: #FBBF24; box-shadow: 0 0 12px 3px rgba(251,191,36,0.4); }
+  33%  { border-color: #F472B6; box-shadow: 0 0 16px 4px rgba(244,114,182,0.4); }
+  66%  { border-color: #C084FC; box-shadow: 0 0 16px 4px rgba(192,132,252,0.5); }
+  100% { border-color: #FBBF24; box-shadow: 0 0 12px 3px rgba(251,191,36,0.4); }
+}
+
+.vip-frame-coral   { border: 2px solid rgba(45,212,191,0.5);  animation: vip-coral-pulse   2.5s ease-in-out infinite; border-radius: 50%; }
+.vip-frame-dorado  { border: 2px solid rgba(251,191,36,0.7);  animation: vip-dorado-shimmer 1.8s ease-in-out infinite; border-radius: 50%; }
+.vip-frame-axolite { border: 2px solid #FBBF24;               animation: vip-axolite-rotate 3s   linear     infinite; border-radius: 50%; }
+
+/* Hide scrollbar for carousel */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* ========== TUTORIAL — DIALOGUE & ANIMATIONS ========== */
+
+/* Dialogue bubble rises from below */
+@keyframes dialogue-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+.animate-dialogue-rise { animation: dialogue-rise 0.28s cubic-bezier(0.2,0.7,0.3,1) both; }
+
+/* Egg shake for tutorial adoption screen */
+@keyframes egg-shake {
+  0%, 100% { transform: rotate(0deg)   scale(1);    }
+  15%       { transform: rotate(-6deg)  scale(1.04); }
+  30%       { transform: rotate(5deg)   scale(1.06); }
+  45%       { transform: rotate(-4deg)  scale(1.04); }
+  60%       { transform: rotate(3deg)   scale(1.05); }
+  75%       { transform: rotate(-2deg)  scale(1.03); }
+  90%       { transform: rotate(1deg)   scale(1.01); }
+}
+.animate-egg-shake { animation: egg-shake 0.7s ease-in-out infinite; }
+
+/* ========== PLAYMODE v2 — WIZARD TRANSITIONS ========== */
+
+/* Paso adelante: entra desde la derecha */
+@keyframes slide-step {
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0);    }
+}
+/* Paso atrás: entra desde la izquierda */
+@keyframes slide-step-back {
+  from { opacity: 0; transform: translateX(-40px); }
+  to   { opacity: 1; transform: translateX(0);     }
+}
+.animate-slide-step      { animation: slide-step      250ms ease-out both; }
+.animate-slide-step-back { animation: slide-step-back 250ms ease-out both; }
+
+/* Carta cantada: fade + leve slide-down, sin rebote */
+@keyframes card-call {
+  0%   { opacity: 0; transform: scale(0.90) translateY(-6px); }
+  100% { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+.animate-card-call { animation: card-call 200ms ease-out both; }
+
+/* Celda de tabla iluminada */
+@keyframes board-fill-cell {
+  from { opacity: 0; transform: scale(0.5); }
+  to   { opacity: 1; transform: scale(1);   }
+}
+.animate-board-fill-cell { animation: board-fill-cell 300ms ease-out both; }
+
+/* Tabla CPU vuela al frente (derrota) */
+@keyframes cpu-win-surge {
+  0%   { transform: translateY(0)    scale(1);   filter: brightness(1); }
+  60%  { transform: translateY(-20%) scale(1.1); filter: brightness(1.3) drop-shadow(0 0 20px rgba(244,63,94,0.8)); }
+  100% { transform: translateY(-20%) scale(1.1); filter: brightness(1.3) drop-shadow(0 0 20px rgba(244,63,94,0.8)); }
+}
+.animate-cpu-win-surge { animation: cpu-win-surge 800ms ease-out both; }
+
+/* Tabla ganadora crece con glow esmeralda */
+@keyframes player-win-bloom {
+  0%   { transform: scale(1);    filter: brightness(1); }
+  50%  { transform: scale(1.12); filter: brightness(1.4) drop-shadow(0 0 30px rgba(52,211,153,0.9)); }
+  100% { transform: scale(1.08); filter: brightness(1.2) drop-shadow(0 0 20px rgba(52,211,153,0.6)); }
+}
+.animate-player-win-bloom { animation: player-win-bloom 600ms ease-out both; }
+
+/* Overlay de resultado: fade + scale-in */
+@keyframes result-fade-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1);    }
+}
+.animate-result-fade-in { animation: result-fade-in 400ms ease-out both; }
+
+/* ========== CENOTE — EXCAVATION ANIMATION ========== */
+
+@keyframes cave-shake {
+  0%, 100% { transform: translate(0, 0)   rotate(0deg); }
+  10%       { transform: translate(-3px, -2px) rotate(-0.5deg); }
+  20%       { transform: translate(3px,  2px) rotate(0.5deg); }
+  30%       { transform: translate(-4px, 1px) rotate(-0.3deg); }
+  40%       { transform: translate(4px, -1px) rotate(0.3deg); }
+  50%       { transform: translate(-2px, 3px) rotate(-0.4deg); }
+  60%       { transform: translate(2px, -3px) rotate(0.4deg); }
+  70%       { transform: translate(-3px, 2px) rotate(-0.2deg); }
+  80%       { transform: translate(3px, -2px) rotate(0.2deg); }
+  90%       { transform: translate(-1px, 1px) rotate(0deg); }
+}
+
+@keyframes cave-muddy-clear {
+  0%   { background: rgba(101,67,33,0.55); }
+  60%  { background: rgba(101,67,33,0.3); }
+  100% { background: rgba(101,67,33,0); }
+}
+
+.animate-cave-shake {
+  animation: cave-shake 0.6s cubic-bezier(0.36,0.07,0.19,0.97) both;
+}
+
+/* Vibración continua sutil para panel de excavación activa */
+@keyframes excavate-vibrate {
+  0%, 100% { transform: translate(0, 0); }
+  15%      { transform: translate(-1.5px, 0.5px); }
+  30%      { transform: translate(1px, -1px); }
+  45%      { transform: translate(-1px, -0.5px); }
+  60%      { transform: translate(1.5px, 0.5px); }
+  75%      { transform: translate(-0.5px, -0.5px); }
+  90%      { transform: translate(0.5px, 0.5px); }
+}
+
+.animate-excavate {
+  animation: excavate-vibrate 0.35s ease-in-out infinite;
+}
+
+.cave-muddy-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 50;
+  animation: cave-muddy-clear 1.8s ease-out forwards;
+}
+
+/* ========== ONBOARDING KEYFRAMES & UTILITIES ========== */
+
+/* Webito cae del cielo */
+@keyframes webito-fall {
+  0%   { transform: translateY(-200px) rotate(-15deg); opacity: 0; }
+  60%  { transform: translateY(20px)   rotate(5deg);   opacity: 1; }
+  75%  { transform: translateY(-10px)  rotate(-3deg);  }
+  85%  { transform: translateY(8px)    rotate(2deg);   }
+  100% { transform: translateY(0px)    rotate(0deg);   opacity: 1; }
+}
+.animate-webito-fall {
+  animation: webito-fall 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Polvo de impacto */
+@keyframes dust-burst {
+  0%   { transform: scale(0); opacity: 0.7; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+.animate-dust-burst {
+  animation: dust-burst 0.5s ease-out forwards;
+}
+
+/* Webito flota suavemente */
+@keyframes webito-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+.animate-webito-float {
+  animation: webito-float 2.5s ease-in-out infinite;
+}

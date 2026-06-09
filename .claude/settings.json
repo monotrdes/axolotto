@@ -1,0 +1,24 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if (Test-Path .claude/context/project-brief.md) { Get-Content .claude/context/project-brief.md } else { Write-Host '[project-brief not found - run: python tools/taskboard/refresh_context.py]' }; Write-Host '---'; git log --oneline -5 --no-decorate 2>$null",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "mcpServers": {
+    "axolotto-kb": {
+      "command": "python",
+      "args": [
+        "tools/taskboard/mcp_knowledge_server.py"
+      ]
+    }
+  }
+}

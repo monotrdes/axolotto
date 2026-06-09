@@ -1,0 +1,39 @@
+============================================================
+TASKBOARD TOOL CONTEXT — Self-Contained AI Kanban
+Generated: 2026-06-09 14:48 UTC
+============================================================
+
+## Stack
+  Python 3.12 stdlib (http.server) + vanilla JS/HTML/CSS + SQLite
+  Path: tools/taskboard/ (SELF-CONTAINED — changes stay here)
+
+## Architecture
+  server.py          — HTTP server (main entry point, port from env)
+  routes.py          — REST API routes (tasks CRUD, AI triggers, git ops)
+  db.py              — SQLite persistence layer (tasks.json in dev, SQLite in prod)
+  ai_router.py       — Multi-provider AI (Claude + DeepClaude via CLI binaries)
+  agent_runner.py    — Agent spawn, git worktree isolation, queue management
+  task_lifecycle.py  — State machine: wishes-&gt;concepts-&gt;planning-&gt;doing-&gt;review-&gt;done
+  rate_limiter.py    — Rate limit tracking per AI provider
+  project_context.py — Rich semantic context generator (THIS FILE)
+
+## Frontend (tools/taskboard/)
+  index.html         — Single-page Kanban board UI
+  app.js             — Main app logic, WebSocket client, state management
+  styles.css         — All styling (dark theme, gradients, animations)
+  modules/           — JS modules: task-card, drag-drop, modal, terminals, etc.
+
+## Key Rules for Taskboard Work
+  1. ALL changes stay in tools/taskboard/ — NEVER touch backend/frontend/contracts
+  2. Taskboard uses Python stdlib + vanilla JS — NO frameworks allowed
+  3. AI providers: Claude CLI (anthropic) + DeepClaude (deepseek via claude CLI)
+  4. Agents run in isolated git worktrees under ../.axolotto_worktrees/
+  5. Context cache TTL: 24h — refresh with POST /api/refresh-context
+
+## AI Processing Pipeline
+  wishes/concepts -&gt; planning: AI generates full plan (SYSTEM_PLANNING prompt)
+  planning -&gt; doing: Agent spawned in isolated worktree
+  doing -&gt; review: Git diff -&gt; AI review (SYSTEM_REVIEW prompt)
+  review -&gt; done: Git merge to base branch
+
+============================================================

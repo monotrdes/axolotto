@@ -1,0 +1,127 @@
+
+======================================================================
+📊  REPORTE FINAL — SIMULADOR AXOLOTTO v3
+======================================================================
+👥  Usuarios creados:          0
+🎟️  Corcholatas canjeadas:     6
+🎁  Corcholatas reclamadas:    0
+💸  AXG comprados (Sim.):      46700 AXG (Pesos: $5810.00 MXN)
+💎  Paquetes GAL comprados:    0
+🃏  Boosters normales:         60
+✨  Boosters foil:             0
+🎯  Boosters extra (abiertos): 0
+🎴  Cartas abiertas total:     287
+🥚  Webitos adoptados:         0
+🐣  Axolotitos eclosionados:   6
+🎓  Tutoriales completados:    6 (Tabla Tutorial creada)
+🧬  Naturalezas obtenidas:     lucky: 4, glutton: 1, hyperactive: 1
+😇  Karma Lucky:               5
+🧂  Karma Salty:               1
+💧  Gotas Anti-Escarcha:       0
+🌤️  Clima incubación:          meteor_shower
+🎉  Evento de prueba creado:   No
+----------------------------------------------------------------------
+🎰  Gashapon rolls:            18
+💊  Cápsulas reclamadas:       0
+🌟  Triple Suerte:             1
+📋  Tableros creados:          6  (0 manuales)
+🏪  Tableros en venta P2P:     1
+🏠  Tableros en renta:         0
+📈  Slots desbloqueados:       1
+🦎  Axos en venta P2P:         0
+----------------------------------------------------------------------
+👑  VIP activados:             4
+🔄  VIP Auto-Renovación:       1
+🌿  GAL VIP reclamados:        0
+💸  Ahorro jugadores (VIP):    82.46 AXF  ← ingresos perdidos por la casa
+----------------------------------------------------------------------
+🎮  Partidas individuales:     42
+  🏆 Victorias:               16  (38.1%)
+  💔 Derrotas:                26
+  🤖 Autojuego:               12 partidas
+  💰 GAL obtenidas:           1036.26
+  🍽️  Alimentaciones:          1
+  😴 Ciclos sueño:            0
+  🔧 Cave items equipados:    0
+  💍 Accesorios equipados:    14
+----------------------------------------------------------------------
+⚔️  Salas multijugador:        4
+  📞 Recall pasó:             1
+  💵 Axos liquidados:         6
+  💰 Jackpots ganados:        0
+----------------------------------------------------------------------
+  📊 Partidas jugadas:         9
+  🏆 Victorias:               3  (33%)
+  💸 GAL neto total:          -159.9
+  Detalle:
+    💔 Mixcoatl Duradero    │ Charco de Novatos        │ Neto:   -25.0 GAL │ XP: +5
+    💔 Mitla Interminable   │ Fosa del Campeón         │ Neto:  -100.0 GAL │ XP: +5
+    💔 Jade Lúcido          │ Charco de Novatos        │ Neto:   -25.0 GAL │ XP: +5
+    🏆 Tonatiuh Perpetuo    │ Charco de Novatos        │ Neto:   +50.6 GAL │ XP: +50
+    🏆 Chichén Imperecedero │ Charco de Novatos        │ Neto:   +20.2 GAL │ XP: +20
+    💔 Carmesí Inagotable   │ Charco de Novatos        │ Neto:   -25.0 GAL │ XP: +5
+    💔 Jade Lúcido          │ Charco de Novatos        │ Neto:   -25.0 GAL │ XP: +5
+    🏆 Tonatiuh Perpetuo    │ Charco de Novatos        │ Neto:    -5.8 GAL │ XP: +20
+    💔 Tonatiuh Perpetuo    │ Charco de Novatos        │ Neto:   -25.0 GAL │ XP: +5
+
+----------------------------------------------------------------------
+🌙  Ciclo Lunar (Daily):
+  💰 FRJ acumulados:          2645 FRJ
+  💊 Cápsulas ganadas:        6
+  🌕 Máx Luna alcanzada:      6
+  📅 Máx racha diaria:        6
+----------------------------------------------------------------------
+⛏️  Expansión del Cenote:
+  🏗️  Expansiones totales:     24
+  💸 AXF gastados (aceler.):  1136
+  🏆 Máx nivel alcanzado:     8
+----------------------------------------------------------------------
+🖼️  Decoración del Cenote:
+  🎨 Items equipados:         0
+  🔒 Tests seguridad slot:    0
+  🧬 Tests límite mentoría:   0
+----------------------------------------------------------------------
+🚫  Tests de errores:
+  ✅ Pasaron:                 3
+  ❌ Fallaron:                2
+======================================================================
+
+⚠️  ERRORES (39):
+  x2  acc_equip did:privy:sim_player_1/body: No posees este accesorio en tu inventario.
+  x2  acc_equip did:privy:cmpl1jf3t01cc0ck4gqt004l5/body: No posees este accesorio en tu inventario.
+  x1  claim_corcholata_unexpected did:privy:cmnn1tv0o02au0ckzho9ugkb2: parameter `request` must be an instance of starlette.requests.Request
+  x1  block_test did:privy:cmnn1tv0o02au0ckzho9ugkb2: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
+  x1  claim_corcholata_unexpected did:privy:sim_player_1: parameter `request` must be an instance of starlette.requests.Request
+  x1  block_test did:privy:sim_player_1: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
+  x1  claim_corcholata_unexpected did:privy:sim_player_2: parameter `request` must be an instance of starlette.requests.Request
+  x1  block_test did:privy:sim_player_2: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
+  x1  claim_corcholata_unexpected did:privy:sim_player_3: parameter `request` must be an instance of starlette.requests.Request
+  x1  block_test did:privy:sim_player_3: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
+  x1  claim_corcholata_unexpected did:privy:sim_player_4: parameter `request` must be an instance of starlette.requests.Request
+  x1  block_test did:privy:sim_player_4: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
+  x1  claim_corcholata_unexpected did:privy:cmpl1jf3t01cc0ck4gqt004l5: parameter `request` must be an instance of starlette.requests.Request
+  x1  block_test did:privy:cmpl1jf3t01cc0ck4gqt004l5: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
+  x1  capsule did:privy:cmnn1tv0o02au0ckzho9ugkb2: Usa POST /api/v1/rewards/lunar/claim
+  x1  capsule did:privy:sim_player_1: Usa POST /api/v1/rewards/lunar/claim
+  x1  capsule did:privy:sim_player_2: Usa POST /api/v1/rewards/lunar/claim
+  x1  capsule did:privy:sim_player_3: Usa POST /api/v1/rewards/lunar/claim
+  x1  capsule did:privy:sim_player_4: Usa POST /api/v1/rewards/lunar/claim
+  x1  capsule did:privy:cmpl1jf3t01cc0ck4gqt004l5: Usa POST /api/v1/rewards/lunar/claim
+  x1  board_manual did:privy:cmnn1tv0o02au0ckzho9ugkb2: Un tablero de Lotería no puede contener cartas duplicadas.
+  x1  board_manual did:privy:sim_player_1: Un tablero de Lotería no puede contener cartas duplicadas.
+  x1  board_manual did:privy:sim_player_2: Un tablero de Lotería no puede contener cartas duplicadas.
+  x1  board_manual did:privy:sim_player_3: Un tablero de Lotería no puede contener cartas duplicadas.
+  x1  board_manual did:privy:sim_player_4: Un tablero de Lotería no puede contener cartas duplicadas.
+  x1  board_manual did:privy:cmpl1jf3t01cc0ck4gqt004l5: No tienes la carta ID 11 (Normal) disponible en tu mochila (ya está en una tabla o no la posees).
+  x1  board_rent_list did:privy:sim_player_1: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_2: La Tabla Tutorial no se puede rentar.
+  x1  acc_equip did:privy:sim_player_1/eyes: No posees este accesorio en tu inventario.
+  x1  acc_equip did:privy:sim_player_2/eyes: No posees este accesorio en tu inventario.
+  x1  acc_equip did:privy:sim_player_2/body: No posees este accesorio en tu inventario.
+  x1  watch_reward did:privy:sim_player_3: 'gal'
+  x1  acc_equip did:privy:sim_player_3/body: No posees este accesorio en tu inventario.
+  x1  acc_equip did:privy:sim_player_4/body: No posees este accesorio en tu inventario.
+  x1  watch_reward did:privy:cmpl1jf3t01cc0ck4gqt004l5: 'gal'
+  x1  acc_equip did:privy:cmpl1jf3t01cc0ck4gqt004l5/eyes: No posees este accesorio en tu inventario.
+  x1  error_test_wrong_code_compra_sin_saldo_400
+======================================================================

@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Axolotto AI Kanban Board v2</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div class="top-sticky-container">
+        <header>
+            <div class="header-title-container">
+                <div class="logo-axolotl">👾</div>
+                <div>
+                    <h1>Axolotto Workspace v2</h1>
+                    <div class="header-subtitle">6-Column AI-Powered Kanban</div>
+                </div>
+            </div>
+
+            <!-- Agy Gateway Status Bar (in-header) -->
+            <div id="agy-gateway-bar" class="agy-gateway-bar agy-gateway-bar--header" style="display:none;">
+                <div class="gateway-status">
+                    <span class="gateway-dot" id="gateway-dot"></span>
+                    <span id="gateway-label">AGY GATEWAY</span>
+                </div>
+                <div class="gateway-plan">
+                    Plan: <strong id="gateway-active-plan">--</strong>
+                    <span id="gateway-fallback-info"></span>
+                </div>
+                <div class="gateway-stats">
+                    <strong id="gateway-agent-count">0</strong> ag ·
+                    <strong id="gateway-queue-count">0</strong> cola
+                    <span id="gateway-provider-info"></span>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <button class="btn btn-secondary btn-sm" id="btn-restart-axo" onclick="restartAxo()" title="Reinicia backend + frontend + anvil (sin taskboard)">
+                    ⚡ Reiniciar Axo
+                </button>
+                <button class="btn btn-secondary btn-sm" id="btn-refresh-context" onclick="refreshContext()" title="Regenera el contexto que usan los agentes AI para planificar tareas">
+                    🧠 Refresh Context
+                </button>
+                <button class="btn btn-secondary btn-sm" onclick="fetchTasks()">🔀 Recargar</button>
+                <button class="btn btn-secondary btn-sm" onclick="openDocsModal()">📄 Docs</button>
+                <button class="btn btn-secondary btn-sm" onclick="openUsageModal()">📊 Usage</button>
+                <button class="btn btn-primary" onclick="openNewIdeaModal()">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Nueva Idea
+                </button>
+            </div>
+        </header>
+
+        <!-- Agent Dashboard: Console + Activity Log side by side -->
+        <div class="agent-dashboard">
+            <div id="agent-console" class="agent-console"></div>
+
+            <div id="agent-activity-log" class="agent-activity-log" style="display:none;">
+                <div class="log-header">
+                    <h4>📋 Actividad en Tiempo Real</h4>
+                    <label class="log-toggle"><input type="checkbox" id="show-raw-messages"> Ver mensajes raw (JSON)</label>
+                </div>
+                <div class="log-entries" id="log-entries"></div>
+            </div>
+        </div>
+
+        <!-- Environments Dashboard -->
+        <div class="env-dashboard" id="env-dashboard">
+            <div class="env-row">
+                <div class="env-panel env-local">
+                    <span class="env-dot" id="env-local-dot"></span>
+                    <span class="env-name">🏠 Local</span>
+                    <span class="env-branch" id="env-local-branch">...</span>
+                    <span class="env-status" id="env-local-status"></span>
+                    <button class="btn btn-sm btn-secondary" onclick="restartAxo()" title="Reiniciar stack local (WSL)">⚡ Reiniciar</button>
+                </div>
+                <div class="env-panel env-prod">
+                    <span class="env-dot" id="env-prod-dot"></span>
+                    <span class="env-name">🌐 Prod</span>
+                    <span class="env-branch" id="env-prod-branch">...</span>
+                    <span class="env-status" id="env-prod-status"></span>
+                    <button class="btn btn-sm btn-secondary" id="btn-env-deploy" onclick="deployToProd()" title="Git pull + restart en el NUC">🔄 Deploy</button>
+                    <button class="btn btn-sm btn-outline" onclick="serverRestart('axo')" title="Solo restart (sin pull)">⚡</button>
+                </div>
+            </div>
+            <div class="env-services" id="env-services" style="display:none;">
+                <span class="env-service-badge" id="env-svc-backend">🐳 backend</span>
+                <span class="env-service-badge" id="env-svc-db">🐘 db</span>
+                <span class="env-service-badge" id="env-svc-frontend">⚡ frontend</span>
+            </div>
+        </div>
+
+        <!-- Filter Bar -->
+        <div class="filter-bar" id="filter-bar">
+            <div class="filter-group">
+                <span class="filter-label">Prioridad:</span>
+                <button class="filter-btn filter-btn-active" onclick="setFilter('priority', '')" data-filter="priority" data-value="">Todas</button>
+                <button class="filter-btn filter-btn-priority-critical" onclick="setFilter('priority', 'critical')" data-filter="priority" data-value="critical">critical</button>
+                <button class="filter-btn filter-btn-priority-high" onclick="setFilter('priority', 'high')" data-filter="priority" data-value="high">high</button>
+                <button class="filter-btn filter-btn-priority-medium" onclick="setFilter('priority', 'medium')" data-filter="priority" data-value="medium">medium</button>
+                <button class="filter-btn filter-btn-priority-low" onclick="setFilter('priority', 'low')" data-filter="priority" data-value="low">low</button>
+            </div>
+            <div class="filter-group">
+                <span class="filter-label">Proyecto:</span>
+                <button class="filter-btn filter-btn-active" onclick="setFilter('scope', '')" data-filter="scope" data-value="">Todos</button>
+                <button class="filter-btn filter-btn-scope-axolotto" onclick="setFilter('scope', 'axolotto')" data-filter="scope" data-value="axolotto">👾 axolotto</button>
+                <button class="filter-btn filter-btn-scope-taskboard" onclick="setFilter('scope', 'taskboard')" data-filter="scope" data-value="taskboard">🔧 taskboard</button>
+            </div>
+            <div class="filter-group" id="filter-category-group">
+                <span class="filter-label">Categoría:</span>
+                <button class="filter-btn filter-btn-active" onclick="setFilter('category', '')" data-filter="category" data-value="">Todas</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Git Health Dashboard -->
+    <div class="git-health-bar" id="git-health-bar" style="display:none">
+        <div class="git-health-inner">
+            <div class="git-health-stats" id="git-health-stats"></div>
+            <div class="git-health-actions">
+                <button class="git-health-btn btn-warn" id="btn-cleanup" onclick="runCleanup()" title="Eliminar worktrees sin commits o huérfanos">
+                    🧹 Limpiar (<span id="cleanup-count">0</span>)
+                </button>
+                <button class="git-health-btn btn-success" id="btn-merge-all" onclick="runMergeAll()" title="Mergear todas las ramas mergeables">
+                    🔀 Merge All (<span id="mergeable-count-hdr">0</span>)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6-Column Board -->
+    <main class="board-container">
+        <!-- WISHES -->
+        <div class="column column-wishes" id="col-wishes" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'wishes')">
+            <div class="column-header">
+                <div class="column-title"><span class="column-dot wishes-dot"></span> Wishes</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+<span class="task-count" id="count-wishes">0</span>
+                </div>
+            </div>
+            <div class="cards-list" id="list-wishes"></div>
+        </div>
+
+        <!-- TASKS (status: concepts) -->
+        <div class="column column-concepts" id="col-concepts" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'concepts')">
+            <div class="column-header">
+                <div class="column-title"><span class="column-dot concepts-dot"></span> Tasks</div>
+                <div style="display: flex; align-items: center; gap: 8px;">
+<span class="task-count" id="count-concepts">0</span>
+                </div>
+            </div>
+            <div class="cards-list" id="list-concepts"></div>
+        </div>
+
+        <!-- PLANNING -->
+        <div class="column column-planning" id="col-planning" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'planning')">
+            <div class="column-header">
+                <div class="column-title"><span class="column-dot planning-dot"></span> Planning</div>
+                <div style="display: flex; align-items: center; gap: 8px;">                    <span class="task-count" id="count-planning">0</span>
+                </div>
+            </div>
+            <div class="cards-list" id="list-planning"></div>
+        </div>
+
+        <!-- DOING -->
+        <div class="column column-doing" id="col-doing" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'doing')">
+            <div class="column-header">
+                <div class="column-title"><span class="column-dot doing-dot"></span> Doing</div>
+                <div style="display: flex; align-items: center; gap: 8px;">                    <span class="task-count" id="count-doing">0</span>
+                </div>
+            </div>
+            <div class="cards-list" id="list-doing"></div>
+        </div>
+
+        <!-- REVIEW -->
+        <div class="column column-review" id="col-review" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'review')">
+            <div class="column-header">
+                <div class="column-title"><span class="column-dot review-dot"></span> Review</div>
+                <div style="display: flex; align-items: center; gap: 8px;">                    <span class="task-count" id="count-review">0</span>
+                </div>
+            </div>
+            <div class="cards-list" id="list-review"></div>
+        </div>
+
+        <!-- DONE -->
+        <div class="column column-done" id="col-done" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event, 'done')">
+            <div class="column-header">
+                <div class="column-title"><span class="column-dot done-dot"></span> Done</div>
+                <div style="display: flex; align-items: center; gap: 8px;">                    <span class="task-count" id="count-done">0</span>
+                </div>
+            </div>
+            <div class="cards-list" id="list-done"></div>
+        </div>
+    </main>
+
+    <!-- MODAL: Detail (Planning + Review tabs) -->
+    <div class="modal-overlay" id="detail-modal" onclick="closeDetailModal(event)">
+        <div class="modal-card" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span id="detail-category-badge" class="badge badge-category">Backend</span>
+                    <h3 class="modal-title" id="detail-title">Cargando Tarea...</h3>
+                </div>
+                <button class="action-btn" onclick="closeDetailModal(null)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+
+            <div class="modal-tabs">
+                <button class="tab-btn active" id="btn-tab-planning" onclick="switchTab('planning')">📋 Requisitos y Chat</button>
+                <button class="tab-btn" id="btn-tab-review" onclick="switchTab('review')">🔍 Review y Git Diff</button>
+                <button class="tab-btn" id="btn-tab-log" onclick="switchTab('log')">📄 Log del Agente</button>
+            </div>
+
+            <!-- TAB 1: PLANNING -->
+            <div class="tab-content active" id="tab-planning">
+                <div class="split-container">
+                    <div>
+                        <div class="form-group" style="margin-bottom: 14px;">
+                            <label>Descripción / Objetivo</label>
+                            <p id="detail-description" style="font-size: 13px; line-height: 1.45; color: var(--text-main); white-space: pre-wrap; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 6px;"></p>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; justify-content: space-between; align-items: center;">
+                                Checklist de Requisitos
+                                <button class="btn btn-secondary btn-sm" id="btn-add-requirement-inline" onclick="addNewRequirementPrompt()">+ Añadir</button>
+                            </label>
+                            <div class="checklist-container" id="detail-requirements-list"></div>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 14px;">
+                        <div class="form-group">
+                            <label>Chat de Refinamiento</label>
+                            <div class="chat-container" id="detail-chat-list"></div>
+                            <div style="display: flex; gap: 8px; margin-top: 8px;">
+                                <input type="text" id="chat-input" placeholder="Comenta al agente para ajustar el plan..." onkeydown="if(event.key === 'Enter') sendComment()">
+                                <button class="btn btn-primary btn-sm" onclick="sendComment()">Enviar</button>
+                                <button class="btn btn-sm" id="btn-refine-plan" style="background:#00b09b;color:#fff;border:none;display:none;" onclick="refinePlanWithFeedback()" title="Regenera el plan incorporando el feedback del chat">Refinar Plan 💡</button>
+                            </div>
+                        </div>
+                        <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.04);" id="approve-plan-panel">
+                            <div>
+                                <label style="display: block; margin-bottom: 2px;">Aprobación del Plan</label>
+                                <span style="font-size: 10.5px; color: var(--text-muted);">Al aprobar, la tarjeta brilla y puede moverse a Doing</span>
+                            </div>
+                            <button class="btn" id="btn-approve-plan" onclick="togglePlanApproval()">Aprobar Plan</button>
+                            <button id="btn-cancel-planning" style="display:none; background:#ff5252; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; margin-top:8px;">Cancelar Planificacion</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: REVIEW -->
+            <div class="tab-content" id="tab-review">
+                <div style="margin-bottom: 8px;">
+                    <span id="detail-review-iterations" style="display:none; background: var(--doing-color); color: #000; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;"></span>
+                </div>
+                <div class="split-container" style="grid-template-columns: 0.9fr 1.1fr;">
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div class="form-group">
+                            <label>🧪 Comando de Pruebas</label>
+                            <input type="text" id="detail-test-command" onchange="saveTestCommand()" placeholder="Ej: ./.venv/bin/pytest backend/tests/test_tutorial_service.py">
+                        </div>
+                        <div class="form-group">
+                            <label>🎮 Guía de Verificación</label>
+                            <textarea id="detail-verification-guide" rows="8" onchange="saveVerificationGuide()" placeholder="Instrucciones paso a paso para verificar el cambio..." style="resize: vertical; font-size: 12.5px; line-height: 1.45;"></textarea>
+                        </div>
+                        <!-- AI Review Summary (shown when review data exists) -->
+                        <div id="review-ai-summary" style="display: none;">
+                            <div class="review-ai-box">
+                                <h4>🤖 Resumen de IA</h4>
+                                <p id="review-summary-text" style="color: var(--text-muted); margin-bottom: 8px;"></p>
+                                <h4 style="font-size: 12px;">⚠️ Edge Cases</h4>
+                                <ul class="edge-cases-list" id="review-edge-cases"></ul>
+                            </div>
+                        </div>
+                        <!-- Review Feedback -->
+                        <div class="form-group" id="review-feedback-panel">
+                            <label>💬 Solicitar más cambios al agente</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="review-feedback-input" placeholder="Describe qué cambios necesitas..." onkeydown="if(event.key === 'Enter') sendReviewFeedback()">
+                                <button class="btn btn-primary btn-sm" onclick="sendReviewFeedback()">Enviar</button>
+                            </div>
+                            <label style="display: flex; align-items: center; gap: 6px; margin: 6px 0; font-size: 12px; cursor: pointer;">
+                                <input type="checkbox" id="review-request-changes" style="cursor: pointer;">
+                                Solicitar cambios (mover a Doing)
+                            </label>
+                            <div id="review-feedback-response" style="font-size: 12px; color: var(--text-muted); margin-top: 6px;"></div>
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <div class="form-group">
+                            <label style="display: flex; justify-content: space-between; align-items: center;">
+                                Git Diff
+                                <span id="detail-branch-badge" class="badge badge-git">Rama: -</span>
+                            </label>
+                            <pre class="diff-code-box" id="detail-diff-box">Cargando Diff Git...</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: LOG -->
+            <div class="tab-content" id="tab-log" style="flex-direction: column; gap: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <label style="font-size: 13px; font-weight: 600;">📄 Output del agente en tiempo real</label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <span id="log-status" style="font-size: 10px; color: var(--text-muted);"></span>
+                        <button class="btn btn-sm btn-secondary" onclick="refreshAgentLog()">🔄 Refrescar</button>
+                        <button class="btn btn-sm btn-secondary" onclick="toggleLogAutoRefresh()" id="btn-log-auto">▶ Auto</button>
+                    </div>
+                </div>
+                <pre class="diff-code-box" id="detail-log-box" style="max-height: 50vh; min-height: 200px; font-size: 11px;">Cargando log...</pre>
+            </div>
+
+            <div class="modal-footer" style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <label style="font-size: 12px; color: var(--text-muted); white-space: nowrap;">Mover a:</label>
+                    <select id="detail-move-select" style="width: auto; min-width: 120px; font-size: 12px; padding: 6px 8px;">
+                        <option value="">— Elegir columna —</option>
+                        <option value="wishes">💭 Wishes</option>
+                        <option value="concepts">📌 Tasks</option>
+                        <option value="planning">📋 Planning</option>
+                        <option value="doing">⚡ Doing</option>
+                        <option value="review">🔍 Review</option>
+                        <option value="done">✅ Done</option>
+                    </select>
+                    <button class="btn btn-primary btn-sm" onclick="moveTaskFromDetail()" title="Mover a la columna seleccionada">▶ Mover</button>
+                    <button class="btn btn-secondary btn-sm" onclick="moveTaskFromDetail(true)" title="Forzar movimiento ignorando restricciones (pruebas, merge, etc.)" style="font-size: 10px;">⚡ Forzar</button>
+                </div>
+                <div style="flex: 1;"></div>
+                <button class="btn btn-secondary" onclick="closeDetailModal(null)">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: New Idea (simplified prompt + column selector) -->
+    <div class="modal-overlay" id="new-idea-modal" onclick="closeNewIdeaModal(event)">
+        <div class="modal-card" style="max-width: 480px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">💡 Nueva Idea</h3>
+                <button class="action-btn" onclick="closeNewIdeaModal(null)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <form id="new-idea-form" onsubmit="submitNewIdea(event)">
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label>Describe tu idea o requerimiento:</label>
+                    <textarea id="idea-prompt-field" required rows="4" placeholder="Ej: Arreglar el bug del login que a veces no muestra mensaje de error..."></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom: 14px;">
+                    <label>Ámbito:</label>
+                    <select id="idea-scope-field">
+                        <option value="axolotto">🎮 Axolotto (juego)</option>
+                        <option value="taskboard">🔧 Taskboard (herramienta)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 18px;">
+                    <label>Colocar en:</label>
+                    <select id="idea-column-field">
+                        <option value="concepts">💡 Concepts (ideas activas)</option>
+                        <option value="wishes">💭 Wishes (baja prioridad)</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeNewIdeaModal(null)">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Crear Idea</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Edit Metadata -->
+    <div class="modal-overlay" id="task-modal" onclick="closeModal(event)">
+        <div class="modal-card" style="max-width: 480px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">Editar Metadatos</h3>
+                <button class="action-btn" onclick="closeModal(null)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <form id="task-form" onsubmit="saveTask(event)">
+                <input type="hidden" id="task-id-field">
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="task-title-field">Título</label>
+                    <input type="text" id="task-title-field" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="task-desc-field">Descripción</label>
+                    <textarea id="task-desc-field" rows="3" style="resize: vertical;"></textarea>
+                </div>
+                <div class="form-group" style="margin-bottom: 12px;">
+                    <label for="task-test-field">Comando de Pruebas</label>
+                    <input type="text" id="task-test-field" placeholder="Ej: ./.venv/bin/pytest backend/tests/test_f2p_service.py">
+                </div>
+                <div class="form-row" style="margin-bottom: 12px;">
+                    <div class="form-group">
+                        <label for="task-assignee-field">Asignar a</label>
+                        <select id="task-assignee-field">
+                            <option value="unassigned">Sin asignar</option>
+                            <option value="claude">claude (Anthropic)</option>
+                            <option value="deepclaude">deepclaude (DeepSeek)</option>
+                            <option value="agy">agy (Google)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-priority-field">Prioridad</label>
+                        <select id="task-priority-field">
+                            <option value="low">Baja</option>
+                            <option value="medium" selected>Media</option>
+                            <option value="high">Alta</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row" style="margin-bottom: 18px;">
+                    <div class="form-group">
+                        <label for="task-category-field">Categoría</label>
+                        <select id="task-category-field">
+                            <option value="backend">Backend</option>
+                            <option value="frontend">Frontend</option>
+                            <option value="tools">Tools</option>
+                            <option value="bug">Bug</option>
+                            <option value="docs">Docs</option>
+                            <option value="security">Seguridad</option>
+                            <option value="finance">Finanzas</option>
+                            <option value="gamedesign">Game Design</option>
+                            <option value="blockchain">Blockchain</option>
+                            <option value="infra">Infraestructura</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-scope-field">Ámbito</label>
+                        <select id="task-scope-field">
+                            <option value="axolotto">🎮 Axolotto (juego)</option>
+                            <option value="taskboard">🔧 Taskboard (herramienta)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task-status-field">Columna</label>
+                        <select id="task-status-field">
+                            <option value="wishes">Wishes</option>
+                            <option value="concepts">Concepts</option>
+                            <option value="planning">Planning</option>
+                            <option value="doing">Doing</option>
+                            <option value="review">Review</option>
+                            <option value="done">Done</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 18px;">
+                    <label for="task-dependencies-field">Depende de (Tarea Prerrequisito)</label>
+                    <select id="task-dependencies-field">
+                        <!-- populated dynamically -->
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal(null)">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL: Test Failure -->
+    <div class="modal-overlay" id="test-fail-modal" onclick="closeTestFailModal(event)">
+        <div class="modal-card" style="max-width: 650px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title" style="color: var(--priority-high); display: flex; align-items: center; gap: 8px;">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    Fallo en Validación de Pruebas
+                </h3>
+                <button class="action-btn" onclick="closeTestFailModal(null)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+            </div>
+            <pre class="diff-code-box" style="color: #ff6b6b; max-height: 250px;" id="test-error-output"></pre>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeTestFailModal(null)">Volver</button>
+                <button type="button" class="btn btn-primary" style="background: var(--priority-high); box-shadow: 0 4px 15px rgba(255,77,77,0.3);" id="force-done-btn">Forzar Cambio</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Docs Viewer -->
+    <div class="modal-overlay" id="docs-modal" onclick="closeDocsModal(event)">
+        <div class="modal-card docs-modal-card" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">📄 Docs</h3>
+                <div style="display:flex;gap:8px;align-items:center;">
+                    <input id="docs-search" type="text" placeholder="Buscar..." class="docs-search-input"
+                           oninput="filterDocs(this.value)">
+                    <button class="action-btn" onclick="closeDocsModal(null)">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="docs-layout">
+                <div class="docs-file-list" id="docs-file-list">
+                    <div style="color:var(--text-muted);padding:20px;text-align:center;font-size:13px;">Cargando...</div>
+                </div>
+                <div class="docs-preview" id="docs-preview">
+                    <div style="color:var(--text-muted);padding:40px;text-align:center;font-size:13px;">
+                        Seleccioná un archivo para verlo
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Spinner -->
+    <div class="loading-overlay" id="loading-indicator">
+        <div class="spinner"></div>
+        <div style="font-size: 15px; font-weight: 500;" id="loading-text">Procesando...</div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toast-container"></div>
+
+    <!-- MODAL: Usage Report -->
+    <div class="modal-overlay" id="usage-modal" onclick="closeUsageModal(event)">
+        <div class="modal-card" style="max-width: 700px;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 class="modal-title">📊 Usage Report</h3>
+                <button class="action-btn" onclick="closeUsageModal(null)">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <div class="usage-grid" id="usage-grid">
+                <div class="usage-card" style="grid-column: 1/-1; text-align: center; padding: 40px;">
+                    <span class="spinner-mini"></span> Cargando datos de usage...
+                </div>
+            </div>
+            <div class="usage-modal-footer">
+                <span id="usage-refreshed">—</span>
+                <button class="btn btn-secondary btn-sm" id="btn-refresh-usage" onclick="refreshUsage()">🔄 Refrescar</button>
+                <button class="btn btn-secondary btn-sm" onclick="closeUsageModal(null)">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script src="modules/websocket-client.js"></script>
+    <script src="modules/task-card.js"></script>
+    <script src="modules/drag-drop.js"></script>
+    <script src="modules/modal.js"></script>
+    <script src="modules/agent-console.js"></script>
+</body>
+</html>
