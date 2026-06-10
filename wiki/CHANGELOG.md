@@ -47,6 +47,34 @@ last_modified: "2026-06-07"
 
 ---
 
+## 2026-06-10 | backend/ + contracts/src/Sobrecito.sol | VULN-07, VULN-08, VULN-09: Remediación seguridad media
+
+### web3_service.py + checkout_service.py + config.py — VULN-07: Bypass de pagos desacoplado de BLOCKCHAIN_MODE
+- **Campo**: `verify_usdc_payment`, `confirm_payment`, `Settings.ALLOW_DEV_PAYMENTS`
+- **Anterior**: Mock hashes y tx vacíos se aceptaban como pago válido si `BLOCKCHAIN_MODE == "local"` (default)
+- **Nuevo**: Nuevo flag `ALLOW_DEV_PAYMENTS: bool = False` independiente; el bypass de pagos ya NO se activa con el modo local por defecto
+- **Motivo**: VULN-07 Auditoría 2026-06-09 — deploy accidental con defaults podía regalar AXF premium
+- **Autor**: Claude Sonnet 4.6
+- **Fuente en código**: commit `cb0e78f`
+
+### contracts/src/Sobrecito.sol — VULN-08: abrirSobrecito protegido con onlyController
+- **Campo**: `function abrirSobrecito(uint256 fase) external`
+- **Anterior**: Función pública — cualquier holder podía quemar su sobrecito on-chain sin pasar por el backend
+- **Nuevo**: `external onlyController` — solo el GameController puede abrir sobrecitos; previene pérdida de activos sin contraparte
+- **Motivo**: VULN-08 Auditoría 2026-06-09 — jugador podía quemar sobre y no recibir cartas
+- **Autor**: Claude Sonnet 4.6
+- **Fuente en código**: commit `cb0e78f`
+
+### staking_service.py — VULN-09: claim_all_staking respeta límite de slots
+- **Campo**: `claim_all_staking` — query de axolotitos a reclamar
+- **Anterior**: Iteraba TODOS los Axolotitos del usuario ignorando `get_staking_slots(user)`
+- **Nuevo**: `ORDER BY id LIMIT get_staking_slots(user)` — solo los primeros N axolotitos (por id) acumulan staking
+- **Motivo**: VULN-09 Auditoría 2026-06-09 — rendimiento pasivo desbalanceado por bypass del cap de slots
+- **Autor**: Claude Sonnet 4.6
+- **Fuente en código**: commit `cb0e78f`
+
+---
+
 ## 2026-06-10 | backend/app/services/multiplayer_service.py | VULN-05: Fix inflación de premios
 
 ### multiplayer_service.py — Liquidación multijugador con invariante de conservación de fondos
