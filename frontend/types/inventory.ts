@@ -75,6 +75,7 @@ export interface PlayerBoard {
   rent_expires_at?: string;
   rent_fee_gal?: number;
   rent_share_owner_pct?: number;
+  slot_generation?: number;
 }
 
 export interface SlotRequirements {
@@ -93,6 +94,7 @@ export interface SlotsStatus {
   total_games_won: number;
   current_gal: number;
   next_slot_requirements?: SlotRequirements;
+  slots_xp?: Record<number, { preserved_xp: number; preserved_level: number }>;
 }
 
 export interface CatalogItem {

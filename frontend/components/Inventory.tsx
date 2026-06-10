@@ -20,6 +20,15 @@ function renderPortal(content: React.ReactNode) {
   return createPortal(content, document.body);
 }
 
+function toRoman(n: number): string {
+  const vals: [number, string][] = [[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+  let result = '';
+  for (const [val, sym] of vals) {
+    while (n >= val) { result += sym; n -= val; }
+  }
+  return result;
+}
+
 export default function Inventory({
   userId,
   token,
@@ -264,9 +273,14 @@ export default function Inventory({
 
                         <div className="pr-4">
                           <p className="text-[11px] font-black text-white uppercase tracking-tight truncate leading-tight">{board.name}</p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                             <span className="text-[8px] text-slate-500 font-bold">Nv.{board.level}</span>
                             <span className={`text-[8px] font-black px-1.5 py-px rounded border ${csrStyle.badge}`}>{board.suerte_tag}</span>
+                            {board.slot_generation > 1 && (
+                              <span className="text-[9px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded bg-violet-900/60 text-violet-300 border border-violet-700/40 ml-1">
+                                GEN {toRoman(board.slot_generation)}
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -301,6 +315,11 @@ export default function Inventory({
                     >
                       <span className="text-xl select-none">✨</span>
                       <span className="text-[9px] font-black text-emerald-500/70 uppercase tracking-wide">Espacio libre</span>
+                      {(slotsStatus?.slots_xp?.[numBoards + idx]?.preserved_xp ?? 0) > 0 && (
+                        <span className="text-xs text-amber-400 font-mono">
+                          ⚡ Nivel {slotsStatus.slots_xp[numBoards + idx].preserved_level} guardado
+                        </span>
+                      )}
                       <button
                         onClick={() => { setShowCreateModal(true); setCreateError(null); setCreateSuccess(null); }}
                         className="w-full py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-emerald-300 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all active:scale-95"
@@ -593,10 +612,11 @@ export default function Inventory({
             <div className="bg-red-950/20 border border-red-500/20 rounded-2xl p-4 space-y-2">
               <span className="text-[10px] font-black text-red-400 uppercase tracking-widest block">Costos y Consecuencias (Solvente de Pegamento):</span>
               <ul className="text-[11px] text-slate-300 space-y-1.5 list-disc list-inside font-medium leading-relaxed font-mono">
-                <li><span className="text-red-400 font-bold">Costo del Solvente:</span> Te costará <span className="text-white font-bold">120 FRJ</span> para despegar las cartas de forma segura.</li>
+                <li><span className="text-red-400 font-bold">Costo del Solvente:</span> Te costará <span className="text-white font-bold">1 AXF</span> para despegar las cartas.</li>
                 <li><span className="text-emerald-400 font-bold">Protección de Cartas:</span> Ninguna carta se destruirá.</li>
                 <li><span className="text-emerald-400 font-bold">Devolución:</span> Las <span className="text-emerald-400 font-bold">16 cartas</span> volverán intactas a tu inventario.</li>
-                <li><span className="text-amber-400 font-bold">Historial:</span> El nivel ({boardToDelete.level}) y estadísticas se conservarán en el historial.</li>
+                <li><span className="text-amber-400 font-bold">XP Preservado:</span> El <span className="text-white font-bold">80% del XP</span> (Nivel {boardToDelete.level}) queda guardado en el slot para tu próxima tabla.</li>
+                <li><span className="text-slate-400 font-bold">Stats en blanco:</span> La nueva tabla inicia sin historial de partidas (CSR neutro).</li>
               </ul>
             </div>
 
@@ -635,7 +655,7 @@ export default function Inventory({
                     : 'bg-slate-900/80 text-slate-500 border-2 border-slate-850 cursor-not-allowed opacity-50'
                 }`}
               >
-                {desarmando === boardToDelete.id ? 'Despegando...' : '💥 Desarmar (120 FRJ)'}
+                {desarmando === boardToDelete.id ? 'Despegando...' : '💥 Desarmar (1 AXF)'}
               </button>
             </div>
           </div>
