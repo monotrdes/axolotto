@@ -11,10 +11,7 @@ import {
   fetchStakingStatus, claimAllStaking, expandCave, accelerateCave,
   startImprinting,
 } from '@/services/santuarioService';
-import SantuarioHUD from '@/components/santuario/SantuarioHUD';
-import ZonaSuperior from '@/components/santuario/ZonaSuperior';
 import ZonaCentral from '@/components/santuario/ZonaCentral';
-import ZonaInferior from '@/components/santuario/ZonaInferior';
 import EggSheet from '@/components/santuario/EggSheet';
 import AxoSheet from '@/components/santuario/AxoSheet';
 import CaveRoomModal from '@/components/santuario/CaveRoomModal';
@@ -91,6 +88,9 @@ export default function Santuario({
   const [acceleratingCave, setAcceleratingCave] = useState(false);
   const [caveShaking, setCaveShaking] = useState(false);
   const [caveMuddy, setCaveMuddy] = useState(false);
+
+  // ── Decoration mode ───────────────────────────────────
+  const [decoMode, setDecoMode] = useState(false);
 
   // ── Hosting modal ─────────────────────────────────────
   const [hostingModalOpen, setHostingModalOpen] = useState(false);
@@ -333,23 +333,10 @@ export default function Santuario({
 
   // ── RENDER ───────────────────────────────────────────
   return (
-    <div className={`flex flex-col h-screen w-full max-w-[430px] mx-auto overflow-hidden${caveShaking ? ' animate-cave-shake' : ''}`}>
+    <div className={`relative h-screen w-full max-w-[430px] mx-auto overflow-hidden${caveShaking ? ' animate-cave-shake' : ''}`}>
 
-      {/* === ZONE 1: HUD === */}
-      <SantuarioHUD
-        axf={(caveWallet.axogemas || 0) / 1_000_000}
-        frj={(caveWallet.frijolitos || 0) / 10_000}
-      />
-
-      {/* === ZONE 2: NIDOS === */}
-      <ZonaSuperior
-        incubaciones={incubaciones}
-        maxSlots={Math.max(nestSlots, 7)}
-        onSelectSlot={(inc) => setSelectedSlot(inc ? { type: 'egg', data: inc } : { type: 'empty', data: null })}
-      />
-
-      {/* === ZONE 3: CENOTE DIORAMA (flex-1) === */}
-      <div className="relative flex-1 min-h-0">
+      {/* === ESCENA FULL-SCREEN === */}
+      <div className="absolute inset-0">
         <ZonaCentral
           spots={spots}
           axolotitos={axolotitos.filter((a: any) => a.status !== 'playing')}
@@ -365,38 +352,34 @@ export default function Santuario({
           selectedAxoId={selectedSlot?.type === 'axo' ? selectedSlot.data.id : null}
           particulas={particulas}
           vipTier={vipTier}
+          decoMode={decoMode}
+          onToggleDecoMode={() => setDecoMode(d => !d)}
         />
-        {/* Expand cave button */}
-        <button
-          onClick={() => setCavesPanelOpen(true)}
-          className="absolute top-2 left-2 z-[90] px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 text-[8px] font-black text-slate-400 hover:text-amber-300 hover:border-amber-500/30 transition-all"
-        >
-          ⛏️ {caveExpansion ? '⏳' : 'Nv.' + caveLevel}
-        </button>
       </div>
 
-      {/* Staking chip — small strip above ZonaInferior when active */}
+      {/* Expand cave button — flotando top-left */}
+      <button
+        onClick={() => setCavesPanelOpen(true)}
+        className="absolute top-3 left-3 z-[90] px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 text-[8px] font-black text-slate-400 hover:text-amber-300 hover:border-amber-500/30 transition-all"
+      >
+        ⛏️ {caveExpansion ? '⏳' : 'Nv.' + caveLevel}
+      </button>
+
+      {/* Staking chip — flotando bottom-left cuando activo */}
       {stakingData && stakingData.total_accrued > 0 && (
-        <div className="shrink-0 flex items-center justify-between px-4 py-1.5 bg-amber-950/80 border-t border-amber-500/20">
+        <div className="absolute bottom-3 left-3 z-[90] flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-950/90 border border-amber-500/30 backdrop-blur-sm shadow-lg">
           <span className="text-[9px] font-black text-amber-300">
-            🪙 +{stakingData.total_accrued.toFixed(2)} FRJ acumulados
+            🪙 +{stakingData.total_accrued.toFixed(2)} FRJ
           </span>
           <button
             onClick={handleClaimAllStaking}
             disabled={claimingAll || stakingData.total_accrued < 0.01}
-            className="px-2.5 py-1 rounded-lg font-black text-[8px] uppercase bg-amber-600 hover:bg-amber-500 text-white transition-all active:scale-95 disabled:opacity-40"
+            className="px-2 py-0.5 rounded-full font-black text-[8px] bg-amber-600 hover:bg-amber-500 text-white transition-all active:scale-95 disabled:opacity-40"
           >
             {claimingAll ? '…' : 'Cobrar'}
           </button>
         </div>
       )}
-
-      {/* === ZONE 4: SOCIAL + NAV === */}
-      <ZonaInferior
-        amigos={[]}
-        activeTab="santuario"
-        onNavigate={(tab) => cambiarTab?.(tab)}
-      />
 
       {/* caveMuddy overlay — fixed overlay */}
       {caveMuddy && <div className="cave-muddy-overlay fixed inset-0 pointer-events-none z-[200]" />}
