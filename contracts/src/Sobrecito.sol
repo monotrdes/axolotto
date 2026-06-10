@@ -49,11 +49,12 @@ contract Sobrecito is ERC1155, Ownable {
     }
 
     /**
-     * @notice Abre un sobrecito. El backend escucha el evento
-     *         SobrecitoAbierto para mintear las 7 cartas correspondientes.
+     * @notice Abre un sobrecito vía GameController (único camino autorizado).
+     *         onlyController previene que un jugador queme su sobre directamente
+     *         en la red sin pasar por el backend, lo que dejaría las cartas sin mintear.
      * @param fase  ID del tipo de sobrecito (1, 2 o 3)
      */
-    function abrirSobrecito(uint256 fase) external returns (uint256 sobrecitoId) {
+    function abrirSobrecito(uint256 fase) external onlyController returns (uint256 sobrecitoId) {
         require(balanceOf(msg.sender, fase) >= 1, "Sobrecito: No tienes este sobrecito");
         _burn(msg.sender, fase, 1);
         sobrecitoId = fase; // El backend usa el fase como ID de referencia

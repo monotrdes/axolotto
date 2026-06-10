@@ -303,9 +303,14 @@ class StakingService:
         session: Session,
         user: User,
     ) -> Dict:
-        """Claim staking rewards for every Axolotito owned by the user."""
+        """Claim staking rewards for Axolotitos within the user's active staking slots."""
+        slots = StakingService.get_staking_slots(user)
+        # Order by id for a stable, deterministic slot assignment.
         axolotitos = session.exec(
-            select(Axolotito).where(Axolotito.user_id == user.privy_did)
+            select(Axolotito)
+            .where(Axolotito.user_id == user.privy_did)
+            .order_by(Axolotito.id)
+            .limit(slots)
         ).all()
 
         total_claimed = 0.0

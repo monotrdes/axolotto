@@ -164,8 +164,8 @@ class CheckoutService:
         """
         El frontend informa el tx_hash tras enviar USDC.
         """
-        # Validar formato tx_hash (solo si no estamos en modo local de blockchain)
-        if settings.BLOCKCHAIN_MODE != "local":
+        # Validar formato tx_hash (siempre, salvo que dev-payments esté explícitamente habilitado)
+        if not settings.ALLOW_DEV_PAYMENTS:
             if not tx_hash or not re.fullmatch(r"0x[0-9a-fA-F]{64}", tx_hash):
                 raise HTTPException(
                     status_code=400,

@@ -574,12 +574,12 @@ class Web3Service:
         En modo dev (mock hashes) siempre devuelve True.
         """
         if not tx_hash:
-            if settings.BLOCKCHAIN_MODE == "local":
+            if settings.ALLOW_DEV_PAYMENTS:
                 return True
             return False
 
         if tx_hash.startswith("0x_mock"):
-            if settings.BLOCKCHAIN_MODE == "local":
+            if settings.ALLOW_DEV_PAYMENTS:
                 return True
             return False
 
@@ -587,8 +587,8 @@ class Web3Service:
             return False
 
         if not settings.USDC_ADDRESS:
-            if settings.BLOCKCHAIN_MODE == "local":
-                print("⚠️ USDC_ADDRESS no configurado. Asumiendo pago válido en modo local (dev).")
+            if settings.ALLOW_DEV_PAYMENTS:
+                print("⚠️ USDC_ADDRESS no configurado. Asumiendo pago válido (ALLOW_DEV_PAYMENTS=True).")
                 return True
             else:
                 print("🚨 ERROR: USDC_ADDRESS no configurado en producción/testnet.")
@@ -630,7 +630,6 @@ class Web3Service:
             return False
         except Exception as e:
             print(f"⚠️ Error verificando pago USDC: {e}")
-            return False
             return False
 
     @staticmethod

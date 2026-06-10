@@ -156,6 +156,11 @@ class Settings(BaseSettings):
     # NEVER set to True in production.
     ALLOW_DEV_AUTH: bool = False
 
+    # Dev-only payment bypass — makes verify_usdc_payment return True for mock hashes.
+    # Decoupled from BLOCKCHAIN_MODE so a local-mode deploy cannot silently skip payment checks.
+    # NEVER set to True in production.
+    ALLOW_DEV_PAYMENTS: bool = False
+
     # Admin API Key
     TRIDY_API_KEY: Optional[str] = None
 
