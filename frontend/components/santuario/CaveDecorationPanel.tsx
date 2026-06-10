@@ -55,7 +55,7 @@ const LAYERS: { key: Subcategory; icon: string; label: string }[] = [
 function slotsForLevel(level: number): Record<Subcategory, number> {
   return {
     MANTEL: 1,
-    ADORNOS_FIJOS: Math.min(4, level),
+    ADORNOS_FIJOS: Math.min(4, Math.max(0, level)),
     ILUMINACION: 1,
     ENTORNO: 1,
   };
