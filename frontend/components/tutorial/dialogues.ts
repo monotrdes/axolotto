@@ -274,12 +274,21 @@ export const ACT2_FINAL_COMMENT: Record<Nature, string> = {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 export const ACT3_BOARD_INTRO: Record<Nature, string> = {
-  hyperactive: "¡¡MIRA!! ¡¡ESTA ES MI TABLA!! ¡¡Nació de mi ADN!! ¡¡Es única en todo el cenote!! ¡¡Vamos a jugar una ronda demo!!",
-  lucky:       "Esta es mi tabla del destino. Cada carta tiene su razón de estar aquí. Hagamos una ronda demo juntos.",
-  salty:       "Esta es mi tabla. Nació de mi ADN. Ahora el Gritón va a cantar. Cuando salga una de las mías... márcala.",
-  methodical:  "Esta es mi tabla, generada algorítmicamente desde mi ADN. Procedamos con la demostración práctica.",
-  shy:         "Esta es mi tabla... la que nació conmigo. El Gritón va a cantar cartas. ¿Me ayudas a marcar las mías?",
+  hyperactive: "¡¡Mira!! Para jugar Lotería necesitamos una Tabla. ¡Cada tabla es una cuadrícula con 16 cartas seleccionadas de un mazo total de 54! ¡Vamos a barajar el mazo para formar tu 'Acta de Nacimiento'!",
+  lucky:       "Para entrar a jugar Lotería, necesitamos una Tabla. Una tabla se forma eligiendo 16 cartas al azar de la baraja completa de 54. ¡Vamos a barajar para ver qué nos da el destino para tu 'Acta de Nacimiento'!",
+  salty:       "Antes de jugar, ocupamos una Tabla. Son 16 cartas sacadas de la baraja total de 54. A ver qué sale cuando barajemos este mazo para hacer tu 'Acta de Nacimiento'...",
+  methodical:  "Todo juego de Lotería requiere una Tabla de 4x4. Cada tabla representa un subconjunto de 16 cartas extraídas secuencialmente de un mazo de 54. Iniciando barajado para estructurar tu 'Acta de Nacimiento'.",
+  shy:         "Para poder jugar... necesitamos una Tabla. Es una cuadrícula con 16 cartas escogidas del mazo entero de 54. ¿Barajamos las cartas para ver cómo queda tu 'Acta de Nacimiento'?",
 };
+
+export const ACT3_BOARD_REVEALED: Record<Nature, string> = {
+  hyperactive: "¡¡QUEDÓ INCREÍBLE!! ¡¡Esas 16 cartas son mi Acta de Nacimiento!! ¡¡Nadie más tiene esta combinación!! ¡¡Empecemos la demo ya ya ya!!",
+  lucky:       "Listo. Mi Acta de Nacimiento está revelada. Estas 16 cartas tienen muy buenas vibras. Iniciemos la ronda de prueba.",
+  salty:       "Ahí está. Mi Acta de Nacimiento con sus 16 cartas. Espero que el Gritón sea benevolente hoy. Hagamos la prueba.",
+  methodical:  "Secuencia de reparto finalizada. Se han posicionado las 16 cartas que componen mi Acta de Nacimiento. Ejecutando simulación demo.",
+  shy:         "¡Qué bonita quedó! Esta es mi Acta de Nacimiento... mis 16 cartas. ¿Jugamos la ronda de prueba juntos?",
+};
+
 
 /** Webito reacts when a hit card is called (4 hits per demo, indexed 0-3). */
 export const ACT3_HIT_REACTIONS: Record<Nature, [string, string, string, string]> = {

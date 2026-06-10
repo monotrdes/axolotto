@@ -411,7 +411,7 @@ class TutorialService:
                 if tutorial_board_card_ids:
                     tutorial_board = PlayerBoard(
                         user_id=user_id,
-                        name="Tabla Tutorial",
+                        name="Acta de Nacimiento",
                         card_ids=tutorial_board_card_ids,
                         card_first_editions=[False] * 16,
                         is_tutorial=True,
@@ -420,7 +420,7 @@ class TutorialService:
                     session.flush()  # obtener ID autogenerado
                     
                     axolotito.assigned_board_id = tutorial_board.id
-                    print(f"🎯 Tabla Tutorial #{tutorial_board.id} asignada a {axolotito.name}", flush=True)
+                    print(f"🎯 Acta de Nacimiento #{tutorial_board.id} asignada a {axolotito.name}", flush=True)
                 
                 session.add(axolotito)
                 session.commit()

@@ -18,6 +18,7 @@ import WebitoDialogue from "../WebitoDialogue";
 import type { WebitoData } from "../TutorialScript";
 import {
   ACT3_BOARD_INTRO,
+  ACT3_BOARD_REVEALED,
   ACT3_HIT_REACTIONS,
   ACT3_VICTORY,
   ACT3_LINES_EXPLAIN,
@@ -147,7 +148,7 @@ function Particles() {
 
 // ── Phase type ────────────────────────────────────────────────────────────────
 
-type Phase = "intro" | "cantada" | "lines-tour" | "full-board" | "outro";
+type Phase = "intro" | "shuffling" | "dealing" | "cantada" | "lines-tour" | "full-board" | "outro";
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
@@ -166,6 +167,7 @@ export default function ActBoardPreview({ webito, onComplete }: Props) {
   const [tourLineIdx, setTourLineIdx]     = useState(-1);
   // fullBoardCount: how many cells are "filled" in the full-board animation (0→16)
   const [fullBoardCount, setFullBoardCount] = useState(0);
+  const [dealingComplete, setDealingComplete] = useState(false);
   const tourTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const userSeed = useMemo(() => stringToSeed(webito.userId), [webito.userId]);
@@ -179,6 +181,25 @@ export default function ActBoardPreview({ webito, onComplete }: Props) {
 
   const currentCard = seq[cantadaStep];
   const isComplete  = markedIndices.length === 4;
+
+  // ── Shuffling phase timer ──
+  useEffect(() => {
+    if (phase !== "shuffling") return;
+    const t = setTimeout(() => {
+      setPhase("dealing");
+    }, 1800);
+    return () => clearTimeout(t);
+  }, [phase]);
+
+  // ── Dealing phase timer ──
+  useEffect(() => {
+    if (phase !== "dealing") return;
+    setDealingComplete(false);
+    const t = setTimeout(() => {
+      setDealingComplete(true);
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [phase]);
 
   // ── Cantada auto-advance ──────────────────────────────────────────────
 
@@ -219,7 +240,7 @@ export default function ActBoardPreview({ webito, onComplete }: Props) {
   // ── Handlers ─────────────────────────────────────────────────────────────
 
   const handleIntroDismiss = useCallback(() => {
-    setPhase("cantada");
+    setPhase("shuffling");
   }, []);
 
   // Player taps a board cell during cantada
@@ -297,17 +318,95 @@ export default function ActBoardPreview({ webito, onComplete }: Props) {
       {/* ── INTRO ─────────────────────────────────────────────────────────── */}
       {phase === "intro" && (
         <>
-          <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: "#64748b" }}>
+          <p className="text-[10px] font-black uppercase tracking-widest text-center" style={{ color: "#64748b" }}>
             Tu Tabla del Destino — generada de tu ADN
           </p>
-          <Board board={board} markedIndices={[]} cellStyle={() => ({})} cellBorder={() => "none"} onCellTap={() => {}} />
+          
+          {/* Show a closed deck in the center */}
+          <div className="relative w-[70px] h-[100px] my-6 mx-auto">
+            <div className="absolute inset-0 rounded-md border border-amber-500/30 bg-indigo-950/80 shadow-md translate-x-1 translate-y-1 rotate-1" />
+            <div className="absolute inset-0 rounded-md border border-amber-500 bg-gradient-to-br from-indigo-950 via-slate-900 to-violet-950 flex flex-col items-center justify-center shadow-lg select-none rounded-md">
+              <div className="text-[14px] font-black text-amber-500 tracking-wider">AXO</div>
+              <div className="text-[8px] text-amber-400">★</div>
+            </div>
+          </div>
+          
           <WebitoDialogue text={ACT3_BOARD_INTRO[webito.nature]} speaker="webito" onDismiss={handleIntroDismiss} />
+        </>
+      )}
+
+      {/* ── SHUFFLING ────────────────────────────────────────────────────── */}
+      {phase === "shuffling" && (
+        <div className="flex flex-col items-center justify-center py-6 px-4 w-full min-h-[200px] gap-4">
+          <p className="text-sm font-bold text-amber-400 animate-pulse tracking-wide uppercase">
+            ⚡ Barajando el mazo de 54 cartas...
+          </p>
+          <div className="relative w-[80px] h-[114px] my-4" style={{ perspective: "1000px" }}>
+            {/* Stacked background cards to give 3D deck depth */}
+            <div
+              className="absolute inset-0 rounded-md border border-amber-500/20 bg-indigo-950 shadow-md"
+              style={{
+                transform: "translate3d(-4px, 4px, -10px) rotate(-3deg)",
+                animation: "shuffle-left 0.4s ease-in-out infinite",
+              }}
+            />
+            <div
+              className="absolute inset-0 rounded-md border border-amber-500/35 bg-indigo-900 shadow-md"
+              style={{
+                transform: "translate3d(4px, 2px, -5px) rotate(3deg)",
+                animation: "shuffle-right 0.4s ease-in-out infinite 0.1s",
+              }}
+            />
+            {/* Top card of the deck */}
+            <div
+              className="absolute inset-0 rounded-md border border-amber-500 bg-gradient-to-br from-indigo-950 via-slate-900 to-violet-950 flex flex-col items-center justify-center shadow-xl select-none"
+              style={{
+                transform: "translate3d(0, 0, 0)",
+                animation: "shuffle-left 0.4s ease-in-out infinite 0.2s",
+              }}
+            >
+              <div className="text-[16px] font-black text-amber-500 tracking-widest drop-shadow-[0_0_6px_rgba(245,158,11,0.5)]">
+                AXO
+              </div>
+              <div className="text-[10px] text-amber-400 animate-bounce mt-1">★</div>
+            </div>
+          </div>
+          <p className="text-[10px] text-slate-500 italic max-w-[200px] text-center">
+            Generando combinación única de 16 cartas según tu ADN...
+          </p>
+        </div>
+      )}
+
+      {/* ── DEALING ───────────────────────────────────────────────────────── */}
+      {phase === "dealing" && (
+        <>
+          <p className="text-[10px] font-black uppercase tracking-widest text-center" style={{ color: "#64748b" }}>
+            📜 Creando tu Acta de Nacimiento...
+          </p>
+          <Board
+            board={board}
+            markedIndices={[]}
+            cellStyle={() => ({})}
+            cellBorder={() => "none"}
+            onCellTap={() => {}}
+            isDealing={true}
+          />
+          {dealingComplete && (
+            <WebitoDialogue
+              text={ACT3_BOARD_REVEALED[webito.nature]}
+              speaker="webito"
+              onDismiss={() => setPhase("cantada")}
+            />
+          )}
         </>
       )}
 
       {/* ── CANTADA ───────────────────────────────────────────────────────── */}
       {phase === "cantada" && (
         <>
+          <p className="text-[10px] font-black uppercase tracking-widest text-center mb-1" style={{ color: "#64748b" }}>
+            📋 Ronda de Prueba (Acta de Nacimiento)
+          </p>
           {/* Big card display */}
           <div
             className="flex flex-col items-center gap-2 py-2 px-4 rounded-2xl w-full"
@@ -512,9 +611,10 @@ interface BoardProps {
   wonLine?: number[];
   allGlow?: boolean;
   pulseIdx?: number;
+  isDealing?: boolean;
 }
 
-function Board({ board, markedIndices, cellStyle, cellBorder, onCellTap, wonLine, allGlow, pulseIdx }: BoardProps) {
+function Board({ board, markedIndices, cellStyle, cellBorder, onCellTap, wonLine, allGlow, pulseIdx, isDealing }: BoardProps) {
   return (
     <div
       className="grid gap-0.5 p-1.5 rounded-2xl"
@@ -536,8 +636,92 @@ function Board({ board, markedIndices, cellStyle, cellBorder, onCellTap, wonLine
           25%       { transform: scale(1.1) rotate(-1.5deg); }
           75%       { transform: scale(1.07) rotate(1.5deg); }
         }
+        @keyframes shuffle-left {
+          0%, 100% { transform: translate(0, 0) rotate(0deg); }
+          50% { transform: translate(-28px, -4px) rotate(-10deg); }
+        }
+        @keyframes shuffle-right {
+          0%, 100% { transform: translate(0, 0) rotate(0deg); }
+          50% { transform: translate(28px, 4px) rotate(10deg); }
+        }
+        @keyframes fly-and-flip {
+          0% {
+            transform: translate(var(--dx), var(--dy)) scale(1.35) rotateY(180deg);
+            opacity: 0;
+          }
+          15% {
+            opacity: 1;
+          }
+          70% {
+            transform: translate(0, 0) scale(1.05) rotateY(180deg);
+          }
+          100% {
+            transform: translate(0, 0) scale(1) rotateY(0deg);
+            opacity: 1;
+          }
+        }
       `}</style>
       {board.map((num, idx) => {
+        if (isDealing) {
+          const r = Math.floor(idx / 4);
+          const c = idx % 4;
+          const dx = CARD_SIZE * (1.5 - c);
+          const dy = CARD_H * (1.5 - r);
+
+          return (
+            <div
+              key={idx}
+              className="relative rounded-md"
+              style={{
+                width: CARD_SIZE,
+                height: CARD_H,
+                perspective: "1000px",
+              }}
+            >
+              <div
+                className="w-full h-full relative"
+                style={{
+                  transformStyle: "preserve-3d",
+                  animation: "fly-and-flip 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards",
+                  animationDelay: `${idx * 110}ms`,
+                  transform: "rotateY(180deg)",
+                  opacity: 0,
+                  "--dx": `${dx}px`,
+                  "--dy": `${dy}px`,
+                } as React.CSSProperties}
+              >
+                {/* Front Side */}
+                <div
+                  className="absolute inset-0 w-full h-full rounded-md overflow-hidden bg-slate-900 border border-slate-700/50"
+                  style={{ backfaceVisibility: "hidden" }}
+                >
+                  {CARD_IMAGE[num] ? (
+                    <img src={CARD_IMAGE[num]} alt="" className="w-full h-full object-cover" draggable={false} />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs text-slate-500">
+                      {num}
+                    </div>
+                  )}
+                </div>
+
+                {/* Back Side */}
+                <div
+                  className="absolute inset-0 w-full h-full rounded-md overflow-hidden"
+                  style={{
+                    backfaceVisibility: "hidden",
+                    transform: "rotateY(180deg)",
+                  }}
+                >
+                  <div className="w-full h-full border border-amber-500 bg-gradient-to-br from-indigo-950 via-slate-900 to-violet-950 flex flex-col items-center justify-center shadow-inner">
+                    <span className="text-[10px] font-black text-amber-500 tracking-wider">AXO</span>
+                    <span className="text-[8px] text-amber-400">★</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         const ov = cellStyle(idx);
         const border = cellBorder(idx);
         const isMarked = markedIndices.includes(idx);
