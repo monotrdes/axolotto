@@ -100,7 +100,11 @@ class Settings(BaseSettings):
     # ── Auth & Admin ──────────────────────────────────────────────────────────
     # Privy App ID for JWT Verification
     PRIVY_APP_ID: Optional[str] = None
-    
+
+    # Dev-only auth bypass — gates X-Dev-User header and unverified JWT decoding.
+    # NEVER set to True in production.
+    ALLOW_DEV_AUTH: bool = False
+
     # Admin API Key
     TRIDY_API_KEY: Optional[str] = None
 
@@ -127,6 +131,20 @@ class Settings(BaseSettings):
     def validate_usdc_address(self) -> 'Settings':
         if self.BLOCKCHAIN_MODE != "local" and not self.USDC_ADDRESS:
             raise ValueError("USDC_ADDRESS must be set in non-local environments")
+        return self
+
+    @model_validator(mode="after")
+    def _enforce_auth(self) -> 'Settings':
+        if self.BLOCKCHAIN_MODE != "local" and not self.PRIVY_APP_ID:
+            raise ValueError(
+                "PRIVY_APP_ID es obligatorio cuando BLOCKCHAIN_MODE != 'local'. "
+                "Configura PRIVY_APP_ID en el .env antes de arrancar."
+            )
+        if self.ALLOW_DEV_AUTH and self.BLOCKCHAIN_MODE != "local":
+            raise ValueError(
+                "ALLOW_DEV_AUTH=True está prohibido fuera de modo local. "
+                "Elimínalo del .env de producción."
+            )
         return self
 
     @property

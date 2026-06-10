@@ -33,37 +33,27 @@ def get_verified_user_id(
     Devuelve el privy_did (el claim 'sub' del JWT).
     """
     if not credentials:
-        # Si no hay token y PRIVY_APP_ID no está configurado, permitimos continuar únicamente en modo local de desarrollo
-        if settings.BLOCKCHAIN_MODE == "local" and not settings.PRIVY_APP_ID:
-            logger.warning("No se proporcionó token de autorización. Continuando en modo de desarrollo sin verificación.")
-            # Intentar buscar user_id en la query o el body para desarrollo
-            user_id = request.query_params.get("user_id") or request.query_params.get("privy_did")
+        if settings.ALLOW_DEV_AUTH and settings.BLOCKCHAIN_MODE == "local":
+            user_id = request.headers.get("X-Dev-User")
             if user_id:
                 return user_id
-            raise HTTPException(
-                status_code=401,
-                detail="Cabecera de autorización ausente. En desarrollo, pasa 'user_id' como parámetro de consulta."
-            )
         raise HTTPException(status_code=401, detail="Token de autorización ausente.")
 
     token = credentials.credentials
 
-    # Caso 1: PRIVY_APP_ID no está configurado (Solo permitido en Modo desarrollo / Local)
+    # Sin PRIVY_APP_ID solo se acepta token si ALLOW_DEV_AUTH está activo en modo local.
+    # En producción el startup validator garantiza que PRIVY_APP_ID esté configurado.
     if not settings.PRIVY_APP_ID:
-        if settings.BLOCKCHAIN_MODE != "local":
-            raise HTTPException(
-                status_code=500,
-                detail="PRIVY_APP_ID no está configurado en un entorno no local."
-            )
-        try:
-            # Decodificamos el token sin verificar la firma para facilitar pruebas locales
-            payload = jwt.decode(token, options={"verify_signature": False})
-            user_id = payload.get("sub")
-            if not user_id:
-                raise HTTPException(status_code=401, detail="El token decodificado no contiene el campo 'sub'.")
-            return user_id
-        except Exception as e:
-            raise HTTPException(status_code=401, detail=f"Error decodificando token en modo desarrollo: {str(e)}")
+        if settings.ALLOW_DEV_AUTH and settings.BLOCKCHAIN_MODE == "local":
+            try:
+                payload = jwt.decode(token, options={"verify_signature": False})
+                user_id = payload.get("sub")
+                if not user_id:
+                    raise HTTPException(status_code=401, detail="El token decodificado no contiene el campo 'sub'.")
+                return user_id
+            except jwt.DecodeError as e:
+                raise HTTPException(status_code=401, detail=f"Token inválido: {str(e)}")
+        raise HTTPException(status_code=401, detail="Token de autorización inválido.")
 
     # Caso 2: PRIVY_APP_ID configurado (Modo Producción Seguro)
     try:

@@ -147,20 +147,3 @@ export async function fetchImprintingStatus(incId: number, token: string | null)
   return res.data;
 }
 
-// ── Arcade (Cenote minigame) ──
-export async function submitArcadeScore(score: number, token: string | null) {
-  const res = await axios.post(`${API}/cave/minigames/arcade/play`, { score }, { headers: headers(token) });
-  return res.data;
-}
-
-export async function fetchArcadeLeaderboard(token: string | null) {
-  const res = await axios.get(`${API}/cave/minigames/arcade/leaderboard`, { headers: headers(token) });
-  return res.data;
-}
-
-// ── Wishing Well ──
-export async function playWishingWell(accuracy: number, outcome: string, token: string | null) {
-  const res = await axios.post(`${API}/cave/minigames/wishing-well`, {}, { headers: headers(token) });
-  return res.data;
-}
-

@@ -1,21 +1,16 @@
 ﻿from __future__ import annotations
 """
-cave_decor.py — Decoraciones y minijuegos del Cenote.
+cave_decor.py — Decoraciones del Cenote.
 
 Rutas — Decoración:
   GET  /api/v1/cave/decorations           — Estado actual de decoraciones
   GET  /api/v1/cave/decorations/inventory — Inventario de CAVE_ITEM del usuario
   POST /api/v1/cave/decorations/update    — Colocar/quitar decoraciones
 
-Rutas — Minijuegos:
-  POST /api/v1/cave/minigames/wishing-well
-  POST /api/v1/cave/minigames/arcade/play
-  GET  /api/v1/cave/minigames/arcade/leaderboard
 """
 
 import json
 import random
-from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import Dict, Optional
@@ -24,22 +19,13 @@ from sqlmodel import Session, select, func
 from app.core.auth import get_verified_user_id
 from app.database import get_session
 from app.models.axolotito import Axolotito
-from app.models.economy import (
-    CurrencyType,
-    TransactionLedger,
-    TransactionType,
-    Wallet,
-)
 from app.models.items import (
-    ArcadeLeaderboard,
     ItemCatalog,
     ItemType,
     PlayerInventory,
     Rarity,
 )
 from app.models.user import User
-from app.services.bank_service import BankService
-from app.services.drop_service import _add_to_inventory
 from app.api.v1.endpoints.cave_expansion import CAVE_LEVEL_DEFINITIONS
 
 router = APIRouter()
@@ -47,9 +33,6 @@ _rng = random.SystemRandom()
 
 # ── Slot naming: {subcategory}_{index}  e.g. "FLOOR_0", "WALL_1" ──────
 VALID_SUBCATEGORIES = {"FLOOR", "WALL", "WATER", "SPECIAL"}
-
-WISHING_WELL_COST_FRJ = 20
-ARCADE_PLAY_COST_AXF = 1
 
 
 # ── Request / Response schemas ─────────────────────────────────────────
@@ -349,246 +332,3 @@ def update_cave_decorations(
 
     return _build_decorations_response(user, session)
 
-
-# ═══════════════════════════════════════════════════════════════════════
-# MINIJUEGOS (existente)
-# ═══════════════════════════════════════════════════════════════════════
-
-
-# ── POST /minigames/wishing-well ──────────────────────────────────────────────
-
-@router.post("/minigames/wishing-well")
-def play_wishing_well(
-    session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id),
-):
-    """
-    Lanza una moneda al pozo de los deseos.
-
-    Cuesta 20 FRJ.
-    Resultados:
-      - perfect (5%):   recuperas 30 FRJ + un CAVE_ITEM común aleatorio
-      - good    (15%):  recuperas 15 FRJ
-      - okay    (30%):  recuperas  5 FRJ
-      - miss    (50%):  nada
-    """
-    wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
-    if wallet.frijolitos < WISHING_WELL_COST_FRJ:
-        raise HTTPException(
-            status_code=403,
-            detail=(
-                f"Saldo insuficiente. El pozo de los deseos cuesta "
-                f"{WISHING_WELL_COST_FRJ} FRJ y tienes {int(wallet.frijolitos)} FRJ."
-            ),
-        )
-
-    # Deducir coste
-    wallet.frijolitos -= WISHING_WELL_COST_FRJ
-    session.add(wallet)
-
-    # Determinar resultado
-    roll = _rng.random()
-    if roll < 0.05:
-        outcome = "perfect"
-        frj_won = 30
-    elif roll < 0.20:
-        outcome = "good"
-        frj_won = 15
-    elif roll < 0.50:
-        outcome = "okay"
-        frj_won = 5
-    else:
-        outcome = "miss"
-        frj_won = 0
-
-    # Creditar FRJ ganados
-    item_won = None
-    if frj_won > 0:
-        wallet.frijolitos += frj_won
-
-    # Si es perfect: otorgar un CAVE_ITEM común aleatorio
-    if outcome == "perfect":
-        cave_items = session.exec(
-            select(ItemCatalog)
-            .where(ItemCatalog.item_type == ItemType.CAVE_ITEM)
-            .where(ItemCatalog.rarity == Rarity.COMMON)
-            .where(ItemCatalog.is_active == True)
-        ).all()
-        if cave_items:
-            chosen_item = _rng.choice(cave_items)
-            _add_to_inventory(session, verified_user_id, chosen_item.id)
-            item_won = {
-                "id": chosen_item.id,
-                "name": chosen_item.name,
-                "rarity": chosen_item.rarity,
-                "description": chosen_item.description,
-            }
-
-    # Registrar en TransactionLedger
-    session.add(TransactionLedger(
-        user_id=verified_user_id,
-        amount=float(WISHING_WELL_COST_FRJ),
-        currency=CurrencyType.GEMA_ALGA,
-        tx_type=TransactionType.WISHING_WELL,
-        description=(
-            f"Pozo de los deseos — resultado: {outcome}, "
-            f"FRJ gastados: {WISHING_WELL_COST_FRJ}, FRJ ganados: {frj_won}"
-            + (f", item: {item_won['name']}" if item_won else "")
-        ),
-        item_id=item_won["id"] if item_won else None,
-    ))
-
-    session.commit()
-
-    return {
-        "outcome": outcome,
-        "frj_spent": WISHING_WELL_COST_FRJ,
-        "frj_won": frj_won,
-        "item_won": item_won,
-        "net_frj": frj_won - WISHING_WELL_COST_FRJ,
-    }
-
-
-# ── POST /minigames/arcade/play ───────────────────────────────────────────────
-
-@router.post("/minigames/arcade/play")
-def play_arcade(
-    body: dict,
-    session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id),
-):
-    """
-    Juega una partida de arcade en el Cenote.
-
-    Cuesta 1 AXF.  El jugador envía su puntuación `score`.
-    Se registra en el leaderboard global de arcade y se devuelve
-    el ranking actual.
-    """
-    score = body.get("score", 0)
-    if not isinstance(score, int) or score < 0:
-        raise HTTPException(status_code=400, detail="El campo 'score' debe ser un entero >= 0.")
-
-    wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
-    if wallet.axofichas < ARCADE_PLAY_COST_AXF:
-        raise HTTPException(
-            status_code=403,
-            detail=(
-                f"Saldo insuficiente. Jugar al arcade cuesta "
-                f"{ARCADE_PLAY_COST_AXF} AXF y tienes {wallet.axofichas} AXF."
-            ),
-        )
-
-    # Deducir coste
-    wallet.axofichas -= ARCADE_PLAY_COST_AXF
-    session.add(wallet)
-
-    # Obtener cave_name del usuario
-    user = session.exec(
-        select(User).where(User.privy_did == verified_user_id)
-    ).first()
-
-    # Insertar nuevo registro en el leaderboard
-    leaderboard_entry = ArcadeLeaderboard(
-        user_id=verified_user_id,
-        cave_name=user.cave_name if user else None,
-        score=score,
-        played_at=datetime.utcnow(),
-    )
-    session.add(leaderboard_entry)
-
-    # Personal best: max score del usuario
-    personal_best = session.exec(
-        select(func.max(ArcadeLeaderboard.score))
-        .where(ArcadeLeaderboard.user_id == verified_user_id)
-    ).one_or_none() or 0
-    if personal_best is None:
-        personal_best = score
-
-    # Total de jugadores únicos
-    total_players = session.exec(
-        select(func.count(func.distinct(ArcadeLeaderboard.user_id)))
-    ).one_or_none() or 0
-
-    # Rank global: cuántos jugadores tienen score ESTRICTAMENTE mayor
-    higher_count = session.exec(
-        select(func.count(func.distinct(ArcadeLeaderboard.user_id)))
-        .where(ArcadeLeaderboard.score > score)
-    ).one_or_none() or 0
-    rank = higher_count + 1
-
-    # Registrar ledger
-    session.add(TransactionLedger(
-        user_id=verified_user_id,
-        amount=float(ARCADE_PLAY_COST_AXF),
-        currency=CurrencyType.AXOGEMA,
-        tx_type=TransactionType.ARCADE_PLAY,
-        description=(
-            f"Arcade del Cenote — score: {score}, "
-            f"personal_best: {personal_best}, rank: {rank}"
-        ),
-    ))
-
-    session.commit()
-
-    return {
-        "score": score,
-        "axf_spent": ARCADE_PLAY_COST_AXF,
-        "personal_best": int(personal_best) if personal_best else score,
-        "rank": rank,
-        "total_players": int(total_players) if total_players else 1,
-    }
-
-
-# ── GET /minigames/arcade/leaderboard ─────────────────────────────────────────
-
-@router.get("/minigames/arcade/leaderboard")
-def get_arcade_leaderboard(
-    session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id),
-):
-    """
-    Devuelve el top 20 global del arcade del Cenote, más el mejor score
-    del usuario autenticado (incluso si no está en el top 20).
-    """
-    # Top 20: scored best score per user, ordered by highest score DESC, then by earliest played_at for ties
-    # Subquery: max score per user
-    top_scores_query = (
-        select(
-            ArcadeLeaderboard.user_id,
-            ArcadeLeaderboard.cave_name,
-            func.max(ArcadeLeaderboard.score).label("max_score"),
-            func.min(ArcadeLeaderboard.played_at).label("first_played"),
-        )
-        .group_by(ArcadeLeaderboard.user_id, ArcadeLeaderboard.cave_name)
-        .order_by(func.max(ArcadeLeaderboard.score).desc(), func.min(ArcadeLeaderboard.played_at).asc())
-        .limit(20)
-    )
-    top_results = session.exec(top_scores_query).all()
-
-    leaderboard = []
-    for i, row in enumerate(top_results):
-        leaderboard.append({
-            "rank": i + 1,
-            "user_id": row.user_id,
-            "cave_name": row.cave_name,
-            "score": int(row.max_score),
-            "played_at": row.first_played.isoformat() if row.first_played else None,
-        })
-
-    # My best score
-    my_best = session.exec(
-        select(func.max(ArcadeLeaderboard.score))
-        .where(ArcadeLeaderboard.user_id == verified_user_id)
-    ).one_or_none() or 0
-
-    my_best_obj = None
-    if my_best and int(my_best) > 0:
-        my_best_obj = {
-            "user_id": verified_user_id,
-            "score": int(my_best),
-        }
-
-    return {
-        "leaderboard": leaderboard,
-        "my_best": my_best_obj,
-    }

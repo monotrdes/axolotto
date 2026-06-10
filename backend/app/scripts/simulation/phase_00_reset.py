@@ -3,7 +3,7 @@ from sqlalchemy import delete, text as sa_text
 from sqlmodel import SQLModel
 
 from app.models.economy import TransactionLedger, AxgPurchaseRecord
-from app.models.items import ItemCatalog, ItemType, PlayerInventory, WebitoIncubation, ArcadeLeaderboard
+from app.models.items import ItemCatalog, ItemType, PlayerInventory, WebitoIncubation
 from app.models.board import PlayerBoard
 from app.models.axolotito import Axolotito
 from app.models.lobby_models import GameRoom, RoomRegistration, JackpotVault, TreasuryVault, MultiplayerGameLog, JackpotWin
@@ -58,7 +58,6 @@ def phase_reset(engine, config, **state) -> dict:
         for model in [
             JackpotWin, RoomRegistration, MultiplayerGameLog, GameRoom,
             WebitoIncubation, PlayerBoard, Axolotito,
-            ArcadeLeaderboard,
             TransactionLedger, PlayerInventory, Wallet,
             JackpotVault, TreasuryVault, AxgPurchaseRecord,
             PendingReward,
@@ -148,7 +147,7 @@ def phase_migrations(engine, config, **state) -> dict:
             conn_raw = psycopg2.connect(db_url)
             conn_raw.autocommit = True
             cursor = conn_raw.cursor()
-            for enum_val in ("BURN", "VIP_GAL_EXPIRED", "CRAFTING", "TUTORIAL_BONUS", "F2P_REWARD", "WEBITO_UNLOCK", "ARCADE_PLAY"):
+            for enum_val in ("BURN", "VIP_GAL_EXPIRED", "CRAFTING", "TUTORIAL_BONUS", "F2P_REWARD", "WEBITO_UNLOCK"):
                 try:
                     cursor.execute(f"ALTER TYPE transactiontype ADD VALUE IF NOT EXISTS '{enum_val}'")
                 except Exception:

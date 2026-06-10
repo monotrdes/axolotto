@@ -35,7 +35,6 @@ class TransactionType(str, Enum):
     WEBITO_UNLOCK = "webito_unlock"      # Desbloqueo de slot de Webito
     PROMO_REWARD = "promo_reward"        # Tokens obsequiados por corcholata/código promo
     STAKING_REWARD = "staking_reward"    # Recompensa pasiva por tener Axolotitos en staking
-    ARCADE_PLAY = "arcade_play"          # Minijuego Arcade del Cenote
 
 class Wallet(SQLModel, table=True):
     __table_args__ = (

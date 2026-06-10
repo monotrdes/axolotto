@@ -134,14 +134,6 @@ class InventoryMarketListing(SQLModel, table=True):
     is_active: bool = Field(default=True)
 
 
-class ArcadeLeaderboard(SQLModel, table=True):
-    """Leaderboard del minijuego Arcade del Cenote (CAVE_ITEM)."""
-    id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: str = Field(foreign_key="user.privy_did", index=True)
-    cave_name: Optional[str] = Field(default=None)
-    score: int = Field(default=0)
-    played_at: datetime = Field(default_factory=datetime.utcnow)
-
 
 class WhitelistEntry(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
