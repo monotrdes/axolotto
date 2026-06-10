@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import React, { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/context/ToastContext';
 import BottomSheet from '@/components/ui/BottomSheet';
@@ -11,7 +11,10 @@ import {
   fetchStakingStatus, claimAllStaking, expandCave, accelerateCave,
   startImprinting,
 } from '@/services/santuarioService';
-import NidoScene from '@/components/santuario/NidoScene';
+import SantuarioHUD from '@/components/santuario/SantuarioHUD';
+import ZonaSuperior from '@/components/santuario/ZonaSuperior';
+import ZonaCentral from '@/components/santuario/ZonaCentral';
+import ZonaInferior from '@/components/santuario/ZonaInferior';
 import EggSheet from '@/components/santuario/EggSheet';
 import AxoSheet from '@/components/santuario/AxoSheet';
 import CaveRoomModal from '@/components/santuario/CaveRoomModal';
@@ -319,7 +322,7 @@ export default function Santuario({
   // ── LOADING ──────────────────────────────────────────
   if (cargando) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 gap-3">
+      <div className="flex items-center justify-center h-screen gap-3 flex-col">
         <span className="text-4xl animate-bounce">🪺</span>
         <p className="text-[#E4007C] font-black uppercase tracking-widest text-sm animate-pulse">
           Preparando el Nido…
@@ -330,96 +333,91 @@ export default function Santuario({
 
   // ── RENDER ───────────────────────────────────────────
   return (
-    <div className={`w-full mt-2 relative${caveShaking ? ' animate-cave-shake' : ''}`}>
-      {/* Section header */}
-      <div className="text-center mb-3">
-        <div className="flex items-center justify-center gap-3">
-          <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tighter">
-            🪺 <span className="text-[#2DD4BF]">{caveName || 'Tu Cenote'}</span>
-          </h2>
-          <button
-            onClick={() => setCavesPanelOpen(true)}
-            className="relative px-3 py-1 rounded-full bg-slate-800/80 border border-white/10 hover:border-amber-500/30 hover:bg-slate-700/80 transition-all text-[10px] font-black text-slate-400 hover:text-amber-300 uppercase"
-          >
-            ⛏️ Expandir
-            {(caveExpansion || (nextLevel && caveLevel < 8)) && (
-              <span className={`absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full flex items-center justify-center text-[7px] font-black text-white animate-pulse ${
-                caveExpansion ? 'bg-amber-500' : 'bg-teal-500'
-              }`}>
-                {caveExpansion ? '⏳' : '!'}
-              </span>
-            )}
-          </button>
-        </div>
-        <p className="text-[9px] text-slate-600 font-bold uppercase tracking-widest mt-0.5">
-          {incubaciones.length} webito{incubaciones.length !== 1 ? 's' : ''} · {axolotitos.length} axolotito{axolotitos.length !== 1 ? 's' : ''} · Nv.{caveLevel} · {nestSlots} nido{nestSlots !== 1 ? 's' : ''}
-          {caveExpansion && (
-            <span className="text-amber-500 ml-1">⛏️ Excavando Nv.{caveExpansion.target_level}…</span>
-          )}
-        </p>
+    <div className={`flex flex-col h-screen w-full max-w-[430px] mx-auto overflow-hidden${caveShaking ? ' animate-cave-shake' : ''}`}>
+
+      {/* === ZONE 1: HUD === */}
+      <SantuarioHUD
+        axf={(caveWallet.axogemas || 0) / 1_000_000}
+        frj={(caveWallet.frijolitos || 0) / 10_000}
+      />
+
+      {/* === ZONE 2: NIDOS === */}
+      <ZonaSuperior
+        incubaciones={incubaciones}
+        maxSlots={Math.max(nestSlots, 7)}
+        onSelectSlot={(inc) => setSelectedSlot(inc ? { type: 'egg', data: inc } : { type: 'empty', data: null })}
+      />
+
+      {/* === ZONE 3: CENOTE DIORAMA (flex-1) === */}
+      <div className="relative flex-1 min-h-0">
+        <ZonaCentral
+          spots={spots}
+          axolotitos={axolotitos.filter((a: any) => a.status !== 'playing')}
+          clima={clima}
+          caveLevel={caveLevel}
+          viewMode={viewMode}
+          hasTable={hasTable}
+          tableSeats={tableSeats}
+          onSelectSpot={(slot) => setSelectedSlot(slot)}
+          onSelectAxo={(axo) => setSelectedSlot({ type: 'axo', data: axo })}
+          onToggleViewMode={() => setViewMode(m => m === 'libre' ? 'gestion' : 'libre')}
+          onOpenHosting={() => setHostingModalOpen(true)}
+          selectedAxoId={selectedSlot?.type === 'axo' ? selectedSlot.data.id : null}
+          particulas={particulas}
+          vipTier={vipTier}
+        />
+        {/* Expand cave button */}
+        <button
+          onClick={() => setCavesPanelOpen(true)}
+          className="absolute top-2 left-2 z-[80] px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 text-[8px] font-black text-slate-400 hover:text-amber-300 hover:border-amber-500/30 transition-all"
+        >
+          ⛏️ {caveExpansion ? '⏳' : 'Nv.' + caveLevel}
+        </button>
       </div>
 
-      {/* ── STAKING HUD ── */}
+      {/* Staking chip — small strip above ZonaInferior when active */}
       {stakingData && stakingData.total_accrued > 0 && (
-        <div className="mb-3 flex items-center justify-between rounded-2xl bg-gradient-to-r from-amber-950/30 via-yellow-950/20 to-amber-950/30 border border-amber-500/20 px-4 py-2.5">
-          <div className="flex items-center gap-2">
-            <span className="text-lg">🪙</span>
-            <div>
-              <span className="text-[10px] font-black text-amber-300 uppercase tracking-wider">
-                Staking FRJ
-              </span>
-              <span className="text-[11px] font-black text-amber-400 ml-2 tabular-nums">
-                +{stakingData.total_accrued.toFixed(2)}
-              </span>
-              <span className="text-[8px] text-slate-500 font-bold ml-1">FRJ acumulados</span>
-            </div>
-          </div>
+        <div className="shrink-0 flex items-center justify-between px-4 py-1.5 bg-amber-950/80 border-t border-amber-500/20">
+          <span className="text-[9px] font-black text-amber-300">
+            🪙 +{stakingData.total_accrued.toFixed(2)} FRJ acumulados
+          </span>
           <button
             onClick={handleClaimAllStaking}
             disabled={claimingAll || stakingData.total_accrued < 0.01}
-            className="px-3 py-1.5 rounded-xl font-black text-[9px] uppercase tracking-wider bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+            className="px-2.5 py-1 rounded-lg font-black text-[8px] uppercase bg-amber-600 hover:bg-amber-500 text-white transition-all active:scale-95 disabled:opacity-40"
           >
-            {claimingAll ? '…' : 'Cobrar Todo'}
+            {claimingAll ? '…' : 'Cobrar'}
           </button>
         </div>
       )}
 
-      {/* Capa de lodo turbio al completar excavación */}
-      {caveMuddy && <div className="cave-muddy-overlay rounded-2xl" />}
-
-      {/* 2.5D Cenote scene — oculta axolotitos en partida multijugador */}
-      <NidoScene
-        spots={spots}
-        axolotitos={axolotitos.filter((a: any) => a.status !== 'playing')}
-        clima={clima}
-        caveLevel={caveLevel}
-        viewMode={viewMode}
-        hasTable={hasTable}
-        tableSeats={tableSeats}
-        onSelectSpot={(slot) => setSelectedSlot(slot)}
-        onSelectAxo={(axo) => setSelectedSlot({ type: 'axo', data: axo })}
-        onToggleViewMode={() => setViewMode(m => m === 'libre' ? 'gestion' : 'libre')}
-        onOpenHosting={() => setHostingModalOpen(true)}
-        selectedAxoId={selectedSlot?.type === 'axo' ? selectedSlot.data.id : null}
-        particulas={particulas}
-        vipTier={vipTier}
+      {/* === ZONE 4: SOCIAL + NAV === */}
+      <ZonaInferior
+        amigos={[]}
+        activeTab="santuario"
+        onNavigate={(tab) => cambiarTab?.(tab)}
       />
 
-      {/* ── LEGACY BACKERS BANNER ── */}
+      {/* caveMuddy overlay — fixed overlay */}
+      {caveMuddy && <div className="cave-muddy-overlay fixed inset-0 pointer-events-none z-[200]" />}
+
+      {/* ── LEGACY BACKERS BANNER — fixed overlay ── */}
       {legacyStatus?.is_legacy_backer && legacyStatus?.eggs_pending > 0 && (
-        <div className="mt-5 bg-gradient-to-r from-amber-950/90 via-yellow-900/80 to-amber-950/90 border-2 border-amber-500/60 rounded-3xl p-5 shadow-[0_0_30px_rgba(245,158,11,0.2)] flex flex-col items-center gap-2 text-center">
-          <div className="text-xl">🥚✨</div>
-          <h3 className="text-sm font-black text-amber-300 uppercase tracking-wider">¡Eres un Fundador Original!</h3>
-          <p className="text-amber-200/70 text-[11px]">
-            Tienes <span className="font-black text-amber-300">{legacyStatus.eggs_pending}</span> Webito(s) Fundador(es) esperándote.
-          </p>
-          <button
-            onClick={reclamarLegacy}
-            disabled={reclamando}
-            className="mt-1 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-900 font-black rounded-full uppercase tracking-widest text-[11px] shadow-amber-500/40 shadow-lg active:scale-95 transition-all disabled:opacity-50"
-          >
-            {reclamando ? 'Reclamando…' : '🎁 Reclamar Webito Fundador Gratis'}
-          </button>
+        <div className="fixed inset-0 z-[115] flex items-end justify-center bg-black/60">
+          <div className="w-full max-w-[430px] bg-gradient-to-r from-amber-950/90 via-yellow-900/80 to-amber-950/90 border-2 border-amber-500/60 rounded-t-3xl p-5 shadow-[0_0_30px_rgba(245,158,11,0.2)] flex flex-col items-center gap-2 text-center">
+            <div className="text-xl">🥚✨</div>
+            <h3 className="text-sm font-black text-amber-300 uppercase tracking-wider">¡Eres un Fundador Original!</h3>
+            <p className="text-amber-200/70 text-[11px]">
+              Tienes <span className="font-black text-amber-300">{legacyStatus.eggs_pending}</span> Webito(s) Fundador(es) esperándote.
+            </p>
+            <button
+              onClick={reclamarLegacy}
+              disabled={reclamando}
+              className="mt-1 px-6 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-slate-900 font-black rounded-full uppercase tracking-widest text-[11px] shadow-amber-500/40 shadow-lg active:scale-95 transition-all disabled:opacity-50"
+            >
+              {reclamando ? 'Reclamando…' : '🎁 Reclamar Webito Fundador Gratis'}
+            </button>
+          </div>
         </div>
       )}
 
