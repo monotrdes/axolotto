@@ -142,7 +142,7 @@ def stake_axolotito(
 
     axolotito.status = status
     axolotito.last_staking_claim = datetime.utcnow()
-    axolotito.accrued_unclaimed = 0.0
+    axolotito.accrued_unclaimed = 0
 
     session.add(axolotito)
     session.commit()

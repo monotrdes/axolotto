@@ -5,6 +5,7 @@ from sqlmodel import Session, select, func
 from pydantic import BaseModel
 from typing import List, Optional
 from app.database import get_session
+from app.core.config import FRJ_DECIMALS_BACKEND
 from app.models.economy import CurrencyType, TransactionType
 from app.services.shop_service import ShopService
 from app.services.bank_service import BankService
@@ -238,7 +239,7 @@ def roll_gashapon(
     """Lanza el Gashapón de Axolotto consumiendo FRJ para obtener un accesorio o comida premium."""
     wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
 
-    cost = 1000.0 if request.roll_type == "common" else 2500.0
+    cost = 1000 * (10 ** FRJ_DECIMALS_BACKEND) if request.roll_type == "common" else 2500 * (10 ** FRJ_DECIMALS_BACKEND)
     if wallet.frijolitos < cost:
         raise HTTPException(
             status_code=400,

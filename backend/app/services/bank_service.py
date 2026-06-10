@@ -3,12 +3,15 @@ from fastapi import HTTPException
 from app.models.economy import Wallet, TransactionLedger, CurrencyType, TransactionType
 from app.models.user import User
 from app.services.web3_service import Web3Service
+from app.core.config import FRJ_DECIMALS_BACKEND
 
 # Constante: La comisión de la casa para transferencias P2P (Ej: 5%)
-P2P_FEE_PERCENTAGE = 0.05
+# En basis points: 500 = 5.00%
+P2P_FEE_BPS = 500
+P2P_FEE_DENOMINATOR = 10000
 
 
-def assert_multijugador_currency(wallet: Wallet, amount_frj: float) -> None:
+def assert_multijugador_currency(wallet: Wallet, amount_frj: int) -> None:
     """
     Guard de compliance legal: el juego multijugador SOLO acepta Frijolitos (FRJ).
 
@@ -23,7 +26,8 @@ def assert_multijugador_currency(wallet: Wallet, amount_frj: float) -> None:
         raise HTTPException(
             status_code=402,
             detail=f"Saldo insuficiente de Frijolitos (FRJ). "
-                   f"Tienes {wallet.frijolitos:.2f} FRJ y necesitas {amount_frj:.2f} FRJ. "
+                   f"Tienes {wallet.frijolitos / (10**FRJ_DECIMALS_BACKEND):.2f} FRJ "
+                   f"y necesitas {amount_frj / (10**FRJ_DECIMALS_BACKEND):.2f} FRJ. "
                    f"El multijugador solo acepta FRJ, no Axofichas (AXF)."
         )
 
@@ -45,7 +49,7 @@ class BankService:
         return wallet
 
     @staticmethod
-    def admin_deposit(session: Session, user_id: str, amount: float, currency: CurrencyType, description: str):
+    def admin_deposit(session: Session, user_id: str, amount: int, currency: CurrencyType, description: str):
         """Deposita dinero y, si son Axofichas, dispara la transacción en la Blockchain."""
         if amount <= 0:
             raise HTTPException(status_code=400, detail="El monto debe ser mayor a cero.")
@@ -76,7 +80,8 @@ class BankService:
         elif currency == CurrencyType.GEMA_ALGA:
             wallet.frijolitos += amount
         else:
-            setattr(wallet, currency.value, getattr(wallet, currency.value) + int(amount))
+            # Fragmentos ya son enteros
+            setattr(wallet, currency.value, getattr(wallet, currency.value) + amount)
 
         # 3. Guardamos el registro inmutable en PostgreSQL
         ledger_entry = TransactionLedger(
@@ -105,7 +110,7 @@ class BankService:
         return respuesta
 
     @staticmethod
-    def transfer_p2p(session: Session, sender_id: str, receiver_id: str, amount: float, currency: CurrencyType):
+    def transfer_p2p(session: Session, sender_id: str, receiver_id: str, amount: int, currency: CurrencyType):
         """Transferencia entre amigos cobrando la comisión de la casa."""
         if amount <= 0:
             raise HTTPException(status_code=400, detail="El monto a enviar debe ser mayor a cero.")
@@ -132,8 +137,8 @@ class BankService:
         if current_balance < amount:
             raise HTTPException(status_code=400, detail="Fondos insuficientes.")
 
-        # 2. Calcular la tajada del Rey (Comisión)
-        fee = amount * P2P_FEE_PERCENTAGE
+        # 2. Calcular la tajada del Rey (Comisión) — aritmética entera (VULN-06)
+        fee = amount * P2P_FEE_BPS // P2P_FEE_DENOMINATOR
         amount_after_fee = amount - fee
 
         try:

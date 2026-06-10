@@ -202,11 +202,11 @@ class ShopService:
         if not price:
             raise HTTPException(status_code=400, detail="Este item no se puede comprar con esa moneda.")
 
-        # Descuento VIP (solo en AXF, excluye Webitos)
+        # Descuento VIP (solo en AXF, excluye Webitos) — VULN-06: aritmética entera
         if payment_currency == CurrencyType.AXOGEMA and user.is_vip and user.vip_tier and item.item_type not in [ItemType.EGG]:
-            vip_discount = VIP_CONFIG.get(user.vip_tier, {}).get("discount", 0.0)
-            if vip_discount:
-                price = round(price * (1 - vip_discount), 2)
+            discount_bps = VIP_CONFIG.get(user.vip_tier, {}).get("discount_bps", 0)
+            if discount_bps:
+                price = price * (10000 - discount_bps) // 10000
 
         current_balance = wallet.axofichas if payment_currency == CurrencyType.AXOGEMA else wallet.frijolitos
         
@@ -243,7 +243,7 @@ class ShopService:
 
             # --- CURRENCY PACK: intercambio AXF → FRJ ---
             if item.item_type == ItemType.CURRENCY_PACK:
-                frj_reward = float((item.item_metadata or {}).get("gal_amount", 0.0))
+                frj_reward = int((item.item_metadata or {}).get("gal_amount", 0))
                 wallet.frijolitos += frj_reward
 
                 if user.wallet_address and settings.GEMA_ALGA_ADDRESS:
@@ -255,7 +255,7 @@ class ShopService:
                 ledger = TransactionLedger(
                     user_id=user_id, amount=price, currency=payment_currency,
                     tx_type=TransactionType.MARKET_BUY,
-                    description=f"Intercambio de AXF por {int(frj_reward)} Frijolitos",
+                    description=f"Intercambio de AXF por {frj_reward} Frijolitos",
                     item_id=item.id
                 )
                 session.add(wallet)
@@ -450,15 +450,15 @@ class ShopService:
         if not config:
             raise HTTPException(status_code=400, detail="Tier VIP inválido.")
 
-        base_price = float(config["price_axg"])
+        base_price = int(config["price_axg"])
 
         # Crédito proporcional si ya tiene VIP activo y está subiendo de nivel
-        credit_axg = 0.0
+        credit_axg = 0
         if user.is_vip and user.vip_tier and user.vip_tier != tier:
             current_config = VIP_CONFIG.get(user.vip_tier, {})
             days_left = max((user.vip_expires_at - datetime.utcnow()).days, 0)
-            daily_rate = current_config.get("price_axg", 0) / 30
-            credit_axg = min(round(daily_rate * days_left, 2), base_price - 1)
+            daily_rate = current_config.get("price_axg", 0) // 30  # VULN-06: división entera
+            credit_axg = min(daily_rate * days_left, base_price - 1)
 
         final_price = base_price - credit_axg
 
@@ -522,9 +522,9 @@ class ShopService:
         # Bono de bienvenida (solo primera activación de este tier)
         tiers_activated = json.loads(user.vip_tiers_activated or "[]")
         is_first_activation = tier not in tiers_activated
-        welcome_frj = 0.0
+        welcome_frj = 0
         if is_first_activation:
-            welcome_frj = float(config.get("welcome_gal", 0))
+            welcome_frj = int(config.get("welcome_gal", 0))
             if welcome_frj > 0:
                 wallet.frijolitos += welcome_frj
 
@@ -624,15 +624,15 @@ class ShopService:
         if not config:
             raise HTTPException(status_code=400, detail="Tier VIP inválido.")
 
-        base_price = float(config["price_axg"])
-        credit_axg = 0.0
+        base_price = int(config["price_axg"])
+        credit_axg = 0
         days_left = 0
 
         if user.is_vip and user.vip_tier and user.vip_tier != target_tier:
             current_config = VIP_CONFIG.get(user.vip_tier, {})
             days_left = max((user.vip_expires_at - datetime.utcnow()).days, 0)
-            daily_rate = current_config.get("price_axg", 0) / 30
-            credit_axg = min(round(daily_rate * days_left, 2), base_price - 1)
+            daily_rate = current_config.get("price_axg", 0) // 30  # VULN-06: división entera
+            credit_axg = min(daily_rate * days_left, base_price - 1)
 
         new_expires = datetime.utcnow() + timedelta(days=30)
 
@@ -780,7 +780,7 @@ class ShopService:
         # Ledger de la apertura
         ledger = TransactionLedger(
             user_id=user_id,
-            amount=0.0,
+            amount=0,
             currency=CurrencyType.GEMA_ALGA, # Dummy currency type since it's an unboxing
             tx_type=TransactionType.BURN,
             description=f"Apertura diferida de Booster: {item.name}",

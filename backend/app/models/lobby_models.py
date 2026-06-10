@@ -9,27 +9,27 @@ class MultiplayerGameLog(SQLModel, table=True):
     axo_name: str
     room_name: str
     outcome: str       # "Victoria", "Derrota"
-    net_gal: float
+    net_gal: int                           # VULN-06: unidad mínima entera
     xp_gained: int
     # Prize breakdown (2026-06 — multiplayer prize clarity)
     prize_breakdown_json: Optional[str] = Field(default=None)  # JSON: [{prize_type, label, gross_gal, luck_bonus, vip_bonus}]
     won_premio_1: bool = Field(default=False)
     won_premio_2: bool = Field(default=False)
     won_jackpot: bool = Field(default=False)
-    entry_fee_paid: float = Field(default=0.0)
-    gross_prize_gal: float = Field(default=0.0)
+    entry_fee_paid: int = Field(default=0)  # VULN-06: unidad mínima entera
+    gross_prize_gal: int = Field(default=0) # VULN-06: unidad mínima entera
     notified: bool = Field(default=False, index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 class TreasuryVault(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    balance: float = Field(default=0.0) # Acumulado de la comisión del 5% de la casa
+    balance: int = Field(default=0)  # VULN-06: unidad mínima entera
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 class JackpotVault(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
-    current_amount: float = Field(default=1000.0) # Inicia en 1000.0 GAL de fondos de proyecto
-    seed_amount: float = Field(default=1000.0)    # Semilla de reinicio estándar
+    current_amount: int = Field(default=10_000_000)  # VULN-06: 1000 FRJ en unidad mínima
+    seed_amount: int = Field(default=10_000_000)     # VULN-06: 1000 FRJ en unidad mínima
     last_won_at: Optional[datetime] = None
     last_winner_axo_id: Optional[int] = None
     updated_at: datetime = Field(default_factory=datetime.utcnow)
@@ -38,7 +38,7 @@ class JackpotWin(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     axo_id: int = Field(foreign_key="axolotito.id")
     user_id: str = Field(foreign_key="user.privy_did")
-    amount_won: float
+    amount_won: int                        # VULN-06: unidad mínima entera
     cards_drawn_count: int
     won_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -46,7 +46,7 @@ class GameRoom(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str # e.g. "Charco de Novatos #1"
     room_type: str # "rookie" o "champion" o "player_hosted"
-    entry_fee_gal: float
+    entry_fee_gal: int                     # VULN-06: unidad mínima entera
     status: str = Field(default="waiting") # waiting, playing, finished
     created_at: datetime = Field(default_factory=datetime.utcnow)
     # Player-hosted rooms (cave table)

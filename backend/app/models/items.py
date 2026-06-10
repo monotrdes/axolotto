@@ -26,11 +26,11 @@ class ItemCatalog(SQLModel, table=True):
     item_type: ItemType
     rarity: Rarity = Field(default=Rarity.COMMON)
     
-    # --- NUEVA ECONOMÍA ---
-    price_axg: Optional[float] = Field(default=None) # Precio en dinero real (Ej. 50.0)
-    price_gal: Optional[float] = Field(default=None) # Precio en esfuerzo (Ej. 500.0)
+    # --- NUEVA ECONOMÍA (VULN-06: montos en unidad mínima entera) ---
+    price_axg: Optional[int] = Field(default=None) # Precio en AXF (6 decimales)
+    price_gal: Optional[int] = Field(default=None) # Precio en FRJ (4 decimales)
     is_active: bool = Field(default=True)            # Para ocultar ítems agotados de la tienda visual
-    # ----------------------
+    # -----------------------------------------------------------------
     
     is_sellable: bool = Field(default=True)
     max_supply: Optional[int] = None # Aquí es donde pondremos los límites (420, 1260, etc.)

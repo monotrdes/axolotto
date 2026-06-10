@@ -11,9 +11,10 @@ from app.core.prices import MULTIPLAYER_ROOMS
 
 _rng = random.SystemRandom()
 
-# Champion: max payout = win_prize * 1.65 = 290 * 1.65 = 478.5 GAL gross
-# (luck at stat_luck=100 → +10%, streak cap → +50%, combined = x1.65)
-MAX_WIN_MULTIPLIER: float = 1.65
+# Champion: max payout = win_prize * 1.65 (luck +10%, streak +50% → combined x1.65)
+# Basis points: 165 = x1.65. Division by 100 after multiplication.
+MAX_WIN_MULTIPLIER: float = 1.65  # legacy float — usar MAX_WIN_MULTIPLIER_BPS
+MAX_WIN_MULTIPLIER_BPS: int = 165  # 1.65x en basis points (VULN-06)
 
 # ---------------------------------------------------------------------------
 # ROOM_CONFIG — centralised balance constants.

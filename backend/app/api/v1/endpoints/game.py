@@ -5,6 +5,7 @@ from sqlmodel import Session
 
 from app.database import get_session
 from app.core.auth import get_verified_user_id
+from app.core.config import frj_to_internal
 from app.services.game_service import GameService
 from app.services.cave_service import get_cave, equip_cave_item, unequip_cave_item
 
@@ -42,9 +43,9 @@ def play_match(
         room_name=req.room_name,
         multiplier=req.multiplier,
         bot_enabled=req.bot_enabled,
-        bot_budget_gal=req.bot_budget_gal,
-        bot_loss_limit_pct=req.bot_loss_limit_pct,
-        bot_profit_limit_pct=req.bot_profit_limit_pct,
+        bot_budget_gal=frj_to_internal(req.bot_budget_gal),
+        bot_loss_limit_pct=frj_to_internal(req.bot_loss_limit_pct),
+        bot_profit_limit_pct=frj_to_internal(req.bot_profit_limit_pct),
         session=session,
         verified_user_id=verified_user_id,
     )

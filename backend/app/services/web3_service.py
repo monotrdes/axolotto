@@ -10,7 +10,7 @@ El modo se configura via BLOCKCHAIN_MODE en el .env.
 Los ABIs se cargan desde los artifacts de Foundry en contracts/out/
 """
 from web3 import Web3
-from app.core.config import settings
+from app.core.config import settings, AXF_BACKEND_TO_WEI_FACTOR, FRJ_BACKEND_TO_WEI_FACTOR
 import json
 import threading
 import os
@@ -134,41 +134,57 @@ class Web3Service:
     # ── FRJ (Frijolito — ERC-20) ──────────────────────────────────────────────
 
     @staticmethod
-    def mint_frj(to_address: str, amount: float) -> str:
-        """Acuña FRJ para un jugador (recompensa, depósito admin)."""
+    def mint_frj(to_address: str, amount: int) -> str:
+        """Acuña FRJ para un jugador (recompensa, depósito admin).
+
+        Args:
+            amount: Monto en unidad mínima entera de backend (4 decimales).
+        """
         w3 = Web3Service._get_w3()
         to = Web3.to_checksum_address(to_address)
-        amount_wei = w3.to_wei(amount, 'ether')
+        amount_wei = amount * FRJ_BACKEND_TO_WEI_FACTOR
         abi = _load_abi("Frijolito") or _ERC20_MINT_ABI
         contract = w3.eth.contract(address=Web3.to_checksum_address(settings.GEMA_ALGA_ADDRESS), abi=abi)
         return Web3Service._send_tx(contract.functions.mint(to, amount_wei), w3)
 
     @staticmethod
-    def burn_frj(from_address: str, amount: float) -> str:
-        """Quema FRJ de un jugador (cuota de entrada, compra en tienda)."""
+    def burn_frj(from_address: str, amount: int) -> str:
+        """Quema FRJ de un jugador (cuota de entrada, compra en tienda).
+
+        Args:
+            amount: Monto en unidad mínima entera de backend (4 decimales).
+        """
         w3 = Web3Service._get_w3()
         from_addr = Web3.to_checksum_address(from_address)
-        amount_wei = w3.to_wei(amount, 'ether')
+        amount_wei = amount * FRJ_BACKEND_TO_WEI_FACTOR
         abi = _load_abi("Frijolito") or _ERC20_MINT_ABI
         contract = w3.eth.contract(address=Web3.to_checksum_address(settings.GEMA_ALGA_ADDRESS), abi=abi)
         return Web3Service._send_tx(contract.functions.burn(from_addr, amount_wei), w3)
 
     @staticmethod
-    def transferir_axofichas(to_address: str, amount: float) -> str:
-        """Envía AXF desde el Treasury a un jugador."""
+    def transferir_axofichas(to_address: str, amount: int) -> str:
+        """Envía AXF desde el Treasury a un jugador.
+
+        Args:
+            amount: Monto en unidad mínima entera de backend (6 decimales).
+        """
         w3 = Web3Service._get_w3()
         to = Web3.to_checksum_address(to_address)
-        amount_wei = w3.to_wei(amount, 'ether')
+        amount_wei = amount * AXF_BACKEND_TO_WEI_FACTOR
         abi = _load_abi("Axoficha") or _ERC20_MINT_ABI
         contract = w3.eth.contract(address=Web3.to_checksum_address(settings.AXOGEMA_ADDRESS), abi=abi)
         return Web3Service._send_tx(contract.functions.mint(to, amount_wei), w3)
 
     @staticmethod
-    def burn_axofichas(from_address: str, amount: float) -> str:
-        """Quema AXF de un jugador."""
+    def burn_axofichas(from_address: str, amount: int) -> str:
+        """Quema AXF de un jugador.
+
+        Args:
+            amount: Monto en unidad mínima entera de backend (6 decimales).
+        """
         w3 = Web3Service._get_w3()
         from_addr = Web3.to_checksum_address(from_address)
-        amount_wei = w3.to_wei(amount, 'ether')
+        amount_wei = amount * AXF_BACKEND_TO_WEI_FACTOR
         abi = _load_abi("Axoficha") or _ERC20_MINT_ABI
         contract = w3.eth.contract(address=Web3.to_checksum_address(settings.AXOGEMA_ADDRESS), abi=abi)
         return Web3Service._send_tx(contract.functions.burn(from_addr, amount_wei), w3)

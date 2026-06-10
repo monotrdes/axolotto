@@ -391,7 +391,7 @@ def _grant_egg_reward(session: Session, user_id: str, reward_type: str | None) -
     if reward_type == "astral":
         session.add(TransactionLedger(
             user_id=user_id,
-            amount=0.0,
+            amount=0,
             currency=CurrencyType.GEMA_ALGA,
             tx_type=TransactionType.WEBITO_UNLOCK,
             description=f"Nivel {8} — Webito Astral de recompensa: {egg.name}",

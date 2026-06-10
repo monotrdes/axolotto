@@ -44,25 +44,26 @@ class Wallet(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: str = Field(foreign_key="user.privy_did", unique=True)
-    
-    # Saldos actuales (Caché rápida)
-    axofichas: float = Field(default=0.0)
-    frijolitos: float = Field(default=0.0)
+
+    # Saldos actuales en unidad mínima entera (VULN-06: sin float)
+    # 1 AXF = 10**6 unidades mínimas, 1 FRJ = 10**4 unidades mínimas
+    axofichas: int = Field(default=0)
+    frijolitos: int = Field(default=0)
 
     @property
-    def axogemas(self) -> float:
+    def axogemas(self) -> int:
         return self.axofichas
 
     @axogemas.setter
-    def axogemas(self, value: float) -> None:
+    def axogemas(self, value: int) -> None:
         self.axofichas = value
 
     @property
-    def gemas_alga(self) -> float:
+    def gemas_alga(self) -> int:
         return self.frijolitos
 
     @gemas_alga.setter
-    def gemas_alga(self, value: float) -> None:
+    def gemas_alga(self, value: int) -> None:
         self.frijolitos = value
 
     def __init__(self, **data):
@@ -84,18 +85,18 @@ class TransactionLedger(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: str = Field(foreign_key="user.privy_did", index=True)
     
-    amount: float
+    amount: int
     currency: CurrencyType
     tx_type: TransactionType
-    
+
     # Para rastrear P2P (quién mandó a quién)
-    related_user_id: Optional[str] = None 
-    
+    related_user_id: Optional[str] = None
+
     # Para vincular transacciones con ítems del catálogo
     item_id: Optional[int] = Field(default=None, foreign_key="itemcatalog.id", index=True)
-    
-    # Para auditoría: ¿cuánta comisión se quedó la casa?
-    fee_applied: float = Field(default=0.0)
+
+    # Para auditoría: ¿cuánta comisión se quedó la casa? (unidad mínima)
+    fee_applied: int = Field(default=0)
     
     description: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -113,20 +114,20 @@ class OrderStatus(str, Enum):
 
 
 class CryptoPurchaseOrder(SQLModel, table=True):
-    """Orden de compra de AXG con cripto. Cada orden corresponde a un pack."""
+    """Orden de compra de AXF con cripto. Cada orden corresponde a un pack."""
     id: str = Field(default_factory=lambda: str(uuid.uuid4()), primary_key=True)
     user_id: str = Field(foreign_key="user.privy_did", index=True)
     pack_id: str                          # "huevito" | "axolotito" | "cenote" | "jackpot"
-    usd_amount: float
-    usdc_amount: float                    # usd_amount + 1% buffer para slippage
-    axg_amount: float                     # AXG a mintear (base + bonus ya calculado)
+    usd_amount: float                     # USD fiat (referencia, 2 decimales)
+    usdc_amount: int                      # USDC en unidad mínima (6 decimales)
+    axg_amount: int                       # AXF en unidad mínima (6 decimales)
     payment_token: str = "USDC"
     treasury_address: str                 # dirección donde el jugador debe enviar
     tx_hash_payment: Optional[str] = Field(default=None, unique=True)  # anti double-mint
     tx_hash_mint: Optional[str] = None
     status: OrderStatus = Field(default=OrderStatus.AWAITING_PAYMENT)
     bonus_applied: Optional[str] = None  # "first_purchase" | "flash_sale"
-    bonus_pct: float = Field(default=0.0)
+    bonus_pct: float = Field(default=0.0)  # porcentaje (0.0-1.0)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     expires_at: datetime                  # created_at + 30 min
     completed_at: Optional[datetime] = None
@@ -178,8 +179,8 @@ class AxfPurchaseRecord(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: str = Field(foreign_key="user.privy_did", index=True)
-    axf_amount: float
-    mxn_amount: float
+    axf_amount: int                       # AXF en unidad mínima (6 decimales)
+    mxn_amount: float                     # MXN fiat (referencia)
     pack_name: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
@@ -189,11 +190,11 @@ class AxfPurchaseRecord(SQLModel, table=True):
         super().__init__(**data)
 
     @property
-    def axg_amount(self) -> float:
+    def axg_amount(self) -> int:
         return self.axf_amount
 
     @axg_amount.setter
-    def axg_amount(self, value: float) -> None:
+    def axg_amount(self, value: int) -> None:
         self.axf_amount = value
 
 AxgPurchaseRecord = AxfPurchaseRecord

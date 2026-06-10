@@ -32,7 +32,7 @@ from app.services.game_logic import (
     check_loterica_line,
     get_winning_line,
     ROOM_CONFIG,
-    MAX_WIN_MULTIPLIER,
+    MAX_WIN_MULTIPLIER_BPS,
     WINNING_LINES,
 )
 from app.services.sal_service import apply_sal_bias
@@ -287,22 +287,23 @@ class GameService:
 
         # --- REWARDS & STATS UPDATE ---
         is_win = winner_name == "player"
-        prize_awarded = 0.0
+        prize_awarded = 0
         streak = axo.cpu_win_streak   # streak BEFORE this game
         streak_bonus_pct = 0          # will be set in win block if applicable
         streak_broken    = False      # will be set in loss block if applicable
 
         if is_win:
             # Win: Prize scaled slightly by Luck stat (+0% to +10% max)
-            luck_bonus = (axo.stat_luck / 1000.0) * win_prize
+            # luck_bonus = (stat_luck / 1000) * win_prize → integer (VULN-06)
+            luck_bonus = axo.stat_luck * win_prize // 1000
             prize_awarded = win_prize + luck_bonus
 
             # Win Streak bonus: +15% per previous consecutive win, capped at +50%
             if streak >= 1:
                 streak_bonus_pct = min(50, streak * 15)
-                prize_awarded   *= 1 + (streak_bonus_pct / 100.0)
+                prize_awarded = prize_awarded * (100 + streak_bonus_pct) // 100
             # Hard cap: luck + streak combined cannot exceed MAX_WIN_MULTIPLIER of base prize
-            prize_awarded = min(prize_awarded, win_prize * MAX_WIN_MULTIPLIER)
+            prize_awarded = min(prize_awarded, win_prize * MAX_WIN_MULTIPLIER_BPS // 100)
             streak_broken         = False
             axo.cpu_win_streak    = streak + 1
 
@@ -311,12 +312,14 @@ class GameService:
 
             # Ledger entry for win
             streak_note = f" (🔥 racha x{streak}, +{streak_bonus_pct}%)" if streak_bonus_pct > 0 else ""
+            from app.core.config import FRJ_DECIMALS_BACKEND
+            _prize_display = prize_awarded / (10 ** FRJ_DECIMALS_BACKEND)
             ledger_win = TransactionLedger(
                 user_id=verified_user_id,
                 amount=prize_awarded,
                 currency=CurrencyType.GEMA_ALGA,
                 tx_type=TransactionType.REWARD,
-                description=f"🏆 ¡Victoria en sala {room_title}! Premio: {prize_awarded:.2f} GAL{streak_note}"
+                description=f"🏆 ¡Victoria en sala {room_title}! Premio: {_prize_display:.2f} FRJ{streak_note}"
             )
             session.add(ledger_win)
 
@@ -332,12 +335,14 @@ class GameService:
             prize_awarded = loss_consolation
             wallet.frijolitos += prize_awarded
 
+            from app.core.config import FRJ_DECIMALS_BACKEND
+            _prize_display = prize_awarded / (10 ** FRJ_DECIMALS_BACKEND)
             ledger_loss = TransactionLedger(
                 user_id=verified_user_id,
                 amount=prize_awarded,
                 currency=CurrencyType.GEMA_ALGA,
                 tx_type=TransactionType.REWARD,
-                description=f"Consolación en sala {room_title}. Premio: {prize_awarded:.2f} GAL"
+                description=f"Consolación en sala {room_title}. Premio: {_prize_display:.2f} FRJ"
             )
             session.add(ledger_loss)
 
@@ -469,7 +474,7 @@ class GameService:
             "room_title": room_title,
             "winner": winner_label,
             "turns": turns,
-            "prize_gal": round(prize_awarded, 2),
+            "prize_gal": prize_awarded,
             "board_xp_gained": win_xp_board if is_win else loss_xp_board,
             "board_level_current": board.level,
             "axo_xp_gained": win_xp_axo if is_win else loss_xp_axo,
@@ -541,7 +546,7 @@ class GameService:
 
         final_restore = energy_restore
         if axo.nature == "glutton":
-            final_restore = int(energy_restore * 1.30)
+            final_restore = energy_restore * 130 // 100  # +30% (VULN-06: integer)
         axo.energy_current = min(max_energy, axo.energy_current + final_restore)
 
         ledger = TransactionLedger(

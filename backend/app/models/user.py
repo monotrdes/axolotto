@@ -27,7 +27,7 @@ class User(SQLModel, table=True):
     last_play_date: Optional[datetime] = Field(default=None)
     daily_play_streak: int = Field(default=0)
     f2p_astral_fragments: int = Field(default=0)
-    f2p_daily_gal_earned: float = Field(default=0.0)
+    f2p_daily_gal_earned: int = Field(default=0)  # VULN-06: FRJ en unidad mínima
     f2p_daily_gal_reset_at: Optional[datetime] = Field(default=None)
     f2p_daily_frags_earned: int = Field(default=0)
     last_f2p_daily_claim_at: Optional[datetime] = Field(default=None)
@@ -44,7 +44,7 @@ class User(SQLModel, table=True):
     vip_expires_at: Optional[datetime] = Field(default=None)
     vip_streak_months: int = Field(default=0)
     vip_streak_last_renewed: Optional[datetime] = Field(default=None)
-    vip_pending_gal: float = Field(default=0.0)                      # GAL disponible para reclamar
+    vip_pending_gal: int = Field(default=0)                          # VULN-06: FRJ en unidad mínima
     vip_pending_gal_expires_at: Optional[datetime] = Field(default=None)  # expiración del lote más antiguo
     vip_last_daily_gal_at: Optional[datetime] = Field(default=None)       # último momento en que se generó GAL diario (Xochimilco)
     vip_tiers_activated: Optional[str] = Field(default="[]")         # JSON array: ["coral", "dorado"]

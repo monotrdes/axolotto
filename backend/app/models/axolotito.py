@@ -34,25 +34,25 @@ class Axolotito(SQLModel, table=True):
     energy_current: int = Field(default=100)        # Energía restante
     sleep_expires_at: Optional[datetime] = Field(default=None, nullable=True)
     last_staking_claim: Optional[datetime] = Field(default=None)
-    accrued_unclaimed: float = Field(default=0.0)
-    escrow_balance_gal: float = Field(default=0.0)   # Banco de custodia (escrow) del Axolotito
+    accrued_unclaimed: int = Field(default=0)          # VULN-06: FRJ en unidad mínima
+    escrow_balance_gal: int = Field(default=0)         # VULN-06: FRJ en unidad mínima
     loyalty_points: int = Field(default=0)          # Puntos de afecto / lealtad acumulados
     cpu_win_streak: int = Field(default=0)          # consecutive CPU wins (resets on loss)
     wants_to_stop: bool = Field(default=False)       # Señal del jugador para retirar al final de la partida actual
-    
+
     # --- Configuración del Bot (Autojuego) ---
     # serialization_alias → frontend recibe nombres AXF (commit rename AXG→AXF)
     bot_enabled: bool = Field(default=False)
-    bot_budget_axg: float = Field(default=0.0, serialization_alias='bot_budget_axf')
-    bot_loss_limit_axg: float = Field(default=0.0, serialization_alias='bot_loss_limit_axf')
-    bot_profit_limit_axg: float = Field(default=0.0, serialization_alias='bot_profit_limit_axf')
+    bot_budget_axg: int = Field(default=0, serialization_alias='bot_budget_axf')      # VULN-06: FRJ unidad mínima
+    bot_loss_limit_axg: int = Field(default=0, serialization_alias='bot_loss_limit_axf')  # VULN-06
+    bot_profit_limit_axg: int = Field(default=0, serialization_alias='bot_profit_limit_axf')  # VULN-06
     assigned_board_id: Optional[int] = Field(default=None, foreign_key="playerboard.id")
-    
+
     # --- Renta y Venta (P2P Market) ---
     is_listed_for_sale: bool = Field(default=False)
-    sale_price_gal: float = Field(default=0.0)
+    sale_price_gal: int = Field(default=0)             # VULN-06: FRJ en unidad mínima
     is_listed_for_rent: bool = Field(default=False)
-    rent_fee_gal: float = Field(default=0.0)
+    rent_fee_gal: int = Field(default=0)               # VULN-06: FRJ en unidad mínima
     rent_share_owner_pct: int = Field(default=0)
     is_rented: bool = Field(default=False)
     renter_id: Optional[str] = Field(default=None, foreign_key="user.privy_did", nullable=True)

@@ -166,7 +166,7 @@ def buy_inventory_listing(
 
     vault = session.exec(select(TreasuryVault)).first()
     if not vault:
-        vault = TreasuryVault(balance=0.0)
+        vault = TreasuryVault(balance=0)
         session.add(vault)
     vault.balance += commission
 

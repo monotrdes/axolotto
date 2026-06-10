@@ -10,6 +10,7 @@ from sqlmodel import Session, select
 from app.database import get_session
 from app.core.prices import MULTIPLAYER_FEES
 from app.core.auth import get_verified_user_id
+from app.core.config import frj_to_internal, frj_to_display, FRJ_DECIMALS_BACKEND
 from app.models.axolotito import Axolotito
 from app.models.board import PlayerBoard
 from app.models.economy import Wallet, CurrencyType, TransactionType, TransactionLedger
@@ -178,10 +179,11 @@ def register_axolotito(
 
     # --- TRANSACCIÓN ECONÓMICA A CUSTODIA (ESCROW) ---
     wallet.frijolitos -= req.budget_gal
-    axo.escrow_balance_gal = req.budget_gal
-    axo.bot_budget_axg = req.budget_gal
-    axo.bot_loss_limit_axg = req.budget_gal * (req.loss_limit_pct / 100.0)
-    axo.bot_profit_limit_axg = req.budget_gal * (req.profit_limit_pct / 100.0)
+    _budget_int = frj_to_internal(req.budget_gal)
+    axo.escrow_balance_gal = _budget_int
+    axo.bot_budget_axg = _budget_int
+    axo.bot_loss_limit_axg = _budget_int * int(req.loss_limit_pct) // 100
+    axo.bot_profit_limit_axg = _budget_int * int(req.profit_limit_pct) // 100
     axo.bot_enabled = True
     axo.status = "playing"
     
@@ -273,7 +275,7 @@ def register_axolotito(
         "mensaje": f"Axolotito registrado con éxito en la sala '{room.name}'",
         "room_name": room.name,
         "entry_fee_gal": room.entry_fee_gal,
-        "escrow_balance_gal": axo.escrow_balance_gal
+        "escrow_balance_gal": frj_to_display(axo.escrow_balance_gal)
     }
 
 @router.get("/lobby")
@@ -327,7 +329,8 @@ def get_jackpot_status(session: Session = Depends(get_session)):
     """Retorna el acumulado del Jackpot de Oro e historial de ganadores recientes."""
     jackpot = session.exec(select(JackpotVault)).first()
     if not jackpot:
-        jackpot = JackpotVault(current_amount=1000.0, seed_amount=1000.0)
+        _jp_seed = 1000 * (10 ** FRJ_DECIMALS_BACKEND)
+        jackpot = JackpotVault(current_amount=_jp_seed, seed_amount=_jp_seed)
         session.add(jackpot)
         session.commit()
         session.refresh(jackpot)
@@ -559,10 +562,11 @@ def join_player_room(
 
     # Mover fondos a escrow (FRJ)
     wallet.frijolitos -= req.budget_gal
-    axo.escrow_balance_gal = req.budget_gal
-    axo.bot_budget_axg = req.budget_gal
-    axo.bot_loss_limit_axg = req.budget_gal * (req.loss_limit_pct / 100.0)
-    axo.bot_profit_limit_axg = req.budget_gal * (req.profit_limit_pct / 100.0)
+    _budget_int = frj_to_internal(req.budget_gal)
+    axo.escrow_balance_gal = _budget_int
+    axo.bot_budget_axg = _budget_int
+    axo.bot_loss_limit_axg = _budget_int * int(req.loss_limit_pct) // 100
+    axo.bot_profit_limit_axg = _budget_int * int(req.profit_limit_pct) // 100
     axo.bot_enabled = True
     axo.status = "playing"
 
@@ -668,7 +672,7 @@ def settle_axolotito_escrow(
     # Otorgar Bono de Afecto (Flat 5 puntos + 1 extra por cada 10 GAL de ganancia neta si aplica)
     loyalty_gained = 5
     if net_performance > 0:
-        loyalty_gained += int(net_performance / 10.0)
+        loyalty_gained += net_performance // 10
         
     # Devolver fondos a la billetera del usuario (FRJ)
     wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
@@ -685,7 +689,7 @@ def settle_axolotito_escrow(
     session.add(ledger_entry)
     
     # Actualizar Axolotito
-    axo.escrow_balance_gal = 0.0
+    axo.escrow_balance_gal = 0
     axo.loyalty_points += loyalty_gained
     axo.status = "sleeping"
     # Sleep duration: 1 minute for quick gameplay testing, reduced by PILA (stamina)
@@ -766,7 +770,7 @@ def get_game_state(
             "player_boards": [],
             "bot_boards": [],
             "tension_level": "low",
-            "escrow_balance": axo.escrow_balance_gal,
+            "escrow_balance": frj_to_display(axo.escrow_balance_gal),
             "current_card": None,
         }
 
@@ -824,7 +828,7 @@ def get_game_state(
         "player_boards": player_boards,
         "bot_boards": bot_boards,
         "tension_level": game_state.tension_level,
-        "escrow_balance": axo.escrow_balance_gal,
+        "escrow_balance": frj_to_display(axo.escrow_balance_gal),
         "current_card": current_card,
     }
 
