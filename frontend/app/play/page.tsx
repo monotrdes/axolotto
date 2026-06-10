@@ -5,7 +5,7 @@ import axios from "axios";
 
 import { usePrivy } from "@privy-io/react-auth";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { LogOut } from "lucide-react";
+import { LogOut, Settings } from "lucide-react";
 import { useBlockchainEvents } from "@/hooks/useBlockchainEvents";
 import { useToast } from "@/context/ToastContext";
 
@@ -17,6 +17,7 @@ import PlayMode from "@/components/PlayMode";
 import Rankings from "@/components/Rankings";
 import Gashapon from "@/components/Gashapon";
 import VipModal, { type VipNotification } from "@/components/VipModal";
+import SettingsModal from "@/components/SettingsModal";
 import { GameCanvas } from "@/components/world/GameCanvas";
 import type { GameCanvasHandle } from "@/components/world/GameCanvas";
 import type { WorldScene } from "@/components/world/WorldScene";
@@ -73,6 +74,7 @@ export default function Home() {
   const [earningsQueue, setEarningsQueue] = useState<number[]>([]);
   const [openBancoCount, setOpenBancoCount] = useState(0);
   const [vipModalOpen, setVipModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [tickerFeed, setTickerFeed]     = useState<any[]>([]);
   const worldSceneRef = useRef<WorldScene | null>(null);
   const gameCanvasRef = useRef<GameCanvasHandle | null>(null);
@@ -558,6 +560,13 @@ export default function Home() {
               />
 
               <button
+                onClick={() => setSettingsModalOpen(true)}
+                className="p-2 rounded-full bg-[#1C1C35]/80 border border-white/5 text-gray-500 hover:text-[#FF8DA1] hover:bg-[#FF8DA1]/15 hover:border-[#FF8DA1]/30 transition-all"
+                title="Ajustes"
+              >
+                <Settings size={13} />
+              </button>
+              <button
                 onClick={logout}
                 className="p-2 rounded-full bg-[#1C1C35]/80 border border-white/5 text-gray-500 hover:text-red-400 hover:bg-red-900/20 hover:border-red-500/30 transition-all"
                 title="Desconectar"
@@ -591,6 +600,14 @@ export default function Home() {
             balances={datosBanco}
             recargarSaldos={actualizarSaldosSilencioso}
             onVipSuccess={toast.vip}
+          />
+
+          {/* Settings Modal */}
+          <SettingsModal
+            isOpen={settingsModalOpen}
+            onClose={() => setSettingsModalOpen(false)}
+            onLogout={logout}
+            onResetTutorial={handleDevReset}
           />
 
           {/* Ticker de Actividad Global */}

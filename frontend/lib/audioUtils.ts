@@ -40,11 +40,17 @@ function playNote(
   osc.stop(startTime + duration + 0.05);
 }
 
+function isSoundEnabled(): boolean {
+  if (typeof window === "undefined") return false;
+  return localStorage.getItem("sound_effects_enabled") !== "false";
+}
+
 /**
  * Ascending arpeggio do-mi-sol (~300ms).
  * Safe to call even if AudioContext is suspended — silently no-ops.
  */
 export function playGainSound(): void {
+  if (!isSoundEnabled()) return;
   const ctx = getCtx();
   if (!ctx || ctx.state !== "running") return;
 
@@ -59,6 +65,7 @@ export function playGainSound(): void {
  * Descending sol-mi-do (~300ms).
  */
 export function playLossSound(): void {
+  if (!isSoundEnabled()) return;
   const ctx = getCtx();
   if (!ctx || ctx.state !== "running") return;
 
@@ -72,6 +79,7 @@ export function playLossSound(): void {
  * Single ding at 440 Hz (~150ms).
  */
 export function playPurchaseSound(): void {
+  if (!isSoundEnabled()) return;
   const ctx = getCtx();
   if (!ctx || ctx.state !== "running") return;
 
@@ -83,6 +91,7 @@ export function playPurchaseSound(): void {
  * 4-note chord (~500ms) — uses C major 7 (C4, E4, G4, B4).
  */
 export function playLegendarySound(): void {
+  if (!isSoundEnabled()) return;
   const ctx = getCtx();
   if (!ctx || ctx.state !== "running") return;
 
@@ -92,3 +101,4 @@ export function playLegendarySound(): void {
   playNote(ctx, 392.00, now + 0.10, 0.5, 0.35, "sine");
   playNote(ctx, 493.88, now + 0.15, 0.5, 0.35, "sine");
 }
+
