@@ -593,7 +593,7 @@ def edit_board_operation(
 
 
 def delete_board_operation(board_id: int, user_id: str, session: Session) -> dict:
-    """Desarma y marca como inactiva (dead) la tabla, perdiendo una carta al azar, liberando las otras 15 y cobrando el staking."""
+    """Desarma la tabla: devuelve las 16 cartas, cobra 1 AXF y preserva 80% del XP en el slot."""
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -634,19 +634,19 @@ def delete_board_operation(board_id: int, user_id: str, session: Session) -> dic
     # 1. Validar y cobrar costo de desarmado (Solvente)
     cost = CONSUMABLE_PRICES["solvente"]
     wallet = BankService.get_or_create_wallet(session, user_id)
-    if wallet.frijolitos < cost:
+    if wallet.axofichas < cost:
         raise HTTPException(
             status_code=400,
-            detail=f"Saldo insuficiente. Desarmar una tabla cuesta {cost} GAL para el Solvente de Pegamento.",
+            detail=f"Saldo insuficiente. Desarmar cuesta 1 AXF (Solvente de Pegamento).",
         )
 
-    wallet.frijolitos -= cost
+    wallet.axofichas -= cost
     ledger_delete = TransactionLedger(
         user_id=user_id,
         amount=cost,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.AXOFICHA,
         tx_type=TransactionType.MARKET_BUY,
-        description=f"Costo por desarmar tabla #{board_id} (Solvente de Pegamento)",
+        description=f"Solvente de Pegamento para desarmar tabla #{board_id}",
     )
     session.add(ledger_delete)
 
@@ -706,6 +706,29 @@ def delete_board_operation(board_id: int, user_id: str, session: Session) -> dic
             skip_index=None,
         )
 
+    # Preservar 80% del XP total en el slot para la próxima tabla
+    preserved_xp_out = 0
+    if board.slot_index is not None:
+        total_xp = _total_board_xp(board)
+        preserved = int(total_xp * 0.8)
+        preserved_xp_out = preserved
+        slot_record = session.exec(
+            select(PlayerBoardSlot).where(
+                PlayerBoardSlot.user_id == user_id,
+                PlayerBoardSlot.slot_index == board.slot_index,
+            )
+        ).first()
+        if slot_record:
+            slot_record.preserved_xp = preserved
+            session.add(slot_record)
+        else:
+            session.add(PlayerBoardSlot(
+                user_id=user_id,
+                slot_index=board.slot_index,
+                preserved_xp=preserved,
+                boards_created=1,
+            ))
+
     # 3. Marcar tabla como muerta y limpiar estados activos de renta
     board.is_dead = True
     board.is_listed_for_rent = False
@@ -715,8 +738,9 @@ def delete_board_operation(board_id: int, user_id: str, session: Session) -> dic
     session.commit()
 
     return {
-        "mensaje": "Tabla desarmada con éxito usando Solvente de Pegamento. Las 16 cartas han vuelto a tu inventario intactas.",
+        "mensaje": "Tabla desarmada. Las 16 cartas han vuelto a tu inventario. El 80% del XP queda guardado en el slot.",
         "lost_card": None,
+        "preserved_xp": preserved_xp_out,
         "tx_blockchain": tx_blockchain,
     }
 

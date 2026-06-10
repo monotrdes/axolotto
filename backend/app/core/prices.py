@@ -75,7 +75,7 @@ CONSUMABLE_PRICES = {
     "vip_axolite": 1800 * _AXF,         # Pase Axolite VIP 30 días (AXF)
     "alimento_comun": 30 * _FRJ,        # Algae Pellet (FRJ)
     "alimento_premium": 150 * _FRJ,     # Brine Shrimp (FRJ)
-    "solvente": 120 * _FRJ,             # Solvente de Pegamento (FRJ)
+    "solvente": 1 * _AXF,               # 1 AXF (era 120 FRJ)
     "upgrade_board_slots": 300 * _AXF,  # Upgrade Board Slots (AXF)
 }
 
