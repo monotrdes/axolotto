@@ -21,11 +21,21 @@ Traduce la petición en `$ARGUMENTS` a UNA llamada del helper y ejecútala desde
 | Petición | Comando |
 |----------|---------|
 | crear tarea | `create "título" "descripción" [columna] [categoría]` |
-| mover + comentar (preferir sobre move/comment separados) | `status <task-id> <columna> "comentario" [agente]` |
-| solo comentar | `comment <task-id> "texto"` |
-| adjuntar/desvincular doc | `attach <task-id> <ruta-doc>` (`""` desvincula) |
+| mover + comentar (preferir sobre move/comment separados) | `status TASK-ID columna "comentario" [agente]` |
+| solo mover | `move TASK-ID columna [--force] [--force-merge]` |
+| solo comentar | `comment TASK-ID "texto"` |
+| adjuntar/desvincular doc | `attach TASK-ID ruta-doc` (`""` desvincula) |
+| mover todas de una columna | `batch col-origen col-destino [--force]` |
+| eliminar tarea | `delete TASK-ID --force` |
+| cambiar agente | `assign TASK-ID claude\|deepclaude\|agy` |
+| marcar ejecución terminada | `done TASK-ID` |
+| planificación AI | `plan TASK-ID generate\|approve\|cancel` |
+| mergear rama | `git-merge TASK-ID [--force]` |
+| limpiar worktrees | `git-cleanup` |
+| ver diff de tarea | `diff TASK-ID` |
+| estado de agentes | `agents` |
 | listar | `list [columna]` |
-| detalle de una tarea | `get <task-id>` |
+| detalle de una tarea | `get TASK-ID` |
 
 ## Docs adjuntos
 
