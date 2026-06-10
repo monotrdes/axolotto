@@ -9,7 +9,7 @@ from datetime import datetime
 _rng = random.SystemRandom()
 from sqlmodel import Session, select
 
-from app.core.config import VIP_CONFIG, settings, FRJ_DECIMALS_BACKEND
+from app.core.config import VIP_CONFIG, settings, FRJ_DECIMALS_BACKEND, frj_to_internal
 from app.core.prices import MULTIPLAYER_ROOMS
 from app.services.sal_service import sal_slip_chance, room_entropy
 from app.database import engine
@@ -50,6 +50,19 @@ def should_start_room(total_boards: int, elapsed_seconds: float) -> bool:
     if total_boards < 1:
         return False
     return elapsed_seconds >= _max_wait_seconds(total_boards)
+
+
+def _entry_fee_internal(room: GameRoom) -> int:
+    """Devuelve entry_fee_gal en unidades mínimas internas, manejando DB legacy.
+
+    Salas nuevas + player-hosted: human-readable (ej. 10 = 10 FRJ, max 1000).
+    Salas viejas oficiales: internal (ej. 100000 = 10 FRJ en unidad mínima).
+    Umbral: >= 50000 → legacy internal; < 50000 → human-readable.
+    """
+    val = room.entry_fee_gal
+    if val >= 50000:
+        return int(val)  # ya está en unidades mínimas (legacy)
+    return frj_to_internal(val)
 
 
 def check_cuadrito(marked: set) -> bool:
@@ -128,8 +141,9 @@ def get_or_create_waiting_room(
 
     # Si llegamos aquí, necesitamos crear una nueva sala
     fee = MULTIPLAYER_ROOMS.get(_room_type, MULTIPLAYER_ROOMS.get(room_type, {}))
-    _DEFAULT_FEE = 10 * (10 ** FRJ_DECIMALS_BACKEND)  # VULN-06: 10 FRJ en unidad mínima
+    _DEFAULT_FEE = 10  # FRJ human-readable
     fee_val = fee.get("fee", _DEFAULT_FEE) if isinstance(fee, dict) else _DEFAULT_FEE
+    # entry_fee_gal stays human-readable; converted via frj_to_internal() at escrow time
 
     if _room_type == "rookie_pool":
         name = "Charco de Novatos"
@@ -273,7 +287,8 @@ class MultiplayerService:
                 # Axolite VIP paga -15% de cuota de entrada (VULN-06: aritmética entera)
                 owner = _users_by_did.get(axo.user_id)
                 entry_discount_bps = VIP_CONFIG.get(getattr(owner, "vip_tier", "") or "", {}).get("multiplayer_discount_bps", 0) if (owner and owner.is_vip) else 0
-                effective_fee = room.entry_fee_gal * (10000 - entry_discount_bps) // 10000
+                fee_int = _entry_fee_internal(room)
+                effective_fee = fee_int * (10000 - entry_discount_bps) // 10000
                 entry_fee_total = len(b_ids) * effective_fee
                 axo.escrow_balance_gal = max(0, axo.escrow_balance_gal - entry_fee_total)
                 
@@ -330,7 +345,7 @@ class MultiplayerService:
                 
             # --- 4. CÁLCULO Y REPARTO DE LA BOLSA (POTS) ---
             # La bolsa total se calcula en base a los buy-ins pagados por humanos
-            total_collected_gal = human_boards_count * room.entry_fee_gal
+            total_collected_gal = human_boards_count * _entry_fee_internal(room)
 
             # Reparto de comisiones (VULN-06: aritmética entera, 5% = 5/100)
             treasury_share = total_collected_gal * 5 // 100
@@ -699,7 +714,7 @@ class MultiplayerService:
             p2_winner_axo_ids = {w["axo_id"] for w in premio_2_winners if not w["is_bot"]}
 
             for axo_id, (axo_obj, b_ids) in axo_registrations_map.items():
-                entry_cost = len(b_ids) * room.entry_fee_gal
+                entry_cost = len(b_ids) * _entry_fee_internal(room)
                 prize_won = axo_prize_won.get(axo_id, 0)
                 net_gal = prize_won - entry_cost
                 xp_total = axo_xp_gained.get(axo_id, 0)
@@ -792,7 +807,7 @@ class MultiplayerService:
                 triggered_stop_loss = (axo_obj.escrow_balance_gal <= (axo_obj.bot_budget_axg - loss_limit_val))
                 triggered_take_profit = (axo_obj.escrow_balance_gal >= (axo_obj.bot_budget_axg + profit_limit_val))
                 no_energy = axo_obj.energy_current < 10
-                no_funds = axo_obj.escrow_balance_gal < (len(b_ids) * room.entry_fee_gal)
+                no_funds = axo_obj.escrow_balance_gal < (len(b_ids) * _entry_fee_internal(room))
                 wants_to_stop = axo_obj.wants_to_stop
 
                 if triggered_stop_loss or triggered_take_profit or no_energy or no_funds or wants_to_stop:

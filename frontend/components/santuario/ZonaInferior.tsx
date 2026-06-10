@@ -2,8 +2,6 @@
 
 import { useState } from "react";
 
-type NavTab = "santuario" | "jugar" | "mercado" | "amigos" | "perfil";
-
 interface Amigo {
   id: string;
   name: string;
@@ -14,26 +12,17 @@ interface Amigo {
 
 interface ZonaInferiorProps {
   amigos?: Amigo[];
-  activeTab?: NavTab;
-  // Called when user taps a nav tab
-  onNavigate?: (tab: NavTab) => void;
+  // Called when user taps the amigos bar → navigate to full Amigos page
+  onOpenAmigos?: () => void;
   // Called when user taps action on a friend
   onLike?: (amigoId: string) => void;
   onInvite?: (amigoId: string) => void;
   onVisit?: (amigoId: string) => void;
 }
 
-const NAV_ITEMS: { tab: NavTab; icon: string; label: string }[] = [
-  { tab: "santuario", icon: "🦎", label: "Santuario" },
-  { tab: "jugar", icon: "🎲", label: "Jugar" },
-  { tab: "amigos", icon: "👥", label: "Amigos" },
-  { tab: "perfil", icon: "👤", label: "Perfil" },
-];
-
 export default function ZonaInferior({
   amigos = [],
-  activeTab = "santuario",
-  onNavigate,
+  onOpenAmigos,
   onLike,
   onInvite,
   onVisit,
@@ -42,42 +31,61 @@ export default function ZonaInferior({
   const [showAllFriends, setShowAllFriends] = useState(false);
 
   const toggleExpand = () => setExpanded((prev) => !prev);
-
   const displayedFriends = showAllFriends ? amigos : amigos.slice(0, 4);
+
+  const onlineCount = amigos.filter((a) => a.isOnline).length;
 
   return (
     <div className="shrink-0 border-t border-slate-700/60 bg-slate-900/95">
-      {/* ── Expand handle ── */}
+      {/* ── Friends bar (collapsed = compact indicator, tap to expand or open full page) ── */}
       <button
         onClick={toggleExpand}
-        className="w-full flex items-center justify-center py-1 hover:bg-white/5 transition-colors"
+        className="w-full flex items-center justify-between px-3 py-1.5 hover:bg-white/5 transition-colors"
         aria-label={expanded ? "Colapsar amigos" : "Expandir amigos"}
       >
-        <span
-          className={`text-[10px] text-slate-500 transition-transform duration-300 ${
-            expanded ? "rotate-180" : ""
-          }`}
-        >
-          {expanded ? "▲" : "▼"}
-        </span>
-        {!expanded && amigos.length > 0 && (
-          <span className="text-[9px] text-slate-600 ml-1.5 font-bold">
-            {amigos.length} amigo{amigos.length !== 1 ? "s" : ""}
-            {amigos.filter((a) => a.isOnline).length > 0 && (
-              <span className="text-emerald-500 ml-1">
-                · {amigos.filter((a) => a.isOnline).length} online
-              </span>
-            )}
+        <div className="flex items-center gap-2">
+          <span
+            className={`text-[10px] text-slate-500 transition-transform duration-300 ${
+              expanded ? "rotate-180" : ""
+            }`}
+          >
+            {expanded ? "▲" : "▼"}
           </span>
-        )}
+          <span className="text-xs font-bold text-white">👥</span>
+          {amigos.length > 0 ? (
+            <span className="text-[10px] text-slate-300 font-bold">
+              {amigos.length} amigo{amigos.length !== 1 ? "s" : ""}
+              {onlineCount > 0 && (
+                <span className="text-emerald-400 ml-1">
+                  · {onlineCount} online
+                </span>
+              )}
+            </span>
+          ) : (
+            <span className="text-[10px] text-slate-600">
+              Sin amigos — toca para invitar
+            </span>
+          )}
+        </div>
+
+        {/* "Ver todos" → opens full Amigos page */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpenAmigos?.();
+          }}
+          className="text-[9px] px-2.5 py-1 rounded-full bg-teal-900/40 border border-teal-500/20 text-teal-400 font-bold hover:bg-teal-800/50 active:scale-95 transition-all"
+        >
+          Ver todos →
+        </button>
       </button>
 
       {/* ── Expanded friends list ── */}
       {expanded && (
-        <div className="overflow-hidden animate-in slide-in-from-bottom-2 duration-200">
+        <div className="overflow-hidden animate-in slide-in-from-bottom-2 duration-200 border-t border-slate-700/40">
           {displayedFriends.length === 0 ? (
             <p className="text-center text-[10px] text-slate-500 py-3">
-              Sin amigos aún. ¡Invita a alguien con tu código de referido!
+              Sin amigos aún. ¡Comparte tu código de referido para invitar!
             </p>
           ) : (
             <>
@@ -158,28 +166,6 @@ export default function ZonaInferior({
           )}
         </div>
       )}
-
-      {/* ── Nav bar (always visible) ── */}
-      <div className="flex items-center border-t border-slate-700/60">
-        {NAV_ITEMS.map(({ tab, icon, label }) => {
-          const isActive = tab === activeTab;
-          return (
-            <button
-              key={tab}
-              onClick={() => onNavigate?.(tab)}
-              className={`flex-1 flex flex-col items-center py-2.5 gap-0.5 ${
-                isActive ? "text-white" : "text-slate-500"
-              }`}
-            >
-              <span className="text-base leading-none">{icon}</span>
-              <span className="text-[9px] leading-none font-bold">{label}</span>
-              {isActive && (
-                <span className="w-4 h-0.5 rounded-full bg-teal-400 mt-0.5" />
-              )}
-            </button>
-          );
-        })}
-      </div>
     </div>
   );
 }

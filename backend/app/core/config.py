@@ -6,45 +6,44 @@ from typing import Optional, Dict, Any
 # price_axg, welcome_gal → enteros. Descuentos/comisiones → basis points (0-10000).
 VIP_CONFIG: Dict[str, Any] = {
     "coral": {
-        "price_axg": 400 * (10 ** 6),        # 400 AXF
-        "gal_daily": 40 * (10 ** 4),          # 40 FRJ/día
-        "discount_bps": 500,                  # 5.00% (basis points)
+        "price_axg": 50 * (10 ** 6),          # 50 AXF (~$100 MXN/mes)
+        "gal_daily": 20 * (10 ** 4),          # 20 FRJ/día
+        "discount_bps": 500,                  # 5.00% descuento tienda
         "capsulas_mensuales": {"bronce": 2},
         "table_bonus_slots": 0,
         "axolotito_bonus_slots": 0,
         "p2p_commission_bps": 400,            # 4.00%
-        "jackpot_bonus_bps": 0,               # 0%
-        "multiplayer_discount_bps": 0,        # 0%
-        "welcome_gal": 200 * (10 ** 4),       # 200 FRJ
+        "jackpot_bonus_bps": 0,               # 0% — prohibido multiplicar pozos de azar
+        "multiplayer_discount_bps": 0,        # 0% — prohibido multiplicar ganancias
+        "welcome_gal": 200 * (10 ** 4),       # 200 FRJ bienvenida
         "welcome_boosters": [],
         "popular": False,
-        # legacy accessors kept for backward compat (set via __init__ below)
     },
     "dorado": {
-        "price_axg": 600 * (10 ** 6),         # 600 AXF
-        "gal_daily": 100 * (10 ** 4),         # 100 FRJ/día
-        "discount_bps": 1200,                 # 12.00%
+        "price_axg": 120 * (10 ** 6),         # 120 AXF (~$240 MXN/mes)
+        "gal_daily": 50 * (10 ** 4),          # 50 FRJ/día
+        "discount_bps": 1200,                 # 12.00% descuento tienda
         "capsulas_mensuales": {"bronce": 2, "plata": 1},
         "table_bonus_slots": 1,
         "axolotito_bonus_slots": 0,
         "p2p_commission_bps": 300,            # 3.00%
-        "jackpot_bonus_bps": 0,               # 0%
-        "multiplayer_discount_bps": 0,        # 0%
-        "welcome_gal": 500 * (10 ** 4),       # 500 FRJ
+        "jackpot_bonus_bps": 0,               # 0% — prohibido multiplicar pozos de azar
+        "multiplayer_discount_bps": 0,        # 0% — prohibido multiplicar ganancias
+        "welcome_gal": 500 * (10 ** 4),       # 500 FRJ bienvenida
         "welcome_boosters": ["normal"],
         "popular": True,
     },
     "axolite": {
-        "price_axg": 1800 * (10 ** 6),        # 1800 AXF
-        "gal_daily": 200 * (10 ** 4),         # 200 FRJ/día
-        "discount_bps": 2000,                 # 20.00%
+        "price_axg": 300 * (10 ** 6),         # 300 AXF (~$600 MXN/mes)
+        "gal_daily": 130 * (10 ** 4),         # 130 FRJ/día
+        "discount_bps": 2000,                 # 20.00% descuento tienda
         "capsulas_mensuales": {"bronce": 3, "plata": 2, "oro": 1},
         "table_bonus_slots": 2,
         "axolotito_bonus_slots": 1,
-        "p2p_commission_bps": 150,            # 1.50%
-        "jackpot_bonus_bps": 500,             # 5.00%
-        "multiplayer_discount_bps": 1500,     # 15.00%
-        "welcome_gal": 1000 * (10 ** 4),      # 1000 FRJ
+        "p2p_commission_bps": 200,            # 2.00%
+        "jackpot_bonus_bps": 0,               # 0% — prohibido multiplicar pozos de azar
+        "multiplayer_discount_bps": 0,        # 0% — prohibido multiplicar ganancias
+        "welcome_gal": 1000 * (10 ** 4),      # 1000 FRJ bienvenida
         "welcome_boosters": ["foil"],
         "popular": False,
     },
