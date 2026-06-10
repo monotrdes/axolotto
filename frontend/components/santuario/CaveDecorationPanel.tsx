@@ -7,7 +7,7 @@ import { API_BASE } from "@/lib/api";
 // TYPES
 // ═══════════════════════════════════════════════════════════
 
-type Subcategory = "FLOOR" | "WALL" | "WATER" | "SPECIAL";
+type Subcategory = "MANTEL" | "ADORNOS_FIJOS" | "ILUMINACION" | "ENTORNO";
 type Rarity = "common" | "rare" | "epic" | "legendary";
 type ActiveTab = "slots" | "inventory" | "bonuses";
 
@@ -45,26 +45,25 @@ interface CaveDecorationPanelProps {
 // ═══════════════════════════════════════════════════════════
 
 const LAYERS: { key: Subcategory; icon: string; label: string }[] = [
-  { key: "FLOOR", icon: "🏠", label: "Piso" },
-  { key: "WALL", icon: "🧱", label: "Pared" },
-  { key: "WATER", icon: "🌊", label: "Agua" },
-  { key: "SPECIAL", icon: "✨", label: "Especial" },
+  { key: "MANTEL", icon: "🧣", label: "Mantel" },
+  { key: "ADORNOS_FIJOS", icon: "🏺", label: "Adornos" },
+  { key: "ILUMINACION", icon: "💡", label: "Iluminación" },
+  { key: "ENTORNO", icon: "🌄", label: "Entorno" },
 ];
 
 /** How many slots per layer per cave level. */
 function slotsForLevel(level: number): Record<Subcategory, number> {
-  const base = Math.min(level, 8);
   return {
-    FLOOR: Math.min(1 + Math.floor((base - 1) / 2), 5),
-    WALL: Math.min(1 + Math.floor((base - 1) / 3), 4),
-    WATER: base >= 2 ? Math.min(1 + Math.floor((base - 2) / 2), 4) : 0,
-    SPECIAL: base >= 3 ? Math.min(1 + Math.floor((base - 3) / 2), 3) : 0,
+    MANTEL: 1,
+    ADORNOS_FIJOS: Math.min(4, level),
+    ILUMINACION: 1,
+    ENTORNO: 1,
   };
 }
 
 function totalSlots(level: number): number {
   const s = slotsForLevel(level);
-  return s.FLOOR + s.WALL + s.WATER + s.SPECIAL;
+  return s.MANTEL + s.ADORNOS_FIJOS + s.ILUMINACION + s.ENTORNO;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -72,34 +71,23 @@ function totalSlots(level: number): number {
 // ═══════════════════════════════════════════════════════════
 
 const MOCK_INVENTORY: CaveDecorationItem[] = [
-  // FLOOR
-  { id: 101, name: "Coral Brillante",   emoji: "🪸", rarity: "common",    subcategory: "FLOOR",  bonuses: { focus_recovery: 2 } },
-  { id: 102, name: "Roca Lunar",        emoji: "🪨", rarity: "rare",      subcategory: "FLOOR",  bonuses: { focus_recovery: 3, frj_multiplier: 1 } },
-  { id: 103, name: "Tapete de Alga",    emoji: "🧶", rarity: "common",    subcategory: "FLOOR",  bonuses: { focus_recovery: 1 } },
-  { id: 104, name: "Cristal de Cuarzo", emoji: "💎", rarity: "epic",      subcategory: "FLOOR",  bonuses: { focus_recovery: 5, frj_multiplier: 2 } },
-  { id: 105, name: "Alfombra Musgo",    emoji: "🌿", rarity: "common",    subcategory: "FLOOR",  bonuses: { focus_recovery: 1 } },
-  { id: 106, name: "Estrella de Mar",   emoji: "⭐", rarity: "rare",      subcategory: "FLOOR",  bonuses: { focus_recovery: 2, frj_multiplier: 1 } },
-  // WALL
-  { id: 201, name: "Linterna de Alga",  emoji: "🏮", rarity: "common",    subcategory: "WALL",   bonuses: { focus_recovery: 2 } },
-  { id: 202, name: "Cuadro de Lotería", emoji: "🖼️", rarity: "rare",      subcategory: "WALL",   bonuses: { frj_multiplier: 2 } },
-  { id: 203, name: "Espejo de Agua",    emoji: "🪞", rarity: "rare",      subcategory: "WALL",   bonuses: { focus_recovery: 2, frj_multiplier: 1 } },
-  { id: 204, name: "Fósil de Trilobite",emoji: "🦴", rarity: "epic",      subcategory: "WALL",   bonuses: { focus_recovery: 3, frj_multiplier: 2 } },
-  { id: 205, name: "Vela Flotante",     emoji: "🕯️", rarity: "common",    subcategory: "WALL",   bonuses: { focus_recovery: 1 } },
-  { id: 206, name: "Reloj de Sol",      emoji: "⏳", rarity: "rare",      subcategory: "WALL",   bonuses: { focus_recovery: 3 } },
-  // WATER
-  { id: 301, name: "Fuente Burbujeante",emoji: "⛲", rarity: "rare",      subcategory: "WATER",  bonuses: { frj_multiplier: 3 } },
-  { id: 302, name: "Cardumen de Colores",emoji: "🐠", rarity: "common",    subcategory: "WATER",  bonuses: { focus_recovery: 1 } },
-  { id: 303, name: "Anémona Luminosa",  emoji: "🌺", rarity: "epic",      subcategory: "WATER",  bonuses: { focus_recovery: 3, frj_multiplier: 2 } },
-  { id: 304, name: "Caracola Susurrante",emoji: "🐚", rarity: "common",    subcategory: "WATER",  bonuses: { focus_recovery: 1 } },
-  { id: 305, name: "Burbuja Eterna",    emoji: "🫧", rarity: "rare",      subcategory: "WATER",  bonuses: { focus_recovery: 2, frj_multiplier: 1 } },
-  { id: 306, name: "Perla Abisal",      emoji: "🦪", rarity: "legendary", subcategory: "WATER",  bonuses: { focus_recovery: 5, frj_multiplier: 4 } },
-  // SPECIAL
-  { id: 401, name: "Corona del Cenote", emoji: "👑", rarity: "legendary", subcategory: "SPECIAL", bonuses: { focus_recovery: 10, frj_multiplier: 10 } },
-  { id: 402, name: "Orbe Astral",       emoji: "🔮", rarity: "epic",      subcategory: "SPECIAL", bonuses: { focus_recovery: 5, frj_multiplier: 3 } },
-  { id: 403, name: "Máscara de Lotería",emoji: "🎭", rarity: "rare",      subcategory: "SPECIAL", bonuses: { frj_multiplier: 4 } },
-  { id: 404, name: "Ánfora Antigua",    emoji: "⚱️", rarity: "rare",      subcategory: "SPECIAL", bonuses: { focus_recovery: 3 } },
-  { id: 405, name: "Tótem de la Suerte",emoji: "🗿", rarity: "epic",      subcategory: "SPECIAL", bonuses: { focus_recovery: 4, frj_multiplier: 3 } },
-  { id: 406, name: "Cofre del Tesoro",  emoji: "🧰", rarity: "epic",      subcategory: "SPECIAL", bonuses: { focus_recovery: 2, frj_multiplier: 5 } },
+  // MANTEL (Mantel de Mesa / Runner Overlay)
+  { id: 101, name: "Papel Picado Catrina",    emoji: "🏮", rarity: "rare",      subcategory: "MANTEL",       bonuses: { frj_multiplier: 2 } },
+  { id: 102, name: "Mantel Bordado Tenango",  emoji: "🧶", rarity: "epic",      subcategory: "MANTEL",       bonuses: { focus_recovery: 3, frj_multiplier: 2 } },
+  { id: 103, name: "Cenote Minimalista",      emoji: "💧", rarity: "common",    subcategory: "MANTEL",       bonuses: { focus_recovery: 1 } },
+  // ADORNOS_FIJOS (4 fixed table slots)
+  { id: 201, name: "Maceta Loto de Papel",    emoji: "🪷", rarity: "common",    subcategory: "ADORNOS_FIJOS", bonuses: { focus_recovery: 2 } },
+  { id: 202, name: "Jarrón de Obsidiana Calada", emoji: "🏺", rarity: "rare",   subcategory: "ADORNOS_FIJOS", bonuses: { focus_recovery: 2, frj_multiplier: 1 } },
+  { id: 203, name: "Mini-Altar de Velas",     emoji: "🕯️", rarity: "epic",      subcategory: "ADORNOS_FIJOS", bonuses: { focus_recovery: 4, frj_multiplier: 2 } },
+  { id: 204, name: "Incensario Copal",        emoji: "🌿", rarity: "common",    subcategory: "ADORNOS_FIJOS", bonuses: { focus_recovery: 1 } },
+  // ILUMINACION (Lighting Layer)
+  { id: 301, name: "Guirnalda Fuego Fatuo",   emoji: "✨", rarity: "rare",      subcategory: "ILUMINACION",  bonuses: { frj_multiplier: 3 } },
+  { id: 302, name: "Lámparas de Jade",        emoji: "💚", rarity: "epic",      subcategory: "ILUMINACION",  bonuses: { focus_recovery: 3, frj_multiplier: 2 } },
+  { id: 303, name: "Antorchas Chinampa",      emoji: "🔥", rarity: "common",    subcategory: "ILUMINACION",  bonuses: { focus_recovery: 2 } },
+  // ENTORNO (Cenote Background Skin)
+  { id: 401, name: "Cueva de Coral de Papel", emoji: "🪸", rarity: "rare",      subcategory: "ENTORNO",      bonuses: { focus_recovery: 3, frj_multiplier: 2 } },
+  { id: 402, name: "Templo Maya en Ruinas",   emoji: "🏛️", rarity: "legendary", subcategory: "ENTORNO",      bonuses: { focus_recovery: 10, frj_multiplier: 8 } },
+  { id: 403, name: "Fondo Día de Muertos",    emoji: "💀", rarity: "epic",      subcategory: "ENTORNO",      bonuses: { focus_recovery: 5, frj_multiplier: 4 } },
 ];
 
 // ═══════════════════════════════════════════════════════════
@@ -449,9 +437,9 @@ export default function CaveDecorationPanel({
           <div className="px-4 pb-4">
             {/* Filter chips */}
             <div className="flex gap-1.5 mb-2.5 overflow-x-auto scrollbar-hide">
-              {(["ALL", "FLOOR", "WALL", "WATER", "SPECIAL"] as const).map((f) => {
-                const labels: Record<string, string> = { ALL: "Todo", FLOOR: "Piso", WALL: "Pared", WATER: "Agua", SPECIAL: "Especial" };
-                const icons: Record<string, string> = { ALL: "📦", FLOOR: "🏠", WALL: "🧱", WATER: "🌊", SPECIAL: "✨" };
+              {(["ALL", "MANTEL", "ADORNOS_FIJOS", "ILUMINACION", "ENTORNO"] as const).map((f) => {
+                const labels: Record<string, string> = { ALL: "Todo", MANTEL: "Mantel", ADORNOS_FIJOS: "Adornos", ILUMINACION: "Iluminación", ENTORNO: "Entorno" };
+                const icons: Record<string, string> = { ALL: "📦", MANTEL: "🧣", ADORNOS_FIJOS: "🏺", ILUMINACION: "💡", ENTORNO: "🌄" };
                 return (
                   <button
                     key={f}
