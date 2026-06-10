@@ -343,6 +343,22 @@ def get_user_boards_data(user_id: str, session: Session) -> list:
     return resultado
 
 
+def _assign_slot_index(user_id: str, session: Session) -> int:
+    """Devuelve el slot_index más bajo disponible (sin tabla activa) para el usuario."""
+    used_slots = set(
+        session.exec(
+            select(PlayerBoard.slot_index)
+            .where(PlayerBoard.user_id == user_id)
+            .where(PlayerBoard.is_dead == False)
+            .where(PlayerBoard.slot_index.is_not(None))
+        ).all()
+    )
+    slot = 1
+    while slot in used_slots:
+        slot += 1
+    return slot
+
+
 def create_random_board_operation(
     user_id: str, name: str, session: Session
 ) -> dict:
@@ -358,7 +374,9 @@ def create_random_board_operation(
     )
 
     current_boards_count = session.exec(
-        select(func.count(PlayerBoard.id)).where(PlayerBoard.user_id == user_id)
+        select(func.count(PlayerBoard.id))
+        .where(PlayerBoard.user_id == user_id)
+        .where(PlayerBoard.is_dead == False)
     ).one()
 
     if current_boards_count >= max_slots:
@@ -452,6 +470,30 @@ def create_random_board_operation(
         blockchain_token_id=blockchain_token_id,
     )
 
+    # Asignar slot y heredar XP/generación
+    new_board.slot_index = _assign_slot_index(user_id, session)
+    _slot_rec = session.exec(
+        select(PlayerBoardSlot).where(
+            PlayerBoardSlot.user_id == user_id,
+            PlayerBoardSlot.slot_index == new_board.slot_index,
+        )
+    ).first()
+    if _slot_rec:
+        if _slot_rec.preserved_xp > 0:
+            _apply_preserved_xp_to_board(new_board, _slot_rec.preserved_xp)
+            _slot_rec.preserved_xp = 0
+        _slot_rec.boards_created += 1
+        new_board.slot_generation = _slot_rec.boards_created
+        session.add(_slot_rec)
+    else:
+        new_board.slot_generation = 1
+        session.add(PlayerBoardSlot(
+            user_id=user_id,
+            slot_index=new_board.slot_index,
+            preserved_xp=0,
+            boards_created=1,
+        ))
+
     # Stakear las cartas
     deduct_staked_cards(user_id, chosen_cids, chosen_first_editions, session)
 
@@ -466,6 +508,9 @@ def create_random_board_operation(
         "board_id": new_board.id,
         "card_ids": new_board.card_ids,
         "tx_blockchain": tx_blockchain,
+        "slot_index": new_board.slot_index,
+        "slot_generation": new_board.slot_generation,
+        "inherited_level": new_board.level,
     }
 
 
@@ -488,7 +533,9 @@ def create_manual_board_operation(
     )
 
     current_boards_count = session.exec(
-        select(func.count(PlayerBoard.id)).where(PlayerBoard.user_id == user_id)
+        select(func.count(PlayerBoard.id))
+        .where(PlayerBoard.user_id == user_id)
+        .where(PlayerBoard.is_dead == False)
     ).one()
 
     if current_boards_count >= max_slots:
@@ -543,6 +590,30 @@ def create_manual_board_operation(
         blockchain_token_id=blockchain_token_id,
     )
 
+    # Asignar slot y heredar XP/generación
+    new_board.slot_index = _assign_slot_index(user_id, session)
+    _slot_rec = session.exec(
+        select(PlayerBoardSlot).where(
+            PlayerBoardSlot.user_id == user_id,
+            PlayerBoardSlot.slot_index == new_board.slot_index,
+        )
+    ).first()
+    if _slot_rec:
+        if _slot_rec.preserved_xp > 0:
+            _apply_preserved_xp_to_board(new_board, _slot_rec.preserved_xp)
+            _slot_rec.preserved_xp = 0
+        _slot_rec.boards_created += 1
+        new_board.slot_generation = _slot_rec.boards_created
+        session.add(_slot_rec)
+    else:
+        new_board.slot_generation = 1
+        session.add(PlayerBoardSlot(
+            user_id=user_id,
+            slot_index=new_board.slot_index,
+            preserved_xp=0,
+            boards_created=1,
+        ))
+
     # Stakear las cartas
     deduct_staked_cards(user_id, card_ids, fe_flags, session)
 
@@ -556,6 +627,9 @@ def create_manual_board_operation(
         "mensaje": f"¡Tabla '{new_board.name}' guardada con éxito!",
         "board_id": new_board.id,
         "tx_blockchain": tx_blockchain,
+        "slot_index": new_board.slot_index,
+        "slot_generation": new_board.slot_generation,
+        "inherited_level": new_board.level,
     }
 
 
