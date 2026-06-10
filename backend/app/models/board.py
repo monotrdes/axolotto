@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, JSON
 from datetime import datetime
+from sqlalchemy import UniqueConstraint as _UniqueConstraint
 
 class PlayerBoard(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -44,6 +45,8 @@ class PlayerBoard(SQLModel, table=True):
     # VIP — congelada si el dueño pierde la membresía que le otorgaba este slot
     is_frozen_by_vip: bool = Field(default=False)
     is_tutorial: bool = Field(default=False, index=True)
+    slot_index: Optional[int] = Field(default=None, index=True)
+    slot_generation: int = Field(default=1)
 
     # NPC Bot Pool
     is_npc_pool: bool          = Field(default=False)
@@ -52,3 +55,15 @@ class PlayerBoard(SQLModel, table=True):
     origin_story: Optional[str] = Field(default=None)  # set when graduated
 
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class PlayerBoardSlot(SQLModel, table=True):
+    """Persiste XP y generación por slot al desarmar una tabla."""
+    __tablename__ = "playerboardslot"
+    __table_args__ = (_UniqueConstraint("user_id", "slot_index"),)
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: str = Field(foreign_key="user.privy_did", index=True)
+    slot_index: int
+    preserved_xp: int = Field(default=0)
+    boards_created: int = Field(default=0)
