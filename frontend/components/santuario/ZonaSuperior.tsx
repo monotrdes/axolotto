@@ -143,7 +143,7 @@ export default function ZonaSuperior({
   }));
 
   return (
-    <div className="w-full">
+    <div className="w-full shrink-0">
       {/* Header strip */}
       <div
         className="w-full px-2 py-0.5 mb-1.5 text-center"

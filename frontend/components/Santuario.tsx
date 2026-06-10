@@ -369,7 +369,7 @@ export default function Santuario({
         {/* Expand cave button */}
         <button
           onClick={() => setCavesPanelOpen(true)}
-          className="absolute top-2 left-2 z-[80] px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 text-[8px] font-black text-slate-400 hover:text-amber-300 hover:border-amber-500/30 transition-all"
+          className="absolute top-2 left-2 z-[90] px-2 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 text-[8px] font-black text-slate-400 hover:text-amber-300 hover:border-amber-500/30 transition-all"
         >
           ⛏️ {caveExpansion ? '⏳' : 'Nv.' + caveLevel}
         </button>
