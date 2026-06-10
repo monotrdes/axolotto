@@ -21,11 +21,12 @@ interface NidoSceneProps {
   selectedAxoId: number | null;
   particulas: { id: number; incId: number; tipo: string; x: number; y: number; cLeft?: number; cBottom?: number }[];
   vipTier?: string | null;
+  className?: string;
 }
 
 export default function NidoScene({
   spots, axolotitos, clima, caveLevel, viewMode, hasTable, tableSeats,
-  onSelectSpot, onSelectAxo, onToggleViewMode, onOpenHosting, selectedAxoId, particulas, vipTier,
+  onSelectSpot, onSelectAxo, onToggleViewMode, onOpenHosting, selectedAxoId, particulas, vipTier, className,
 }: NidoSceneProps) {
   const periodTint =
     clima?.period === 'Madrugada' ? 'rgba(6,182,212,0.04)' :
@@ -141,7 +142,7 @@ export default function NidoScene({
       `}</style>
 
       <div
-        className="relative w-full overflow-hidden rounded-3xl border border-white/5 shadow-2xl h-[340px] sm:h-[500px]"
+        className={`relative w-full overflow-hidden rounded-3xl border border-white/5 shadow-2xl ${className ?? 'h-[340px] sm:h-[500px]'}`}
         style={{ background: 'linear-gradient(180deg, #020C16 0%, #050F1C 30%, #071018 55%, #0A0F08 85%, #0D1A0A 100%)' }}
       >
         {/* ═══ LAYER 0: SURFACE — Light rays from top ═══ */}
