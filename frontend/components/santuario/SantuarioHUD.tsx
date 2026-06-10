@@ -1,18 +1,20 @@
+// Caller must pass values already in display units (not internal DB integers).
+// For caveWallet: axf = axogemas / 1_000_000, frj = frijolitos / 10_000
 interface SantuarioHUDProps {
-  axfRaw: number;
-  frjRaw: number;
+  axf: number;
+  frj: number;
   ticketCount?: number;
   boostActive?: boolean;
 }
 
 export default function SantuarioHUD({
-  axfRaw,
-  frjRaw,
+  axf,
+  frj,
   ticketCount = 0,
   boostActive = false,
 }: SantuarioHUDProps) {
-  const axfDisplay = Math.floor(axfRaw / 1_000_000).toLocaleString();
-  const frjDisplay = Math.floor(frjRaw / 10_000).toLocaleString();
+  const axfDisplay = Math.floor(axf).toLocaleString();
+  const frjDisplay = Math.floor(frj).toLocaleString();
 
   return (
     <div className="flex items-center gap-3 px-4 py-2 bg-slate-900/95 border-b border-slate-700/60 h-12 shrink-0">
