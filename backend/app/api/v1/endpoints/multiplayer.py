@@ -243,13 +243,25 @@ def register_axolotito(
         .where(RoomRegistration.room_id == room.id)
     ).all()
     user_boards_in_room = 0
+    # Precargar axolotitos y usuarios para evitar N+1 (VULN-12)
+    _axo_ids_room = [r_reg.axolotito_id for r_reg in room_regs]
+    _axos_room: dict[int, Axolotito] = {}
+    if _axo_ids_room:
+        _axos_room_loaded = session.exec(select(Axolotito).where(Axolotito.id.in_(_axo_ids_room))).all()
+        _axos_room = {a.id: a for a in _axos_room_loaded}
+    _users_room: dict[str, User] = {}
+    if user.wallet_address:
+        _uids_room = set(a.user_id for a in _axos_room.values() if a.user_id != verified_user_id)
+        if _uids_room:
+            _users_room_loaded = session.exec(select(User).where(User.privy_did.in_(_uids_room))).all()
+            _users_room = {u.privy_did: u for u in _users_room_loaded}
     for r_reg in room_regs:
-        reg_axo = session.get(Axolotito, r_reg.axolotito_id)
+        reg_axo = _axos_room.get(r_reg.axolotito_id)
         if reg_axo:
             is_same_user = reg_axo.user_id == verified_user_id
             is_same_wallet = False
             if user.wallet_address:
-                reg_owner = session.exec(select(User).where(User.privy_did == reg_axo.user_id)).first()
+                reg_owner = _users_room.get(reg_axo.user_id)
                 if reg_owner and reg_owner.wallet_address == user.wallet_address:
                     is_same_wallet = True
             if is_same_user or is_same_wallet:
@@ -340,10 +352,22 @@ def get_jackpot_status(session: Session = Depends(get_session)):
         select(JackpotWin).order_by(JackpotWin.won_at.desc()).limit(10)
     ).all()
     
+    # Precargar axolotitos y usuarios en batch para evitar N+1 (VULN-12)
+    _win_axo_ids = list(set(w.axo_id for w in wins))
+    _win_axos_by_id: dict[int, Axolotito] = {}
+    if _win_axo_ids:
+        _win_axos = session.exec(select(Axolotito).where(Axolotito.id.in_(_win_axo_ids))).all()
+        _win_axos_by_id = {a.id: a for a in _win_axos}
+    _win_user_ids = list(set(w.user_id for w in wins))
+    _win_users_by_did: dict[str, User] = {}
+    if _win_user_ids:
+        _win_users = session.exec(select(User).where(User.privy_did.in_(_win_user_ids))).all()
+        _win_users_by_did = {u.privy_did: u for u in _win_users}
+
     history = []
     for w in wins:
-        axo = session.get(Axolotito, w.axo_id)
-        user = session.exec(select(User).where(User.privy_did == w.user_id)).first()
+        axo = _win_axos_by_id.get(w.axo_id)
+        user = _win_users_by_did.get(w.user_id)
         history.append({
             "id": w.id,
             "axo_name": axo.name if axo else f"Axolotito #{w.axo_id}",
@@ -456,10 +480,17 @@ def get_player_rooms(
         .where(GameRoom.visibility == "public")  # Solo públicas en este endpoint
     ).all()
 
+    # Precargar usuarios host en batch para evitar N+1 (VULN-12)
+    _host_ids = list(set(r.host_id for r in rooms if r.host_id))
+    _hosts_by_did: dict[str, User] = {}
+    if _host_ids:
+        _hosts_loaded = session.exec(select(User).where(User.privy_did.in_(_host_ids))).all()
+        _hosts_by_did = {u.privy_did: u for u in _hosts_loaded}
+
     result = []
     for room in rooms:
         config = json.loads(room.room_config or "{}")
-        host = session.exec(select(User).where(User.privy_did == room.host_id)).first()
+        host = _hosts_by_did.get(room.host_id) if room.host_id else None
         host_name = host.nickname if host and host.nickname else "Anfitrión"
 
         # Filtro de búsqueda
@@ -588,10 +619,12 @@ def join_player_room(
     session.add(wallet)
     session.commit()
 
+    host_user = session.exec(select(User).where(User.privy_did == room.host_id)).first()
+
     return {
         "joined": True,
         "room_name": room.name,
-        "host_name": session.exec(select(User).where(User.privy_did == room.host_id)).first().nickname or "Anfitrión",
+        "host_name": host_user.nickname if host_user and host_user.nickname else "Anfitrión",
         "message": f"¡Te uniste a '{room.name}'! La partida comenzará pronto.",
     }
 

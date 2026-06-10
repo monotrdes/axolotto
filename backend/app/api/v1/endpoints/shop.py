@@ -86,44 +86,80 @@ def get_store_items(user_id: Optional[str] = None, session: Session = Depends(ge
             if sin_nidos:
                 nido_status["next_level"] = _get_next_level_info(user_data.cave_level)
 
+    # Precargar total_sold y user_owned en batch para evitar N+1 (VULN-12)
+    _booster_egg_ids = [item.id for item in items if item.item_type in (ItemType.BOOSTER, ItemType.EGG)]
+    _other_ids = [item.id for item in items if item.item_type not in (ItemType.BOOSTER, ItemType.EGG)]
+
+    # total_sold para BOOSTER/EGG (TransactionLedger)
+    _total_sold_tx: dict[int, int] = {}
+    if _booster_egg_ids:
+        _rows = session.exec(
+            select(TransactionLedger.item_id, func.count(TransactionLedger.id))
+            .where(TransactionLedger.item_id.in_(_booster_egg_ids))
+            .group_by(TransactionLedger.item_id)
+        ).all()
+        _total_sold_tx = {row[0]: row[1] for row in _rows}
+
+    # total_sold para otros ítems (PlayerInventory)
+    _total_sold_inv: dict[int, int] = {}
+    if _other_ids:
+        _rows = session.exec(
+            select(PlayerInventory.item_id, func.sum(PlayerInventory.quantity))
+            .where(PlayerInventory.item_id.in_(_other_ids))
+            .group_by(PlayerInventory.item_id)
+        ).all()
+        _total_sold_inv = {row[0]: (row[1] or 0) for row in _rows}
+
+    # user_owned precomputado
+    _user_boosters: dict[int, int] = {}
+    _user_inv: dict[int, int] = {}
+    _total_eggs_user = 0
+    _total_axos_user = 0
+    if user_id:
+        _booster_ids = [item.id for item in items if item.item_type == ItemType.BOOSTER]
+        if _booster_ids:
+            _rows = session.exec(
+                select(TransactionLedger.item_id, func.count(TransactionLedger.id))
+                .where(TransactionLedger.user_id == user_id)
+                .where(TransactionLedger.tx_type == TransactionType.BOOSTER_PURCHASE)
+                .where(TransactionLedger.item_id.in_(_booster_ids))
+                .group_by(TransactionLedger.item_id)
+            ).all()
+            _user_boosters = {row[0]: row[1] for row in _rows}
+
+        # EGG totals (reutilizar egg_inv_count ya calculado arriba)
+        _total_eggs_user = int(egg_inv_count or 0)
+        _total_axos_user = session.exec(
+            select(func.count(Axolotito.id)).where(Axolotito.user_id == user_id)
+        ).one_or_none() or 0
+
+        _user_other_ids = [item.id for item in items if item.item_type not in (ItemType.BOOSTER, ItemType.EGG)]
+        if _user_other_ids:
+            _rows = session.exec(
+                select(PlayerInventory.item_id, func.sum(PlayerInventory.quantity))
+                .where(PlayerInventory.user_id == user_id)
+                .where(PlayerInventory.item_id.in_(_user_other_ids))
+                .group_by(PlayerInventory.item_id)
+            ).all()
+            _user_inv = {row[0]: (row[1] or 0) for row in _rows}
+
     resultado = []
     for item in items:
-        if (item.item_type == ItemType.BOOSTER) or item.item_type == ItemType.EGG:
-            total_sold = session.exec(
-                select(func.count(TransactionLedger.id))
-                .where(TransactionLedger.item_id == item.id)
-            ).one_or_none() or 0
+        # total_sold desde batch
+        if item.item_type in (ItemType.BOOSTER, ItemType.EGG):
+            total_sold = _total_sold_tx.get(item.id, 0)
         else:
-            total_sold = session.exec(
-                select(func.sum(PlayerInventory.quantity)).where(PlayerInventory.item_id == item.id)
-            ).one_or_none() or 0
+            total_sold = _total_sold_inv.get(item.id, 0)
 
+        # user_owned desde batch
         user_owned = 0
         if user_id:
             if item.item_type == ItemType.BOOSTER:
-                user_owned = session.exec(
-                    select(func.count(TransactionLedger.id))
-                    .where(TransactionLedger.user_id == user_id)
-                    .where(TransactionLedger.tx_type == TransactionType.BOOSTER_PURCHASE)
-                ).one_or_none() or 0
+                user_owned = _user_boosters.get(item.id, 0)
             elif item.item_type == ItemType.EGG:
-                total_eggs = session.exec(
-                    select(func.sum(PlayerInventory.quantity))
-                    .join(ItemCatalog, PlayerInventory.item_id == ItemCatalog.id)
-                    .where(PlayerInventory.user_id == user_id)
-                    .where(ItemCatalog.item_type == ItemType.EGG)
-                ).one_or_none() or 0
-                total_axolotitos = session.exec(
-                    select(func.count(Axolotito.id))
-                    .where(Axolotito.user_id == user_id)
-                ).one_or_none() or 0
-                user_owned = total_eggs + total_axolotitos
+                user_owned = _total_eggs_user + _total_axos_user
             else:
-                user_owned = session.exec(
-                    select(func.sum(PlayerInventory.quantity))
-                    .where(PlayerInventory.user_id == user_id)
-                    .where(PlayerInventory.item_id == item.id)
-                ).one_or_none() or 0
+                user_owned = _user_inv.get(item.id, 0)
 
         item_dict = item.model_dump()
         if item.name == "Booster Brillante (Foil)":

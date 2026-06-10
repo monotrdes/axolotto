@@ -85,11 +85,66 @@ _CONSUMABLES_ABI_MINIMAL = json.loads('''[
 class Web3Service:
     """
     Servicio centralizado de interacciones con la blockchain de Axolotto.
-    
+
     Soporta modo "polygon_amoy" (Polygon Amoy Testnet) y "local" (Anvil).
     """
     # Mutex para serializar transacciones y evitar conflictos de nonce
     _tx_lock = threading.Lock()
+
+    # ── Caché de gas y gestión de nonce local (VULN-11) ──────────────────────────
+    # Gas cache: (contract_address, fn_name) → gas_limit estimado
+    _gas_cache: dict[tuple[str, str], int] = {}
+
+    # Nonce local para evitar get_transaction_count('pending') en cada tx.
+    # Solo se resincroniza del chain al inicio y tras errores.
+    _nonce: int | None = None
+    _nonce_lock = threading.Lock()
+
+    # Fallback gas limits por categoría de operación (usados si estimate_gas falla)
+    _GAS_FALLBACK: dict[str, int] = {
+        "mint": 150_000,
+        "burn": 100_000,
+        "transfer": 120_000,
+        "mintWebito": 300_000,
+        "mintCards": 350_000,
+        "mintSobrecito": 250_000,
+        "burnSobrecito": 100_000,
+        "mintConsumable": 200_000,
+        "burnConsumable": 100_000,
+        "transferirTabla": 150_000,
+        "transferirAxolotito": 200_000,
+        "transferCard": 150_000,
+        "transferirSobrecito": 150_000,
+        "setApprovalForTablas": 80_000,
+        "updateStats": 100_000,
+        "default": 500_000,
+    }
+
+    @staticmethod
+    def _gas_fallback_from_fn(fn_name: str) -> int:
+        """Devuelve el gas fallback según el nombre de la función."""
+        return Web3Service._GAS_FALLBACK.get(fn_name, Web3Service._GAS_FALLBACK["default"])
+
+    @staticmethod
+    def _get_nonce(w3: Web3, address: str) -> int:
+        """Obtiene el nonce: usa contador local si existe, o lo sincroniza del chain."""
+        with Web3Service._nonce_lock:
+            if Web3Service._nonce is None:
+                Web3Service._nonce = w3.eth.get_transaction_count(address, 'pending')
+            return Web3Service._nonce
+
+    @staticmethod
+    def _bump_nonce():
+        """Incrementa nonce local tras transacción exitosa."""
+        with Web3Service._nonce_lock:
+            if Web3Service._nonce is not None:
+                Web3Service._nonce += 1
+
+    @staticmethod
+    def _reset_nonce():
+        """Invalida nonce local (se resincronizará del chain en la próxima tx)."""
+        with Web3Service._nonce_lock:
+            Web3Service._nonce = None
 
     # ── Conexión ──────────────────────────────────────────────────────────────
     w3 = Web3(Web3.HTTPProvider(settings.rpc_url))
@@ -107,29 +162,73 @@ class Web3Service:
 
     @staticmethod
     def _send_tx(function_call, w3: Web3 = None) -> str:
-        """Firma y envía una transacción. Serializada con lock para evitar nonce conflicts."""
-        with Web3Service._tx_lock:
-            if w3 is None:
-                w3 = Web3Service._get_w3()
-            admin_account = w3.eth.account.from_key(settings.TREASURY_PRIVATE_KEY)
-            nonce = w3.eth.get_transaction_count(admin_account.address, 'pending')
+        """
+        Firma y envía una transacción con caché de gas, nonce local y reintentos.
 
+        VULN-11: El gas se estima una vez por tipo de operación y se cachea;
+        el nonce se trackea localmente para no consultar el chain en cada tx;
+        el lock solo cubre la sección crítica (asignación de nonce + envío).
+        """
+        if w3 is None:
+            w3 = Web3Service._get_w3()
+        admin_account = w3.eth.account.from_key(settings.TREASURY_PRIVATE_KEY)
+
+        # Clave de caché: (dirección contrato, nombre función)
+        fn_name = function_call.abi.get("name", "unknown") if hasattr(function_call, "abi") else "unknown"
+        cache_key = (function_call.address.lower(), fn_name)
+
+        # ── Estimar gas FUERA del lock (cache-aware) ──
+        gas_limit = Web3Service._gas_cache.get(cache_key)
+        if gas_limit is None:
             try:
-                gas_estimado = function_call.estimate_gas({'from': admin_account.address})
+                gas_estimado = function_call.estimate_gas({"from": admin_account.address})
                 gas_limit = int(gas_estimado * 1.3)
+                Web3Service._gas_cache[cache_key] = gas_limit
             except Exception as e:
-                print(f"⚠️ No se pudo estimar gas: {e}. Usando 3M.")
-                gas_limit = 3_000_000
+                gas_limit = Web3Service._gas_fallback_from_fn(fn_name)
+                print(f"⚠️ estimate_gas falló para {fn_name}: {e}. Usando fallback {gas_limit}.")
 
-            tx = function_call.build_transaction({
-                'chainId': settings.chain_id,
-                'gas': gas_limit,
-                'gasPrice': w3.eth.gas_price,
-                'nonce': nonce,
-            })
-            signed = w3.eth.account.sign_transaction(tx, settings.TREASURY_PRIVATE_KEY)
-            tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
-            return w3.to_hex(tx_hash)
+        # ── Enviar bajo lock con reintentos ──
+        max_retries = 3
+        last_error = None
+
+        for attempt in range(max_retries):
+            with Web3Service._tx_lock:
+                nonce = Web3Service._get_nonce(w3, admin_account.address)
+
+                try:
+                    tx = function_call.build_transaction({
+                        "chainId": settings.chain_id,
+                        "gas": gas_limit,
+                        "gasPrice": w3.eth.gas_price,
+                        "nonce": nonce,
+                    })
+                    signed = w3.eth.account.sign_transaction(tx, settings.TREASURY_PRIVATE_KEY)
+                    tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction)
+                    Web3Service._bump_nonce()
+                    return w3.to_hex(tx_hash)
+
+                except Exception as e:
+                    last_error = e
+                    Web3Service._reset_nonce()
+
+                    # Si el error es de gas, invalidar caché y re-estimar
+                    err_msg = str(e).lower()
+                    if any(kw in err_msg for kw in ("gas", "underpriced", "replacement", "nonce")):
+                        Web3Service._gas_cache.pop(cache_key, None)
+                        try:
+                            gas_estimado = function_call.estimate_gas({"from": admin_account.address})
+                            gas_limit = int(gas_estimado * 1.3)
+                            Web3Service._gas_cache[cache_key] = gas_limit
+                        except Exception:
+                            gas_limit = gas_limit * 2  # doblar como último recurso
+
+                    if attempt < max_retries - 1:
+                        print(f"⚠️ Reintentando tx {fn_name} (intento {attempt + 2}/{max_retries}): {e}")
+
+        raise Exception(
+            f"Fallo al enviar tx '{fn_name}' después de {max_retries} intentos: {last_error}"
+        )
 
     # ── FRJ (Frijolito — ERC-20) ──────────────────────────────────────────────
 

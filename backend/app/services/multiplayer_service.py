@@ -95,15 +95,26 @@ def get_or_create_waiting_room(
 
         # Omitir salas donde el usuario o su wallet ya estén registrados
         already_registered = False
-        if user_id:
+        if user_id and regs:
+            # Precargar axolotitos y usuarios en batch para evitar N+1 (VULN-12)
+            _axo_ids = [reg.axolotito_id for reg in regs]
+            _axos_loaded = session.exec(select(Axolotito).where(Axolotito.id.in_(_axo_ids))).all()
+            _axos_map = {a.id: a for a in _axos_loaded}
+
+            _uids = set(a.user_id for a in _axos_loaded if a.user_id != user_id)
+            _users_map: dict[str, User] = {}
+            if wallet_address and _uids:
+                _users_loaded = session.exec(select(User).where(User.privy_did.in_(_uids))).all()
+                _users_map = {u.privy_did: u for u in _users_loaded}
+
             for reg in regs:
-                reg_axo = session.get(Axolotito, reg.axolotito_id)
+                reg_axo = _axos_map.get(reg.axolotito_id)
                 if reg_axo:
                     if reg_axo.user_id == user_id:
                         already_registered = True
                         break
                     if wallet_address:
-                        reg_owner = session.exec(select(User).where(User.privy_did == reg_axo.user_id)).first()
+                        reg_owner = _users_map.get(reg_axo.user_id)
                         if reg_owner and reg_owner.wallet_address == wallet_address:
                             already_registered = True
                             break
@@ -215,17 +226,36 @@ class MultiplayerService:
             registrations = session.exec(
                 select(RoomRegistration).where(RoomRegistration.room_id == room.id)
             ).all()
-            
+
             # --- 1. RECOPILAR JUGADORES HUMANOS ---
             participating_boards = []
             human_players = set()
             human_boards_count = 0
-            
+
             # Para re-encolar a los Axolotitos después de procesar
             axo_registrations_map = {} # axo_id -> (axolotito, board_ids_list)
-            
+
+            # Precargar axolotitos y usuarios en batch para evitar N+1 (VULN-12)
+            _all_axo_ids = [reg.axolotito_id for reg in registrations]
+            _axos_by_id: dict[int, Axolotito] = {}
+            if _all_axo_ids:
+                _axos_loaded = session.exec(
+                    select(Axolotito).where(Axolotito.id.in_(_all_axo_ids))
+                ).all()
+                _axos_by_id = {a.id: a for a in _axos_loaded}
+
+            _users_by_did: dict[str, User] = {}
+            _user_ids_to_load = set(a.user_id for a in _axos_by_id.values())
+            if room.host_id:
+                _user_ids_to_load.add(room.host_id)
+            if _user_ids_to_load:
+                _users_loaded = session.exec(
+                    select(User).where(User.privy_did.in_(_user_ids_to_load))
+                ).all()
+                _users_by_did = {u.privy_did: u for u in _users_loaded}
+
             for reg in registrations:
-                axo = session.get(Axolotito, reg.axolotito_id)
+                axo = _axos_by_id.get(reg.axolotito_id)
                 if not axo:
                     continue
                 
@@ -241,7 +271,7 @@ class MultiplayerService:
                 
                 # Descontar Buy-in del depósito en custodia (escrow) por cada tabla registrada
                 # Axolite VIP paga -15% de cuota de entrada (VULN-06: aritmética entera)
-                owner = session.exec(select(User).where(User.privy_did == axo.user_id)).first()
+                owner = _users_by_did.get(axo.user_id)
                 entry_discount_bps = VIP_CONFIG.get(getattr(owner, "vip_tier", "") or "", {}).get("multiplayer_discount_bps", 0) if (owner and owner.is_vip) else 0
                 effective_fee = room.entry_fee_gal * (10000 - entry_discount_bps) // 10000
                 entry_fee_total = len(b_ids) * effective_fee
@@ -273,7 +303,7 @@ class MultiplayerService:
             # cambios en el flujo de registro.
             human_wallets: set[str] = set()
             for uid in human_players:
-                owner_for_wallet = session.exec(select(User).where(User.privy_did == uid)).first()
+                owner_for_wallet = _users_by_did.get(uid)
                 if owner_for_wallet and owner_for_wallet.wallet_address:
                     human_wallets.add(owner_for_wallet.wallet_address.lower())
             jackpot_eligible = (human_boards_count >= 5) and (len(human_wallets) >= 2)
@@ -310,7 +340,7 @@ class MultiplayerService:
             host_share = 0
             if room.host_id and room.room_type == "player_hosted":
                 host_share = total_collected_gal * 5 // 100
-                host_user = session.exec(select(User).where(User.privy_did == room.host_id)).first()
+                host_user = _users_by_did.get(room.host_id)
                 if host_user:
                     host_wallet = session.exec(select(Wallet).where(Wallet.user_id == room.host_id)).first()
                     if not host_wallet:
@@ -486,7 +516,7 @@ class MultiplayerService:
                 if w["is_bot"]:
                     continue
                 luck_bps = min(int(w["axo_luck"] * 100), 1000)  # cap 10% = 1000 bps
-                winner_user = session.exec(select(User).where(User.privy_did == w["user_id"])).first()
+                winner_user = _users_by_did.get(w["user_id"])
                 vip_bps = (
                     int(VIP_CONFIG.get(getattr(winner_user, "vip_tier", "") or "", {}).get("jackpot_bonus", 0.0) * 10000)
                     if (winner_user and winner_user.is_vip) else 0
@@ -538,7 +568,7 @@ class MultiplayerService:
                 if w["is_bot"]:
                     continue
                 luck_bps = min(int(w["axo_luck"] * 100), 1000)
-                winner_user = session.exec(select(User).where(User.privy_did == w["user_id"])).first()
+                winner_user = _users_by_did.get(w["user_id"])
                 vip_bps = (
                     int(VIP_CONFIG.get(getattr(winner_user, "vip_tier", "") or "", {}).get("jackpot_bonus", 0.0) * 10000)
                     if (winner_user and winner_user.is_vip) else 0
@@ -601,7 +631,7 @@ class MultiplayerService:
                 # VULN-05/06: VIP bonus normalizado dentro del 90% del vault (no phantom funds)
                 _jp_raw: list = []
                 for w in jackpot_winners:
-                    jackpot_winner_user = session.exec(select(User).where(User.privy_did == w["user_id"])).first()
+                    jackpot_winner_user = _users_by_did.get(w["user_id"])
                     vip_jp_bps = (
                         int(VIP_CONFIG.get(getattr(jackpot_winner_user, "vip_tier", "") or "", {}).get("jackpot_bonus", 0.0) * 10000)
                         if (jackpot_winner_user and jackpot_winner_user.is_vip) else 0
