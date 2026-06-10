@@ -69,10 +69,21 @@ Eres un agente de desarrollo trabajando en el proyecto **Axolotto**. Tienes acce
 # Comentar sin mover
 .\tools\taskboard\bin\taskboard.ps1 comment task-1234567890-0 "Esperando que el PR se mergee..."
 
+# Adjuntar un doc a la tarjeta (badge 📄 Plan) — "" desvincula
+.\tools\taskboard\bin\taskboard.ps1 attach task-1234567890-0 docs/plan_mi_feature.md
+
 # Ver tareas
 .\tools\taskboard\bin\taskboard.ps1 list doing
 .\tools\taskboard\bin\taskboard.ps1 get task-1234567890-0
 ```
+
+## Documentos adjuntos (plan_doc)
+
+- Una tarea puede tener UN doc Markdown vinculado (`planning_data.plan_doc_path`).
+- En el tablero, la tarjeta muestra el badge **📄 Plan**; al pulsarlo se abre el visor de docs directamente en ese archivo (acceso rápido). El panel de detalle muestra el mismo link clicable.
+- La IA lo setea automáticamente al generar un plan en `planning`. Tú puedes setearlo con `attach`.
+- Regla: si escribes un plan, auditoría o diseño para una tarea, guárdalo en `docs/` (ruta relativa al repo, terminado en `.md`) y adjúntalo con `attach` en el mismo paso. El API valida que el archivo exista dentro de `docs/`.
+- Antes de trabajar una tarea, corre `get <id>`: si imprime "📄 docs/...", lee ese documento primero — contiene el plan detallado.
 
 ## Asignación por especialidad
 

@@ -267,7 +267,7 @@ function renderBoard() {
         let docBadgeHtml = '';
         const planDocPath = (task.planning_data && task.planning_data.plan_doc_path) || '';
         if (planDocPath) {
-            docBadgeHtml = `<span class="task-badge task-doc-badge" onclick="event.stopPropagation(); openDocFromBadge('${escapeHtml(planDocPath)}')" title="Ver plan: ${escapeHtml(planDocPath)}" style="cursor:pointer;">Plan</span>`;
+            docBadgeHtml = `<span class="task-badge task-doc-badge" onclick="event.stopPropagation(); openDocFromBadge('${escapeHtml(planDocPath)}')" title="Abrir en el visor de docs: ${escapeHtml(planDocPath)}" style="cursor:pointer;">📄 Plan</span>`;
         }
 
         // Determine if we're in Plan A (Agy orchestrator) or Plan B (Chat AI)
@@ -346,7 +346,7 @@ function renderBoard() {
             ${execCmdHtml}
             <div class="card-footer" onclick="event.stopPropagation()">
                 <span class="model-badge ${modelClass}">${modelLabel}</span>
-                <span class="task-id-badge" onclick="copyTaskId('${escapeHtml(task.id)}')" title="Copiar ID: ${escapeHtml(task.id)}">#${escapeHtml(task.id.split('-').pop())}</span>
+                <span class="task-id-badge" onclick="copyTaskId('${escapeHtml(task.id)}')" title="Copiar ID: ${escapeHtml(task.id)}">#${escapeHtml(task.id)}</span>
                 <div class="card-actions">
                     <button class="action-btn" onclick="openEditTaskModal('${task.id}')" title="Editar">
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>

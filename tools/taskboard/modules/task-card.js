@@ -168,10 +168,15 @@ function loadTaskDetails(id) {
         let extraHtml = '';
         const planPrev = task.planning_data?.plan_preview;
         const planDoc = task.planning_data?.plan_doc_path;
+        if (planDoc) {
+            extraHtml += `<div onclick="openDocFromBadge('${escapeHtml(planDoc)}')" title="Abrir en el visor de docs"
+                style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;padding:8px 10px;border:1px solid rgba(162,155,254,0.25);border-radius:8px;background:rgba(162,155,254,0.06);cursor:pointer;">
+                📄 <span style="text-decoration:underline;">${escapeHtml(planDoc)}</span>
+            </div>`;
+        }
         if (planPrev && task.status === 'planning') {
             extraHtml += `<div class="plan-preview-block">
                 <strong>📋 Plan generado por IA</strong>
-                ${planDoc ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">📄 ${escapeHtml(planDoc)}</div>` : ''}
                 <pre>${escapeHtml(planPrev)}</pre>
             </div>`;
         }

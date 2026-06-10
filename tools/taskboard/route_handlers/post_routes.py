@@ -308,6 +308,29 @@ def handle_post(handler, path, body):
             planning_data["dependencies"] = body["dependencies"]
             task_to_update["planning_data"] = planning_data
 
+        if "plan_doc_path" in body:
+            planning_data = task_to_update.get("planning_data", {})
+            if not isinstance(planning_data, dict):
+                planning_data = {}
+            doc_rel = (body["plan_doc_path"] or "").strip().replace("\\", "/")
+            if doc_rel:
+                # Security: must be an existing .md inside REPO_ROOT/docs
+                abs_doc = os.path.normpath(os.path.join(REPO_ROOT, doc_rel))
+                docs_dir = os.path.normpath(os.path.join(REPO_ROOT, "docs"))
+                if not abs_doc.startswith(docs_dir) or not doc_rel.endswith(".md") or not os.path.isfile(abs_doc):
+                    handler.send_response(400)
+                    handler.send_header("Content-Type", "application/json; charset=utf-8")
+                    handler.end_headers()
+                    handler.wfile.write(json.dumps({
+                        "success": False,
+                        "message": f"Doc no encontrado o fuera de docs/: {doc_rel}"
+                    }, ensure_ascii=False).encode('utf-8'))
+                    return
+                planning_data["plan_doc_path"] = doc_rel
+            else:
+                planning_data.pop("plan_doc_path", None)
+            task_to_update["planning_data"] = planning_data
+
         task_to_update["title"] = body.get("title", task_to_update["title"])
         task_to_update["description"] = body.get("description", task_to_update["description"])
         task_to_update["assigned_to"] = body.get("assigned_to", task_to_update["assigned_to"])

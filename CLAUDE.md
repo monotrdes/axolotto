@@ -52,6 +52,14 @@ axolotto/
 10. **Do NOT start servers** from agent tasks — verify with unit tests or static analysis
 11. **Changelog on merge**: every merge to `develop` MUST append an entry to `wiki/CHANGELOG.md` — automated by taskboard, but verify it ran
 
+## Taskboard (Kanban)
+
+- Tablero visual en http://localhost:8181 — se gestiona SOLO manualmente con `/taskboard <acción>` (skill de invocación manual, corre en fork con Haiku).
+- Ciclo: wishes → concepts → planning → doing → review → done.
+- **NUNCA commit/merge sin aprobación explícita del usuario** cuando hay trabajo en `review` (aprobación: "ok", "dale", "aprobado", "commit", "merge", "perfecto").
+- `done` = aprobado + commiteado + mergeado a develop. No mover a `done` sin aprobación.
+- Worktrees de tareas en `D:\Axolotto_2026\.axolotto_worktrees\<task-id>\`.
+
 ## Key Backend Files
 
 | File | Purpose |

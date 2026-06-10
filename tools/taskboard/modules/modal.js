@@ -868,48 +868,17 @@ function _relTime(ms) {
 // ── Doc Badge Click ─────────────────────────────────────────────────
 
 window.openDocFromBadge = function(docPath) {
-    // Open docs modal
     const docsModal = document.getElementById('docs-modal');
-    if (docsModal) docsModal.style.display = 'flex';
-
-    // Load the specific doc
+    if (docsModal) docsModal.classList.add('open');
+    const search = document.getElementById('docs-search');
+    if (search) search.value = '';
+    // Set before loadDocsList so it doesn't auto-open the most recent doc
+    _activeDocPath = docPath;
     loadDocsList().then(() => {
-        // Find and select this doc in the sidebar
-        const items = document.querySelectorAll('.docs-file-item');
-        for (const item of items) {
-            if (item.dataset.path === docPath || item.dataset.path.endsWith(docPath)) {
-                item.click();
-                return;
-            }
-        }
-        // Also try .docs-file elements
-        const fileItems = document.querySelectorAll('.docs-file');
-        for (const item of fileItems) {
-            const title = item.getAttribute('title') || '';
-            const onclick = item.getAttribute('onclick') || '';
-            if (title === docPath || title.endsWith(docPath) || onclick.includes(docPath)) {
-                item.click();
-                return;
-            }
-        }
-        // If not found in list, load directly
-        loadDocContentByPath(docPath);
+        const match = _allDocs.find(f => f.path === docPath || f.path.endsWith(docPath) || docPath.endsWith(f.path));
+        loadDoc(match ? match.path : docPath);
     });
 };
-
-async function loadDocContentByPath(path) {
-    try {
-        const resp = await fetch('/api/docs/content?path=' + encodeURIComponent(path));
-        if (!resp.ok) return;
-        const data = await resp.json();
-        const preview = document.getElementById('docs-preview');
-        if (preview && data.content) {
-            preview.innerHTML = (typeof marked !== 'undefined')
-                ? marked.parse(data.content)
-                : '<pre>' + escapeHtml(data.content) + '</pre>';
-        }
-    } catch(e) { console.error(e); }
-}
 
 function escapeHtml(s) {
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');

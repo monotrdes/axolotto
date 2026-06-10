@@ -14,7 +14,7 @@
 #>
 
 param(
-    [ValidateSet("create","move","status","comment","list","get","help")]
+    [ValidateSet("create","move","status","comment","attach","list","get","help")]
     [string]$Action = "help",
 
     [string]$Arg1,  # task-id for move/status/comment/get, title for create
@@ -139,6 +139,36 @@ switch ($Action) {
         }
     }
 
+    "attach" {
+        # Vincula un doc Markdown (relativo al repo, dentro de docs/) a una tarea.
+        # La tarjeta mostrará el badge 📄 Plan que abre el visor de docs.
+        # Pasar "" como ruta para desvincular el doc.
+        $taskId = $Arg1
+        $docPath = $Arg2
+
+        if (-not $taskId) {
+            Write-Host "Uso: taskboard.ps1 attach <task-id> <ruta-doc|''>"
+            Write-Host "Ej:  taskboard.ps1 attach task-123 docs/plan_mi_feature.md"
+            exit 1
+        }
+
+        $body = @{ id = $taskId; plan_doc_path = $docPath } | ConvertTo-Json
+
+        Write-Host "Adjuntando doc a $taskId" -ForegroundColor Cyan
+        try {
+            $response = Invoke-RestMethod -Uri "$BASE/api/tasks/edit" -Method Post -Body $body -ContentType "application/json"
+            if ($docPath) {
+                Write-Host "✅ Doc vinculado: $docPath" -ForegroundColor Green
+            } else {
+                Write-Host "✅ Doc desvinculado" -ForegroundColor Green
+            }
+        } catch {
+            $errorMsg = $_.ErrorDetails.Message
+            if (-not $errorMsg) { $errorMsg = $_ }
+            Write-Host "❌ Error: $errorMsg" -ForegroundColor Red
+        }
+    }
+
     "list" {
         $column = $Arg1
         Write-Host "Tareas del tablero:" -ForegroundColor Cyan
@@ -223,6 +253,7 @@ USO:
   taskboard.ps1 move <task-id> <columna>
   taskboard.ps1 status <task-id> <columna> [comentario]
   taskboard.ps1 comment <task-id> <comentario>
+  taskboard.ps1 attach <task-id> <ruta-doc>     (ej: docs/plan_x.md — '' desvincula)
   taskboard.ps1 list [columna]
   taskboard.ps1 get <task-id>
 
