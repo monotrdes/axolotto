@@ -4,10 +4,13 @@ from typing import Optional, Dict, Any
 
 # ── VIP_CONFIG: montos monetarios en unidad mínima entera (VULN-06) ─────
 # price_axg, welcome_gal → enteros. Descuentos/comisiones → basis points (0-10000).
+# Rediseño §1 del plan económico (docs/plan_economia_devex_fintech.md):
+# valor de conveniencia y estatus — sin bonos que multipliquen ganancias
+# ni pozos de azar (jackpot_bonus_bps=0 en todos los niveles, cortafuegos legal).
 VIP_CONFIG: Dict[str, Any] = {
     "coral": {
-        "price_axg": 400 * (10 ** 6),        # 400 AXF
-        "gal_daily": 40 * (10 ** 4),          # 40 FRJ/día
+        "price_axg": 50 * (10 ** 6),          # 50 AXF ($100 MXN/mes)
+        "gal_daily": 20 * (10 ** 4),          # 20 FRJ/día
         "discount_bps": 500,                  # 5.00% (basis points)
         "capsulas_mensuales": {"bronce": 2},
         "table_bonus_slots": 0,
@@ -21,8 +24,8 @@ VIP_CONFIG: Dict[str, Any] = {
         # legacy accessors kept for backward compat (set via __init__ below)
     },
     "dorado": {
-        "price_axg": 600 * (10 ** 6),         # 600 AXF
-        "gal_daily": 100 * (10 ** 4),         # 100 FRJ/día
+        "price_axg": 120 * (10 ** 6),         # 120 AXF ($240 MXN/mes)
+        "gal_daily": 50 * (10 ** 4),          # 50 FRJ/día
         "discount_bps": 1200,                 # 12.00%
         "capsulas_mensuales": {"bronce": 2, "plata": 1},
         "table_bonus_slots": 1,
@@ -35,14 +38,14 @@ VIP_CONFIG: Dict[str, Any] = {
         "popular": True,
     },
     "axolite": {
-        "price_axg": 1800 * (10 ** 6),        # 1800 AXF
-        "gal_daily": 200 * (10 ** 4),         # 200 FRJ/día
+        "price_axg": 300 * (10 ** 6),         # 300 AXF ($600 MXN/mes)
+        "gal_daily": 130 * (10 ** 4),         # 130 FRJ/día
         "discount_bps": 2000,                 # 20.00%
         "capsulas_mensuales": {"bronce": 3, "plata": 2, "oro": 1},
         "table_bonus_slots": 2,
         "axolotito_bonus_slots": 1,
-        "p2p_commission_bps": 150,            # 1.50%
-        "jackpot_bonus_bps": 500,             # 5.00%
+        "p2p_commission_bps": 200,            # 2.00% especial
+        "jackpot_bonus_bps": 0,               # 0% — sin bonos de azar
         "multiplayer_discount_bps": 1500,     # 15.00%
         "welcome_gal": 1000 * (10 ** 4),      # 1000 FRJ
         "welcome_boosters": ["foil"],
@@ -96,6 +99,10 @@ MULTIPLAYER_CURRENCY: str = "frijolito"
 AXF_DECIMALS_BACKEND: int = 6
 FRJ_DECIMALS_BACKEND: int = 4
 
+# ── Ley económica (§1 del plan): 1 AXF = $2.00 MXN fijo ───────────────────
+# Relación lineal estricta para evitar arbitrajes. En centavos MXN.
+AXF_MXN_CENTS: int = 200
+
 # Factores de conversión: multiplicar una cantidad en unidad mínima de backend
 # por este factor para obtener wei (18 decimales) on-chain.
 #   backend → wei:  amount * 10**(18 - DECIMALS)
@@ -147,6 +154,11 @@ class Settings(BaseSettings):
 
     # ── Checkout / Cripto ────────────────────────────────────────────────────
     USDC_ADDRESS: str = ""   # Contrato USDC en Polygon Amoy (ERC-20, 6 decimales)
+
+    # ── Tianguis P2P fiat (docs/plan_economia_devex_fintech.md) ──────────────
+    MARKET_ESCROW_ADDRESS: str = ""          # contrato MarketEscrow.sol
+    PAYMENT_WEBHOOK_SECRET: str = "axolotto_dev_webhook_secret"  # HMAC webhooks pasarela
+    P2P_QUARANTINE_HOURS: int = 72           # cuarentena AXF_Earned (§4 AML)
 
     # ── Auth & Admin ──────────────────────────────────────────────────────────
     # Privy App ID for JWT Verification
@@ -200,6 +212,11 @@ class Settings(BaseSettings):
             raise ValueError(
                 "ALLOW_DEV_AUTH=True está prohibido fuera de modo local. "
                 "Elimínalo del .env de producción."
+            )
+        if self.BLOCKCHAIN_MODE != "local" and self.PAYMENT_WEBHOOK_SECRET == "axolotto_dev_webhook_secret":
+            raise ValueError(
+                "PAYMENT_WEBHOOK_SECRET debe configurarse con un valor propio "
+                "fuera de modo local (firma HMAC de webhooks de pago)."
             )
         return self
 
