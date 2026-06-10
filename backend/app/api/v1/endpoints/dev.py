@@ -4,6 +4,11 @@ dev.py — Endpoints de desarrollo. Solo activos en BLOCKCHAIN_MODE=local.
 Rutas:
   POST /api/v1/dev/reset-tutorial          — Resetea el tutorial del usuario autenticado
   POST /api/v1/dev/fill-multiplayer-rooms  — Llena una sala con jugadores mock para testing
+
+Seguridad:
+  - El router entero solo se monta si BLOCKCHAIN_MODE == "local" (main.py).
+  - Dependency de router: _check_dev_mode_dep (404 si no es local, no revela existencia).
+  - Todos los endpoints requieren autenticación de admin (require_admin).
 """
 
 import json
@@ -13,7 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlmodel import Session, select
 from datetime import datetime, timedelta
 
-from app.core.auth import get_verified_user_id
+from app.core.auth import get_verified_user_id, require_admin
 from app.core.config import settings
 from app.core.prices import MULTIPLAYER_FEES
 from app.database import get_session
@@ -28,15 +33,20 @@ from app.services.multiplayer_service import get_or_create_waiting_room
 
 _rng = random.SystemRandom()
 
-router = APIRouter()
+# ── Dev Auto-Reward ────────────────────────────────────────────────────
+# Valores modestos para testing local. Fuente de verdad para user_service y simulación.
+DEV_AUTO_REWARD_AXF: float = 1000.0
+DEV_AUTO_REWARD_FRJ: float = 5000.0
 
 
-def _check_dev_mode():
+def _check_dev_mode_dep():
+    """Dependency del router: bloquea con 404 si no es modo local.
+    Usa 404 en vez de 403 para no revelar la existencia de estos endpoints en producción."""
     if settings.BLOCKCHAIN_MODE != "local":
-        raise HTTPException(
-            status_code=403,
-            detail="Este endpoint solo está disponible en modo desarrollo (BLOCKCHAIN_MODE=local).",
-        )
+        raise HTTPException(status_code=404)
+
+
+router = APIRouter(dependencies=[Depends(_check_dev_mode_dep)])
 
 
 @router.post("/reset-tutorial")
@@ -44,6 +54,7 @@ def reset_tutorial(
     delete_axolotito: bool = False,
     session: Session = Depends(get_session),
     user_id: str = Depends(get_verified_user_id),
+    _admin: str = Depends(require_admin),
 ):
     """
     Resetea completamente el estado del tutorial del usuario autenticado:
@@ -51,9 +62,8 @@ def reset_tutorial(
     - User: tutorial_completed=False, is_new_user tratado como False (no se toca)
     - Opcional: elimina el Axolotito nacido del tutorial si delete_axolotito=True
 
-    Solo disponible con BLOCKCHAIN_MODE=local.
+    Requiere autenticación de admin. Solo disponible con BLOCKCHAIN_MODE=local.
     """
-    _check_dev_mode()
 
     actions = []
 
@@ -113,20 +123,20 @@ def reset_tutorial(
                 code="DEV_AUTO",
                 batch="dev",
                 reward_type="booster_pack",
-                reward_axofichas=settings.DEV_AUTO_REWARD_AXF,
-                reward_frijolitos=settings.DEV_AUTO_REWARD_FRJ,
+                reward_axofichas=DEV_AUTO_REWARD_AXF,
+                reward_frijolitos=DEV_AUTO_REWARD_FRJ,
             )
             session.add(dev_code)
             session.flush()
         pending = PendingReward(
             user_id=user_id,
             promo_code_id=dev_code.id,
-            reward_axf=settings.DEV_AUTO_REWARD_AXF,
-            reward_frj=settings.DEV_AUTO_REWARD_FRJ,
+            reward_axf=DEV_AUTO_REWARD_AXF,
+            reward_frj=DEV_AUTO_REWARD_FRJ,
             expires_at=datetime.utcnow() + timedelta(days=365),
         )
         session.add(pending)
-        actions.append(f"PendingReward creada: {settings.DEV_AUTO_REWARD_AXF:.0f} AXF + {settings.DEV_AUTO_REWARD_FRJ:.0f} FRJ")
+        actions.append(f"PendingReward creada: {DEV_AUTO_REWARD_AXF:.0f} AXF + {DEV_AUTO_REWARD_FRJ:.0f} FRJ")
 
     # 3. Opcional: eliminar Axolotito nacido
     if delete_axolotito:
@@ -154,6 +164,8 @@ def fill_multiplayer_rooms(
     axf_amount: float = Query(default=0.0, ge=0.0, description="Cantidad de AXF (axofichas) por jugador mock"),
     frj_amount: float = Query(default=10000.0, ge=0.0, description="Cantidad de FRJ (frijolitos) por jugador mock"),
     session: Session = Depends(get_session),
+    user_id: str = Depends(get_verified_user_id),
+    _admin: str = Depends(require_admin),
 ):
     """
     Crea jugadores mock (did:privy:dev_mock_1..N) con Axolotitos y tablas,
@@ -162,10 +174,8 @@ def fill_multiplayer_rooms(
     Las salas pobladas SOLO con mocks no inician automáticamente en modo local —
     permanecen en 'waiting' hasta que el desarrollador se une.
 
-    Solo disponible con BLOCKCHAIN_MODE=local.
+    Requiere autenticación de admin. Solo disponible con BLOCKCHAIN_MODE=local.
     """
-    _check_dev_mode()
-
     _room_type = room_type
     if _room_type == "rookie":
         _room_type = "rookie_pool"

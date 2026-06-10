@@ -8,6 +8,7 @@ from slowapi import _rate_limit_exceeded_handler
 
 from app.api.v1.endpoints import bank, user, shop, incubation, metadata, legacy, board, game, ranking, multiplayer, checkout, market, leonardo, admin, whitelist, codes, f2p, tutorial, cave_expansion, admin_events, events, dev, rewards, staking
 from app.api.v1.ws import game_ws
+from app.core.config import settings
 
 app = FastAPI(title="Axolotto API")
 app.state.limiter = limiter
@@ -500,7 +501,8 @@ app.include_router(f2p.router, prefix="/api/v1/f2p", tags=["F2P — Huevo Durmie
 app.include_router(tutorial.router, prefix="/api/v1/tutorial", tags=["Tutorial del Axolotito"])
 app.include_router(cave_expansion.router, prefix="/api/v1/cave", tags=["Cenote — Expansión"])
 app.include_router(admin_events.router, prefix="/api/v1/admin/events", tags=["admin-events"])
-app.include_router(dev.router, prefix="/api/v1/dev", tags=["Dev Tools"])
+if settings.BLOCKCHAIN_MODE == "local":
+    app.include_router(dev.router, prefix="/api/v1/dev", tags=["Dev Tools"])
 app.include_router(events.router, prefix="/api/v1/events", tags=["events"])
 app.include_router(rewards.router, prefix="/api/v1/rewards", tags=["Rewards"])
 app.include_router(staking.router, prefix="/api/v1/staking", tags=["Staking"])

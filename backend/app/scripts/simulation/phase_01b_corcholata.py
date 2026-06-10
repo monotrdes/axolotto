@@ -13,6 +13,7 @@ Pasos 3-4 ocurren en phase_04_incubation.py después de completar el tutorial.
 import secrets
 
 from sqlmodel import Session
+from app.api.v1.endpoints.dev import DEV_AUTO_REWARD_AXF, DEV_AUTO_REWARD_FRJ
 from fastapi import HTTPException
 
 from app.models.promo import PromoCode
@@ -29,8 +30,8 @@ def _create_unique_code(session: Session, player_index: int) -> PromoCode:
         code=code,
         batch="simulation",
         reward_type="starter_pack",
-        reward_axofichas=settings.DEV_AUTO_REWARD_AXF,
-        reward_frijolitos=settings.DEV_AUTO_REWARD_FRJ,
+        reward_axofichas=DEV_AUTO_REWARD_AXF,
+        reward_frijolitos=DEV_AUTO_REWARD_FRJ,
         reward_item_id=None,
     )
     session.add(promo)

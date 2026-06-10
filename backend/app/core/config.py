@@ -123,9 +123,9 @@ class Settings(BaseSettings):
     SIMULATION_REPORT_PATH: str = "/app/simulation_report.txt"
 
     # ── Dev Corcholata Auto-Reward ────────────────────────────────────────────
-    # En modo local, todo nuevo usuario recibe automáticamente este premio.
-    DEV_AUTO_REWARD_AXF: float = 50000.0
-    DEV_AUTO_REWARD_FRJ: float = 500000.0
+    # Movido a backend/app/api/v1/endpoints/dev.py como constantes del módulo.
+    # Importar desde ahí si se necesita en modo local:
+    #   from app.api.v1.endpoints.dev import DEV_AUTO_REWARD_AXF, DEV_AUTO_REWARD_FRJ
 
     @model_validator(mode="after")
     def validate_usdc_address(self) -> 'Settings':

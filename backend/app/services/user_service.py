@@ -20,6 +20,7 @@ from app.core.config import VIP_CONFIG, settings
 from app.services.bank_service import BankService
 from app.services.web3_service import Web3Service
 from app.services.rarity_service import get_card_dynamic_rarities
+from app.api.v1.endpoints.dev import DEV_AUTO_REWARD_AXF, DEV_AUTO_REWARD_FRJ
 
 
 # ---------------------------------------------------------------------------
@@ -132,16 +133,16 @@ def sync_user(
                     code="DEV_AUTO",
                     batch="dev",
                     reward_type="booster_pack",
-                    reward_axofichas=settings.DEV_AUTO_REWARD_AXF,
-                    reward_frijolitos=settings.DEV_AUTO_REWARD_FRJ,
+                    reward_axofichas=DEV_AUTO_REWARD_AXF,
+                    reward_frijolitos=DEV_AUTO_REWARD_FRJ,
                 )
                 session.add(dev_code)
                 session.flush()
             pending = PendingReward(
                 user_id=verified_user_id,
                 promo_code_id=dev_code.id,
-                reward_axf=settings.DEV_AUTO_REWARD_AXF,
-                reward_frj=settings.DEV_AUTO_REWARD_FRJ,
+                reward_axf=DEV_AUTO_REWARD_AXF,
+                reward_frj=DEV_AUTO_REWARD_FRJ,
                 expires_at=datetime.utcnow() + timedelta(days=365),
             )
             session.add(pending)
