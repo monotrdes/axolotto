@@ -414,7 +414,7 @@ class TestTutorialLocks:
         board_db = session.exec(select(PlayerBoard).where(PlayerBoard.user_id == user.privy_did)).first()
         assert board_db is not None
         assert board_db.is_tutorial is True
-        assert board_db.name == "Tabla Tutorial"
+        assert board_db.name == "Acta de Nacimiento"
         assert axo_db.assigned_board_id == board_db.id
 
     def test_cannot_list_tutorial_axolotito_for_sale_or_rent(self, session):
