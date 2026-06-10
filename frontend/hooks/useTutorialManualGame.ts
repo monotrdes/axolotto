@@ -202,7 +202,7 @@ export function useTutorialManualGame(options: UseTutorialManualGameOptions): Us
 
   // Distraction overlay for phase 2
   const [showDistraction, setShowDistraction] = useState(false);
-  const [hasTriggeredDistraction, setHasTriggeredDistraction] = useState(false);
+  const hasTriggeredDistractionRef = useRef(false);
 
   // Stable boards
   const [cpuBoardsNums, setCpuBoardsNums] = useState<number[][]>(() => [fakeCpuBoard()]);
@@ -388,6 +388,7 @@ export function useTutorialManualGame(options: UseTutorialManualGameOptions): Us
       playerMissedRef.current = [];
       cpuMatchesAllRef.current = [[]];
       cpuMissedMainRef.current = [];
+      hasTriggeredDistractionRef.current = false;
     }
 
     const tick = () => {
@@ -414,8 +415,8 @@ export function useTutorialManualGame(options: UseTutorialManualGameOptions): Us
       calledIdxRef.current = localIdx;
 
       // ── 2. Interrupción por Distracción (Acto 6) ──
-      if (tutorialPhase === 2 && localIdx === 5 && !hasTriggeredDistraction) {
-        setHasTriggeredDistraction(true);
+      if (tutorialPhase === 2 && localIdx === 5 && !hasTriggeredDistractionRef.current) {
+        hasTriggeredDistractionRef.current = true;
         isPausedRef.current = true;
         setShowDistraction(true);
         const playerCellIdx = playerBoardNums.findIndex((n: number) => n === cardNum);
