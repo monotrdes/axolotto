@@ -32,7 +32,9 @@ def _interact_eggs(session: Session, user_id: str, incubation_time_s: int) -> No
 
 
 def _trigger_waiting_rooms(session: Session, stats: dict, errors: list, round_num: int) -> None:
-    """Fuerza el inicio de todas las salas en espera con al menos 1 inscripción."""
+    """Arranca todas las salas 'waiting' con inscripciones. El scheduler de
+    producción (cada 10s) puede haber arrancado algunas — no pasa nada,
+    _read_new_logs recolecta los resultados de cualquier sala ya procesada."""
     session.expire_all()
     waiting_rooms = session.exec(
         select(GameRoom).where(GameRoom.status == "waiting")
@@ -62,7 +64,12 @@ def _read_new_logs(
     registered: dict,
     all_logs: list,
 ) -> None:
-    """Lee MultiplayerGameLog no notificados y los imprime + acumula en all_logs."""
+    """Lee MultiplayerGameLog no notificados. Primero por user_id de los axos
+    registrados vía el sim, luego un barrido de cualquier log huérfano (salas
+    que arrancó el scheduler antes de que el sim las tocara)."""
+    seen_ids: set[int] = set()
+
+    # Pass 1: logs de los axolotitos que el sim registró
     for axo_id, info in registered.items():
         user_id = info["user_id"]
         new_logs = session.exec(
@@ -72,6 +79,7 @@ def _read_new_logs(
             .order_by(MultiplayerGameLog.created_at.asc())
         ).all()
         for log in new_logs:
+            seen_ids.add(log.id)
             icon = "🏆" if log.outcome == "Victoria" else "💔"
             print(f"    {icon} {log.axo_name:<22} │ {log.room_name:<26} │ "
                   f"Neto: {log.net_gal:+7.1f} GAL │ XP: +{log.xp_gained}")
@@ -85,6 +93,31 @@ def _read_new_logs(
             })
             log.notified = True
             session.add(log)
+        session.commit()
+
+    # Pass 2: cualquier log huérfano (salas arrancadas por el scheduler)
+    orphan_logs = session.exec(
+        select(MultiplayerGameLog)
+        .where(MultiplayerGameLog.notified == False)  # noqa: E712
+        .order_by(MultiplayerGameLog.created_at.asc())
+    ).all()
+    for log in orphan_logs:
+        if log.id in seen_ids:
+            continue
+        icon = "🏆" if log.outcome == "Victoria" else "💔"
+        print(f"    {icon} {log.axo_name:<22} │ {log.room_name:<26} │ "
+              f"Neto: {log.net_gal:+7.1f} GAL │ XP: +{log.xp_gained}")
+        all_logs.append({
+            "user_id": log.user_id,
+            "axo_name": log.axo_name,
+            "room_name": log.room_name,
+            "outcome": log.outcome,
+            "net_gal": log.net_gal,
+            "xp_gained": log.xp_gained,
+        })
+        log.notified = True
+        session.add(log)
+    if orphan_logs:
         session.commit()
 
 

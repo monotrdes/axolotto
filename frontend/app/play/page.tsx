@@ -44,7 +44,6 @@ const ZONE_TABS = [
   { id: 'tienda'    as TabId, label: 'Tianguis',  emoji: '🏪', color: '#FF6B35', glow: 'rgba(255,107,53,0.5)',  zone: 'tianguis' },
   { id: 'jugar'     as TabId, label: 'Sala',      emoji: '🎲', color: '#34D399', glow: 'rgba(52,211,153,0.5)',  zone: 'sala' },
   { id: 'rankings'  as TabId, label: 'Pirámide',  emoji: '🏆', color: '#FBBF24', glow: 'rgba(251,191,36,0.5)',  zone: 'piramide' },
-  { id: 'amigos'    as TabId, label: 'Amigos',    emoji: '👥', color: '#2DD4BF', glow: 'rgba(45,212,191,0.5)',  zone: 'amigos' },
   { id: 'gashapon'  as TabId, label: 'Cápsulas',  emoji: '🎰', color: '#A855F7', glow: 'rgba(168,85,247,0.5)',  zone: 'capsulas' },
 ] as const;
 

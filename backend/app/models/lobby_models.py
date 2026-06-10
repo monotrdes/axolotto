@@ -46,7 +46,7 @@ class GameRoom(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     name: str # e.g. "Charco de Novatos #1"
     room_type: str # "rookie" o "champion" o "player_hosted"
-    entry_fee_gal: int                     # VULN-06: unidad mínima entera
+    entry_fee_gal: int                     # FRJ human-readable (convertir con frj_to_internal al usarse en escrow)
     status: str = Field(default="waiting") # waiting, playing, finished
     created_at: datetime = Field(default_factory=datetime.utcnow)
     # Player-hosted rooms (cave table)

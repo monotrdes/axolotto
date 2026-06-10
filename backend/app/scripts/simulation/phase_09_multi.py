@@ -1,4 +1,5 @@
-﻿import time
+import time
+from datetime import datetime, timedelta
 
 from sqlmodel import Session, select
 from sqlalchemy import delete
@@ -8,6 +9,7 @@ from app.models.axolotito import Axolotito
 from app.models.board import PlayerBoard
 from app.models.lobby_models import GameRoom, RoomRegistration, JackpotVault, JackpotWin
 from app.services.bank_service import BankService
+from app.services.game_service import GameService
 from app.core.config import frj_to_internal
 from app.api.v1.endpoints.multiplayer import (
     register_axolotito, recall_axolotito,
@@ -30,6 +32,55 @@ def phase_multiplayer(engine, config, **state) -> dict:
 
     progress("  ⚔️  Simulando multijugador (con test de recall y espera real)...")
 
+    # ── Pre-multiplayer: limpiar salas stuck de runs anteriores ───────────
+    stuck_rooms = session.exec(
+        select(GameRoom).where(GameRoom.status.in_(["waiting", "playing"]))
+    ).all()
+    for sr in stuck_rooms:
+        sr.status = "finished"
+        session.add(sr)
+    stuck_axos = session.exec(
+        select(Axolotito).where(Axolotito.status == "playing")
+    ).all()
+    for sa in stuck_axos:
+        sa.status = "idle"
+        sa.energy_current = max(sa.energy_current or 100, 20)
+        session.add(sa)
+    old_regs = session.exec(select(RoomRegistration)).all()
+    for r in old_regs:
+        session.delete(r)
+    if stuck_rooms or stuck_axos or old_regs:
+        session.commit()
+        progress(f"  🧹 Limpiados {len(stuck_rooms)} salas stuck + {len(stuck_axos)} axos + {len(old_regs)} registros viejos.")
+
+    # ── Pre-multiplayer: despertar axolotitos dormidos ─────────────────────
+    # Phase 8 deja muchos axos en "sleeping" tras enfriamiento post-partida.
+    # Sin este paso, 0 axos idle → 0 partidas multijugador.
+    all_axos = session.exec(
+        select(Axolotito).where(Axolotito.status != "idle")
+    ).all()
+    awakened = 0
+    for axo in all_axos:
+        if axo.status == "sleeping":
+            axo.sleep_expires_at = datetime.utcnow() - timedelta(seconds=5)
+            session.add(axo)
+            session.commit()
+            try:
+                GameService.wake_axolotito(axo_id=axo.id, session=session, verified_user_id=axo.user_id)
+                session.refresh(axo)
+                awakened += 1
+            except Exception:
+                session.rollback()
+        elif axo.status == "playing":
+            # Stuck axos from previous phases — force back to idle
+            axo.status = "idle"
+            axo.energy_current = max(axo.energy_current or 100, 20)
+            session.add(axo)
+            session.commit()
+            awakened += 1
+    if awakened:
+        progress(f"  🌅 {awakened} axolotito(s) despertados/liberados para multijugador.")
+
     # ── Construir lista de jugadores elegibles ─────────────────────────────────
     eligible: list[tuple] = []  # (player_dict, axo, [boards])
     for p in players:
@@ -37,7 +88,7 @@ def phase_multiplayer(engine, config, **state) -> dict:
         axos = session.exec(
             select(Axolotito).where(
                 Axolotito.user_id == user_id,
-                Axolotito.status == "idle",
+                Axolotito.status.in_(["idle", "sleeping"]),
             )
         ).all()
         bids = boards_by_user.get(user_id, [])
@@ -182,26 +233,29 @@ def phase_multiplayer(engine, config, **state) -> dict:
     # Acumular todos los resultados de todas las rondas
     all_match_logs: list[dict] = []
 
-    # ── CICLO DE RONDAS ──────────────────────────────────────────────────────
+    # ── CICLO DE RONDAS ──────────────────────────────────────────────────
+    # Estrategia: NO competimos con el scheduler de producción (cada 10s).
+    # Él arranca las salas, nosotros esperamos y leemos resultados.
+    # Si tras la espera alguna sala sigue en "waiting", la arrancamos
+    # nosotros como fallback.
     MAX_ROUNDS = 3
     for round_num in range(1, MAX_ROUNDS + 1):
 
-        # Espera real simulando el lobby timer (30 s del scheduler)
-        progress(f"  ⏳ Ronda {round_num}: esperando {wait_secs}s "
-                 f"(como el scheduler en producción)...")
+        # Paso 1: esperar a que el scheduler haga su magia
+        progress(f"  ⏳ Ronda {round_num}: esperando {wait_secs}s (scheduler → match → logs)...")
         for tick in range(wait_secs, 0, -1):
             time.sleep(1)
-            if tick % 10 == 0 or tick <= 3:
+            if tick % 15 == 0 or tick <= 3:
                 progress(f"    🕐 {tick}s...")
 
-        # Disparar simulación de todas las salas en espera
+        # Paso 2: fallback — arrancar salas que el scheduler no tocó
         _trigger_waiting_rooms(session, stats, errors, round_num)
 
-        # Leer y mostrar resultados de esta ronda
+        # Paso 3: leer logs (del scheduler + del fallback sim)
         print(f"\n  📊 Resultados ronda {round_num}:")
         _read_new_logs(session, registered, all_match_logs)
 
-        # Liquidar los que terminaron (waiting_settlement)
+        # Paso 4: liquidar axolotitos que terminaron
         for axo_id, info in registered.items():
             axo = session.get(Axolotito, axo_id)
             if axo and axo.status == "waiting_settlement":
@@ -218,7 +272,7 @@ def phase_multiplayer(engine, config, **state) -> dict:
                 except HTTPException as e:
                     errors.append(f"multi_settle {info['user_id']}: {e.detail}")
 
-        # Revisar si queda alguien aún en juego (auto-re-inscrito)
+        # Paso 5: ¿queda alguien en juego?
         still_playing = [
             axo_id for axo_id in registered
             if (lambda a: a and a.status == "playing")(session.get(Axolotito, axo_id))

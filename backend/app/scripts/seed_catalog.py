@@ -293,7 +293,7 @@ def run_seed():
             ),
             ItemCatalog(
                 name="Pase Coral VIP (30 días)",
-                description="Entrada al VIP Club: +40 GAL/día (reclamar diario), 5% descuento en tienda, 1 Gashapón/mes y marco Coral exclusivo.",
+                description="VIP Club Casual: +20 FRJ/día, 5% descuento en tienda, cápsulas mensuales y marco Coral exclusivo.",
                 item_type=ItemType.CONSUMABLE,
                 rarity=Rarity.RARE,
                 price_axg=CONSUMABLE_PRICES["vip_coral"],
@@ -304,7 +304,7 @@ def run_seed():
             ),
             ItemCatalog(
                 name="Pase Dorado VIP (30 días)",
-                description="+100 GAL/día, 12% descuento, slot de tabla extra, comisión P2P 3%, caja mensual y corona animada.",
+                description="VIP Club Frecuente: +50 FRJ/día, 12% descuento, slot de tabla extra, comisión P2P 3%, cápsulas mensuales y corona animada.",
                 item_type=ItemType.CONSUMABLE,
                 rarity=Rarity.EPIC,
                 price_axg=CONSUMABLE_PRICES["vip_dorado"],
@@ -315,7 +315,7 @@ def run_seed():
             ),
             ItemCatalog(
                 name="Pase Axolite VIP (30 días)",
-                description="+200 GAL/día, 20% descuento, 2 slots de tabla, slot axolotito extra, +5% en jackpots y marco animado legendario.",
+                description="VIP Club Hardcore: +130 FRJ/día, 20% descuento, 2 slots de tabla, slot axolotito extra, comisión P2P 2% y marco animado legendario.",
                 item_type=ItemType.CONSUMABLE,
                 rarity=Rarity.LEGENDARY,
                 price_axg=CONSUMABLE_PRICES["vip_axolite"],

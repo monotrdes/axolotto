@@ -165,22 +165,23 @@ def register_axolotito(
             )
             
     # 5. Validar que el presupuesto cubra al menos una entrada para cada tabla inscrita
-    fee_per_board = MULTIPLAYER_FEES[_room_type]
-    min_budget = fee_per_board * len(req.boards)
+    fee_per_board = MULTIPLAYER_FEES[_room_type]            # human-readable FRJ
+    min_budget = fee_per_board * len(req.boards)             # human-readable FRJ
     if req.budget_gal < min_budget:
         raise HTTPException(
             status_code=400,
-            detail=f"Presupuesto insuficiente. Requieres al menos {min_budget} GAL para jugar {len(req.boards)} tablas."
+            detail=f"Presupuesto insuficiente. Requieres al menos {min_budget:.0f} FRJ para jugar {len(req.boards)} tablas."
         )
-        
+
+    _budget_int = frj_to_internal(req.budget_gal)  # convertir una sola vez
+
     # 6. Validar balance de cartera del usuario (bloquear cartera de forma pesimista)
     # MULTIPLAYER CURRENCY: Solo Frijolitos (FRJ). Axofichas (AXF) prohibido por compliance.
     wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
-    assert_multijugador_currency(wallet, req.budget_gal)
+    assert_multijugador_currency(wallet, _budget_int)
 
     # --- TRANSACCIÓN ECONÓMICA A CUSTODIA (ESCROW) ---
-    wallet.frijolitos -= req.budget_gal
-    _budget_int = frj_to_internal(req.budget_gal)
+    wallet.frijolitos -= _budget_int
     axo.escrow_balance_gal = _budget_int
     axo.bot_budget_axg = _budget_int
     axo.bot_loss_limit_axg = _budget_int * int(req.loss_limit_pct) // 100
@@ -590,16 +591,16 @@ def join_player_room(
         if not (is_owner or is_renter):
             raise HTTPException(status_code=400, detail=f"No tienes permiso sobre la tabla #{board_id}.")
 
-    # Validar presupuesto
+    # Validar presupuesto (ambos en human-readable FRJ)
     fee = room.entry_fee_gal * len(req.boards)
     if req.budget_gal < fee:
-        raise HTTPException(status_code=400, detail=f"Presupuesto insuficiente. Necesitas al menos {fee} GAL.")
-    wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
-    assert_multijugador_currency(wallet, req.budget_gal)
-
-    # Mover fondos a escrow (FRJ)
-    wallet.frijolitos -= req.budget_gal
+        raise HTTPException(status_code=400, detail=f"Presupuesto insuficiente. Necesitas al menos {fee:.0f} FRJ.")
     _budget_int = frj_to_internal(req.budget_gal)
+    wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
+    assert_multijugador_currency(wallet, _budget_int)
+
+    # Mover fondos a escrow (FRJ, internal mínimo)
+    wallet.frijolitos -= _budget_int
     axo.escrow_balance_gal = _budget_int
     axo.bot_budget_axg = _budget_int
     axo.bot_loss_limit_axg = _budget_int * int(req.loss_limit_pct) // 100

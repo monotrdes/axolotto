@@ -70,9 +70,9 @@ GASHAPON_TIER_COSTS = {
 CONSUMABLE_PRICES = {
     "gotas": 200 * _FRJ,                # Gotas Anti-Escarcha (FRJ)
     "lampara": 200 * _AXF,              # Lámpara Infrarroja Pro (AXF)
-    "vip_coral": 400 * _AXF,            # Pase Coral VIP 30 días (AXF)
-    "vip_dorado": 600 * _AXF,           # Pase Dorado VIP 30 días (AXF)
-    "vip_axolite": 1800 * _AXF,         # Pase Axolite VIP 30 días (AXF)
+    "vip_coral": 50 * _AXF,             # Pase Coral VIP 30 días ($100 MXN)
+    "vip_dorado": 120 * _AXF,           # Pase Dorado VIP 30 días ($240 MXN)
+    "vip_axolite": 300 * _AXF,          # Pase Axolite VIP 30 días ($600 MXN)
     "alimento_comun": 30 * _FRJ,        # Algae Pellet (FRJ)
     "alimento_premium": 150 * _FRJ,     # Brine Shrimp (FRJ)
     "solvente": 1 * _AXF,               # 1 AXF (era 120 FRJ)
@@ -97,30 +97,29 @@ BOARD_SLOT_COSTS = {
     9: 15000 * _FRJ,
 }
 
-# --- MULTIPLAYER FEES (FRJ) ---
-# Solo 2 salas públicas oficiales (rookie_pool y champion_abyss).
-# Basado en: paquete más barato = 200 FRJ por $35 MXN.
-#   → Rookie:  25 FRJ ($4.38 MXN) — 8 juegos por paquete
-#   → Champion: 100 FRJ ($17.50 MXN) — 2 juegos por paquete
-# Player-hosted (cave) rooms usan buy_in_frj configurable.
+# --- MULTIPLAYER FEES (FRJ, human-readable) ---
+# Se aplica frj_to_internal() al guardar en DB. Aquí en unidades legibles.
+# Basado en: booster pure = 60 FRJ, gashapon bronce = 1500 FRJ.
+#   → Rookie:  10 FRJ (~$1.75 MXN) — accesible, ~20 juegos por booster
+#   → Champion: 50 FRJ (~$8.75 MXN) — riesgo moderado, ~4 juegos por booster
 MULTIPLAYER_FEES = {
-    "rookie_pool": 25 * _FRJ,
-    "champion_abyss": 100 * _FRJ,
-    # Legacy keys — mantener para compatibilidad con datos existentes
-    "rookie": 25 * _FRJ,
-    "champion": 100 * _FRJ,
+    "rookie_pool": 10,
+    "champion_abyss": 50,
+    # Legacy keys — mantener para compatibilidad
+    "rookie": 10,
+    "champion": 50,
 }
 
 # --- MULTIPLAYER ROOMS CONFIG ---
-# fee, prize, consolation en FRJ (multiplicar por _FRJ)
+# fee, prize, consolation en FRJ human-readable
 # XP se mantiene como entero (no es monto monetario)
 MULTIPLAYER_ROOMS = {
     "rookie_pool": {
         "title": "Charco de Novatos",
         "difficulty_label": "Fácil",
-        "fee": 25 * _FRJ,
-        "prize": 85 * _FRJ,
-        "consolation": 8 * _FRJ,
+        "fee": 10,
+        "prize": 40,
+        "consolation": 5,
         "win_xp_board": 25,
         "win_xp_axo": 35,
         "loss_xp_board": 8,
@@ -129,9 +128,9 @@ MULTIPLAYER_ROOMS = {
     "champion_abyss": {
         "title": "Fosa del Campeón",
         "difficulty_label": "Difícil",
-        "fee": 100 * _FRJ,
-        "prize": 400 * _FRJ,
-        "consolation": 20 * _FRJ,
+        "fee": 50,
+        "prize": 200,
+        "consolation": 10,
         "win_xp_board": 60,
         "win_xp_axo": 75,
         "loss_xp_board": 15,
@@ -139,18 +138,18 @@ MULTIPLAYER_ROOMS = {
     },
     # Legacy keys — mantener para compatibilidad
     "rookie": {
-        "fee": 25 * _FRJ,
-        "prize": 85 * _FRJ,
-        "consolation": 8 * _FRJ,
+        "fee": 10,
+        "prize": 40,
+        "consolation": 5,
         "win_xp_board": 25,
         "win_xp_axo": 35,
         "loss_xp_board": 8,
         "loss_xp_axo": 8,
     },
     "champion": {
-        "fee": 100 * _FRJ,
-        "prize": 400 * _FRJ,
-        "consolation": 20 * _FRJ,
+        "fee": 50,
+        "prize": 200,
+        "consolation": 10,
         "win_xp_board": 60,
         "win_xp_axo": 75,
         "loss_xp_board": 15,

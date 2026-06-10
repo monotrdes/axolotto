@@ -2,32 +2,32 @@
 ======================================================================
 📊  REPORTE FINAL — SIMULADOR AXOLOTTO v3
 ======================================================================
-👥  Usuarios creados:          96
-🎟️  Corcholatas canjeadas:     102
+👥  Usuarios creados:          0
+🎟️  Corcholatas canjeadas:     8
 🎁  Corcholatas reclamadas:    5
-💸  AXF comprados (Sim.):      1131000 AXF (Pesos: $149667.00 MXN)
-💎  Paquetes FRJ comprados:    448
-🃏  Boosters normales:         1421
+💸  AXF comprados (Sim.):      63500 AXF (Pesos: $7946.00 MXN)
+💎  Paquetes FRJ comprados:    34
+🃏  Boosters normales:         80
 ✨  Boosters foil:             0
 🎯  Boosters extra (abiertos): 0
-🎴  Cartas abiertas total:     7679
+🎴  Cartas abiertas total:     392
 🥚  Webitos adoptados:         0
-🐣  Axolotitos eclosionados:   102
-🎓  Tutoriales completados:    102 (Tabla Tutorial creada)
-🧬  Naturalezas obtenidas:     shy: 17, hyperactive: 19, wise: 19, lucky: 17, methodical: 13, glutton: 17
-😇  Karma Lucky:               89
-🧂  Karma Salty:               13
+🐣  Axolotitos eclosionados:   8
+🎓  Tutoriales completados:    8 (Tabla Tutorial creada)
+🧬  Naturalezas obtenidas:     hyperactive: 1, glutton: 1, methodical: 1, shy: 3, wise: 2
+😇  Karma Lucky:               7
+🧂  Karma Salty:               1
 💧  Gotas Anti-Escarcha:       0
-🌤️  Clima incubación:          cold_fog
+🌤️  Clima incubación:          energizing_dew
 🎉  Evento de prueba creado:   No
 ----------------------------------------------------------------------
-🎰  Gashapon rolls:            346
+🎰  Gashapon rolls:            26
 💊  Cápsulas reclamadas:       0
-🌟  Triple Suerte:             40
-📋  Tableros creados:          188  (0 manuales)
-🏪  Tableros en venta P2P:     22
+🌟  Triple Suerte:             3
+📋  Tableros creados:          16  (0 manuales)
+🏪  Tableros en venta P2P:     1
 🏠  Tableros en renta:         0
-📈  Slots desbloqueados:       40
+📈  Slots desbloqueados:       3
 🦎  Axos en venta P2P:         0
 ----------------------------------------------------------------------
 👑  VIP activados:             0
@@ -35,31 +35,51 @@
 🌿  FRJ VIP reclamados:        0
 💸  Ahorro jugadores (VIP):    0.00 AXF  ← ingresos perdidos por la casa
 ----------------------------------------------------------------------
-🎮  Partidas individuales:     1237
-  🏆 Victorias:               391  (31.6%)
-  💔 Derrotas:                846
-  🤖 Autojuego:               237 partidas
-  💰 GAL obtenidas:           610713509.00
-  🍽️  Alimentaciones:          38
-  😴 Ciclos sueño:            4
+🎮  Partidas individuales:     98
+  🏆 Victorias:               29  (29.6%)
+  💔 Derrotas:                69
+  🤖 Autojuego:               18 partidas
+  💰 GAL obtenidas:           2828.00
+  🍽️  Alimentaciones:          5
+  😴 Ciclos sueño:            1
   🔧 Cave items equipados:    0
-  💍 Accesorios equipados:    247
+  💍 Accesorios equipados:    18
 ----------------------------------------------------------------------
-⚔️  Salas multijugador:        0
-  📞 Recall pasó:             0
-  💵 Axos liquidados:         0
+⚔️  Salas multijugador:        6
+  📞 Recall pasó:             1
+  💵 Axos liquidados:         8
   💰 Jackpots ganados:        0
 ----------------------------------------------------------------------
+  📊 Partidas jugadas:         15
+  🏆 Victorias:               6  (40%)
+  💸 GAL neto total:          -2275000.0
+  Detalle:
+    🏆 Huitzilopochtli Dura │ Charco de Novatos        │ Neto: +45000.0 GAL │ XP: +25
+    💔 Centeotl Perdurable  │ Charco de Novatos        │ Neto: -100000.0 GAL │ XP: +5
+    💔 Cenote Inagotable    │ Charco de Novatos        │ Neto: -200000.0 GAL │ XP: +10
+    🏆 Requinto Perpetuo    │ Charco de Novatos        │ Neto: +285000.0 GAL │ XP: +50
+    💔 Arpa Inextinguible   │ Fosa del Campeón         │ Neto: -500000.0 GAL │ XP: +5
+    🏆 Tepetate Estratégico │ Fosa del Campeón         │ Neto: +25000.0 GAL │ XP: +20
+    💔 Quetzal Inmortal     │ Charco de Novatos        │ Neto: -100000.0 GAL │ XP: +5
+    💔 Cotorra Floreciente  │ Fosa del Campeón         │ Neto: -500000.0 GAL │ XP: +5
+    🏆 Huitzilopochtli Dura │ Charco de Novatos        │ Neto: +160000.0 GAL │ XP: +75
+    💔 Cenote Inagotable    │ Charco de Novatos        │ Neto: -200000.0 GAL │ XP: +10
+    🏆 Tepetate Estratégico │ Fosa del Campeón         │ Neto: -150000.0 GAL │ XP: +20
+    💔 Cotorra Floreciente  │ Fosa del Campeón         │ Neto: -500000.0 GAL │ XP: +5
+    💔 Huitzilopochtli Dura │ Charco de Novatos        │ Neto: -200000.0 GAL │ XP: +10
+    🏆 Cenote Inagotable    │ Charco de Novatos        │ Neto: +160000.0 GAL │ XP: +75
+    💔 Tepetate Estratégico │ Fosa del Campeón         │ Neto: -500000.0 GAL │ XP: +5
+
 ----------------------------------------------------------------------
 🌙  Ciclo Lunar (Daily):
-  💰 FRJ acumulados:          44295 FRJ
-  💊 Cápsulas ganadas:        60
+  💰 FRJ acumulados:          3310 FRJ
+  💊 Cápsulas ganadas:        4
   🌕 Máx Luna alcanzada:      2
   📅 Máx racha diaria:        6
 ----------------------------------------------------------------------
 ⛏️  Expansión del Cenote:
-  🏗️  Expansiones totales:     371
-  💸 AXF gastados (aceler.):  16656
+  🏗️  Expansiones totales:     32
+  💸 AXF gastados (aceler.):  1840
   🏆 Máx nivel alcanzado:     8
 ----------------------------------------------------------------------
 🖼️  Decoración del Cenote:
@@ -68,311 +88,26 @@
   🧬 Tests límite mentoría:   0
 ----------------------------------------------------------------------
 🚫  Tests de errores:
-  ✅ Pasaron:                 5
+  ✅ Pasaron:                 4
   ❌ Fallaron:                1
 ======================================================================
 
-⚠️  ERRORES (1346):
-  x16  booster_buy did:privy:sim_player_81: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x15  booster_buy did:privy:sim_player_68: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x14  booster_buy did:privy:sim_player_75: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x13  booster_buy did:privy:sim_player_80: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x13  booster_buy did:privy:sim_player_83: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x13  booster_buy did:privy:sim_player_84: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x12  booster_buy did:privy:sim_player_72: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x12  booster_buy did:privy:sim_player_79: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x12  booster_buy did:privy:sim_player_99: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x11  booster_buy did:privy:sim_player_69: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x11  booster_buy did:privy:sim_player_71: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x11  booster_buy did:privy:sim_player_73: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x11  booster_buy did:privy:sim_player_74: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x11  booster_buy did:privy:sim_player_77: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x11  booster_buy did:privy:sim_player_91: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x11  booster_buy did:privy:sim_player_95: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x11  booster_buy did:privy:sim_player_96: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x11  booster_buy did:privy:sim_player_100: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x10  booster_buy did:privy:sim_player_82: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x10  booster_buy did:privy:sim_player_86: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x10  booster_buy did:privy:sim_player_88: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x10  booster_buy did:privy:sim_player_89: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x10  booster_buy did:privy:sim_player_93: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x9  booster_buy did:privy:sim_player_58: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x9  booster_buy did:privy:sim_player_62: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x9  booster_buy did:privy:sim_player_63: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x9  booster_buy did:privy:sim_player_70: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x9  booster_buy did:privy:sim_player_76: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x9  booster_buy did:privy:sim_player_90: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x8  booster_buy did:privy:sim_player_28: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x8  booster_buy did:privy:sim_player_85: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x8  booster_buy did:privy:sim_player_92: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x7  booster_buy did:privy:sim_player_29: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x7  booster_buy did:privy:sim_player_56: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x7  booster_buy did:privy:sim_player_66: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x7  booster_buy did:privy:sim_player_67: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x7  booster_buy did:privy:sim_player_87: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x7  booster_buy did:privy:sim_player_97: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x7  booster_buy did:privy:cmpl1jf3t01cc0ck4gqt004l5: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x6  booster_buy did:privy:sim_player_26: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x6  booster_buy did:privy:sim_player_30: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x6  booster_buy did:privy:sim_player_42: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x6  booster_buy did:privy:sim_player_49: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x6  booster_buy did:privy:sim_player_52: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x6  booster_buy did:privy:sim_player_55: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x6  booster_buy did:privy:sim_player_59: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x6  booster_buy did:privy:sim_player_60: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x6  booster_buy did:privy:sim_player_61: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x6  booster_buy did:privy:sim_player_64: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x6  booster_buy did:privy:sim_player_94: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x6  booster_buy did:privy:sim_player_98: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x5  booster_buy did:privy:sim_player_32: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x5  booster_buy did:privy:sim_player_35: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x5  booster_buy did:privy:sim_player_38: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x5  booster_buy did:privy:sim_player_40: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x5  booster_buy did:privy:sim_player_43: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x5  booster_buy did:privy:sim_player_50: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x5  booster_buy did:privy:sim_player_57: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x4  booster_buy did:privy:sim_player_25: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x4  booster_buy did:privy:sim_player_27: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x4  booster_buy did:privy:sim_player_34: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x4  booster_buy did:privy:sim_player_36: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x4  booster_buy did:privy:sim_player_41: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x4  booster_buy did:privy:sim_player_47: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x4  booster_buy did:privy:sim_player_54: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x4  booster_buy did:privy:sim_player_65: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x4  booster_buy did:privy:sim_player_78: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x3  booster_buy did:privy:sim_player_3: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x3  booster_buy did:privy:sim_player_38: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x3  booster_buy did:privy:sim_player_39: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x3  booster_buy did:privy:sim_player_44: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x3  booster_buy did:privy:sim_player_46: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x3  booster_buy did:privy:sim_player_48: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x3  booster_buy did:privy:sim_player_51: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x3  booster_buy did:privy:sim_player_53: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x3  booster_buy did:privy:sim_player_67: Límite de 8 unidades por wallet alcanzado para este ítem.
-  x2  booster_buy did:privy:sim_player_1: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x2  booster_buy did:privy:sim_player_14: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x2  booster_buy did:privy:sim_player_16: Límite de 8 unidades por wallet alcanzado para este ítem.
-  x2  booster_buy did:privy:sim_player_23: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x2  booster_buy did:privy:sim_player_24: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x2  booster_buy did:privy:sim_player_31: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x2  booster_buy did:privy:sim_player_33: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x2  booster_buy did:privy:sim_player_33: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x2  booster_buy did:privy:sim_player_34: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x2  booster_buy did:privy:sim_player_35: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x2  booster_buy did:privy:sim_player_37: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x2  booster_buy did:privy:sim_player_37: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x2  booster_buy did:privy:sim_player_44: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x2  booster_buy did:privy:sim_player_45: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x2  booster_buy did:privy:sim_player_49: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x2  booster_buy did:privy:sim_player_53: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x2  booster_buy did:privy:sim_player_57: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x2  board_random did:privy:sim_player_81: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 13.
-  x2  board_random did:privy:sim_player_84: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 15.
-  x2  acc_equip did:privy:sim_player_1/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_6/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_7/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_15/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_16/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_31/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_33/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_35/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_37/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_41/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_46/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_50/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_51/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_53/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_55/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_66/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_71/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_75/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_76/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_85/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_96/body: No posees este accesorio en tu inventario.
-  x2  acc_equip did:privy:sim_player_99/body: No posees este accesorio en tu inventario.
-  x1  vip_buy_early did:privy:cmnn1tv0o02au0ckzho9ugkb2 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_2 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_3 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_4 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_5 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_7 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_8 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_9 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_10 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_12 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_13 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_14 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_15 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_17 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_18 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_19 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_20 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_22 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_23 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_24 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_25 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_27 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_28 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_29 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_30 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_32 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_33 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_34 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_35 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_37 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_38 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_39 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_40 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_42 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_43 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_44 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_45 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_47 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_48 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_49 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_50 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_52 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_53 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_54 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_55 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_57 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_58 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_59 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_60 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_62 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_63 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_64 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_65 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_67 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_68 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_69 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_70 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_72 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_73 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_74 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_75 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_77 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_78 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_79 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_80 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_82 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_83 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_84 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_85 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_87 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_88 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_89 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_90 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_92 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_93 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_94 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_95 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_97 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_98 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_99 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_100 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy_early did:privy:cmpl1jf3t01cc0ck4gqt004l5 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:cmnn1tv0o02au0ckzho9ugkb2 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_2 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_3 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_4 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_5 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_7 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_8 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_9 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_10 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_12 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_13 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_14 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_15 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_17 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_18 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_19 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_20 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_22 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_23 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_24 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_25 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_27 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_28 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_29 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_30 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_32 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_33 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_34 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_35 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_37 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_38 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_39 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_40 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_42 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_43 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_44 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_45 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_47 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_48 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_49 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_50 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_52 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_53 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_54 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_55 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_57 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_58 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_59 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_60 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_62 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_63 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_64 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_65 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_67 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_68 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_69 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_70 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_72 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_73 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_74 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_75 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_77 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_78 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_79 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_80 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_82 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_83 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_84 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_85 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_87 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_88 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_89 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_90 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_92 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_93 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_94 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_95 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_97 axolite: Saldo insuficiente. Necesitas 1800000000 AXF.
-  x1  vip_buy did:privy:sim_player_98 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:sim_player_99 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  vip_buy did:privy:sim_player_100 dorado: Saldo insuficiente. Necesitas 600000000 AXF.
-  x1  vip_buy did:privy:cmpl1jf3t01cc0ck4gqt004l5 coral: Saldo insuficiente. Necesitas 400000000 AXF.
-  x1  booster_buy did:privy:cmnn1tv0o02au0ckzho9ugkb2: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_5: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_6: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_10: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_13: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_17: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_18: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_20: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_21: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_24: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_27: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_31: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_40: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_41: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_46: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_47: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
-  x1  booster_buy did:privy:sim_player_61: Límite de 8 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_66: Límite de 8 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_78: Límite de 15 unidades por wallet alcanzado para este ítem.
+⚠️  ERRORES (41):
+  x2  acc_equip did:privy:sim_player_2/body: No posees este accesorio en tu inventario.
+  x1  vip_buy_early did:privy:cmnn1tv0o02au0ckzho9ugkb2 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
+  x1  vip_buy_early did:privy:sim_player_1 coral: Saldo insuficiente. Necesitas 50000000 AXF.
+  x1  vip_buy_early did:privy:sim_player_3 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
+  x1  vip_buy_early did:privy:sim_player_4 axolite: Saldo insuficiente. Necesitas 300000000 AXF.
+  x1  vip_buy_early did:privy:sim_player_5 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
+  x1  vip_buy_early did:privy:sim_player_6 coral: Saldo insuficiente. Necesitas 50000000 AXF.
+  x1  vip_buy_early did:privy:cmpl1jf3t01cc0ck4gqt004l5 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
+  x1  vip_buy did:privy:cmnn1tv0o02au0ckzho9ugkb2 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
+  x1  vip_buy did:privy:sim_player_1 coral: Saldo insuficiente. Necesitas 50000000 AXF.
+  x1  vip_buy did:privy:sim_player_3 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
+  x1  vip_buy did:privy:sim_player_4 axolite: Saldo insuficiente. Necesitas 300000000 AXF.
+  x1  vip_buy did:privy:sim_player_5 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
+  x1  vip_buy did:privy:sim_player_6 coral: Saldo insuficiente. Necesitas 50000000 AXF.
+  x1  vip_buy did:privy:cmpl1jf3t01cc0ck4gqt004l5 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
   x1  block_test did:privy:cmnn1tv0o02au0ckzho9ugkb2: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
   x1  block_test did:privy:sim_player_1: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
   x1  block_test did:privy:sim_player_2: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
@@ -382,510 +117,20 @@
   x1  block_test did:privy:sim_player_5: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
   x1  claim_corcholata_unexpected did:privy:sim_player_6: 429: 5 per 1 minute
   x1  block_test did:privy:sim_player_6: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_7: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_7: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_8: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_8: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_9: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_9: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_10: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_10: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_11: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_11: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_12: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_12: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_13: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_13: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_14: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_14: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_15: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_15: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_16: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_16: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_17: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_17: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_18: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_18: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_19: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_19: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_20: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_20: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_21: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_21: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_22: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_22: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_23: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_23: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_24: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_24: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_25: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_25: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_26: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_26: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_27: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_27: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_28: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_28: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_29: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_29: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_30: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_30: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_31: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_31: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_32: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_32: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_33: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_33: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_34: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_34: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_35: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_35: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_36: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_36: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_37: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_37: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_38: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_38: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_39: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_39: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_40: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_40: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_41: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_41: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_42: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_42: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_43: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_43: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_44: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_44: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_45: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_45: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_46: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_46: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_47: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_47: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_48: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_48: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_49: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_49: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_50: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_50: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_51: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_51: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_52: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_52: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_53: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_53: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_54: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_54: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_55: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_55: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_56: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_56: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_57: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_57: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_58: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_58: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_59: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_59: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_60: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_60: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_61: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_61: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_62: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_62: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_63: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_63: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_64: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_64: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_65: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_65: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_66: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_66: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_67: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_67: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_68: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_68: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_69: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_69: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_70: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_70: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_71: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_71: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_72: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_72: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_73: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_73: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_74: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_74: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_75: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_75: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_76: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_76: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_77: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_77: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_78: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_78: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_79: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_79: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_80: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_80: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_81: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_81: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_82: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_82: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_83: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_83: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_84: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_84: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_85: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_85: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_86: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_86: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_87: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_87: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_88: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_88: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_89: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_89: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_90: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_90: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_91: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_91: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_92: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_92: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_93: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_93: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_94: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_94: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_95: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_95: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_96: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_96: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_97: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_97: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_98: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_98: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_99: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_99: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_100: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_100: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
   x1  claim_corcholata_unexpected did:privy:cmpl1jf3t01cc0ck4gqt004l5: 429: 5 per 1 minute
   x1  block_test did:privy:cmpl1jf3t01cc0ck4gqt004l5: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  board_manual did:privy:sim_player_2: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
-  x1  board_manual did:privy:sim_player_6: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
-  x1  board_manual did:privy:sim_player_7: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
-  x1  board_manual did:privy:sim_player_8: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
-  x1  board_manual did:privy:sim_player_11: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
-  x1  board_manual did:privy:sim_player_12: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
-  x1  board_manual did:privy:sim_player_19: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
-  x1  board_manual did:privy:sim_player_27: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
-  x1  board_manual did:privy:sim_player_37: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
-  x1  board_random did:privy:sim_player_68: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 5.
-  x1  board_random did:privy:sim_player_69: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 14.
-  x1  board_random did:privy:sim_player_71: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 13.
-  x1  board_random did:privy:sim_player_74: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 14.
-  x1  board_random did:privy:sim_player_75: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 11.
-  x1  board_random did:privy:sim_player_79: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 14.
-  x1  board_random did:privy:sim_player_80: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 14.
-  x1  board_random did:privy:sim_player_83: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 13.
-  x1  board_random did:privy:sim_player_86: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 15.
-  x1  board_random did:privy:sim_player_91: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 15.
-  x1  board_random did:privy:sim_player_95: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 15.
-  x1  board_random did:privy:sim_player_99: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 12.
   x1  board_sale_list did:privy:sim_player_5: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_15: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_22: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_25: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_35: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_37: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_55: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_60: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_62: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_65: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_70: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_75: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_80: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_85: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_87: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_90: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_95: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_97: La Tabla Tutorial no se puede vender.
-  x1  board_rent_list did:privy:sim_player_4: La Tabla Tutorial no se puede rentar.
+  x1  board_sale_list did:privy:cmpl1jf3t01cc0ck4gqt004l5: La Tabla Tutorial no se puede vender.
+  x1  board_rent_list did:privy:sim_player_1: La Tabla Tutorial no se puede rentar.
   x1  board_rent_list did:privy:sim_player_5: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_9: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_10: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_14: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_15: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_19: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_20: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_24: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_25: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_29: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_30: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_34: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_35: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_39: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_40: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_44: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_45: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_49: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_50: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_54: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_55: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_59: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_60: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_64: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_65: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_69: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_70: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_74: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_75: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_79: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_80: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_84: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_85: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_89: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_90: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_94: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_95: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_99: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_100: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_6: La Tabla Tutorial no se puede rentar.
   x1  board_rent_list did:privy:cmpl1jf3t01cc0ck4gqt004l5: La Tabla Tutorial no se puede rentar.
   x1  acc_equip did:privy:cmnn1tv0o02au0ckzho9ugkb2/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_1: 'gal'
   x1  acc_equip did:privy:sim_player_1/eyes: No posees este accesorio en tu inventario.
+  x1  acc_equip did:privy:sim_player_1/body: No posees este accesorio en tu inventario.
+  x1  watch_reward did:privy:sim_player_2: 'gal'
   x1  acc_equip did:privy:sim_player_2/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_2/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_3/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_4/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_4/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_6: 'gal'
+  x1  acc_equip did:privy:sim_player_5/body: No posees este accesorio en tu inventario.
   x1  acc_equip did:privy:sim_player_6/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_7/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_9/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_9/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_10/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_10/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_11: 'gal'
-  x1  acc_equip did:privy:sim_player_11/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_12/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_13/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_13/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_14/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_14/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_15/eyes: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_16: 'gal'
-  x1  acc_equip did:privy:sim_player_16/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_18/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_19/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_19/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_20/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_20/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_21: 'gal'
-  x1  acc_equip did:privy:sim_player_21/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_21/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_24/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_24/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_25/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_25/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_26: 'gal'
-  x1  acc_equip did:privy:sim_player_26/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_29/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_29/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_30/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_30/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_31: 'gal'
-  x1  acc_equip did:privy:sim_player_31/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_33/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_34/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_34/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_35/eyes: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_36: 'gal'
-  x1  acc_equip did:privy:sim_player_36/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_36/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_37/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_38/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_39/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_39/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_40/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_41: 'gal'
-  x1  acc_equip did:privy:sim_player_41/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_42/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_42/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_44/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_44/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_45/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_46: 'gal'
-  x1  acc_equip did:privy:sim_player_46/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_47/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_48/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_49/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_49/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_50/eyes: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_51: 'gal'
-  x1  acc_equip did:privy:sim_player_51/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_52/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_53/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_54/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_54/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_55/eyes: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_56: 'gal'
-  x1  acc_equip did:privy:sim_player_56/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_57/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_57/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_58/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_58/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_59/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_59/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_60/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_61: 'gal'
-  x1  acc_equip did:privy:sim_player_61/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_64/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_64/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_65/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_66: 'gal'
-  x1  acc_equip did:privy:sim_player_66/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_68/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_68/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_69/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_69/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_70/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_70/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_71: 'gal'
-  x1  acc_equip did:privy:sim_player_71/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_73/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_73/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_74/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_74/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_75/eyes: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_76: 'gal'
-  x1  acc_equip did:privy:sim_player_76/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_77/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_77/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_78/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_79/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_79/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_80/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_80/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_81: 'gal'
-  x1  acc_equip did:privy:sim_player_82/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_83/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_85/eyes: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_86: 'gal'
-  x1  acc_equip did:privy:sim_player_86/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_89/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_89/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_90/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_91: 'gal'
-  x1  acc_equip did:privy:sim_player_92/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_93/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_94/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_94/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_95/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_96: 'gal'
-  x1  acc_equip did:privy:sim_player_96/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_97/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_97/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_99/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_100/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:cmpl1jf3t01cc0ck4gqt004l5/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:cmpl1jf3t01cc0ck4gqt004l5/body: No posees este accesorio en tu inventario.
-  x1  recall_test: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:cmnn1tv0o02au0ckzho9ugkb2: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_1: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_3: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_4: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_5: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_6: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_7: Presupuesto insuficiente. Requieres al menos 2000000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_8: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_9: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_10: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_11: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_12: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_13: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_15: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_16: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_17: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_18: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_19: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_20: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_21: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_22: Presupuesto insuficiente. Requieres al menos 2000000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_23: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_24: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_25: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_26: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_27: Presupuesto insuficiente. Requieres al menos 2000000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_28: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_29: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_30: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_31: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_32: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_33: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_34: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_35: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_36: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_37: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_38: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_39: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_40: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_41: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_42: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_43: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_44: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_45: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_46: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_47: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_48: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_49: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_50: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_51: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_52: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_53: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_54: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_55: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_56: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_57: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_58: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_59: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_61: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_62: Presupuesto insuficiente. Requieres al menos 2000000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_63: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_64: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_65: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_66: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_67: Presupuesto insuficiente. Requieres al menos 2000000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_68: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_69: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_70: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_71: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_72: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_73: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_74: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_75: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_76: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_77: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_78: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_79: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_80: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_82: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_83: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_85: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_86: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_87: Presupuesto insuficiente. Requieres al menos 2000000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_88: Presupuesto insuficiente. Requieres al menos 500000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_89: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_90: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_91: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_92: Presupuesto insuficiente. Requieres al menos 2000000 GAL para jugar 2 tablas.
-  x1  multi_register did:privy:sim_player_94: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_95: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_96: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_97: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_98: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_99: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:sim_player_100: Presupuesto insuficiente. Requieres al menos 1000000 GAL para jugar 1 tablas.
-  x1  multi_register did:privy:cmpl1jf3t01cc0ck4gqt004l5: Presupuesto insuficiente. Requieres al menos 250000 GAL para jugar 1 tablas.
+  x1  acc_equip did:privy:sim_player_6/body: No posees este accesorio en tu inventario.
 ======================================================================

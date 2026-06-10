@@ -77,9 +77,16 @@ export default function TutorialResetButton({ onReset }: Props) {
     setMpLoading(true);
     setMpResult(null);
     try {
+      const token = await getAccessToken();
       const res = await fetch(
         `${API_BASE}/dev/fill-multiplayer-rooms?room_type=${mpRoomType}&count=${mpCount}&axf_amount=${mpAxfAmount}&frj_amount=${mpFrjAmount}`,
-        { method: "POST" }
+        {
+          method: "POST",
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            "X-Dev-User": "admin",
+          },
+        }
       );
       const data = await res.json();
       if (res.ok) {
@@ -221,8 +228,8 @@ export default function TutorialResetButton({ onReset }: Props) {
             onChange={e => setMpRoomType(e.target.value as "rookie_pool" | "champion_abyss")}
             style={selectStyle}
           >
-            <option value="rookie_pool">Charco de Novatos (25 FRJ)</option>
-            <option value="champion_abyss">Fosa del Campeón (100 FRJ)</option>
+            <option value="rookie_pool">Charco de Novatos (10 FRJ)</option>
+            <option value="champion_abyss">Fosa del Campeón (50 FRJ)</option>
           </select>
 
           <label style={{ fontSize: "10px", color: "#fca5a5", display: "block", marginBottom: "4px" }}>

@@ -95,7 +95,6 @@ export default function Santuario({
   // ── Social (friends) ──
   const { fetchTopFriends, sendLike } = useSocial(token);
   const [amigosActivos, setAmigosActivos] = useState<any[]>([]);
-  const [activeSantuarioTab, setActiveSantuarioTab] = useState<string>('santuario');
 
   useEffect(() => {
     if (!token) return;
@@ -373,37 +372,26 @@ export default function Santuario({
 
       </div>{/* end flex-1 relative */}
 
-      {/* === ZONA INFERIOR — SOCIAL + NAV === */}
+      {/* === ZONA INFERIOR — SOCIAL BAR === */}
       <ZonaInferior
         amigos={amigosActivos.map((f: any) => ({
           id: f.friend_id,
           name: f.nickname || "Jugador",
           avatarEmoji: f.vip_tier === "axolite" ? "👑" : f.vip_tier === "dorado" ? "💛" : "🦎",
+          isOnline: f.is_online,
+          isBestFriend: f.is_best_friend,
         }))}
-        activeTab={activeSantuarioTab as any}
-        onNavigate={(tab) => {
-          if (tab === 'amigos') {
-            cambiarTab && cambiarTab('amigos');
-          } else if (tab === 'jugar') {
-            cambiarTab && cambiarTab('jugar');
-          } else if (tab === 'mercado') {
-            cambiarTab && cambiarTab('tienda');
-          } else if (tab === 'perfil') {
-            // Profile — future feature
-          }
-          setActiveSantuarioTab(tab);
-        }}
+        onOpenAmigos={() => cambiarTab && cambiarTab('amigos')}
         onLike={async (amigoId: string) => {
           try {
             await sendLike(amigoId);
             fetchTopFriends(4).then(setAmigosActivos).catch(() => {});
           } catch {}
         }}
-        onInvite={(amigoId: string) => {
+        onInvite={(_amigoId: string) => {
           cambiarTab && cambiarTab('jugar');
         }}
-        onVisit={(amigoId: string) => {
-          // Open friend cave view — future: navigate to amigos tab with pre-selected friend
+        onVisit={(_amigoId: string) => {
           cambiarTab && cambiarTab('amigos');
         }}
       />
