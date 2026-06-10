@@ -60,6 +60,11 @@ export default function ActGame({
   const [preGameDone, setPreGameDone]   = useState(() => statFocus === "SAL");
   const [postGameText, setPostGameText] = useState("");
 
+  const tickMs =
+    backendPhase === 1 ? 2200 :
+    backendPhase === 2 ? 1700 :
+    1300;
+
   // ── Pre-game dialogue setup ──────────────────────────────────────────────────
   const salValue = Math.round(Math.max(0, Math.min(100, webito.baseStatSalinity + webito.bonusSalinityAdj)));
   const preGameText = useMemo(() => {
@@ -208,7 +213,7 @@ export default function ActGame({
                 ? {
                     cardNumber: game.nameToNum.get(game.result.drawn_cards_sample[game.calledIdx]?.toLowerCase() ?? "") ?? undefined,
                     turn: game.calledIdx + 1,
-                    windowMs: TICK_MS,
+                    windowMs: tickMs,
                     name: game.result.drawn_cards_sample[game.calledIdx],
                   }
                 : null
