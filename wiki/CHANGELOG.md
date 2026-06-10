@@ -47,6 +47,18 @@ last_modified: "2026-06-07"
 
 ---
 
+## 2026-06-10 | backend/app/services/multiplayer_service.py | VULN-05: Fix inflación de premios
+
+### multiplayer_service.py — Liquidación multijugador con invariante de conservación de fondos
+- **Campo**: Reparto de Premio 1, Premio 2 y Jackpot bonus en `simulate_multiplayer_match`
+- **Anterior**: `luck_bonus` y `vip_bonus` se sumaban ENCIMA del share base (fondos fantasma — no respaldados en ningún vault)
+- **Nuevo**: Opción A (in-pool bonuses) — bonuses redistribuyen DENTRO del pool con aritmética basis-points. Si Σ raw > pool → normalización proporcional; remanente a tesorería. Invariante: `Σ premios ≤ (premio_1_pool + premio_2_pool)`
+- **Motivo**: VULN-05 Auditoría de Seguridad Web3 2026-06-09 — inflación de FRJ por bonuses sin respaldo
+- **Autor**: Claude Sonnet 4.6
+- **Fuente en código**: commit `aebad48` — `multiplayer_service.py` + 5 tests en `test_prize_invariants.py`
+
+---
+
 ## 2026-06-07 | wiki/ | Creación inicial del vault Obsidian
 
 ### 00-INDEX.md — Índice maestro
