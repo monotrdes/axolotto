@@ -15,7 +15,7 @@ from app.models.user import User
 from app.models.economy import Wallet, TransactionLedger, CryptoPurchaseOrder, ProcessedTransaction, AxfPurchaseRecord, CryptoPaymentAttempt
 from app.models.items import ItemCatalog, PlayerInventory, WebitoIncubation, CapsulaDailyFree, CapsulaPity, LegacyBacker, WhitelistEntry
 from app.models.axolotito import Axolotito
-from app.models.board import PlayerBoard
+from app.models.board import PlayerBoard, PlayerBoardSlot
 from app.models.lobby_models import MultiplayerGameLog, TreasuryVault, JackpotVault, JackpotWin, GameRoom, RoomRegistration
 from app.models.promo import PromoCode
 
