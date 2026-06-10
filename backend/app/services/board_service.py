@@ -8,7 +8,7 @@ from sqlmodel import Session, select, func
 logger = logging.getLogger("board_service")
 
 from app.core.prices import BOARD_SLOT_COSTS, CONSUMABLE_PRICES
-from app.models.board import PlayerBoard
+from app.models.board import PlayerBoard, PlayerBoardSlot
 from app.models.items import ItemCatalog, PlayerInventory, ItemType, Rarity
 from app.models.axolotito import Axolotito
 from app.models.economy import Wallet, CurrencyType, TransactionType, TransactionLedger
@@ -18,6 +18,31 @@ from app.services.bank_service import BankService
 from app.services.web3_service import Web3Service
 
 _rng = random.SystemRandom()
+
+
+# ─── Slot XP helpers ─────────────────────────────────────────────────────
+
+def _total_board_xp(board: PlayerBoard) -> int:
+    """XP total acumulado = XP gastado en nivel-ups (curva triangular) + XP actual."""
+    return (board.level * (board.level - 1) // 2) * 100 + board.xp
+
+
+def _apply_preserved_xp_to_board(board: PlayerBoard, preserved_xp: int) -> None:
+    """Aplica XP preservado a un tablero nuevo calculando el nivel resultante."""
+    board.level = 1
+    board.xp = preserved_xp
+    while board.xp >= (board.level * 100):
+        board.xp -= board.level * 100
+        board.level += 1
+
+
+def _level_from_total_xp(total_xp: int) -> int:
+    """Nivel que resultaría de tener total_xp acumulado."""
+    level, xp = 1, total_xp
+    while xp >= (level * 100):
+        xp -= level * 100
+        level += 1
+    return level
 
 
 # ─── Pure helper functions ───────────────────────────────────────────────
