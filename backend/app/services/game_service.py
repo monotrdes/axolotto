@@ -6,6 +6,8 @@ Contains:
   - feed_axolotito / sleep_axolotito / wake_axolotito: Energy management
 """
 from datetime import datetime, timedelta
+import json
+import logging
 from typing import Optional
 
 from fastapi import HTTPException
@@ -15,12 +17,14 @@ from app.core.config import settings
 from app.core.prices import CONSUMABLE_PRICES
 from app.models.axolotito import Axolotito
 from app.models.board import PlayerBoard
-from app.models.economy import Wallet, CurrencyType, TransactionType, TransactionLedger
+from app.models.economy import Wallet, CurrencyType, TransactionType, TransactionLedger, ChainOutbox
 from app.models.items import ItemCatalog, ItemType
 from app.models.user import User
 from app.services.bank_service import BankService
 from app.services.incubation_service import _apply_imprinting_if_needed
 from app.services.npc_service import _ensure_npc_pool, _spawn_npc_replacement
+
+logger = logging.getLogger("game_service")
 from app.services.game_logic import (
     _rng,
     _lucky_save,
@@ -34,6 +38,34 @@ from app.services.game_logic import (
 from app.services.sal_service import apply_sal_bias
 from app.services.pila_service import recovery_multiplier
 from app.services.web3_service import Web3Service
+
+
+def _enqueue_chain_op(session: Session, user_id: str, operation: str, payload: dict):
+    """Escribe una intención on-chain en la tabla ChainOutbox dentro de la misma
+    transacción DB. El worker chain_outbox la procesará con reintentos.
+
+    Reemplaza el patrón roto:  wallet.frijolitos -= X; session.commit();
+                               try: Web3Service.burn_frj(...)
+                               except: print(...)  # error tragado
+    """
+    entry = ChainOutbox(
+        user_id=user_id,
+        operation=operation,
+        payload_json=json.dumps(payload),
+        status="pending",
+    )
+    session.add(entry)
+    return entry
+
+
+def _flush_outbox(session: Session, max_batch: int = 10):
+    """Procesa la outbox de forma síncrona (best-effort) después del commit DB.
+    Si falla, las entradas quedan 'pending' y el worker las reintentará."""
+    try:
+        from app.services.chain_outbox_worker import process_outbox_sync
+        process_outbox_sync(session, max_batch=max_batch)
+    except Exception:
+        pass  # El worker asíncrono se encargará
 
 
 class GameService:
@@ -107,10 +139,10 @@ class GameService:
         wallet.frijolitos -= entry_fee
         user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
         if user and user.wallet_address and settings.GEMA_ALGA_ADDRESS:
-            try:
-                Web3Service.burn_frj(user.wallet_address, entry_fee)
-            except Exception as e:
-                print(f"⚠️ Error al quemar la cuota de entrada on-chain: {e}")
+            _enqueue_chain_op(session, verified_user_id, "burn_frj", {
+                "from_address": user.wallet_address,
+                "amount": entry_fee,
+            })
 
         axo.energy_current -= 10
         axo.status = "playing"
@@ -354,17 +386,18 @@ class GameService:
 
         # --- ON-CHAIN REWARDS & STATS UPDATE ---
         if user and user.wallet_address and settings.GEMA_ALGA_ADDRESS:
-            try:
-                Web3Service.mint_frj(user.wallet_address, prize_awarded)
-            except Exception as e:
-                print(f"⚠️ Error al acuñar premio GAL on-chain: {e}")
+            _enqueue_chain_op(session, verified_user_id, "mint_frj", {
+                "to_address": user.wallet_address,
+                "amount": prize_awarded,
+            })
 
         if board.blockchain_token_id is not None:
-            try:
-                xp_gained = win_xp_board if is_win else loss_xp_board
-                Web3Service.update_table_stats_onchain(board.blockchain_token_id, is_win, xp_gained)
-            except Exception as e:
-                print(f"⚠️ Error al actualizar stats de tabla on-chain: {e}")
+            xp_gained = win_xp_board if is_win else loss_xp_board
+            _enqueue_chain_op(session, verified_user_id, "update_board_stats", {
+                "board_token_id": board.blockchain_token_id,
+                "won": is_win,
+                "xp_gained": xp_gained,
+            })
 
         # --- NPC BOARD XP UPDATE ---
         npc_win_xp  = win_xp_board
@@ -425,6 +458,7 @@ class GameService:
         session.add(board)
         session.add(axo)
         session.commit()
+        _flush_outbox(session)  # best-effort: procesa outbox inline, el worker reintenta si falla
         session.refresh(axo)
         session.refresh(board)
 
@@ -500,10 +534,10 @@ class GameService:
         wallet.frijolitos -= cost
         user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
         if user and user.wallet_address and settings.GEMA_ALGA_ADDRESS:
-            try:
-                Web3Service.burn_frj(user.wallet_address, cost)
-            except Exception as e:
-                print(f"⚠️ Error burning feed cost on-chain: {e}")
+            _enqueue_chain_op(session, verified_user_id, "burn_frj", {
+                "from_address": user.wallet_address,
+                "amount": cost,
+            })
 
         final_restore = energy_restore
         if axo.nature == "glutton":
@@ -521,6 +555,7 @@ class GameService:
         session.add(wallet)
         session.add(axo)
         session.commit()
+        _flush_outbox(session)  # best-effort: procesa burn_frj outbox
         session.refresh(axo)
 
         return {

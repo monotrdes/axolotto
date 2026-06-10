@@ -5,11 +5,14 @@ Contiene la logica de negocio de los endpoints /melter/melt y /melter/forge
 que antes vivia directamente en shop.py.
 """
 import random
+import logging
 from sqlmodel import Session, select
 from fastapi import HTTPException
 from app.models.items import ItemCatalog, ItemType, Rarity, PlayerInventory
 from app.models.economy import Wallet, CurrencyType, TransactionType, TransactionLedger
 from app.models.user import User
+
+logger = logging.getLogger("forge_service")
 from app.services.bank_service import BankService
 from app.services.web3_service import Web3Service
 from app.core.config import settings
@@ -103,7 +106,7 @@ def melt_card(session: Session, user_id: str, card_id: int, is_first_edition: bo
         try:
             Web3Service.burn_frj(user.wallet_address, price)
         except Exception as e:
-            print(f"⚠️ Error al quemar GAL on-chain en fundición: {e}")
+            logger.error("Error al quemar GAL on-chain en fundición: %s", e)
 
     # 6. Elegir carta superior aleatoria
     chosen_card = _rng.choice(next_cards)

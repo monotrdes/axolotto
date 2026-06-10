@@ -1,8 +1,11 @@
 ﻿import random
+import logging
 from typing import List, Optional
 from datetime import datetime, timedelta
 from fastapi import HTTPException, status
 from sqlmodel import Session, select, func
+
+logger = logging.getLogger("board_service")
 
 from app.core.prices import BOARD_SLOT_COSTS, CONSUMABLE_PRICES
 from app.models.board import PlayerBoard
@@ -411,7 +414,7 @@ def create_random_board_operation(
             )
             blockchain_token_id = Web3Service.get_token_id_from_tx(tx_blockchain)
         except Exception as e:
-            print(f"⚠️ Error al crear tabla en Blockchain (random): {e}")
+            logger.error("Error al crear tabla en Blockchain (random): %s", e)
             import secrets
 
             tx_blockchain = f"0x_error_fallback_{secrets.token_hex(32)}"
@@ -502,7 +505,7 @@ def create_manual_board_operation(
             )
             blockchain_token_id = Web3Service.get_token_id_from_tx(tx_blockchain)
         except Exception as e:
-            print(f"⚠️ Error al crear tabla en Blockchain (manual): {e}")
+            logger.error("Error al crear tabla en Blockchain (manual): %s", e)
             import secrets
 
             tx_blockchain = f"0x_error_fallback_{secrets.token_hex(32)}"

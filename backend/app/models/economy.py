@@ -152,6 +152,26 @@ class CryptoPaymentAttempt(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
 
+class ChainOutbox(SQLModel, table=True):
+    """Outbox transaccional para operaciones on-chain.
+
+    Patrón: la intención on-chain se persiste en la misma transacción DB que la
+    mutación de estado. Un worker externo procesa las entradas con reintentos y
+    backoff, garantizando eventual consistencia entre DB y blockchain.
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: str = Field(foreign_key="user.privy_did", index=True)
+    operation: str          # "mint_frj" | "burn_frj" | "mint_axf" | "transfer_card" | "transfer_board" | "update_board_stats"
+    payload_json: str       # argumentos serializados en JSON
+    status: str = Field(default="pending")  # pending | processing | confirmed | failed
+    tx_hash: Optional[str] = Field(default=None, index=True)
+    retry_count: int = Field(default=0)
+    max_retries: int = Field(default=5)
+    last_error: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+
 class AxfPurchaseRecord(SQLModel, table=True):
     """Registro de compras de AXF con pesos (MXN)."""
     __tablename__: str = "axf_purchase_record"

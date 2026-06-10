@@ -2,17 +2,20 @@
 from sqlmodel import Session, select
 from typing import Optional, List
 from datetime import datetime
+import json
+import logging
 
 from app.database import get_session
 from app.core.auth import get_verified_user_id
 from app.models.items import ItemCatalog, PlayerInventory, ItemType, InventoryMarketListing
 from app.models.user import User
-from app.models.economy import TransactionLedger, CurrencyType, TransactionType
+from app.models.economy import TransactionLedger, CurrencyType, TransactionType, ChainOutbox
 from app.models.lobby_models import TreasuryVault
 from app.services.bank_service import BankService
-from app.services.web3_service import Web3Service
 from app.services.rarity_service import get_card_dynamic_rarities
 from app.core.config import VIP_CONFIG
+
+logger = logging.getLogger("market")
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -184,29 +187,36 @@ def buy_inventory_listing(
         tx_type=TransactionType.BURN, description=f"Comisión P2P {commission_rate*100:.1f}% {item_name} x{listing.quantity}"
     )
 
-    # 5. Transferencia Web3 on-chain (si ambos tienen wallets vinculadas)
+    # 5. Transferencia Web3 on-chain via outbox (si ambos tienen wallets vinculadas)
     seller_user = session.exec(select(User).where(User.privy_did == listing.seller_id)).first()
     if buyer_user and buyer_user.wallet_address and seller_user and seller_user.wallet_address:
         if item:
-            try:
-                if item.item_type == ItemType.BOOSTER:
-                    metadata = item.item_metadata or {}
-                    booster_fase = metadata.get("fase", 1)
-                    Web3Service.transferir_sobrecito_onchain(
-                        seller_user.wallet_address,
-                        buyer_user.wallet_address,
-                        booster_fase,
-                        listing.quantity
-                    )
-                elif item.item_type == ItemType.CARD:
-                    Web3Service.transfer_card_onchain(
-                        seller_user.wallet_address,
-                        buyer_user.wallet_address,
-                        listing.item_id,
-                        listing.quantity
-                    )
-            except Exception as e:
-                print(f"⚠️ Error al transferir on-chain P2P: {e}")
+            if item.item_type == ItemType.BOOSTER:
+                metadata = item.item_metadata or {}
+                booster_fase = metadata.get("fase", 1)
+                session.add(ChainOutbox(
+                    user_id=listing.seller_id,
+                    operation="transfer_booster",
+                    payload_json=json.dumps({
+                        "from_address": seller_user.wallet_address,
+                        "to_address": buyer_user.wallet_address,
+                        "booster_fase": booster_fase,
+                        "quantity": listing.quantity,
+                    }),
+                    status="pending",
+                ))
+            elif item.item_type == ItemType.CARD:
+                session.add(ChainOutbox(
+                    user_id=listing.seller_id,
+                    operation="transfer_card",
+                    payload_json=json.dumps({
+                        "from_address": seller_user.wallet_address,
+                        "to_address": buyer_user.wallet_address,
+                        "card_id": listing.item_id,
+                        "quantity": listing.quantity,
+                    }),
+                    status="pending",
+                ))
 
     # 6. Reasignar propiedad y agregar al PlayerInventory del comprador
     inv_item = session.exec(
@@ -240,6 +250,12 @@ def buy_inventory_listing(
     session.add(ledger_seller)
     session.add(ledger_commission)
     session.commit()
+    # Procesar outbox best-effort inline; el worker reintenta si falla
+    try:
+        from app.services.chain_outbox_worker import process_outbox_sync
+        process_outbox_sync(session, max_batch=5)
+    except Exception:
+        pass
 
     return {"mensaje": f"Compra de {item_name} x{listing.quantity} realizada con éxito."}
 

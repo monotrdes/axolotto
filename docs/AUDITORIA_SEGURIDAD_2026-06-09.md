@@ -146,6 +146,7 @@ Cliente (Privy JWT)  ──HTTP──►  FastAPI Backend  ──Treasury PK─�
   - Implementar un **patrón outbox transaccional**: escribir la intención on-chain en una tabla dentro del mismo commit que la mutación DB, y procesarla con un worker idempotente con reintentos y backoff.
   - Registrar cada tx on-chain confirmada en `ProcessedTransaction` y reconciliar periódicamente DB vs cadena.
   - Nunca usar `print` para tragar fallos financieros: emitir a un log estructurado + métrica + alerta, y marcar la fila como `pending_chain_sync`.
+- 📋 **Plan de remediación:** `docs/plan_task-1781055512-64-VULN-04_remediacion-db-chain-outbox.md`
 
 ---
 

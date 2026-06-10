@@ -12,6 +12,8 @@ from app.services.bank_service import BankService
 from app.services.web3_service import Web3Service
 from app.models.user import User
 from app.models.axolotito import Axolotito
+import logging
+logger = logging.getLogger("shop_service")
 
 # --- CATEGORÍAS TEMÁTICAS DE CARTAS PARA SOBRES ---
 FIESTA_CARDS = {
@@ -230,14 +232,14 @@ class ShopService:
                     try:
                         Web3Service.burn_axofichas(user.wallet_address, price)
                     except Exception as e:
-                        print(f"⚠️ Error al quemar AXF on-chain: {e}")
+                        logger.error("Error al quemar AXF on-chain: %s", e)
             else:
                 wallet.frijolitos -= price
                 if user.wallet_address and settings.GEMA_ALGA_ADDRESS:
                     try:
                         Web3Service.burn_frj(user.wallet_address, price)
                     except Exception as e:
-                        print(f"⚠️ Error al quemar FRJ on-chain: {e}")
+                        logger.error("Error al quemar FRJ on-chain: %s", e)
 
             # --- CURRENCY PACK: intercambio AXF → FRJ ---
             if item.item_type == ItemType.CURRENCY_PACK:
@@ -248,7 +250,7 @@ class ShopService:
                     try:
                         Web3Service.mint_frj(user.wallet_address, frj_reward)
                     except Exception as e:
-                        print(f"⚠️ Error al acuñar FRJ on-chain: {e}")
+                        logger.error("Error al acuñar FRJ on-chain: %s", e)
 
                 ledger = TransactionLedger(
                     user_id=user_id, amount=price, currency=payment_currency,
@@ -314,7 +316,7 @@ class ShopService:
                     try:
                         tx_hash = Web3Service.mint_sobrecito_onchain(user.wallet_address, sobrecito_id=booster_fase, amount=1)
                     except Exception as e:
-                        print(f"⚠️ Error al acuñar Sobrecito on-chain: {e}")
+                        logger.error("Error al acuñar Sobrecito on-chain: %s", e)
 
                 ledger = TransactionLedger(
                     user_id=user_id, amount=price, currency=payment_currency,
@@ -684,7 +686,7 @@ class ShopService:
             try:
                 tx_burn_hash = Web3Service.burn_sobrecito_onchain(user.wallet_address, sobrecito_id=booster_fase, amount=1)
             except Exception as e:
-                print(f"⚠️ Error al quemar Sobrecito on-chain: {e}")
+                logger.error("Error al quemar Sobrecito on-chain: %s", e)
 
         # 6. Generar las 7 cartas únicas
         pack_theme = metadata.get("pack_theme", "pure")
@@ -773,7 +775,7 @@ class ShopService:
             try:
                 tx_mint_hash = Web3Service.mint_cards_onchain(user.wallet_address, list(conteo.keys()), list(conteo.values()))
             except Exception as e:
-                print(f"⚠️ Error al acuñar cartas on-chain: {e}")
+                logger.error("Error al acuñar cartas on-chain: %s", e)
 
         # Ledger de la apertura
         ledger = TransactionLedger(
