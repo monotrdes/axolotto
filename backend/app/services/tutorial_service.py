@@ -39,8 +39,7 @@ _engine = DialogueEngine()
 # Número de rondas simuladas por fase de mini-simulación
 PHASE_ROUNDS = 5
 
-# Nombre del consumible que se otorga como bonus karma salty
-GOTAS_ITEM_NAME = "gotas_antiescarcha"
+
 
 # GAL que se otorgan como bonus karma lucky
 LUCKY_GAL_BONUS = 50.0
@@ -74,11 +73,7 @@ def _get_incubation_stat(incubation: WebitoIncubation, stat_name: str) -> float:
     return float(getattr(incubation, f"bonus_{stat_name}", 0.0))
 
 
-def _find_gotas_item(session: Session) -> Optional[ItemCatalog]:
-    """Busca el ítem de gotas_antiescarcha en el catálogo."""
-    return session.exec(
-        select(ItemCatalog).where(ItemCatalog.name == GOTAS_ITEM_NAME)
-    ).first()
+
 
 
 # ---------------------------------------------------------------------------
@@ -498,48 +493,16 @@ class TutorialService:
             return {"type": "frj", "amount": LUCKY_GAL_BONUS, "currency": "FRJ"}
 
         else:  # salty
-            gotas = _find_gotas_item(session)
-            if gotas:
-                inv = session.exec(
-                    select(PlayerInventory)
-                    .where(PlayerInventory.user_id == user_id)
-                    .where(PlayerInventory.item_id == gotas.id)
-                    .with_for_update()
-                ).first()
-
-                if inv:
-                    inv.quantity += 1
-                    session.add(inv)
-                else:
-                    inv = PlayerInventory(
-                        user_id=user_id,
-                        item_id=gotas.id,
-                        quantity=1,
-                    )
-                    session.add(inv)
-
-                ledger = TransactionLedger(
-                    user_id=user_id,
-                    amount=1,
-                    currency=CurrencyType.FRIJOLITO,
-                    tx_type=TransactionType.TUTORIAL_BONUS,
-                    description=f"Bonus karma salty: gotas_antiescarcha — tutorial huevo #{incubation.id}",
-                )
-                session.add(ledger)
-                session.commit()
-                return {"type": "item", "item": GOTAS_ITEM_NAME, "quantity": 1}
-
-            # Si no existe el ítem en catálogo, dar FRJ como fallback
             wallet = BankService.get_or_create_wallet(session, user_id, for_update=True)
-            wallet.frijolitos += 10.0
+            wallet.frijolitos += 15.0
             ledger = TransactionLedger(
                 user_id=user_id,
-                amount=10.0,
+                amount=15.0,
                 currency=CurrencyType.FRIJOLITO,
                 tx_type=TransactionType.TUTORIAL_BONUS,
-                description=f"Bonus karma salty (fallback FRJ) — tutorial huevo #{incubation.id}",
+                description=f"Bonus karma salty — tutorial huevo #{incubation.id}",
             )
             session.add(wallet)
             session.add(ledger)
             session.commit()
-            return {"type": "frj", "amount": 10.0, "currency": "FRJ", "note": "gotas no disponibles en catalogo"}
+            return {"type": "frj", "amount": 15.0, "currency": "FRJ"}

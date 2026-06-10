@@ -7,11 +7,13 @@ import { SpotSlot, SelectedSlot } from '@/types/santuario';
 import type { StakingStatus } from '@/types/economy';
 import {
   fetchCaveStatus, fetchIncubaciones, fetchAxolotitos, hatchEgg as hatchEggApi,
-  fetchLegacyStatus, claimLegacy, fetchInventory, fetchShopItems,
+  fetchLegacyStatus, claimLegacy,
   fetchStakingStatus, claimAllStaking, expandCave, accelerateCave,
   startImprinting,
 } from '@/services/santuarioService';
 import ZonaCentral from '@/components/santuario/ZonaCentral';
+import ZonaInferior from '@/components/santuario/ZonaInferior';
+import { useSocial } from '@/hooks/useSocial';
 import EggSheet from '@/components/santuario/EggSheet';
 import AxoSheet from '@/components/santuario/AxoSheet';
 import CaveRoomModal from '@/components/santuario/CaveRoomModal';
@@ -51,11 +53,7 @@ export default function Santuario({
   const [caveStats,       setCaveStats]       = useState<any>({});
   const [caveWallet,      setCaveWallet]      = useState<any>({});
 
-  // ── Item/price states ────────────────────────────────
-  const [cantidadGotas,    setCantidadGotas]    = useState(0);
-  const [cantidadLamparas, setCantidadLamparas] = useState(0);
-  const [precioGotas,      setPrecioGotas]      = useState(150);
-  const [precioLamparas,   setPrecioLamparas]   = useState(25);
+
 
   // ── Interaction states ───────────────────────────────
   const [interactuando, setInteractuando] = useState<number | null>(null);
@@ -65,8 +63,7 @@ export default function Santuario({
   const [hatchingId,     setHatchingId]     = useState<number | null>(null);
   const [nuevoAxolotito, setNuevoAxolotito] = useState<any | null>(null);
 
-  // ── Shield modal ─────────────────────────────────────
-  const [modalEscudoIncId, setModalEscudoIncId] = useState<number | null>(null);
+
 
   // ── Legacy ───────────────────────────────────────────
   const [legacyStatus, setLegacyStatus] = useState<any | null>(null);
@@ -94,6 +91,16 @@ export default function Santuario({
 
   // ── Hosting modal ─────────────────────────────────────
   const [hostingModalOpen, setHostingModalOpen] = useState(false);
+
+  // ── Social (friends) ──
+  const { fetchTopFriends, sendLike } = useSocial(token);
+  const [amigosActivos, setAmigosActivos] = useState<any[]>([]);
+  const [activeSantuarioTab, setActiveSantuarioTab] = useState<string>('santuario');
+
+  useEffect(() => {
+    if (!token) return;
+    fetchTopFriends(4).then(setAmigosActivos).catch(() => {});
+  }, [token, fetchTopFriends]);
 
   // ── Reload trigger & cooldown tick ───────────────────
   const [recargaTrigger, setRecargaTrigger] = useState(0);
@@ -202,35 +209,17 @@ export default function Santuario({
     load();
   }, [userId, token, recargaTrigger]);
 
-  // ── Fetch inventory prices + legacy ─────────────────
+  // ── Fetch legacy status ─────────────────────────────
   useEffect(() => {
     if (!userId) return;
     const load = async () => {
       try {
-        const [invData, shopData, legacyData] = await Promise.allSettled([
-          fetchInventory(userId, token),
-          fetchShopItems(),
-          fetchLegacyStatus(userId, token),
-        ]);
-        if (invData.status === 'fulfilled') {
-          const inv = invData.value;
-          const gotas    = inv.find((i: any) => i.id === 61 || i.item_id === 61);
-          const lamparas = inv.find((i: any) => i.id === 62 || i.item_id === 62);
-          setCantidadGotas(gotas    ? gotas.quantity    : 0);
-          setCantidadLamparas(lamparas ? lamparas.quantity : 0);
-        }
-        if (shopData.status === 'fulfilled') {
-          const items = shopData.value;
-          const item61 = items.find((i: any) => i.id === 61);
-          const item62 = items.find((i: any) => i.id === 62);
-          if (item61) setPrecioGotas(item61.price_gal || 150);
-          if (item62) setPrecioLamparas(item62.price_axg || 25);
-        }
-        if (legacyData.status === 'fulfilled') setLegacyStatus(legacyData.value);
-      } catch (e) { console.error('Error en datos extra:', e); }
+        const legacyData = await fetchLegacyStatus(userId, token);
+        setLegacyStatus(legacyData);
+      } catch (e) { console.error('Error en datos legacy:', e); }
     };
     load();
-  }, [userId, token, modalEscudoIncId, recargaTrigger]);
+  }, [userId, token, recargaTrigger]);
 
   // ── Cooldown UI tick (30s) ───────────────────────────
   useEffect(() => {
@@ -333,29 +322,30 @@ export default function Santuario({
 
   // ── RENDER ───────────────────────────────────────────
   return (
-    <div className={`relative h-screen w-full max-w-[430px] mx-auto overflow-hidden${caveShaking ? ' animate-cave-shake' : ''}`}>
+    <div className={`flex flex-col h-screen w-full max-w-[430px] mx-auto overflow-hidden${caveShaking ? ' animate-cave-shake' : ''}`}>
 
-      {/* === ESCENA FULL-SCREEN === */}
-      <div className="absolute inset-0">
-        <ZonaCentral
-          spots={spots}
-          axolotitos={axolotitos.filter((a: any) => a.status !== 'playing')}
-          clima={clima}
-          caveLevel={caveLevel}
-          viewMode={viewMode}
-          hasTable={hasTable}
-          tableSeats={tableSeats}
-          onSelectSpot={(slot) => setSelectedSlot(slot)}
-          onSelectAxo={(axo) => setSelectedSlot({ type: 'axo', data: axo })}
-          onToggleViewMode={() => setViewMode(m => m === 'libre' ? 'gestion' : 'libre')}
-          onOpenHosting={() => setHostingModalOpen(true)}
-          selectedAxoId={selectedSlot?.type === 'axo' ? selectedSlot.data.id : null}
-          particulas={particulas}
-          vipTier={vipTier}
-          decoMode={decoMode}
-          onToggleDecoMode={() => setDecoMode(d => !d)}
-        />
-      </div>
+      {/* === ESCENA CENTRAL === */}
+      <div className="flex-1 relative">
+        <div className="absolute inset-0">
+          <ZonaCentral
+            spots={spots}
+            axolotitos={axolotitos.filter((a: any) => a.status !== 'playing')}
+            clima={clima}
+            caveLevel={caveLevel}
+            viewMode={viewMode}
+            hasTable={hasTable}
+            tableSeats={tableSeats}
+            onSelectSpot={(slot) => setSelectedSlot(slot)}
+            onSelectAxo={(axo) => setSelectedSlot({ type: 'axo', data: axo })}
+            onToggleViewMode={() => setViewMode(m => m === 'libre' ? 'gestion' : 'libre')}
+            onOpenHosting={() => setHostingModalOpen(true)}
+            selectedAxoId={selectedSlot?.type === 'axo' ? selectedSlot.data.id : null}
+            particulas={particulas}
+            vipTier={vipTier}
+            decoMode={decoMode}
+            onToggleDecoMode={() => setDecoMode(d => !d)}
+          />
+        </div>
 
       {/* Expand cave button — flotando top-left */}
       <button
@@ -380,6 +370,43 @@ export default function Santuario({
           </button>
         </div>
       )}
+
+      </div>{/* end flex-1 relative */}
+
+      {/* === ZONA INFERIOR — SOCIAL + NAV === */}
+      <ZonaInferior
+        amigos={amigosActivos.map((f: any) => ({
+          id: f.friend_id,
+          name: f.nickname || "Jugador",
+          avatarEmoji: f.vip_tier === "axolite" ? "👑" : f.vip_tier === "dorado" ? "💛" : "🦎",
+        }))}
+        activeTab={activeSantuarioTab as any}
+        onNavigate={(tab) => {
+          if (tab === 'amigos') {
+            cambiarTab && cambiarTab('amigos');
+          } else if (tab === 'jugar') {
+            cambiarTab && cambiarTab('jugar');
+          } else if (tab === 'mercado') {
+            cambiarTab && cambiarTab('tienda');
+          } else if (tab === 'perfil') {
+            // Profile — future feature
+          }
+          setActiveSantuarioTab(tab);
+        }}
+        onLike={async (amigoId: string) => {
+          try {
+            await sendLike(amigoId);
+            fetchTopFriends(4).then(setAmigosActivos).catch(() => {});
+          } catch {}
+        }}
+        onInvite={(amigoId: string) => {
+          cambiarTab && cambiarTab('jugar');
+        }}
+        onVisit={(amigoId: string) => {
+          // Open friend cave view — future: navigate to amigos tab with pre-selected friend
+          cambiarTab && cambiarTab('amigos');
+        }}
+      />
 
       {/* caveMuddy overlay — fixed overlay */}
       {caveMuddy && <div className="cave-muddy-overlay fixed inset-0 pointer-events-none z-[200]" />}

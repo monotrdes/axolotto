@@ -33,16 +33,4 @@ export interface InventoryItem {
   item_metadata?: Record<string, any>;
 }
 
-export interface ShieldModalProps {
-  incId: number;
-  incubaciones: any[];
-  userId: string;
-  token: string | null;
-  cantidadGotas: number;
-  cantidadLamparas: number;
-  precioGotas: number;
-  precioLamparas: number;
-  onClose: () => void;
-  onSuccess: () => void;
-  cambiarTab?: (tab: string) => void;
-}
+

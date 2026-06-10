@@ -18,6 +18,7 @@ from app.models.lobby_models import TreasuryVault, JackpotVault, JackpotWin, Gam
 from app.models.user import User
 from app.services.bank_service import BankService, assert_multijugador_currency
 from app.services.multiplayer_service import get_or_create_waiting_room, _max_wait_seconds
+from app.services.social_service import SocialService
 from app.services.manual_game_service import ManualGameService
 from app.services.pila_service import recovery_multiplier
 from app.core.config import MULTIPLAYER_CURRENCY
@@ -539,6 +540,11 @@ def join_player_room(
         raise HTTPException(status_code=400, detail="Usa /register para salas oficiales.")
     if room.status != "waiting":
         raise HTTPException(status_code=400, detail="Esta sala ya no acepta jugadores.")
+
+    # Validar visibilidad "friends" contra el grafo social
+    if room.visibility == "friends" and verified_user_id != room.host_id:
+        if not SocialService.are_friends(session, room.host_id, verified_user_id):
+            raise HTTPException(status_code=403, detail="Esta sala es solo para amigos del anfitrión.")
 
     # Validar contraseña
     if room.password_hash:

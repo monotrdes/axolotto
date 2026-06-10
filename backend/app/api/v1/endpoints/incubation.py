@@ -568,11 +568,7 @@ def start_imprinting(
         raise HTTPException(status_code=400, detail=f"{padrino.name} está congelado y no puede ser padrino.")
     if padrino.status == "sleeping":
         raise HTTPException(status_code=400, detail=f"{padrino.name} está durmiendo. Espera a que despierte.")
-    if (padrino.mentorship_count or 0) >= 3:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{padrino.name} ya ha apadrinado 3 huevos y no puede ser padrino de más."
-        )
+
 
     # Verificar que el padrino no ya es padrino de otro webito
     already_padrino = session.exec(

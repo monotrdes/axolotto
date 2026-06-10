@@ -33,8 +33,7 @@ export default function EggSheet({
 
   const eligibleAxos = (axolotitos || []).filter(axo => 
     !axo.is_frozen_by_vip && 
-    axo.status !== "sleeping" && 
-    (axo.mentorship_count ?? 0) < 3
+    axo.status !== "sleeping"
   );
 
   const totalBonos = [
@@ -130,7 +129,7 @@ export default function EggSheet({
                       No tienes axolotitos elegibles para apadrinar.
                     </p>
                     <p className="text-[9px] text-slate-600 mt-1">
-                      Deben estar despiertos, no congelados por VIP y tener menos de 3 apadrinamientos.
+                      Deben estar despiertos y no estar congelados por VIP.
                     </p>
                   </div>
                 ) : (
@@ -153,7 +152,7 @@ export default function EggSheet({
                             <div>
                               <div className="text-xs font-black">{axo.name || `Axolotito #${axo.id}`}</div>
                               <div className="text-[9px] text-slate-500 font-semibold">
-                                Nivel {axo.level} · Mentoring: {axo.mentorship_count ?? 0}/3
+                                Nivel {axo.level} · Mentoring: {axo.mentorship_count ?? 0}
                               </div>
                             </div>
                           </div>

@@ -97,14 +97,7 @@ export async function unequipCaveItem(axoId: number, itemId: number, token: stri
   await axios.post(`${API}/game/axolotitos/${axoId}/cave/unequip`, { item_id: itemId }, { headers: headers(token) });
 }
 
-// ── Shield / incubation items ──
-export async function useIncubationItem(incId: number, itemId: number, userId: string, token: string | null) {
-  await axios.post(`${API}/incubation/use-item/${incId}?item_id=${itemId}&user_id=${userId}`, {}, { headers: headers(token) });
-}
 
-export async function buyAndUseIncubationItem(incId: number, itemId: number, userId: string, token: string | null) {
-  await axios.post(`${API}/incubation/buy-and-use/${incId}?item_id=${itemId}&user_id=${userId}`, {}, { headers: headers(token) });
-}
 
 // ── Staking ──
 export async function fetchStakingStatus(userId: string, token: string | null) {

@@ -16,6 +16,7 @@ import Santuario from "@/components/Santuario";
 import PlayMode from "@/components/PlayMode";
 import Rankings from "@/components/Rankings";
 import Gashapon from "@/components/Gashapon";
+import AmigosPage from "@/components/social/AmigosPage";
 import VipModal, { type VipNotification } from "@/components/VipModal";
 import SettingsModal from "@/components/SettingsModal";
 import { GameCanvas } from "@/components/world/GameCanvas";
@@ -43,6 +44,7 @@ const ZONE_TABS = [
   { id: 'tienda'    as TabId, label: 'Tianguis',  emoji: '🏪', color: '#FF6B35', glow: 'rgba(255,107,53,0.5)',  zone: 'tianguis' },
   { id: 'jugar'     as TabId, label: 'Sala',      emoji: '🎲', color: '#34D399', glow: 'rgba(52,211,153,0.5)',  zone: 'sala' },
   { id: 'rankings'  as TabId, label: 'Pirámide',  emoji: '🏆', color: '#FBBF24', glow: 'rgba(251,191,36,0.5)',  zone: 'piramide' },
+  { id: 'amigos'    as TabId, label: 'Amigos',    emoji: '👥', color: '#2DD4BF', glow: 'rgba(45,212,191,0.5)',  zone: 'amigos' },
   { id: 'gashapon'  as TabId, label: 'Cápsulas',  emoji: '🎰', color: '#A855F7', glow: 'rgba(168,85,247,0.5)',  zone: 'capsulas' },
 ] as const;
 
@@ -675,6 +677,7 @@ export default function Home() {
                 <Santuario userId={user?.id || ""} token={accessToken} cambiarTab={(tab) => setTabActiva(tab as TabId)} vipTier={datosBanco?.vip_tier} />
               )}
               {tabActiva === 'rankings'   && <Rankings  userId={user?.id || ""} token={accessToken} cambiarTab={setTabActiva}                   />}
+{tabActiva === 'amigos'    && <AmigosPage userId={user?.id || ""} token={accessToken} onNavigate={(tab) => setTabActiva(tab as TabId)} />}
               {tabActiva === 'gashapon'   && (
                 <Gashapon
                   userId={user?.id || ""}

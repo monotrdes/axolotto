@@ -444,7 +444,7 @@ def test_permanent_stats_boost_on_hatch(session):
     baby = session.get(Axolotito, baby_id)
     assert baby.tutored_by_id == padrino.id
 
-def test_mentorship_limit_of_3(session):
+def test_mentorship_no_limit(session):
     user = make_user(session, privy_did="did:privy:padrino_test_limit")
     padrino = Axolotito(
         user_id=user.privy_did,
@@ -476,8 +476,5 @@ def test_mentorship_limit_of_3(session):
         padrino_axolotito_id=padrino.id
     )
 
-    with pytest.raises(HTTPException) as exc_info:
-        start_imprinting(payload, session, verified_user_id=user.privy_did)
-    
-    assert exc_info.value.status_code == 400
-    assert "ya ha apadrinado 3 huevos" in exc_info.value.detail
+    res = start_imprinting(payload, session, verified_user_id=user.privy_did)
+    assert res["incubation_id"] == incubation.id

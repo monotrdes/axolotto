@@ -277,7 +277,7 @@ def run_seed():
                 price_axg=0.0,
                 price_gal=CONSUMABLE_PRICES["gotas"],
                 max_supply=999999,
-                is_active=True,
+                is_active=False,
                 item_metadata={"duration_hours": 12, "target": "single"}
             ),
             ItemCatalog(
@@ -288,7 +288,7 @@ def run_seed():
                 price_axg=CONSUMABLE_PRICES["lampara"],
                 price_gal=0.0,
                 max_supply=999999,
-                is_active=True,
+                is_active=False,
                 item_metadata={"duration_hours": 24, "target": "single"}
             ),
             ItemCatalog(

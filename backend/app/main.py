@@ -6,7 +6,7 @@ from app.core.limiter import limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
-from app.api.v1.endpoints import bank, user, shop, incubation, metadata, legacy, board, game, ranking, multiplayer, checkout, market, leonardo, admin, whitelist, codes, f2p, tutorial, cave_expansion, admin_events, events, dev, rewards, staking
+from app.api.v1.endpoints import bank, user, shop, incubation, metadata, legacy, board, game, ranking, multiplayer, checkout, market, leonardo, admin, whitelist, codes, f2p, tutorial, cave_expansion, admin_events, events, dev, rewards, staking, social, referrals
 from app.api.v1.ws import game_ws
 from app.core.config import settings
 
@@ -302,6 +302,7 @@ async def on_startup():
     from app.models.items import InventoryMarketListing  # noqa: F401
     from app.models.promo import PromoCode, PendingReward  # noqa: F401
     from app.models.manual_mode_event import ManualModeEvent  # noqa: F401 — registra tabla
+    from app.models.social import FriendRelation, SocialActionLog, ReferralCode, ReferralTracking  # noqa: F401 — registra tablas
     SQLModel.metadata.create_all(engine)
 
     # --- MIGRACIONES DINÁMICAS: CHECKOUT / USER ---
@@ -506,3 +507,5 @@ if settings.BLOCKCHAIN_MODE == "local":
 app.include_router(events.router, prefix="/api/v1/events", tags=["events"])
 app.include_router(rewards.router, prefix="/api/v1/rewards", tags=["Rewards"])
 app.include_router(staking.router, prefix="/api/v1/staking", tags=["Staking"])
+app.include_router(social.router, prefix="/api/v1/social", tags=["Social — Amigos"])
+app.include_router(referrals.router, prefix="/api/v1/referrals", tags=["Social — Referidos"])

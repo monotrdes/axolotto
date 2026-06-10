@@ -34,7 +34,7 @@ from app.models.axolotito import Axolotito  # noqa: F401
 from app.models.board import PlayerBoard  # noqa: F401
 from app.models.promo import PromoCode, PendingReward  # noqa: F401
 
-from app.services.tutorial_service import TutorialService, LUCKY_GAL_BONUS, GOTAS_ITEM_NAME
+from app.services.tutorial_service import TutorialService, LUCKY_GAL_BONUS
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -107,17 +107,7 @@ def _make_incubation(
     return incubation
 
 
-def _make_gotas_item(session: Session) -> ItemCatalog:
-    item = ItemCatalog(
-        name=GOTAS_ITEM_NAME,
-        item_type=ItemType.CONSUMABLE,
-        rarity=Rarity.COMMON,
-        price_gal=0.0,
-    )
-    session.add(item)
-    session.commit()
-    session.refresh(item)
-    return item
+
 
 
 # ---------------------------------------------------------------------------
@@ -244,9 +234,7 @@ class TestAdvancePhase:
         wallet = BankService.get_or_create_wallet(session, user.privy_did)
         assert wallet.gemas_alga >= LUCKY_GAL_BONUS
 
-    def test_phase_4_to_5_salty_gives_consumable(self, session):
-        _make_gotas_item(session)
-
+    def test_phase_4_to_5_salty_gives_gal(self, session):
         user = _make_user(session, "did:privy:adv_4_salty")
         inc = _make_incubation(session, user.privy_did, tutorial_phase=4)
         inc.tutorial_karma = "salty"
@@ -256,20 +244,13 @@ class TestAdvancePhase:
         result = TutorialService.advance_phase(session, user.privy_did, inc)
 
         assert result["karma"] == "salty"
-        assert result["karma_bonus"]["type"] == "item"
-        assert result["karma_bonus"]["item"] == GOTAS_ITEM_NAME
-        assert result["karma_bonus"]["quantity"] == 1
+        assert result["karma_bonus"]["type"] == "frj"
+        assert result["karma_bonus"]["amount"] == 15.0
 
-        # Verificar inventario
-        from app.models.items import PlayerInventory, ItemCatalog
-        gotas = session.exec(select(ItemCatalog).where(ItemCatalog.name == GOTAS_ITEM_NAME)).first()
-        inv = session.exec(
-            select(PlayerInventory)
-            .where(PlayerInventory.user_id == user.privy_did)
-            .where(PlayerInventory.item_id == gotas.id)
-        ).first()
-        assert inv is not None
-        assert inv.quantity >= 1
+        # Verificar wallet
+        from app.services.bank_service import BankService
+        wallet = BankService.get_or_create_wallet(session, user.privy_did)
+        assert wallet.frijolitos == 15.0
 
     def test_phase_already_completed_raises_400(self, session):
         user = _make_user(session, "did:privy:adv_done")
@@ -397,27 +378,14 @@ class TestApplyKarmaBonus:
         assert len(ledger_entries) >= 1
         assert any(e.amount == LUCKY_GAL_BONUS for e in ledger_entries)
 
-    def test_salty_bonus_with_no_item_falls_back_to_gal(self, session):
-        """Si no existe gotas_antiescarcha en el catalogo, da 10 GAL como fallback."""
-        user = _make_user(session, "did:privy:bonus_salty_fallback")
+    def test_salty_bonus_gives_gal(self, session):
+        user = _make_user(session, "did:privy:bonus_salty_gal")
         inc = _make_incubation(session, user.privy_did, tutorial_phase=4)
 
         result = TutorialService._apply_karma_bonus(session, user.privy_did, inc, "salty")
 
-        # No hay item en catálogo → fallback GAL
         assert result["type"] == "frj"
-        assert result["amount"] == 10.0
-
-    def test_salty_bonus_with_existing_item_gives_consumable(self, session):
-        _make_gotas_item(session)
-        user = _make_user(session, "did:privy:bonus_salty_item")
-        inc = _make_incubation(session, user.privy_did, tutorial_phase=4)
-
-        result = TutorialService._apply_karma_bonus(session, user.privy_did, inc, "salty")
-
-        assert result["type"] == "item"
-        assert result["item"] == GOTAS_ITEM_NAME
-        assert result["quantity"] == 1
+        assert result["amount"] == 15.0
 
 
 # ---------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 // Types for play page
-export type TabId = 'tienda' | 'jugar' | 'mochila' | 'cartas' | 'tablas' | 'santuario' | 'criadero' | 'axolotitos' | 'rankings' | 'gashapon';
+export type TabId = 'tienda' | 'jugar' | 'mochila' | 'cartas' | 'tablas' | 'santuario' | 'criadero' | 'axolotitos' | 'rankings' | 'gashapon' | 'amigos';
 
 export interface ZoneTab {
   id: TabId;

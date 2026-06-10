@@ -20,7 +20,8 @@ from sqlmodel import select
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
-from app.services.bank_service import BankService, P2P_FEE_PERCENTAGE
+from app.services.bank_service import BankService, P2P_FEE_BPS, P2P_FEE_DENOMINATOR
+P2P_FEE_PERCENTAGE = P2P_FEE_BPS / P2P_FEE_DENOMINATOR
 from app.models.economy import (
     Wallet, TransactionLedger, CurrencyType, TransactionType
 )
