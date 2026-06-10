@@ -8,6 +8,7 @@ from app.models.economy import Wallet, CurrencyType, AxgPurchaseRecord
 from app.models.items import ItemCatalog, ItemType
 from app.services.bank_service import BankService
 from app.services.shop_service import ShopService
+from app.core.config import VIP_CONFIG, frj_to_internal, FRJ_DECIMALS_BACKEND
 
 from sim_types import _rng
 
@@ -39,8 +40,8 @@ def phase_fund_wallets(engine, config, **state) -> dict:
         if (item.item_metadata or {}).get("is_vip")
     }
 
-    # Buscar los paquetes de GAL en el catálogo
-    gal_packs = session.exec(
+    # Buscar los paquetes de FRJ (Frijolitos) en el catálogo
+    frj_packs = session.exec(
         select(ItemCatalog).where(
             ItemCatalog.item_type == ItemType.CURRENCY_PACK,
             ItemCatalog.is_active == True,
@@ -70,7 +71,6 @@ def phase_fund_wallets(engine, config, **state) -> dict:
         vip_discount = 0.0
         if vip_tier and vip_tier in vip_catalog:
             vip_cost = vip_catalog[vip_tier].price_axg
-            from app.core.config import VIP_CONFIG
             vip_discount = VIP_CONFIG.get(vip_tier, {}).get("discount", 0.0)
 
         boosters_normal = personality.get("boosters_normal", 0)
@@ -145,36 +145,36 @@ def phase_fund_wallets(engine, config, **state) -> dict:
         stats["axg_purchased_mxn"] = stats.get("axg_purchased_mxn", 0.0) + mxn_spent
         stats["axg_purchased_qty"] = stats.get("axg_purchased_qty", 0.0) + current_obtained
 
-        # 3. Comprar paquetes GAL con AXG (primero COR, luego VIP para que el descuento aplique)
-        if gal_packs:
-            n_packs = _rng.randint(2, 5)
-            for _ in range(n_packs):
-                pack = _rng.choice(gal_packs)
-                try:
-                    ShopService.buy_item(
-                        session=session,
-                        user_id=user_id,
-                        item_id=pack.id,
-                        payment_currency=CurrencyType.AXOGEMA,
-                    )
-                    stats["gal_packs_bought"] = stats.get("gal_packs_bought", 0) + 1
-                except HTTPException as e:
-                    errors.append(f"gal_pack {user_id}: {e.detail}")
-            session.refresh(wallet)
-            print(f"  🌿 {user_id}: {wallet.frijolitos:.0f} GAL tras {n_packs} paquetes")
+        # 3. Fondear FRJ directamente (ShopService.buy_item bloquea CURRENCY_PACK por
+        #    compliance regulatorio — status_code 403). En lugar de comprar paquetes,
+        #    acreditamos FRJ directamente en unidad mínima (VULN-06).
+        n_packs = _rng.randint(3, 6)
+        if frj_packs:
+            # Usar price_gal de los paquetes como referencia de cuánto FRJ otorga cada uno
+            pack_amounts = [
+                p.price_gal if p.price_gal else 2000 * (10 ** FRJ_DECIMALS_BACKEND)
+                for p in frj_packs
+            ]
+            avg_pack = sum(pack_amounts) // len(pack_amounts)
+            total_frj = n_packs * avg_pack
         else:
-            # Sin paquetes en catálogo: seed directo para que el resto funcione
-            wallet.frijolitos = 5000.0
-            session.add(wallet)
-            session.commit()
-            print(f"  🌿 {user_id}: 5000 GAL (sin CURRENCY_PACK en catálogo)")
+            total_frj = frj_to_internal(10000)  # 10,000 FRJ fallback
+
+        wallet.frijolitos += total_frj
+        session.add(wallet)
+        session.commit()
+        stats["frj_packs_bought"] = stats.get("frj_packs_bought", 0) + n_packs
+        print(f"  🌿 {user_id}: {wallet.frijolitos / (10**FRJ_DECIMALS_BACKEND):.0f} FRJ "
+              f"({n_packs} paquetes, +{total_frj / (10**FRJ_DECIMALS_BACKEND):.0f} FRJ)")
 
         # 3b. Si se especificó FRJ inicial custom, sobrescribir el saldo
+        #      El valor se interpreta en FRJ legibles (ej. 5000 = 5000 FRJ),
+        #      se convierte a unidad mínima antes de guardar (VULN-06).
         if config.initial_frj > 0:
-            wallet.frijolitos = config.initial_frj
+            wallet.frijolitos = frj_to_internal(config.initial_frj)
             session.add(wallet)
             session.commit()
-            print(f"  🌿 {user_id}: {wallet.frijolitos:.0f} FRJ (custom inicial)")
+            print(f"  🌿 {user_id}: {wallet.frijolitos / (10**FRJ_DECIMALS_BACKEND):.0f} FRJ (custom inicial, {config.initial_frj} FRJ)")
 
         # 4. Activar VIP ahora que ya tiene GAL — compras futuras (boosters, huevos) gozarán descuento
         if vip_tier and vip_tier in vip_catalog:
@@ -189,8 +189,8 @@ def phase_fund_wallets(engine, config, **state) -> dict:
                 session.refresh(wallet)
                 session.refresh(user)
                 stats["vip_activations"] = stats.get("vip_activations", 0) + 1
-                welcome_gal = res.get("welcome_gal_bonus", 0) if isinstance(res, dict) else 0
-                print(f"  👑 {user_id}: VIP {vip_tier.upper()} activado tras fondear GAL (+{welcome_gal} GAL bienvenida) — próximas compras con descuento")
+                welcome_frj = res.get("welcome_gal_bonus", 0) if isinstance(res, dict) else 0
+                print(f"  👑 {user_id}: VIP {vip_tier.upper()} activado tras fondear FRJ (+{welcome_frj} FRJ bienvenida) — próximas compras con descuento")
             except HTTPException as e:
                 errors.append(f"vip_buy_early {user_id} {vip_tier}: {e.detail}")
 

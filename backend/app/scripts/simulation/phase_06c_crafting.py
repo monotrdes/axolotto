@@ -3,9 +3,8 @@ from fastapi import HTTPException
 
 from app.models.items import ItemCatalog, ItemType, PlayerInventory
 from app.services.bank_service import BankService
-from app.api.v1.endpoints.shop import (
-    melt_card, forge_card, MeltCardRequest, ForgeCardRequest,
-)
+from app.services.forge_service import melt_card, forge_card
+from app.api.v1.endpoints.shop import MeltCardRequest, ForgeCardRequest
 
 from sim_types import _rng
 
@@ -53,9 +52,10 @@ def phase_card_melter(engine, config, **state) -> dict:
                 if wallet.frijolitos >= cost:
                     try:
                         res = melt_card(
-                            request=MeltCardRequest(card_id=inv.item_id, is_first_edition=inv.is_first_edition),
                             session=session,
-                            verified_user_id=user_id
+                            user_id=user_id,
+                            card_id=inv.item_id,
+                            is_first_edition=inv.is_first_edition,
                         )
                         stats["cards_melted"] = stats.get("cards_melted", 0) + 5
                         stats["melter_fusions"] = stats.get("melter_fusions", 0) + 1
@@ -104,9 +104,9 @@ def phase_card_melter(engine, config, **state) -> dict:
                     target_card = _rng.choice(forgeable_cards)
                     try:
                         res = forge_card(
-                            request=ForgeCardRequest(target_card_id=target_card.id),
                             session=session,
-                            verified_user_id=user_id
+                            user_id=user_id,
+                            target_card_id=target_card.id,
                         )
                         stats["cards_forged"] = stats.get("cards_forged", 0) + 1
                         print(f"  🔨 {user_id}: forjó '{target_card.name}' ({rarity_label}) usando {frag_cost} fragmentos y {gal_cost} GAL")

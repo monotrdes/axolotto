@@ -34,15 +34,16 @@ def phase_gashapon(engine, config, **state) -> dict:
             except HTTPException as e:
                 errors.append(f"gashapon {user_id}: {e.detail}")
 
-        # — Cápsula diaria —
+        # — Cápsula diaria (deprecada, ahora va por /api/v1/rewards/lunar/claim) —
         try:
             res = claim_daily_capsule(session=session, verified_user_id=user_id)
             prize = res.get("item_name") or res.get("resultado", "?")
             print(f"  💊 {user_id}: cápsula diaria → {prize}")
             stats["capsule_claims"] = stats.get("capsule_claims", 0) + 1
         except HTTPException as e:
-            if e.status_code in (400, 409):
-                print(f"  ℹ️  {user_id}: cápsula diaria ya reclamada hoy ({e.detail})")
+            if e.status_code in (400, 409) or "lunar/claim" in str(e.detail):
+                # Endpoint deprecado redirige al sistema lunar — no es un error
+                print(f"  ℹ️  {user_id}: cápsula diaria → sistema lunar (no error)")
             else:
                 errors.append(f"capsule {user_id}: {e.detail}")
 

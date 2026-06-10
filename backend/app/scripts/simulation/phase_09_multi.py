@@ -8,6 +8,7 @@ from app.models.axolotito import Axolotito
 from app.models.board import PlayerBoard
 from app.models.lobby_models import GameRoom, RoomRegistration, JackpotVault, JackpotWin
 from app.services.bank_service import BankService
+from app.core.config import frj_to_internal
 from app.api.v1.endpoints.multiplayer import (
     register_axolotito, recall_axolotito,
     settle_axolotito_escrow, RegisterRequest,
@@ -58,7 +59,7 @@ def phase_multiplayer(engine, config, **state) -> dict:
     recall_user = recall_p["user_id"]
 
     wallet_r = BankService.get_or_create_wallet(session, recall_user)
-    wallet_r.frijolitos = max(wallet_r.frijolitos, 500.0)
+    wallet_r.frijolitos = max(wallet_r.frijolitos, frj_to_internal(500))  # 500 FRJ → unidad mínima
     session.add(wallet_r)
     recall_axo.energy_current = max(recall_axo.energy_current, 20)
     session.add(recall_axo)
@@ -124,9 +125,11 @@ def phase_multiplayer(engine, config, **state) -> dict:
         budget = round(fee * n_boards * rounds_target, 2)
 
         wallet = BankService.get_or_create_wallet(session, user_id)
-        if wallet.frijolitos < budget:
-            wallet.frijolitos = budget + 200.0
+        # budget está en FRJ legibles; convertir a unidad mínima para el guard
+        if wallet.frijolitos < frj_to_internal(budget):
+            wallet.frijolitos = frj_to_internal(budget + 200.0)
             session.add(wallet)
+            session.commit()
 
         # Forzar idle + energía suficiente
         session.refresh(axo)

@@ -37,13 +37,27 @@ def phase_reset(engine, config, **state) -> dict:
             "inventorymarketlisting", "processedtransaction",
             "capsuladailyfree", "capsulapity",
             "cryptopaymentattempt", "cryptopurchaseorder",
-            "arcadeleaderboard",
+            "chainoutbox", "playerboardslot", "activegamestate",
+            "manualmodeevent",
         ]
         try:
-            tables_sql = ", ".join(f'"{t}"' for t in game_tables)
-            session.execute(sa_text(f"TRUNCATE TABLE {tables_sql} RESTART IDENTITY CASCADE"))
-            session.commit()
-            progress(f"  🗑️  TRUNCATE CASCADE: {len(game_tables)} tablas vaciadas.")
+            # Verificar qué tablas existen realmente (evita que una tabla missing rompa todo el TRUNCATE)
+            existing_tables = [
+                r[0] for r in session.execute(
+                    sa_text("SELECT tablename FROM pg_catalog.pg_tables WHERE schemaname = 'public'")
+                ).fetchall()
+            ]
+            tables_to_truncate = [t for t in game_tables if t in existing_tables]
+            missing = [t for t in game_tables if t not in existing_tables]
+            if missing:
+                progress(f"  ⚠️  Tablas no encontradas (skip): {', '.join(missing)}")
+            if tables_to_truncate:
+                tables_sql = ", ".join(f'"{t}"' for t in tables_to_truncate)
+                session.execute(sa_text(f"TRUNCATE TABLE {tables_sql} RESTART IDENTITY CASCADE"))
+                session.commit()
+                progress(f"  🗑️  TRUNCATE CASCADE: {len(tables_to_truncate)}/{len(game_tables)} tablas vaciadas.")
+            else:
+                progress("  ⚠️  Ninguna tabla para truncar.")
         except Exception as e:
             session.rollback()
             progress(f"  ⚠️  TRUNCATE falló: {e}")
@@ -86,6 +100,7 @@ def phase_reset(engine, config, **state) -> dict:
                 unlocked_board_slots     = 3,
                 cave_level              = 1,
                 cave_name               = NULL,
+                cave_decorations         = '{}',
                 cave_expansion_target_level = NULL,
                 cave_expansion_started_at   = NULL,
                 puntos                   = 0,
@@ -99,7 +114,12 @@ def phase_reset(engine, config, **state) -> dict:
                 f2p_daily_gal_reset_at   = NULL,
                 f2p_daily_frags_earned   = 0,
                 last_f2p_daily_claim_at  = NULL,
-                f2p_daily_claim_streak   = 0
+                f2p_daily_claim_streak   = 0,
+                lunar_streak_day         = 0,
+                lunar_week               = 1,
+                lunar_last_claim_at      = NULL,
+                lunar_cycles_completed   = 0,
+                webito_slots_unlocked    = 1
         """))
         session.commit()
     except Exception as e:
@@ -230,8 +250,12 @@ def phase_migrations(engine, config, **state) -> dict:
             ("playerboard",       "npc_room",                     "VARCHAR(50)"),
             ("playerboard",       "npc_retired",                  "BOOLEAN DEFAULT FALSE"),
             ("playerboard",       "origin_story",                 "TEXT"),
+            ("playerboard",       "is_tutorial",                  "BOOLEAN DEFAULT FALSE"),
+            ("playerboard",       "slot_index",                   "INTEGER NULL"),
+            ("playerboard",       "slot_generation",              "INTEGER DEFAULT 1"),
             # playerinventory
             ("playerinventory",   "is_first_edition",             "BOOLEAN DEFAULT FALSE"),
+            ("playerinventory",   "is_shiny",                     "BOOLEAN DEFAULT FALSE"),
             # axolotito
             ("axolotito",         "sleep_expires_at",             "TIMESTAMP NULL"),
             ("axolotito",         "is_main",                      "BOOLEAN DEFAULT FALSE"),
@@ -248,6 +272,9 @@ def phase_migrations(engine, config, **state) -> dict:
             ("axolotito",         "cpu_win_streak",               "INTEGER DEFAULT 0"),
             ("axolotito",         "cave_items",                   "JSON DEFAULT '[]'"),
             ("axolotito",         "nature",                       "VARCHAR(255) NULL"),
+            ("axolotito",         "is_tutorial",                  "BOOLEAN DEFAULT FALSE"),
+            ("axolotito",         "is_rented",                    "BOOLEAN DEFAULT FALSE"),
+            ("axolotito",         "renter_id",                    "VARCHAR(255) NULL"),
         ]
         for table, col, ddl in migrations:
             try:
@@ -272,7 +299,7 @@ def phase_migrations(engine, config, **state) -> dict:
             select(func.count(ItemCatalog.id)).where(ItemCatalog.item_type != ItemType.CARD)
         ).one()
         if other_count == 0:
-            progress("  📦 Sembrando boosters, huevos, VIP, paquetes GAL...")
+            progress("  📦 Sembrando boosters, huevos, VIP, paquetes FRJ...")
             try:
                 from app.scripts.seed_catalog import run_seed
                 run_seed()

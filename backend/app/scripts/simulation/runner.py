@@ -137,19 +137,37 @@ def main():
     # ── Mock Web3Service for sim: skip real blockchain calls ─────────────────
     # Sim wallets are fake addresses without ETH. Patch all on-chain calls to
     # return mock hashes so phases don't fail on gas/funds errors.
+    # Use a counter to generate unique tx hashes — ProcessedTransaction has a
+    # UNIQUE constraint on tx_hash, so identical hashes cause integrity errors.
     from app.services import web3_service as _w3mod
-    _MOCK_TX = "0x_sim_mock_tx"
-    _w3mod.Web3Service.mint_webito_onchain    = staticmethod(lambda wallet:        _MOCK_TX)
-    _w3mod.Web3Service.mint_sobrecito_onchain   = staticmethod(lambda *a, **kw:      _MOCK_TX)
-    _w3mod.Web3Service.burn_axofichas          = staticmethod(lambda *a, **kw:      _MOCK_TX)
-    _w3mod.Web3Service.burn_frj               = staticmethod(lambda *a, **kw:      _MOCK_TX)
-    _w3mod.Web3Service.mint_frj               = staticmethod(lambda *a, **kw:      _MOCK_TX)
-    _w3mod.Web3Service.mint_cards_onchain     = staticmethod(lambda *a, **kw:      _MOCK_TX)
-    _w3mod.Web3Service.create_board_onchain   = staticmethod(lambda *a, **kw:      _MOCK_TX)
-    _w3mod.Web3Service.dissolve_board_onchain = staticmethod(lambda *a, **kw:      _MOCK_TX)
-    _w3mod.Web3Service.dissolve_board_safe_onchain = staticmethod(lambda *a, **kw: _MOCK_TX)
-    _w3mod.Web3Service.transfer_board_onchain = staticmethod(lambda *a, **kw:      _MOCK_TX)
-    _w3mod.Web3Service.create_npc_board       = staticmethod(lambda *a, **kw:      _rng.randint(1000, 9999))
+    _mock_counter = [0]  # list for mutable closure in nonlocal-less lambdas
+    def _mock_tx(*a, **kw):
+        _mock_counter[0] += 1
+        return f"0x_sim_mock_{_mock_counter[0]:06d}"
+    _w3mod.Web3Service.mint_webito_onchain       = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.mint_axolotito_onchain    = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.mint_axolotito_with_stats = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.mint_sobrecito_onchain    = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.burn_sobrecito_onchain    = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.transferir_sobrecito_onchain = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.burn_axofichas            = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.transferir_axofichas      = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.burn_frj                  = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.mint_frj                  = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.mint_cards_onchain        = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.transfer_card_onchain     = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.create_board_onchain      = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.dissolve_board_onchain    = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.dissolve_board_safe_onchain = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.transfer_board_onchain    = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.transfer_axolotito_onchain = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.update_table_stats_onchain = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.burn_consumable           = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.mint_consumable           = staticmethod(lambda *a, **kw: _mock_tx())
+    _w3mod.Web3Service.create_npc_board          = staticmethod(lambda *a, **kw: _rng.randint(1000, 9999))
+    # Force mock mode in outbox worker — avoids _dispatch_onchain entirely,
+    # generates tx_hash from entry.id guaranteeing uniqueness per entry.
+    settings.IS_MOCK_WEB3 = True
 
     stats: dict = {}
     errors: list = []
@@ -249,7 +267,7 @@ def main():
         progress("⏳ [2c/10] Ciclo Lunar — simulando recompensas diarias...")
         state.update(phase_daily_rewards(engine, config, **state) or {})
 
-        progress("⏳ [3/10] Fondos + paquetes GAL...")
+        progress("⏳ [3/10] Fondos + paquetes FRJ...")
         state.update(phase_fund_wallets(engine, config, **state) or {})
 
         progress("⏳ [3b/10] Cápsulas iniciales — sembrando saldo inicial...")
@@ -265,7 +283,7 @@ def main():
         progress("⏳ [4b/10] Boosters — apertura inmediata (whale)...")
         state.update(phase_open_boosters(engine, config, strategy="immediate", **state) or {})
 
-        progress(f"⏳ [5/10] Incubación real ({config.incubation}s) — barra en vivo...")
+        progress(f"⏳ [5/10] Incubación — tutorial + imprinting ({config.incubation}s max)...")
         state.update(phase_incubation(engine, config, **state) or {})
 
         # Apertura POST-INCUBACIÓN: selective (foils ya comprados) + random
@@ -351,8 +369,8 @@ def main():
 👥  Usuarios creados:          {stats.get('users_created', 0)}
 🎟️  Corcholatas canjeadas:     {stats.get('corcholatas_redeemed', 0)}
 🎁  Corcholatas reclamadas:    {stats.get('corcholatas_claimed', 0)}
-💸  AXG comprados (Sim.):      {stats.get('axg_purchased_qty', 0.0):.0f} AXG (Pesos: ${stats.get('axg_purchased_mxn', 0.0):.2f} MXN)
-💎  Paquetes GAL comprados:    {stats.get('gal_packs_bought', 0)}
+💸  AXF comprados (Sim.):      {stats.get('axg_purchased_qty', 0.0):.0f} AXF (Pesos: ${stats.get('axg_purchased_mxn', 0.0):.2f} MXN)
+💎  Paquetes FRJ comprados:    {stats.get('frj_packs_bought', 0)}
 🃏  Boosters normales:         {stats.get('boosters_bought', 0)}
 ✨  Boosters foil:             {stats.get('boosters_foil_bought', 0)}
 🎯  Boosters extra (abiertos): {stats.get('boosters_extra_bought', 0)}
@@ -378,7 +396,7 @@ def main():
 {'-'*70}
 👑  VIP activados:             {stats.get('vip_activations', 0)}
 🔄  VIP Auto-Renovación:       {stats.get('vip_auto_renew', 0)}
-🌿  GAL VIP reclamados:        {stats.get('vip_gal_claimed', 0)}
+🌿  FRJ VIP reclamados:        {stats.get('vip_gal_claimed', 0)}
 💸  Ahorro jugadores (VIP):    {stats.get('vip_savings_axg', 0.0):.2f} AXF  ← ingresos perdidos por la casa
 {'-'*70}
 🎮  Partidas individuales:     {gp}

@@ -289,7 +289,12 @@ def phase_incubation(engine, config, **state) -> dict:
                 if tutorial_result and tutorial_result.get("has_pending_reward"):
                     try:
                         from app.api.v1.endpoints.rewards import claim_pending_reward
+                        from starlette.requests import Request
+                        # Build minimal Request scope for the endpoint signature
+                        mock_scope = {"type": "http", "method": "POST", "path": "/api/v1/rewards/claim", "headers": []}
+                        mock_req = Request(mock_scope)
                         claim_res = claim_pending_reward(
+                            mock_req,
                             session=session,
                             verified_user_id=user_id,
                         )
@@ -381,7 +386,9 @@ def phase_incubation(engine, config, **state) -> dict:
                 print(f"  🔒 {user_id}: Límite de Nivel 1 verificado correctamente: {e.detail}")
 
         # 5. Expandir la cueva vía FRJ + logro para desbloquear más spots
-        #    (La expansión completa con aceleración y logros se prueba en phase_07e)
+        #    Importamos el helper de phase_07e para asegurar logros antes de expandir.
+        #    Sin esto, start_expansion rechaza la expansión por falta de logros.
+        from phase_07e_cave_expansion import _ensure_achievements_for_level, _cleanup_stuck_expansion
         n_eggs = p["personality"].get("eggs", 0)
         if n_eggs > 0:
             target_level = min(5, 1 + n_eggs)
@@ -391,7 +398,15 @@ def phase_incubation(engine, config, **state) -> dict:
                 from app.models.economy import Wallet
                 while current_level < target_level:
                     try:
-                        # Asegurar FRJ suficientes para la expansión
+                        session.refresh(user)
+                        # ── Asegurar logros para el nivel objetivo ──
+                        _ensure_achievements_for_level(
+                            session=session,
+                            user_id=user_id,
+                            target_level=current_level + 1,
+                            user=user,
+                        )
+                        # Asegurar FRJ y AXF suficientes para la expansión
                         wallet = session.exec(
                             select(Wallet).where(Wallet.user_id == user_id).with_for_update()
                         ).first()
@@ -401,7 +416,7 @@ def phase_incubation(engine, config, **state) -> dict:
                             session.add(wallet)
                             session.commit()
 
-                        # Iniciar expansión (requiere logro + FRJ, sin argumento "path")
+                        # Iniciar expansión (requiere logro + FRJ)
                         res = start_expansion(
                             session=session,
                             verified_user_id=user_id
@@ -412,12 +427,14 @@ def phase_incubation(engine, config, **state) -> dict:
                             verified_user_id=user_id
                         )
                         current_level = accel_res.get("current_level", current_level + 1)
-                        stats["cave_expansions"] = stats.get("cave_expansions", 0) + 1
+                        stats["cave_expansions_total"] = stats.get("cave_expansions_total", 0) + 1
                         stats["cave_expansion_axf_spent"] = stats.get("cave_expansion_axf_spent", 0) + accel_res.get("axf_spent", 0)
                         print(f"  ⛏️ {user_id}: Cenote expandido a nivel {current_level} "
                               f"({accel_res.get('axf_spent', 0)} AXF aceleración)")
                     except Exception as e:
+                        session.rollback()
                         errors.append(f"cave_expand {user_id} to {current_level+1}: {e}")
+                        _cleanup_stuck_expansion(session, user_id, current_level + 1)
                         break
 
             # 6. Comprar los huevos adicionales una vez expandido el cenote

@@ -78,8 +78,27 @@ def phase_boards(engine, config, **state) -> dict:
             )
         ).all()
 
-        if len(inv_cards) >= 16:
-            selected = _rng.sample(inv_cards, 16)
+        # Obtener IDs de cartas ya usadas en tableros existentes (no disponibles)
+        existing_boards = session.exec(
+            select(PlayerBoard).where(
+                PlayerBoard.user_id == user_id,
+                PlayerBoard.is_dead == False,
+            )
+        ).all()
+        used_card_ids: set[int] = set()
+        for b in existing_boards:
+            if b.card_ids:
+                used_card_ids.update(b.card_ids)
+
+        # Deduplicar por item_id y filtrar cartas ya usadas en otros tableros
+        unique_available: dict[int, PlayerInventory] = {}
+        for inv in inv_cards:
+            if inv.item_id not in used_card_ids and inv.item_id not in unique_available:
+                unique_available[inv.item_id] = inv
+
+        if len(unique_available) >= 16:
+            available_list = list(unique_available.values())
+            selected = _rng.sample(available_list, 16)
             card_ids = [inv.item_id for inv in selected]
             try:
                 res = create_manual_board(
@@ -95,11 +114,11 @@ def phase_boards(engine, config, **state) -> dict:
                     ids.append(bid)
                     stats["boards_created"] = stats.get("boards_created", 0) + 1
                     stats["manual_boards"]   = stats.get("manual_boards", 0) + 1
-                    print(f"  🖊️  {user_id}: tabla MANUAL #{bid}")
+                    print(f"  🖊️  {user_id}: tabla MANUAL #{bid} con {len(card_ids)} cartas únicas")
             except HTTPException as e:
                 errors.append(f"board_manual {user_id}: {e.detail}")
         else:
-            print(f"  ℹ️  {user_id}: pocas cartas ({len(inv_cards)}) para tabla manual")
+            print(f"  ℹ️  {user_id}: solo {len(unique_available)} cartas únicas disponibles para tabla manual (se necesitan 16)")
 
         boards_by_user[user_id] = ids
 

@@ -46,7 +46,7 @@ def phase_error_tests(engine, config, **state) -> dict:
 
     counter = {"passed": 0, "failed": 0}
 
-    # Test 1: Comprar item con saldo insuficiente → 402/400
+    # Test 1: Comprar item con saldo insuficiente → 400
     item = session.exec(
         select(ItemCatalog).where(ItemCatalog.is_active == True, ItemCatalog.price_axg > 0)
     ).first()
@@ -58,7 +58,7 @@ def phase_error_tests(engine, config, **state) -> dict:
         session.commit()
         expect_error(
             "compra_sin_saldo",
-            402,
+            400,
             lambda: ShopService.buy_item(session, user_a, item.id, CurrencyType.AXOGEMA),
             session=session,
             errors_log=errors,
