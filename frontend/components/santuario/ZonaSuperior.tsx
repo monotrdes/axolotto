@@ -24,7 +24,7 @@ function NidoSlot({
   const isTutorial = inc ? (inc.tutorial_phase ?? 0) > 0 : false;
   const isReady = inc
     ? isTutorial
-      ? inc.horasRestantes === 0
+      ? (inc.horasRestantes ?? 1) <= 0
       : !!inc.imprinting_complete
     : false;
 
@@ -56,7 +56,7 @@ function NidoSlot({
     if (isTutorial) {
       return (
         <div className="absolute top-0.5 right-0.5 text-[6px] font-black text-white/60 leading-none">
-          {inc.horasRestantes}h
+          {inc.horasRestantes ?? '?'}h
         </div>
       );
     }
