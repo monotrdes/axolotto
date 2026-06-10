@@ -3,28 +3,39 @@ from sqlmodel import Session
 from pydantic import BaseModel
 from typing import Any, Optional
 
-# Importamos tu servicio y modelos
 from app.models.economy import CurrencyType
 from app.services.bank_service import BankService
 from app.database import get_session
 from app.core.auth import get_verified_user_id, require_admin
 from app.core.config import settings, axf_to_internal, frj_to_internal, axf_to_display, frj_to_display
+from app.core.economy_types import AxfAmount, FrjAmount
 from app.core.limiter import limiter
 
 router = APIRouter()
 
-# --- ESQUEMAS DE DATOS (Lo que esperamos recibir en la petición) ---
+# --- ESQUEMAS DE DATOS ---
+
 class DepositRequest(BaseModel):
     user_id: str
-    amount: float  # humano-legible, convertido a int antes del servicio
+    amount: float  # humano-legible, endpoint convierte según currency
     currency: CurrencyType
     description: str = "Depósito manual"
 
 class TransferRequest(BaseModel):
     sender_id: str
     receiver_id: str
-    amount: float  # humano-legible, convertido a int antes del servicio
+    amount: float  # humano-legible, endpoint convierte según currency
     currency: CurrencyType
+
+# --- ESQUEMAS DE RESPUESTA (VULN-06: tipos con serializer automático) ---
+
+class WalletResponse(BaseModel):
+    user_id: str
+    axofichas: float  # serializado desde int por el endpoint
+    frijolitos: float
+    axogemas: float   # backward compat
+    gemas_alga: float  # backward compat
+    fragmentos: dict
 
 # --- ENDPOINTS (Las Ventanillas) ---
 
