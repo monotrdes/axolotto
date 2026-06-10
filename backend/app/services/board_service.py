@@ -310,6 +310,8 @@ def _build_board_response(
         if board.rent_expires_at
         else None,
         "is_tutorial": board.is_tutorial,
+        "slot_index": board.slot_index,
+        "slot_generation": board.slot_generation,
         "created_at": board.created_at.isoformat() + "Z"
         if board.created_at
         else None,
@@ -1229,6 +1231,19 @@ def get_slot_status_data(user_id: str, session: Session) -> dict:
             f"Se requieren {reqs['games_won']} partidas ganadas (tienes {total_games_won})"
         )
 
+    # Obtener XP preservado por slot
+    slot_records = session.exec(
+        select(PlayerBoardSlot).where(PlayerBoardSlot.user_id == user_id)
+    ).all()
+    slots_xp = {
+        rec.slot_index: {
+            "preserved_xp": rec.preserved_xp,
+            "preserved_level": _level_from_total_xp(rec.preserved_xp),
+        }
+        for rec in slot_records
+        if rec.preserved_xp > 0
+    }
+
     return {
         "unlocked_slots": unlocked_slots,
         "used_slots": used_slots,
@@ -1243,6 +1258,7 @@ def get_slot_status_data(user_id: str, session: Session) -> dict:
             "can_unlock": can_unlock,
             "reasons": reasons,
         },
+        "slots_xp": slots_xp,
     }
 
 
