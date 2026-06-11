@@ -9,6 +9,7 @@ export interface StakingAxolotitoInfo {
   accrued_unclaimed: number;
   cap_reached: boolean;
   play_to_stake_active: boolean;
+  lock_remaining_seconds?: number;
 }
 
 export interface StakingStatus {
