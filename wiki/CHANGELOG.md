@@ -1,7 +1,7 @@
 ---
 tags: [changelog]
 description: "Historial de todos los cambios al wiki con fecha, motivo, autor y referencia al código"
-last_modified: "2026-06-07"
+last_modified: "2026-06-10"
 ---
 
 # Wiki Changelog — Axolotto
@@ -19,6 +19,34 @@ last_modified: "2026-06-07"
 - **Autor**: Claude / DeepClaude / AGY / [usuario]
 - **Fuente en código**: `backend/app/core/prices.py:WEBITO_PRICES` o commit hash
 ```
+
+---
+
+## 2026-06-10 | backend/ + contracts/ + frontend/ | Integración de task-77 y task-79 en dev
+
+### backend/app/core/config.py — VIP_CONFIG consolidado
+- **Campo**: `VIP_CONFIG` (precios de coral/dorado/axolite, gal_daily y bonos multiplicadores)
+- **Anterior**: Configuraciones VIP con bonos de multijugador activos (15.00% en axolite)
+- **Nuevo**: VIP_CONFIG unificado con precios ajustados (50/120/300 AXF), recompensas diarias reducidas (20/50/130 FRJ) y sin multiplicadores de jackpot o multijugador (`multiplayer_discount_bps: 0`) por balance de economía.
+- **Motivo**: Rebalance y seguridad de economía en multijugador, alineado con fixes de VULN-05.
+- **Autor**: AGY / tridyland-glitch
+- **Fuente en código**: commits `3e0b55d` y `f2fc8be`
+
+### backend/ + contracts/src/MarketEscrow.sol — Escrow P2P y pagos simulados (task-77)
+- **Campo**: `MarketEscrow.sol`, `ReconciliationService`, `MockPaymentGateway`
+- **Anterior**: — (No existían)
+- **Nuevo**: Contrato `MarketEscrow` para custodia on-chain de NFT y liberación via paymentRef; backend con flujos de pagos fiat y reconciliación contra blockchain en cuarentena de 72h.
+- **Motivo**: Implementación del Tianguis P2P con escrow seguro de activos.
+- **Autor**: AGY / tridyland-glitch
+- **Fuente en código**: commit `3e0b55d` (task-77 merge)
+
+### frontend/components/tutorial/ + docs/ — Refactor a juego manual (task-79)
+- **Campo**: `ActGame.tsx`, `useTutorialManualGame.ts`, plan del tutorial
+- **Anterior**: Flujo de tutorial vulnerable a loops de distracción infinitos
+- **Nuevo**: Refactorización del Acto 6 del tutorial para el modo manual vs CPU, implementando el hook `useTutorialManualGame` y controlando las transiciones del loop de juego.
+- **Motivo**: Corrección de loop infinito y estabilidad en onboarding de usuarios.
+- **Autor**: AGY / tridyland-glitch
+- **Fuente en código**: commit `b4e9c83` (task-79 merge)
 
 ---
 
