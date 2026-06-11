@@ -16,13 +16,13 @@ def setup_vip_test_catalog(session: Session):
     # 1. Seed de los boosters de bienvenida
     booster_normal = make_item(
         session,
-        name="Booster Mezclado",
+        name="Sobrecito Mezclado",
         item_type=ItemType.BOOSTER,
         item_metadata={"fase": 1, "pack_theme": "pure"}
     )
     booster_foil = make_item(
         session,
-        name="Booster Brillante (Foil)",
+        name="Sobrecito Brillante (Foil)",
         item_type=ItemType.BOOSTER,
         item_metadata={"fase": 1, "pack_theme": "foil"}
     )
@@ -77,7 +77,7 @@ def test_vip_welcome_gift(session):
 
     # Caso 1: Usuario compra Coral por primera vez
     user_a = make_user(session, privy_did="user_a")
-    make_wallet(session, user_id="user_a", axogemas=1600.0) # Fondos suficientes
+    make_wallet(session, user_id="user_a", axogemas=160 * 10**6) # 160 AXF, fondos suficientes
 
     ShopService.buy_item(session, user_id="user_a", item_id=vip_coral.id, payment_currency=CurrencyType.AXOGEMA)
 
@@ -90,8 +90,8 @@ def test_vip_welcome_gift(session):
     # 0 boosters Coral
     assert user_a.is_vip is True
     assert user_a.vip_tier == "coral"
-    assert wallet_a.gemas_alga == 200.0
-    assert wallet_a.axogemas == 1200.0 # Costó 400 AXG
+    assert wallet_a.gemas_alga == 200 * 10**4
+    assert wallet_a.axogemas == 110 * 10**6 # Costó 50 AXF (Coral §1 del plan)
 
     # Comprobar Cápsulas Bronce
     inv_bronce = session.exec(
@@ -108,12 +108,12 @@ def test_vip_welcome_gift(session):
     session.refresh(wallet_a)
 
     # Se extendió el tiempo
-    assert wallet_a.gemas_alga == 200.0 # No se sumaron otros 200.0 GAL
-    assert wallet_a.axogemas == 800.0 # Costó otros 400 AXG
+    assert wallet_a.gemas_alga == 200 * 10**4 # No se sumaron otros 200 FRJ
+    assert wallet_a.axogemas == 60 * 10**6 # Costó otros 50 AXF
 
     # Caso 3: Usuario compra Dorado (da 500 GAL + 1 booster normal + capsulas: bronce=2, plata=1)
     user_b = make_user(session, privy_did="user_b")
-    make_wallet(session, user_id="user_b", axogemas=1800.0)
+    make_wallet(session, user_id="user_b", axogemas=180 * 10**6)
 
     ShopService.buy_item(session, user_id="user_b", item_id=vip_dorado.id, payment_currency=CurrencyType.AXOGEMA)
 
@@ -121,7 +121,7 @@ def test_vip_welcome_gift(session):
     wallet_b = session.exec(select(Wallet).where(Wallet.user_id == "user_b")).one()
 
     assert user_b.vip_tier == "dorado"
-    assert wallet_b.gemas_alga == 500.0
+    assert wallet_b.gemas_alga == 500 * 10**4
 
     # Verificar Cápsula Bronce (2)
     inv_bronce_b = session.exec(
@@ -152,7 +152,7 @@ def test_vip_welcome_gift(session):
 
     # Caso 4: Usuario compra Axolite (da 1000 GAL + 1 booster foil + capsulas: bronce=3, plata=2, oro=1)
     user_c = make_user(session, privy_did="user_c")
-    make_wallet(session, user_id="user_c", axogemas=3500.0)
+    make_wallet(session, user_id="user_c", axogemas=350 * 10**6)
 
     ShopService.buy_item(session, user_id="user_c", item_id=vip_axolite.id, payment_currency=CurrencyType.AXOGEMA)
 
@@ -160,7 +160,7 @@ def test_vip_welcome_gift(session):
     wallet_c = session.exec(select(Wallet).where(Wallet.user_id == "user_c")).one()
 
     assert user_c.vip_tier == "axolite"
-    assert wallet_c.gemas_alga == 1000.0
+    assert wallet_c.gemas_alga == 1000 * 10**4
 
     # Verificar Cápsula Bronce (3)
     inv_bronce_c = session.exec(
@@ -209,8 +209,8 @@ def test_vip_auto_renewal_success(session):
     user.vip_streak_months = 2
     session.add(user)
     
-    # Wallet con fondos suficientes (precio Axolite = 3500 AXG)
-    make_wallet(session, user_id="user_renew", axogemas=3600.0)
+    # Wallet con fondos suficientes (precio Axolite = 300 AXF, §1 del plan)
+    make_wallet(session, user_id="user_renew", axogemas=360 * 10**6)
     session.commit()
 
     # 2. Ejecutar tareas del scheduler
@@ -220,7 +220,7 @@ def test_vip_auto_renewal_success(session):
     wallet = session.exec(select(Wallet).where(Wallet.user_id == "user_renew")).one()
 
     # 3. Comprobar que se cobró y se extendió
-    assert wallet.axogemas == 1800.0 # 3600 - 1800
+    assert wallet.axogemas == 60 * 10**6 # 360 - 300 AXF
     assert user.vip_expires_at > datetime.utcnow() + timedelta(days=31) # Se sumaron 30 días a la expiración
     assert user.vip_streak_months == 3
     assert user.vip_auto_renew is True
@@ -232,7 +232,7 @@ def test_vip_auto_renewal_success(session):
         .where(TransactionLedger.currency == CurrencyType.AXOGEMA)
     ).first()
     assert ledger is not None
-    assert ledger.amount == 1800.0
+    assert ledger.amount == 300 * 10**6
     assert "Auto-renovación" in ledger.description
 
 def test_vip_auto_renewal_insufficient_funds(session):
@@ -262,7 +262,7 @@ def test_vip_streak_tracking(session):
 
     # 1. Compra inicial
     user = make_user(session, privy_did="user_streak")
-    make_wallet(session, user_id="user_streak", axogemas=2400.0)
+    make_wallet(session, user_id="user_streak", axogemas=200 * 10**6)
     
     ShopService.buy_item(session, user_id="user_streak", item_id=vip_coral.id, payment_currency=CurrencyType.AXOGEMA)
     session.refresh(user)
@@ -327,27 +327,30 @@ def test_get_vip_tiers_contrato_correcto():
 
 def test_get_vip_tiers_claves_traducidas():
     """
-    Las claves legacy se traducen correctamente:
-      price_axg → price_axf  : 400 / 600 / 1800
-      gal_daily  → frj_daily  : 40  / 100 / 200
-      welcome_gal→ welcome_frj: 200 / 500 / 1000
+    Las claves legacy se traducen correctamente (rediseño §1 del plan económico,
+    montos en unidad mínima entera VULN-06):
+      price_axg → price_axf  : 50 / 120 / 300 AXF
+      gal_daily  → frj_daily  : 20 / 50  / 130 FRJ
+      welcome_gal→ welcome_frj: 200 / 500 / 1000 FRJ
     """
     tiers = {t["id"]: t for t in ShopService.get_vip_tiers()}
+    AXF = 10 ** 6
+    FRJ = 10 ** 4
 
-    # Precios AXF
-    assert tiers["coral"]["price_axf"] == 400
-    assert tiers["dorado"]["price_axf"] == 600
-    assert tiers["axolite"]["price_axf"] == 1800
+    # Precios AXF (1 AXF = $2 MXN → $100 / $240 / $600 MXN/mes)
+    assert tiers["coral"]["price_axf"] == 50 * AXF
+    assert tiers["dorado"]["price_axf"] == 120 * AXF
+    assert tiers["axolite"]["price_axf"] == 300 * AXF
 
     # FRJ diario
-    assert tiers["coral"]["frj_daily"] == 40
-    assert tiers["dorado"]["frj_daily"] == 100
-    assert tiers["axolite"]["frj_daily"] == 200
+    assert tiers["coral"]["frj_daily"] == 20 * FRJ
+    assert tiers["dorado"]["frj_daily"] == 50 * FRJ
+    assert tiers["axolite"]["frj_daily"] == 130 * FRJ
 
     # Welcome FRJ
-    assert tiers["coral"]["welcome_frj"] == 200
-    assert tiers["dorado"]["welcome_frj"] == 500
-    assert tiers["axolite"]["welcome_frj"] == 1000
+    assert tiers["coral"]["welcome_frj"] == 200 * FRJ
+    assert tiers["dorado"]["welcome_frj"] == 500 * FRJ
+    assert tiers["axolite"]["welcome_frj"] == 1000 * FRJ
 
     # Las claves legacy no deben aparecer en el contrato
     for tier in tiers.values():

@@ -26,6 +26,9 @@ from app.models.items import (  # noqa: F401
     CapsulaDailyFree, CapsulaPity, LegacyBacker,
 )
 from app.models.axolotito import Axolotito  # noqa: F401
+from app.models.market_escrow import (  # noqa: F401
+    EscrowListing, FiatPaymentIntent, EarnedBalanceLock,
+)
 from app.models.manual_mode_event import ManualModeEvent  # noqa: F401
 from app.models.board import PlayerBoard  # noqa: F401
 from app.models.lobby_models import (  # noqa: F401

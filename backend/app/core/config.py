@@ -4,6 +4,9 @@ from typing import Optional, Dict, Any
 
 # ── VIP_CONFIG: montos monetarios en unidad mínima entera (VULN-06) ─────
 # price_axg, welcome_gal → enteros. Descuentos/comisiones → basis points (0-10000).
+# Rediseño §1 del plan económico (docs/plan_economia_devex_fintech.md):
+# valor de conveniencia y estatus — sin bonos que multipliquen ganancias
+# ni pozos de azar (jackpot_bonus_bps=0 en todos los niveles, cortafuegos legal).
 VIP_CONFIG: Dict[str, Any] = {
     "coral": {
         "price_axg": 50 * (10 ** 6),          # 50 AXF (~$100 MXN/mes)
@@ -95,6 +98,10 @@ MULTIPLAYER_CURRENCY: str = "frijolito"
 AXF_DECIMALS_BACKEND: int = 6
 FRJ_DECIMALS_BACKEND: int = 4
 
+# ── Ley económica (§1 del plan): 1 AXF = $2.00 MXN fijo ───────────────────
+# Relación lineal estricta para evitar arbitrajes. En centavos MXN.
+AXF_MXN_CENTS: int = 200
+
 # Factores de conversión: multiplicar una cantidad en unidad mínima de backend
 # por este factor para obtener wei (18 decimales) on-chain.
 #   backend → wei:  amount * 10**(18 - DECIMALS)
@@ -146,6 +153,11 @@ class Settings(BaseSettings):
 
     # ── Checkout / Cripto ────────────────────────────────────────────────────
     USDC_ADDRESS: str = ""   # Contrato USDC en Polygon Amoy (ERC-20, 6 decimales)
+
+    # ── Tianguis P2P fiat (docs/plan_economia_devex_fintech.md) ──────────────
+    MARKET_ESCROW_ADDRESS: str = ""          # contrato MarketEscrow.sol
+    PAYMENT_WEBHOOK_SECRET: str = "axolotto_dev_webhook_secret"  # HMAC webhooks pasarela
+    P2P_QUARANTINE_HOURS: int = 72           # cuarentena AXF_Earned (§4 AML)
 
     # ── Auth & Admin ──────────────────────────────────────────────────────────
     # Privy App ID for JWT Verification
@@ -199,6 +211,11 @@ class Settings(BaseSettings):
             raise ValueError(
                 "ALLOW_DEV_AUTH=True está prohibido fuera de modo local. "
                 "Elimínalo del .env de producción."
+            )
+        if self.BLOCKCHAIN_MODE != "local" and self.PAYMENT_WEBHOOK_SECRET == "axolotto_dev_webhook_secret":
+            raise ValueError(
+                "PAYMENT_WEBHOOK_SECRET debe configurarse con un valor propio "
+                "fuera de modo local (firma HMAC de webhooks de pago)."
             )
         return self
 

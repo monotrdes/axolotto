@@ -82,6 +82,22 @@ def _dispatch_onchain(entry: ChainOutbox) -> str:
             payload["board_token_id"],
             payload["destroy_card_index"],
         )
+    elif op == "escrow_deposit":
+        return Web3Service.escrow_deposit_and_list(
+            payload["listing_id"],
+            payload["seller_address"],
+            payload["nft_contract"],
+            payload["token_id"],
+            payload["price_axf"],
+        )
+    elif op == "escrow_release":
+        return Web3Service.escrow_release(
+            payload["listing_id"],
+            payload["buyer_address"],
+            payload["payment_ref"],
+        )
+    elif op == "escrow_refund":
+        return Web3Service.escrow_refund(payload["listing_id"])
     elif op == "transfer_booster":
         return Web3Service.transferir_sobrecito_onchain(
             payload["from_address"],

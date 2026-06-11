@@ -751,3 +751,95 @@ class Web3Service:
     def get_mode() -> str:
         """Devuelve el modo de blockchain activo."""
         return settings.BLOCKCHAIN_MODE
+
+    # ── MarketEscrow (Tianguis P2P fiat, docs/plan_economia_devex_fintech.md) ──
+
+    _ESCROW_ABI = json.loads('''[
+      {"inputs":[{"name":"listingId","type":"bytes32"},{"name":"seller","type":"address"},{"name":"nftContract","type":"address"},{"name":"tokenId","type":"uint256"},{"name":"priceAxf","type":"uint256"}],"name":"depositAndList","outputs":[],"stateMutability":"nonpayable","type":"function"},
+      {"inputs":[{"name":"listingId","type":"bytes32"},{"name":"buyer","type":"address"},{"name":"paymentRef","type":"bytes32"}],"name":"release","outputs":[],"stateMutability":"nonpayable","type":"function"},
+      {"inputs":[{"name":"listingId","type":"bytes32"}],"name":"refund","outputs":[],"stateMutability":"nonpayable","type":"function"},
+      {"inputs":[{"name":"listingId","type":"bytes32"}],"name":"getListing","outputs":[{"components":[{"name":"seller","type":"address"},{"name":"nftContract","type":"address"},{"name":"tokenId","type":"uint256"},{"name":"priceAxf","type":"uint256"},{"name":"status","type":"uint8"},{"name":"listedAt","type":"uint64"}],"name":"","type":"tuple"}],"stateMutability":"view","type":"function"}
+    ]''')
+    _ESCROW_STATUS_LISTED = 1  # enum Status { None, Listed, Released, Refunded }
+
+    @staticmethod
+    def _listing_id_bytes32(listing_id: str) -> bytes:
+        """bytes32 determinístico desde el uuid del backend (conciliación 1:1 DB↔chain)."""
+        return Web3.keccak(text=listing_id)
+
+    @staticmethod
+    def _get_escrow_contract(w3: Web3):
+        return w3.eth.contract(
+            address=Web3.to_checksum_address(settings.MARKET_ESCROW_ADDRESS),
+            abi=Web3Service._ESCROW_ABI,
+        )
+
+    @staticmethod
+    def escrow_deposit_and_list(listing_id: str, seller_address: str,
+                                nft_contract: str, token_id: int, price_axf: int) -> str:
+        """Deposita el NFT del vendedor en el MarketEscrow y abre el listing."""
+        if settings.IS_MOCK_WEB3 or not settings.MARKET_ESCROW_ADDRESS:
+            return "0x_mock_escrow_deposit"
+        w3 = Web3Service._get_w3()
+        contract = Web3Service._get_escrow_contract(w3)
+        return Web3Service._send_tx(contract.functions.depositAndList(
+            Web3Service._listing_id_bytes32(listing_id),
+            Web3.to_checksum_address(seller_address),
+            Web3.to_checksum_address(nft_contract),
+            token_id,
+            price_axf,
+        ), w3)
+
+    @staticmethod
+    def escrow_release(listing_id: str, buyer_address: str, payment_ref: str) -> str:
+        """Libera el NFT al comprador registrando el paymentRef fiat (auditoría)."""
+        if settings.IS_MOCK_WEB3 or not settings.MARKET_ESCROW_ADDRESS:
+            return "0x_mock_escrow_release"
+        w3 = Web3Service._get_w3()
+        contract = Web3Service._get_escrow_contract(w3)
+        return Web3Service._send_tx(contract.functions.release(
+            Web3Service._listing_id_bytes32(listing_id),
+            Web3.to_checksum_address(buyer_address),
+            Web3.keccak(text=payment_ref),
+        ), w3)
+
+    @staticmethod
+    def escrow_refund(listing_id: str) -> str:
+        """Devuelve el NFT en custodia al vendedor original."""
+        if settings.IS_MOCK_WEB3 or not settings.MARKET_ESCROW_ADDRESS:
+            return "0x_mock_escrow_refund"
+        w3 = Web3Service._get_w3()
+        contract = Web3Service._get_escrow_contract(w3)
+        return Web3Service._send_tx(contract.functions.refund(
+            Web3Service._listing_id_bytes32(listing_id),
+        ), w3)
+
+    @staticmethod
+    def verify_escrow_custody(listing_id: str, nft_contract: str, token_id: int) -> bool:
+        """Paso 4 de la conciliación E3: custodia real antes de liberar.
+
+        Verifica que el listing on-chain esté Listed, apunte al mismo
+        NFT, y que el contrato de escrow sea el owner actual del token.
+        """
+        if settings.IS_MOCK_WEB3 or not settings.MARKET_ESCROW_ADDRESS:
+            return True
+        try:
+            w3 = Web3Service._get_w3()
+            contract = Web3Service._get_escrow_contract(w3)
+            onchain = contract.functions.getListing(
+                Web3Service._listing_id_bytes32(listing_id)
+            ).call()
+            seller, oc_nft, oc_token_id, _price, status, _listed_at = onchain
+            if status != Web3Service._ESCROW_STATUS_LISTED:
+                return False
+            if oc_nft.lower() != nft_contract.lower() or oc_token_id != token_id:
+                return False
+            erc721 = w3.eth.contract(
+                address=Web3.to_checksum_address(nft_contract),
+                abi=json.loads('[{"inputs":[{"name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"name":"","type":"address"}],"stateMutability":"view","type":"function"}]'),
+            )
+            owner = erc721.functions.ownerOf(token_id).call()
+            return owner.lower() == settings.MARKET_ESCROW_ADDRESS.lower()
+        except Exception as e:
+            print(f"⚠️ verify_escrow_custody falló listing={listing_id}: {e}")
+            return False

@@ -6,7 +6,7 @@ from app.core.limiter import limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
-from app.api.v1.endpoints import bank, user, shop, incubation, metadata, legacy, board, game, ranking, multiplayer, checkout, market, leonardo, admin, whitelist, codes, f2p, tutorial, cave_expansion, admin_events, events, dev, rewards, staking, social, referrals
+from app.api.v1.endpoints import bank, user, shop, incubation, metadata, legacy, board, game, ranking, multiplayer, checkout, market, market_escrow, payments, leonardo, admin, whitelist, codes, f2p, tutorial, cave_expansion, admin_events, events, dev, rewards, staking, social, referrals
 from app.api.v1.ws import game_ws
 from app.core.config import settings
 
@@ -300,6 +300,7 @@ async def on_startup():
     # Importar modelos de checkout para que se registren en metadata antes del create_all
     from app.models.economy import CryptoPurchaseOrder, AxfPurchaseRecord  # noqa: F401
     from app.models.items import InventoryMarketListing  # noqa: F401
+    from app.models.market_escrow import EscrowListing, FiatPaymentIntent, EarnedBalanceLock  # noqa: F401
     from app.models.promo import PromoCode, PendingReward  # noqa: F401
     from app.models.manual_mode_event import ManualModeEvent  # noqa: F401 — registra tabla
     from app.models.social import FriendRelation, SocialActionLog, ReferralCode, ReferralTracking  # noqa: F401 — registra tablas
@@ -494,6 +495,8 @@ app.include_router(multiplayer.router, prefix="/api/v1/multiplayer", tags=["Lote
 app.include_router(game_ws.router, prefix="/api/v1/ws", tags=["WebSocket — Juego Manual"])
 app.include_router(checkout.router, prefix="/api/v1/bank/checkout", tags=["Checkout Cripto"])
 app.include_router(market.router, prefix="/api/v1/market", tags=["Marketplace P2P Inventario"])
+app.include_router(market_escrow.router, prefix="/api/v1/market/escrow", tags=["Tianguis P2P Escrow"])
+app.include_router(payments.router, prefix="/api/v1/payments", tags=["Pagos Fiat (Webhooks)"])
 app.include_router(leonardo.router, prefix="/api/v1/leonardo", tags=["Leonardo.ai Cards"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
 app.include_router(whitelist.router, prefix="/api/v1/whitelist", tags=["Whitelist Fase 1"])
