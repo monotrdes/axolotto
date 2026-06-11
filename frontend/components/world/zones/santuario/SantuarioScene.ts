@@ -177,20 +177,31 @@ function toPuppetState(axo: AxolotitoData): PuppetState {
   return "idle";
 }
 
-/** Nido con huevo incubando: anillo de progreso + pulso suave. */
+/** Nido con huevo incubando: anillo de progreso (dorado cuando está listo). */
 function buildNestWithEgg(x: number, y: number, egg: AxolotitoData): Container {
   const c = new Container();
   c.position.set(x, y);
+  const listo = (egg.eggProgress ?? 0) >= 100;
   const nest = new Graphics().ellipse(0, 26, 56, 20).fill(0x8b5e34).stroke({ color: 0xfff7ec, width: 4 });
-  const shell = new Graphics().ellipse(0, 0, 32, 40).fill(0xfde7f0).stroke({ color: 0xfff7ec, width: 4 });
+  const shell = new Graphics()
+    .ellipse(0, 0, 32, 40)
+    .fill(listo ? 0xfff3c4 : 0xfde7f0)
+    .stroke({ color: listo ? 0xf5c542 : 0xfff7ec, width: 4 });
   c.addChild(nest, shell);
   const progress = Math.max(0, Math.min(100, egg.eggProgress ?? 0));
   if (progress > 0) {
     const ring = new Graphics()
       .arc(0, 0, 50, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * progress) / 100)
-      .stroke({ color: 0xf59e0b, width: 6 });
+      .stroke({ color: listo ? 0xf5c542 : 0xf59e0b, width: 6 });
     c.addChild(ring);
   }
+  const tag = new Text({
+    text: egg.name,
+    style: { fontSize: 20, fill: listo ? 0xf5c542 : 0xfff7ec, fontWeight: "700" },
+  });
+  tag.anchor.set(0.5);
+  tag.position.set(0, 78);
+  c.addChild(tag);
   return c;
 }
 

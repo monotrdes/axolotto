@@ -103,11 +103,13 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
     let cancelled = false;
 
     (async () => {
-      const [{ WorldEngine }, { ZoneManager }, { SantuarioScene }] = await Promise.all([
-        import("./engine/WorldEngine"),
-        import("./zones/ZoneManager"),
-        import("./zones/santuario/SantuarioScene"),
-      ]);
+      const [{ WorldEngine }, { ZoneManager }, { SantuarioScene }, { TianguisScene }] =
+        await Promise.all([
+          import("./engine/WorldEngine"),
+          import("./zones/ZoneManager"),
+          import("./zones/santuario/SantuarioScene"),
+          import("./zones/tianguis/TianguisScene"),
+        ]);
       if (cancelled || !hostRef.current) return;
 
       const engine = await WorldEngine.create(hostRef.current);
@@ -116,13 +118,14 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
         return;
       }
       const zones = new ZoneManager(engine);
-      // Fase 1: diorama real del Santuario (las demás zonas siguen placeholder).
+      // Dioramas reales (la Pirámide sigue placeholder hasta Fase 2b).
       zones.registerBuilder("santuario", (e) => {
         const scene = new SantuarioScene(e);
         santuarioRef.current = scene;
         scene.setAxolotitos(axolotitosRef.current);
         return scene;
       });
+      zones.registerBuilder("tianguis", (e) => new TianguisScene(e));
       engine.bridge.on("hotspot", ({ kind, id }) => {
         onStallClickRef.current?.(id ? `${kind}:${id}` : kind);
       });

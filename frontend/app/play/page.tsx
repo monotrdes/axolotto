@@ -34,8 +34,13 @@ import VipChip from "@/components/play/VipChip";
 import WorldOrbs from "@/components/play/WorldOrbs";
 import ZoneDock from "@/components/play/ZoneDock";
 import ZoneDockMacro from "@/components/play/ZoneDockMacro";
-import { fetchAxolotitos } from "@/services/santuarioService";
-import { mapBackendAxolotito, type BackendAxolotito } from "@/components/world/mapBackendAxolotito";
+import { fetchAxolotitos, fetchIncubaciones } from "@/services/santuarioService";
+import {
+  mapBackendAxolotito,
+  mapIncubationToEgg,
+  type BackendAxolotito,
+  type BackendIncubation,
+} from "@/components/world/mapBackendAxolotito";
 import type { TabId, OnboardingPhase, SyncData } from '@/types/play';
 import type { MochilaTab } from '@/types/inventory';
 
@@ -43,6 +48,21 @@ import type { MochilaTab } from '@/types/inventory';
 
 // Mundo papel picado (plan task-84): con flag se usa el dock de 3 macrozonas.
 const PAPER_WORLD = process.env.NEXT_PUBLIC_PAPER_WORLD === "1";
+
+// Etiquetas del botón "abrir panel" del mundo papel picado
+const PANEL_LABELS: Partial<Record<TabId, string>> = {
+  tienda: 'Abrir Tienda',
+  jugar: 'Abrir Salas',
+  rankings: 'Ver Rankings',
+  gashapon: 'Abrir Cápsulas',
+  santuario: 'Gestionar Nido',
+  criadero: 'Gestionar Nido',
+  axolotitos: 'Gestionar Nido',
+  amigos: 'Abrir Amigos',
+  mochila: 'Abrir Mochila',
+  cartas: 'Abrir Mochila',
+  tablas: 'Abrir Mochila',
+};
 
 // New 5-zone dock matching the paper world
 const ZONE_TABS = [
@@ -59,6 +79,9 @@ export default function Home() {
   const [mensajeBackend, setMensajeBackend] = useState("Sincronizando con la red de Axolotto...");
   const [accessToken, setAccessToken]     = useState<string | null>(null);
   const [tabActiva, setTabActiva]         = useState<TabId>('tienda');
+  // Mundo papel picado: los paneles HTML viven ocultos y se abren como overlay
+  // (hotspots del diorama o botón 📜). Sin flag siempre visibles (legacy).
+  const [panelVisible, setPanelVisible]   = useState(!PAPER_WORLD);
   const [mochilaInitialTab, setMochilaInitialTab] = useState<MochilaTab>('cartas');
 
   const [onboardingPhase, setOnboardingPhase] = useState<OnboardingPhase>("loading");
@@ -133,10 +156,16 @@ export default function Home() {
   useEffect(() => {
     if (!PAPER_WORLD || !accessToken || !user?.id) return;
     let cancelled = false;
-    fetchAxolotitos(user.id, accessToken)
-      .then((rows: BackendAxolotito[]) => {
-        if (cancelled || !Array.isArray(rows)) return;
-        const data = rows.map(mapBackendAxolotito);
+    Promise.all([
+      fetchAxolotitos(user.id, accessToken),
+      fetchIncubaciones(user.id, accessToken).catch(() => []),
+    ])
+      .then(([axos, incubaciones]: [BackendAxolotito[], BackendIncubation[]]) => {
+        if (cancelled || !Array.isArray(axos)) return;
+        const data = [
+          ...axos.map(mapBackendAxolotito),
+          ...(Array.isArray(incubaciones) ? incubaciones.map(mapIncubationToEgg) : []),
+        ];
         setAxolotitosData(data);
         gameCanvasRef.current?.setAxolotitos(data);
       })
@@ -500,26 +529,29 @@ export default function Home() {
               setAvailableDecorations(getMockDecorations());
               setCaveDecorOpen(true);
             }}
-            onAxolotitoClick={(axoId: string) => {
+            onAxolotitoClick={(_axoId: string) => {
               setTabActiva("santuario");
+              setPanelVisible(true);
             }}
             onStallClick={(stallType) => {
-              // Map stall type to tab/action
+              // Hotspots del diorama → abrir el panel HTML correspondiente
               if (stallType === "mesa-amigos") {
                 // Mesa del Santuario: jugar con amigos (provisional: hub social;
                 // TODO Fase 1: HostingSetupModal para crear sala privada)
                 setTabActiva("amigos");
               } else if (stallType === "fountain") {
-                // Open bank/currency conversion (navigate to store with bank flag)
+                // Fuente-banco: conversión FRJ↔AXF
                 setTabActiva("tienda");
                 setOpenBancoCount((c) => c + 1);
               } else {
-                // Navigate to store section
+                // Puestos del Tianguis (booster/adopcion/forja/p2p) → tienda
+                // TODO(Fase 2): seleccionar sub-tab del Store según el puesto
                 setTabActiva("tienda");
               }
+              setPanelVisible(true);
             }}
             visible={false}
-            initialZone="nido"
+            initialZone={PAPER_WORLD ? "tianguis" : "nido"}
           />
 
           {/* HUD TOP BAR */}
@@ -665,15 +697,14 @@ export default function Home() {
           )}
 
           {/* CONTENT AREA — padded away from HUD and dock.
-              En el santuario del mundo papel picado el main queda vacío:
+              Con el mundo activo y panel cerrado, el main queda vacío y con
               pointer-events-none para que los taps lleguen al diorama. */}
           <main
             className={`relative z-10 ${tickerFeed.length > 0 ? 'pt-20' : 'pt-14'} pb-20 min-h-screen ${
-              PAPER_WORLD && (tabActiva === 'santuario' || tabActiva === 'criadero' || tabActiva === 'axolotitos')
-                ? 'pointer-events-none'
-                : ''
+              PAPER_WORLD && !panelVisible ? 'pointer-events-none' : ''
             }`}
           >
+            {(!PAPER_WORLD || panelVisible) && (
             <div key={tabActiva} className="max-w-5xl mx-auto px-3 sm:px-6 py-4 animate-tab-fade">
               {tabActiva === 'tienda' && (
                 <AxolottoStore
@@ -708,8 +739,8 @@ export default function Home() {
                 />
               )}
               {/* santuario = El Nido (merged webitos + axolotitos). Legacy criadero/axolotitos ids redirect here.
-                  Con el mundo papel picado activo, el diorama Pixi ES el santuario — el HTML viejo se oculta. */}
-              {(tabActiva === 'santuario' || tabActiva === 'criadero' || tabActiva === 'axolotitos') && !PAPER_WORLD && (
+                  Con el mundo activo solo aparece como panel (gestión: alimentar/eclosionar/expandir). */}
+              {(tabActiva === 'santuario' || tabActiva === 'criadero' || tabActiva === 'axolotitos') && (
                 <Santuario userId={user?.id || ""} token={accessToken} cambiarTab={(tab) => setTabActiva(tab as TabId)} vipTier={datosBanco?.vip_tier} />
               )}
               {tabActiva === 'rankings'   && <Rankings  userId={user?.id || ""} token={accessToken} cambiarTab={setTabActiva}                   />}
@@ -723,13 +754,29 @@ export default function Home() {
                 />
               )}
             </div>
+            )}
           </main>
+
+          {/* Mundo papel picado: botón flotante para abrir/cerrar el panel de la zona */}
+          {PAPER_WORLD && (
+            <button
+              onClick={() => setPanelVisible((v) => !v)}
+              className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-full text-sm font-bold border transition-all active:scale-95 ${
+                panelVisible
+                  ? 'bg-[#1C1C35]/90 text-gray-300 border-white/15 hover:border-white/40'
+                  : 'bg-[var(--papel-cempasuchil)] text-black border-transparent shadow-[0_0_18px_rgba(245,158,11,0.45)]'
+              }`}
+            >
+              {panelVisible ? '🌊 Ver mundo' : `📜 ${PANEL_LABELS[tabActiva] ?? 'Abrir panel'}`}
+            </button>
+          )}
 
           {/* Mochila flotante — abre el dashboard unificado en la sección seleccionada */}
           <MochilaFloating
             onOpenSection={(section) => {
               setMochilaInitialTab(section);
               setTabActiva("mochila");
+              setPanelVisible(true);
             }}
           />
 
@@ -740,6 +787,7 @@ export default function Home() {
               dailyClaimAvailable={dailyClaimAvailable}
               onNavigate={(tab, zone) => {
                 setTabActiva(tab);
+                setPanelVisible(false); // navegar muestra el mundo limpio
                 gameCanvasRef.current?.navigateToZone(zone);
               }}
             />

@@ -42,7 +42,10 @@
   3. **Decoraciones**: persistencia localStorage (backend endpoint = sub-tarea aparte)
      y render en el diorama (`setCaveDecorations`).
   4. **Burbujas Zzz** al dormir + partículas burbujas al nadar (solo tier alta/media).
-  Después → Fase 2 (Tianguis + esqueleto Pirámide, ver plan §8).
+  Después → Fase 2 restante: diorama de la PIRÁMIDE (escena ancha 3240px con las 3
+  subzonas: Explanada/podio con puppets del top-3, Cámara de la Suerte con 3
+  gashapones, Cenote de las Salas con 2 pozas) + sub-tab del Store según puesto
+  tocado (forja→melter, p2p→market: requiere prop initialTab en Store).
 
 ## Checklist de fases (espejo del plan §8 — marcar aquí, no en el plan)
 
@@ -83,6 +86,15 @@
       completo con clamp horizontal — en 16:9 se revelan laterales en vez de recortar
       el alto (plan §3.4). Escenas pintan el overscan; vegetación decorativa lateral
 - [x] Hotspot mesa-amigos → tab `amigos` (provisional; TODO HostingSetupModal)
+- [x] **Sistema de paneles overlay**: con flag, los paneles HTML viven ocultos
+      (`panelVisible` en page.tsx); se abren por hotspot del diorama o botón flotante
+      📜 (PANEL_LABELS por tab) y el dock los cierra al navegar. Santuario HTML
+      vuelve a estar disponible como panel de gestión
+- [x] Huevos de incubación reales en los nidos (`mapIncubationToEgg` desde
+      /incubation/user — horasRestantes; anillo dorado + tag "¡listo!" al terminar)
+- [x] **TianguisScene** (Fase 2 parcial): 5 puestos tocables (booster/adopción/
+      fountain-banco/forja/p2p) con rebote de cartón GSAP + guirnalda de banderines
+      ondulando; hotspots → panel tienda (fountain abre banco)
 - [ ] Embarcadero social: trajineritas + burbujas like/visitar/invitar; canasta → AmigosPage
 - [ ] page.tsx: manejar `onStallClick("mesa-amigos")` → HostingSetupModal
 - [ ] Decoraciones reales (⚠️ endpoint backend = sub-tarea; mientras localStorage)
@@ -111,7 +123,8 @@
 | 2026-06-11 | 0f961a4 | Fase 1 núcleo: rig puppet cut-out + SantuarioScene (nidos/camitas, deambular, mesa hotspot) |
 | 2026-06-11 | 94a0174 | Dev proxy same-origin para probar en :3001/LAN sin CORS |
 | 2026-06-11 | 22b8967 | Axolotitos reales en el diorama (fetch /auth/axolotitos + mapper) y Santuario HTML oculto con flag |
-| 2026-06-11 | (este) | Fix cámara desktop (overscan + alto completo); mesa-amigos → tab amigos. PAUSA DE PRUEBA con usuario (móvil OK, validar web) |
+| 2026-06-11 | 9164784 | Fix cámara desktop (overscan + alto completo); mesa-amigos → tab amigos. Validado por usuario en móvil y web ✓ |
+| 2026-06-11 | (este) | Paneles overlay ocultos por defecto + TianguisScene con 5 puestos + huevos de incubación reales. PAUSA DE PRUEBA |
 
 ## Notas para el verificador humano
 
