@@ -230,6 +230,8 @@ class StakingService:
           4. Write TransactionLedger row.
           5. Reset last_staking_claim / accrued_unclaimed.
         """
+        from app.core.auth import require_tutorial
+        require_tutorial(user)
         axolotito = session.exec(
             select(Axolotito).where(Axolotito.id == axolotito_id)
         ).first()
@@ -304,6 +306,8 @@ class StakingService:
         user: User,
     ) -> Dict:
         """Claim staking rewards for Axolotitos within the user's active staking slots."""
+        from app.core.auth import require_tutorial
+        require_tutorial(user)
         slots = StakingService.get_staking_slots(user)
         # Order by id for a stable, deterministic slot assignment.
         axolotitos = session.exec(
@@ -342,6 +346,8 @@ class StakingService:
         axolotitos: List[Axolotito],
     ) -> Dict:
         """Return full staking status: slots, per-axo rates, caps, play-to-stake."""
+        from app.core.auth import require_tutorial
+        require_tutorial(user)
         slots = StakingService.get_staking_slots(user)
         staking_active = StakingService.is_staking_active(user)
 

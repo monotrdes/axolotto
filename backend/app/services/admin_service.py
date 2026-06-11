@@ -6,6 +6,7 @@ refactoring (Fase 3.4). No logic was changed.
 """
 
 import os
+import json
 import pathlib
 import re
 import subprocess
@@ -921,6 +922,267 @@ def run_simulation(params: SimRunParams, background_tasks) -> dict:
         _sim_state.update({"running": True, "started_at": datetime.utcnow().isoformat(), "error": None})
     background_tasks.add_task(_run_sim_task, params)
     return {"status": "started"}
+
+
+# ── Chaos & Security Simulator v2 ────────────────────────────────────────────────
+
+class ChaosRunParams(BaseModel):
+    """Parameters for the Chaos & Security Simulator v2."""
+    total_players: int = 100
+    duration: int = 120
+    skip_reset: bool = False
+    enable_replay_attack: bool = True
+    enable_id_spoofing: bool = True
+    enable_race_condition: bool = True
+    enable_double_booking: bool = True
+    enable_boundary_injection: bool = True
+    enable_cooldown_bypass: bool = True
+
+
+# ── In-memory chaos simulation state ──────────────────────────────────────────
+_chaos_sim_state: dict = {"running": False, "started_at": None, "error": None}
+_chaos_sim_lock = threading.Lock()
+
+CHAOS_PROGRESS_PATH = "/app/chaos_simulation_progress.log"
+CHAOS_REPORT_PATH = "/app/chaos_simulation_report.txt"
+CHAOS_ACTIVITIES_PATH = "/app/chaos_activities.json"
+
+
+def _parse_chaos_progress(progress_path: str) -> dict:
+    """Parse the chaos runner's stdout log for progress info."""
+    if not os.path.exists(progress_path):
+        return {"progress": 0.0, "current_phase": "Iniciando...", "live_details": ""}
+
+    try:
+        with open(progress_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+    except Exception:
+        return {"progress": 0.0, "current_phase": "Error leyendo progreso", "live_details": ""}
+
+    lines = content.replace("\r", "\n").split("\n")
+
+    current_phase = "Iniciando..."
+    progress_val = 0.0
+    live_details = ""
+
+    setup_markers = {
+        "[SETUP/0]": 2.0, "[SETUP/1]": 5.0, "[SETUP/2]": 10.0,
+        "[SETUP/3]": 15.0, "[SETUP/4]": 22.0, "[SETUP/5]": 28.0,
+        "[SETUP/6]": 33.0, "[SETUP/7]": 37.0, "[SETUP/8]": 41.0,
+        "[SETUP/9]": 44.0, "[SETUP/10]": 47.0,
+    }
+
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+
+        # Check setup phase markers
+        for marker, pct in setup_markers.items():
+            if marker in line:
+                current_phase = f"Setup: {line.split(']', 1)[-1].strip() if ']' in line else line}"
+                progress_val = pct
+                break
+
+        if "[CONCURRENT]" in line:
+            progress_val = 50.0
+            current_phase = "Fase Concurrente"
+
+        if "Ejecutando fase concurrente" in line:
+            progress_val = 55.0
+
+        # Parse elapsed time in concurrent phase
+        if "elapsed" not in line.lower() and "⏱️" in line:
+            try:
+                # Format: "⏱️  30s / 120s | ..."
+                parts = line.split("/")
+                if len(parts) >= 2:
+                    elapsed_str = parts[0].strip().rstrip("s").split()[-1]
+                    elapsed = float(elapsed_str)
+                    # 55% to 90% during concurrent phase
+                    progress_val = 55.0 + (elapsed / 120.0) * 35.0
+                    live_details = line
+            except (ValueError, IndexError):
+                pass
+
+        if "[VALIDATION]" in line:
+            progress_val = 90.0
+            current_phase = "Validación"
+
+        if "[REPORT]" in line:
+            progress_val = 95.0
+            current_phase = "Generando Reporte"
+
+        if "completada" in line.lower() and "simulación" in line.lower():
+            progress_val = 100.0
+            current_phase = "Completada"
+
+    return {
+        "progress": round(min(progress_val, 100.0), 1),
+        "current_phase": current_phase,
+        "live_details": live_details[-200:] if live_details else "",
+    }
+
+
+def _read_chaos_activities() -> dict:
+    """Read live activities JSON file written by the chaos runner."""
+    if not os.path.exists(CHAOS_ACTIVITIES_PATH):
+        return {}
+    try:
+        with open(CHAOS_ACTIVITIES_PATH, "r", encoding="utf-8") as f:
+            return json.loads(f.read())
+    except Exception:
+        return {}
+
+
+def get_chaos_simulation_status() -> dict:
+    """Return current chaos simulation run status."""
+    if _chaos_sim_state["running"]:
+        prog = _parse_chaos_progress(CHAOS_PROGRESS_PATH)
+        activities = _read_chaos_activities()
+        return {
+            "running": True,
+            "started_at": _chaos_sim_state["started_at"],
+            "progress": prog["progress"],
+            "current_phase": prog["current_phase"],
+            "live_details": prog["live_details"],
+            "activities": activities.get("activities", {}),
+            "counters": activities.get("counters", {}),
+            "stats": activities.get("stats", {}),
+        }
+    else:
+        error = _chaos_sim_state.get("error")
+        if error:
+            return {
+                "running": False,
+                "started_at": None,
+                "progress": 0.0,
+                "current_phase": f"Error: {error[:200]}",
+                "live_details": "",
+                "activities": {},
+                "counters": {},
+                "stats": {},
+            }
+        report_exists = os.path.exists(CHAOS_REPORT_PATH)
+        # Read last activities even when stopped (for final snapshot)
+        activities = _read_chaos_activities()
+        return {
+            "running": False,
+            "started_at": None,
+            "progress": 100.0 if report_exists else 0.0,
+            "current_phase": "Completada" if report_exists else "No iniciada",
+            "live_details": "",
+            "activities": activities.get("activities", {}),
+            "counters": activities.get("counters", {}),
+            "stats": activities.get("stats", {}),
+        }
+
+
+def get_chaos_simulation_report() -> dict:
+    """Read and return the chaos simulation report file."""
+    from fastapi import HTTPException
+
+    path = CHAOS_REPORT_PATH
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Reporte de caos no encontrado.")
+    resolved = pathlib.Path(path).resolve()
+    try:
+        if not resolved.is_relative_to(pathlib.Path("/app")):
+            raise HTTPException(status_code=403, detail="Acceso denegado.")
+    except AttributeError:
+        # Python < 3.9 fallback
+        if not str(resolved).startswith("/app"):
+            raise HTTPException(status_code=403, detail="Acceso denegado.")
+    with open(path, "r", encoding="utf-8") as f:
+        content = f.read()
+    modified_at = datetime.utcfromtimestamp(os.path.getmtime(path)).isoformat()
+    return {"content": content, "modified_at": modified_at}
+
+
+def run_chaos_simulation(params: ChaosRunParams, background_tasks) -> dict:
+    """Start a new chaos simulation in the background."""
+    from fastapi import HTTPException
+
+    # Validate
+    if params.total_players < 1 or params.total_players > 500:
+        raise HTTPException(
+            status_code=400,
+            detail="total_players debe estar entre 1 y 500.",
+        )
+    if params.duration < 10 or params.duration > 600:
+        raise HTTPException(
+            status_code=400,
+            detail="duration debe estar entre 10 y 600 segundos.",
+        )
+
+    with _chaos_sim_lock:
+        if _chaos_sim_state["running"]:
+            raise HTTPException(
+                status_code=409,
+                detail="Simulación caótica ya en ejecución. Espera a que termine.",
+            )
+        _chaos_sim_state.update({
+            "running": True,
+            "started_at": datetime.utcnow().isoformat(),
+            "error": None,
+        })
+    background_tasks.add_task(_run_chaos_sim_task, params)
+    return {"status": "started"}
+
+
+def _run_chaos_sim_task(params: ChaosRunParams) -> None:
+    """Background task that spawns chaos_runner.py as a subprocess."""
+    cmd = [
+        "python", "-u", "app/scripts/simulation_chaos/chaos_runner.py",
+        "--total-players", str(params.total_players),
+        "--duration", str(params.duration),
+        "--db-url", settings.DATABASE_URL,
+    ]
+    if params.skip_reset:
+        cmd.append("--skip-reset")
+    if not params.enable_replay_attack:
+        cmd.append("--no-replay")
+    if not params.enable_id_spoofing:
+        cmd.append("--no-spoof")
+    if not params.enable_race_condition:
+        cmd.append("--no-race")
+    if not params.enable_double_booking:
+        cmd.append("--no-booking")
+    if not params.enable_boundary_injection:
+        cmd.append("--no-injection")
+    if not params.enable_cooldown_bypass:
+        cmd.append("--no-cooldown")
+
+    try:
+        # Clear old progress
+        if os.path.exists(CHAOS_PROGRESS_PATH):
+            try:
+                os.remove(CHAOS_PROGRESS_PATH)
+            except Exception:
+                pass
+
+        with open(CHAOS_PROGRESS_PATH, "w", encoding="utf-8") as f:
+            process = subprocess.Popen(
+                cmd, stdout=f, stderr=subprocess.STDOUT, cwd="/app"
+            )
+            process.wait(timeout=900)  # 15 min max
+            if process.returncode != 0:
+                try:
+                    with open(CHAOS_PROGRESS_PATH, "r", encoding="utf-8", errors="ignore") as rf:
+                        tail = rf.read()[-2000:] if os.path.getsize(CHAOS_PROGRESS_PATH) > 0 else ""
+                except Exception:
+                    tail = ""
+                error_msg = f"Chaos sim terminó con código {process.returncode}"
+                logger.error(error_msg)
+                with _chaos_sim_lock:
+                    _chaos_sim_state["error"] = error_msg + ("\n" + tail[-500:] if tail else "")
+    except Exception as e:
+        logger.error("Chaos simulation task failed: %s", e, exc_info=True)
+        with _chaos_sim_lock:
+            _chaos_sim_state["error"] = str(e)[:500]
+    finally:
+        with _chaos_sim_lock:
+            _chaos_sim_state.update({"running": False, "started_at": None})
 
 
 def get_card_distribution(session: Session) -> dict:

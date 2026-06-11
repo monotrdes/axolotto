@@ -35,6 +35,10 @@ def list_friends(
     verified_user_id: str = Depends(get_verified_user_id),
 ) -> list[dict]:
     """List all friends with online status, sorted by relevance."""
+    from app.models.user import User
+    from app.core.auth import require_tutorial
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    if user: require_tutorial(user)
     return SocialService.get_friends_list(session, verified_user_id)
 
 
@@ -45,6 +49,10 @@ def top_friends(
     verified_user_id: str = Depends(get_verified_user_id),
 ) -> list[dict]:
     """Top N friends for ZonaInferior shortcut bar."""
+    from app.models.user import User
+    from app.core.auth import require_tutorial
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    if user: require_tutorial(user)
     return SocialService.get_top_active_friends(session, verified_user_id, limit)
 
 
@@ -55,6 +63,10 @@ def send_friend_request(
     verified_user_id: str = Depends(get_verified_user_id),
 ) -> dict:
     """Send a friend request."""
+    from app.models.user import User
+    from app.core.auth import require_tutorial
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    if user: require_tutorial(user)
     relation = SocialService.send_friend_request(session, verified_user_id, req.target_user_id)
     return {
         "message": "Solicitud enviada.",
@@ -70,6 +82,10 @@ def accept_friend_request(
     verified_user_id: str = Depends(get_verified_user_id),
 ) -> dict:
     """Accept a pending friend request."""
+    from app.models.user import User
+    from app.core.auth import require_tutorial
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    if user: require_tutorial(user)
     relation = SocialService.accept_friend_request(session, verified_user_id, request_id)
     return {
         "message": "¡Ahora son amigos! 🦎",
@@ -86,6 +102,10 @@ def reject_friend_request(
     verified_user_id: str = Depends(get_verified_user_id),
 ) -> dict:
     """Reject a pending friend request."""
+    from app.models.user import User
+    from app.core.auth import require_tutorial
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    if user: require_tutorial(user)
     SocialService.reject_friend_request(session, verified_user_id, request_id)
     return {"message": "Solicitud rechazada."}
 
@@ -97,6 +117,10 @@ def remove_friend(
     verified_user_id: str = Depends(get_verified_user_id),
 ) -> dict:
     """Remove a friend."""
+    from app.models.user import User
+    from app.core.auth import require_tutorial
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    if user: require_tutorial(user)
     SocialService.remove_friend(session, verified_user_id, relation_id)
     return {"message": "Amigo eliminado."}
 
@@ -108,6 +132,10 @@ def block_user(
     verified_user_id: str = Depends(get_verified_user_id),
 ) -> dict:
     """Block a user."""
+    from app.models.user import User
+    from app.core.auth import require_tutorial
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    if user: require_tutorial(user)
     SocialService.block_user(session, verified_user_id, req.user_id)
     return {"message": "Usuario bloqueado."}
 
@@ -160,6 +188,10 @@ def friend_suggestions(
     verified_user_id: str = Depends(get_verified_user_id),
 ) -> list[dict]:
     """Suggested players: friends of friends (mutual connections)."""
+    from app.models.user import User
+    from app.core.auth import require_tutorial
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    if user: require_tutorial(user)
     return SocialService.get_suggestions(session, verified_user_id, limit)
 
 
@@ -172,6 +204,10 @@ def like_friend(
     verified_user_id: str = Depends(get_verified_user_id),
 ) -> dict:
     """Give a like to a friend. +1 FRJ for both."""
+    from app.models.user import User
+    from app.core.auth import require_tutorial
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    if user: require_tutorial(user)
     return SocialService.process_like(session, verified_user_id, target_user_id)
 
 
@@ -182,6 +218,10 @@ def visit_friend_cave(
     verified_user_id: str = Depends(get_verified_user_id),
 ) -> dict:
     """Visit a friend's cave. Returns public cave data."""
+    from app.models.user import User
+    from app.core.auth import require_tutorial
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    if user: require_tutorial(user)
     return SocialService.visit_cave(session, verified_user_id, friend_id)
 
 
@@ -194,6 +234,9 @@ def get_friend_cave(
     """Get friend's cave data without counting a visit (read-only)."""
     from app.models.user import User
     from app.services.social_service import SocialService
+    from app.core.auth import require_tutorial
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    if user: require_tutorial(user)
 
     # Verify friendship
     if not SocialService.are_friends(session, verified_user_id, friend_id):

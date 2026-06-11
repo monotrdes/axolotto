@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from sqlmodel import Session
 
 from app.database import get_session
-from app.core.auth import get_verified_user_id
+from app.core.auth import get_verified_user_id, verify_no_active_game
 from app.core.config import frj_to_internal
 from app.services.game_service import GameService
 from app.services.cave_service import get_cave, equip_cave_item, unequip_cave_item
@@ -35,7 +35,7 @@ class CaveUnequipRequest(BaseModel):
 def play_match(
     req: PlayRequest,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id)
+    verified_user_id: str = Depends(verify_no_active_game)
 ):
     """Simulates a Lotería match, consuming Axolotito energy and charging entry fee."""
     return GameService.play_match(
@@ -56,7 +56,7 @@ def feed_axolotito(
     axo_id: int,
     req: FeedRequest,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id)
+    verified_user_id: str = Depends(verify_no_active_game)
 ):
     """Feeds an Axolotito, deducting FRJ from wallet and restoring energy."""
     return GameService.feed_axolotito(
@@ -71,7 +71,7 @@ def feed_axolotito(
 def sleep_axolotito(
     axo_id: int,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id)
+    verified_user_id: str = Depends(verify_no_active_game)
 ):
     """Puts an Axolotito to sleep to restore full energy for free after a short cooldown."""
     return GameService.sleep_axolotito(
@@ -85,7 +85,7 @@ def sleep_axolotito(
 def wake_axolotito(
     axo_id: int,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id)
+    verified_user_id: str = Depends(verify_no_active_game)
 ):
     """Wakes up an Axolotito from sleep, restoring full energy if cooldown expired."""
     return GameService.wake_axolotito(

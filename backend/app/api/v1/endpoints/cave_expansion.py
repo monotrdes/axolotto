@@ -419,6 +419,8 @@ def get_cave_status(
     ).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    from app.core.auth import require_tutorial
+    require_tutorial(user)
 
     # ── AUTO-RESOLVER EXPANSIÓN COMPLETADA POR TIEMPO ──
     # with_for_update() previene que dos requests concurrentes otorguen el huevo dos veces
@@ -555,6 +557,8 @@ def start_expansion(
     user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    from app.core.auth import require_tutorial
+    require_tutorial(user)
 
     current_level = user.cave_level
     target_level = current_level + 1
@@ -684,6 +688,8 @@ def accelerate_expansion(
     user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    from app.core.auth import require_tutorial
+    require_tutorial(user)
 
     if not user.cave_expansion_target_level or not user.cave_expansion_started_at:
         raise HTTPException(status_code=400, detail="No hay excavación en curso.")
@@ -827,6 +833,9 @@ def visit_cave(
     Registra una visita a la cueva de otro jugador y deja un aplauso.
     Máximo 1 aplauso por visita.
     """
+    visitor = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    from app.core.auth import require_tutorial
+    if visitor: require_tutorial(visitor)
     if verified_user_id == user_id:
         raise HTTPException(status_code=400, detail="No puedes visitar tu propia cueva.")
 

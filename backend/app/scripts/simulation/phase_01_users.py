@@ -27,6 +27,7 @@ def phase_create_users(engine, config, **state) -> dict:
             email="treasury@axolot.to",
             wallet_address="0x" + "0" * 40,
             unlocked_board_slots=0,
+            tutorial_completed=True,
         )
         session.add(treasury_user)
         session.commit()
@@ -38,6 +39,8 @@ def phase_create_users(engine, config, **state) -> dict:
             privy_did=PRO_USER_DID,
             email="user_pro@example.com",
             wallet_address=f"0x{'dead' + '0' * 36}",
+            # tutorial_completed se pone en False — phase_incubation lo pondrá a True
+            tutorial_completed=False,
             unlocked_board_slots=5,
             cave_level=1,
         )
@@ -46,6 +49,7 @@ def phase_create_users(engine, config, **state) -> dict:
         session.refresh(pro_user)
     else:
         pro_user.cave_level = 1
+        pro_user.tutorial_completed = False  # El tutorial lo pondrá a True al completar
         session.add(pro_user)
         session.commit()
     players.append({
@@ -71,6 +75,8 @@ def phase_create_users(engine, config, **state) -> dict:
                 wallet_address=wallet_addr,
                 unlocked_board_slots=3,
                 cave_level=1,
+                # tutorial_completed se pone en False — phase_incubation lo pondrá a True
+                tutorial_completed=False,
             )
             session.add(user)
             session.commit()

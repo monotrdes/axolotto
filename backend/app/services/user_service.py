@@ -636,6 +636,8 @@ def claim_vip_frj(
         raise HTTPException(
             status_code=404, detail="Usuario no encontrado."
         )
+    from app.core.auth import require_tutorial
+    require_tutorial(user)
     if not user.is_vip:
         raise HTTPException(
             status_code=403,

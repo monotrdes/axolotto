@@ -10,6 +10,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from sqlmodel import select, Session
 from fastapi import HTTPException
+from app.core.config import frj_to_internal, frj_to_display
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
@@ -33,9 +34,9 @@ from conftest import make_user, make_wallet, make_item
 @pytest.fixture(autouse=True)
 def mock_web3_transfers(monkeypatch):
     """Mock Web3Service transfer methods to prevent blockchain connection errors."""
-    mock_transfer_booster = MagicMock()
-    mock_transfer_card = MagicMock()
-    monkeypatch.setattr("app.services.web3_service.Web3Service.transfer_booster_onchain", mock_transfer_booster)
+    mock_transfer_booster = MagicMock(return_value="0xfake_booster_tx")
+    mock_transfer_card = MagicMock(return_value="0xfake_card_tx")
+    monkeypatch.setattr("app.services.web3_service.Web3Service.transferir_sobrecito_onchain", mock_transfer_booster)
     monkeypatch.setattr("app.services.web3_service.Web3Service.transfer_card_onchain", mock_transfer_card)
     return {
         "transfer_booster": mock_transfer_booster,
@@ -303,7 +304,7 @@ class TestBuyInventoryListing:
         )
         session.add(listing)
         
-        treasury = TreasuryVault(balance=10.0)
+        treasury = TreasuryVault(balance=frj_to_internal(10.0))
         session.add(treasury)
         session.commit()
         session.refresh(listing)
@@ -321,8 +322,8 @@ class TestBuyInventoryListing:
         session.refresh(treasury)
 
         assert buyer_w.gemas_alga == 0.0
-        assert seller_w.gemas_alga == 95.0
-        assert treasury.balance == 15.0
+        assert frj_to_display(seller_w.gemas_alga) == 95.0
+        assert frj_to_display(treasury.balance) == 15.0
 
         # Check buyer has the item now
         inv = session.exec(
@@ -346,17 +347,17 @@ class TestBuyInventoryListing:
         seller_tx = [l for l in ledgers if l.user_id == seller.privy_did][0]
         treasury_tx = [l for l in ledgers if l.user_id == "treasury"][0]
 
-        assert buyer_tx.amount == 100.0
+        assert frj_to_display(buyer_tx.amount) == 100.0
         assert buyer_tx.tx_type == TransactionType.MARKET_BUY
-        assert seller_tx.amount == 95.0
+        assert frj_to_display(seller_tx.amount) == 95.0
         assert seller_tx.tx_type == TransactionType.REWARD
-        assert treasury_tx.amount == 5.0
+        assert frj_to_display(treasury_tx.amount) == 5.0
         assert treasury_tx.tx_type == TransactionType.BURN
 
     @pytest.mark.parametrize("vip_tier, expected_rate", [
         ("coral", 0.04),
         ("dorado", 0.03),
-        ("axolite", 0.015),
+        ("axolite", 0.02),
     ])
     def test_buy_success_vip_tiers(self, session: Session, vip_tier, expected_rate):
         """Buying with a VIP user account applies the correct discounted commission fee."""
@@ -373,7 +374,7 @@ class TestBuyInventoryListing:
         )
         session.add(listing)
         
-        treasury = TreasuryVault(balance=5.0)
+        treasury = TreasuryVault(balance=frj_to_internal(5.0))
         session.add(treasury)
         session.commit()
         session.refresh(listing)
@@ -392,8 +393,8 @@ class TestBuyInventoryListing:
         session.refresh(treasury)
 
         assert buyer_w.gemas_alga == 0.0
-        assert seller_w.gemas_alga == seller_share
-        assert treasury.balance == 5.0 + commission
+        assert frj_to_display(seller_w.gemas_alga) == seller_share
+        assert frj_to_display(treasury.balance) == 5.0 + commission
 
     def test_buy_triggers_onchain_web3_transfers_for_booster(self, session: Session, mock_web3_transfers):
         """P2P purchase of a booster pack triggers Web3Service.transfer_booster_onchain if users have wallets."""

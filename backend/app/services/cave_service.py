@@ -8,6 +8,7 @@ from sqlmodel import Session, select
 
 from app.models.axolotito import Axolotito
 from app.models.items import ItemCatalog, ItemType, PlayerInventory
+from app.models.user import User
 
 
 def _cave_max_slots(axo_level: int) -> int:
@@ -114,10 +115,16 @@ def unequip_cave_item(axo_id: int, item_id: int, session: Session, verified_user
 
 
 def _get_axo_or_403(axo_id: int, session: Session, verified_user_id: str) -> Axolotito:
-    """Helper to fetch an Axolotito and validate ownership."""
+    """Helper to fetch an Axolotito and validate ownership + tutorial."""
     axo = session.get(Axolotito, axo_id)
     if not axo:
         raise HTTPException(status_code=404, detail="Axolotito no encontrado.")
     if axo.user_id != verified_user_id:
         raise HTTPException(status_code=403, detail="No eres dueño de este Axolotito.")
+
+    # Verificar tutorial completado
+    from app.core.auth import require_tutorial
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    if user: require_tutorial(user)
+
     return axo

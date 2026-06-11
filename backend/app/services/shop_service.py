@@ -44,6 +44,10 @@ class ShopService:
         if not user:
             raise HTTPException(status_code=400, detail="Usuario no encontrado.")
 
+        # 1b. Verificar tutorial completado
+        from app.core.auth import require_tutorial
+        require_tutorial(user)
+
         # 2. Verificar que el item existe y bloquearlo con SELECT FOR UPDATE
         item = session.exec(
             select(ItemCatalog).where(ItemCatalog.id == item_id).with_for_update()
@@ -164,7 +168,7 @@ class ShopService:
                 for lvl in range(1, user.cave_level + 1):
                     bonus = CAVE_PASSIVE_BONUSES.get(lvl, {})
                     bonus_slots += bonus.get("global_incubation_slot", 0)
-                max_incubation_slots = user.cave_level + 6 + bonus_slots
+                max_incubation_slots = user.cave_level + bonus_slots
 
                 # Cada nido puede tener UN ocupante: huevo en incubación O axolotito en dormitorio
                 occupied_nests = total_eggs + total_axolotitos
@@ -176,7 +180,7 @@ class ShopService:
 
                 # Verificar límite total (VIP puede tener bonus separado)
                 user_owned = total_eggs + total_axolotitos
-                axo_limit = user.cave_level + 6 + user.vip_bonus_axolotito_slots
+                axo_limit = user.cave_level + user.vip_bonus_axolotito_slots
                 if user_owned >= axo_limit:
                     raise HTTPException(
                         status_code=400,
@@ -653,6 +657,10 @@ class ShopService:
         user = session.exec(select(User).where(User.privy_did == user_id)).first()
         if not user:
             raise HTTPException(status_code=400, detail="Usuario no encontrado.")
+
+        # 1b. Verificar tutorial completado
+        from app.core.auth import require_tutorial
+        require_tutorial(user)
 
         # 2. Lock inventory row using SELECT FOR UPDATE to prevent race conditions
         inv_item = session.exec(

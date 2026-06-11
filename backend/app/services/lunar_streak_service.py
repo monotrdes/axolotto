@@ -152,6 +152,9 @@ def get_status(user: User) -> dict:
 
 
 def claim(db: Session, user: User) -> dict:
+    from app.core.auth import require_tutorial
+    require_tutorial(user)
+
     _apply_inactivity_reset(user)
 
     if not _can_claim_today(user):

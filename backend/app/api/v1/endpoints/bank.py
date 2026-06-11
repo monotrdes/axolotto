@@ -6,7 +6,7 @@ from typing import Any, Optional
 from app.models.economy import CurrencyType
 from app.services.bank_service import BankService
 from app.database import get_session
-from app.core.auth import get_verified_user_id, require_admin
+from app.core.auth import get_verified_user_id, require_admin, verify_no_active_game
 from app.core.config import settings, axf_to_internal, frj_to_internal, axf_to_display, frj_to_display
 from app.core.economy_types import AxfAmount, FrjAmount
 from app.core.limiter import limiter
@@ -96,7 +96,7 @@ def transfer_funds(
     request: Request,
     req: TransferRequest,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id)
+    verified_user_id: str = Depends(verify_no_active_game)
 ) -> Any:
     """Transfiere fondos a un amigo cobrando la comisión de la casa."""
     if req.sender_id != verified_user_id:

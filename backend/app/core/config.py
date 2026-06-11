@@ -188,6 +188,8 @@ class Settings(BaseSettings):
             dids.append(self.ADMIN_PRIVY_DID)
         return dids
     SIMULATION_REPORT_PATH: str = "/app/simulation_report.txt"
+    CHAOS_SIMULATION_REPORT_PATH: str = "/app/chaos_simulation_report.txt"
+    CHAOS_SIMULATION_PROGRESS_PATH: str = "/app/chaos_simulation_progress.log"
 
     # ── Dev Corcholata Auto-Reward ────────────────────────────────────────────
     # Movido a backend/app/api/v1/endpoints/dev.py como constantes del módulo.

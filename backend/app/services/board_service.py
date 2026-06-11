@@ -321,6 +321,9 @@ def _build_board_response(
 
 def get_user_boards_data(user_id: str, session: Session) -> list:
     """Devuelve las tablas que posee el usuario y las que tiene rentadas actualmente."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     now = datetime.utcnow()
 
     # 1. Tablas propias del usuario (solo activas)
@@ -366,10 +369,12 @@ def create_random_board_operation(
     user_id: str, name: str, session: Session
 ) -> dict:
     """Crea un tablero de Lotería al azar cobrando 25 GAL de comisión."""
-    # 0. Validar límite de tableros
+    # 0. Validar tutorial
     user_record = session.exec(
         select(User).where(User.privy_did == user_id)
     ).first()
+    from app.core.auth import require_tutorial
+    if user_record: require_tutorial(user_record)
     max_slots = (
         user_record.unlocked_board_slots
         if (user_record and user_record.unlocked_board_slots is not None)
@@ -530,6 +535,8 @@ def create_manual_board_operation(
     user_record = session.exec(
         select(User).where(User.privy_did == user_id)
     ).first()
+    from app.core.auth import require_tutorial
+    if user_record: require_tutorial(user_record)
     max_slots = (
         user_record.unlocked_board_slots
         if (user_record and user_record.unlocked_board_slots is not None)
@@ -642,6 +649,9 @@ def edit_board_operation(
     board_id: int, user_id: str, name: Optional[str], session: Session
 ) -> dict:
     """Reconfigura una tabla existente permitiendo SOLO cambiar el nombre de forma gratuita."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -673,6 +683,9 @@ def edit_board_operation(
 
 def delete_board_operation(board_id: int, user_id: str, session: Session) -> dict:
     """Desarma la tabla: devuelve las 16 cartas, cobra 1 AXF y preserva 80% del XP en el slot."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -826,6 +839,9 @@ def delete_board_operation(board_id: int, user_id: str, session: Session) -> dic
 
 def claim_staking_operation(board_id: int, user_id: str, session: Session) -> dict:
     """Reclama las Gemas Alga acumuladas por el staking de las cartas de esta tabla."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -869,6 +885,9 @@ def claim_staking_operation(board_id: int, user_id: str, session: Session) -> di
 
 def claim_all_staking_operation(user_id: str, session: Session) -> dict:
     """Reclama las Gemas Alga acumuladas por el staking de TODAS las tablas del usuario a la vez."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     boards = session.exec(
         select(PlayerBoard)
         .where(PlayerBoard.user_id == user_id)
@@ -988,6 +1007,9 @@ def list_board_for_rent_operation(
     session: Session,
 ) -> dict:
     """Lista un tablero en el mercado de rentas fijando fee y win split."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -1036,6 +1058,9 @@ def cancel_rent_listing_operation(
     board_id: int, user_id: str, session: Session
 ) -> dict:
     """Retira un tablero del mercado de rentas."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -1067,6 +1092,9 @@ def rent_board_operation(
     board_id: int, user_id: str, session: Session
 ) -> dict:
     """Alquila una tabla del mercado de rentas por 24 horas pagando la fee de GAL por adelantado."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -1176,6 +1204,8 @@ def get_slot_status_data(user_id: str, session: Session) -> dict:
     user_record = session.exec(
         select(User).where(User.privy_did == user_id)
     ).first()
+    from app.core.auth import require_tutorial
+    if user_record: require_tutorial(user_record)
     unlocked_slots = (
         user_record.unlocked_board_slots
         if (user_record and user_record.unlocked_board_slots is not None)
@@ -1272,6 +1302,8 @@ def unlock_slot_operation(user_id: str, session: Session) -> dict:
     ).first()
     if not user_record:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    from app.core.auth import require_tutorial
+    require_tutorial(user_record)
 
     unlocked_slots = (
         user_record.unlocked_board_slots
@@ -1405,6 +1437,9 @@ def list_board_for_sale_operation(
     session: Session,
 ) -> dict:
     """Publica un tablero en el mercado de venta definitiva."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -1453,6 +1488,9 @@ def cancel_sale_operation(
     board_id: int, user_id: str, session: Session
 ) -> dict:
     """Cancela la publicación de venta de un tablero."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -1518,6 +1556,8 @@ def buy_board_operation(
     buyer_record = session.exec(
         select(User).where(User.privy_did == user_id)
     ).first()
+    from app.core.auth import require_tutorial
+    if buyer_record: require_tutorial(buyer_record)
     max_slots = (
         buyer_record.unlocked_board_slots
         if (buyer_record and buyer_record.unlocked_board_slots is not None)

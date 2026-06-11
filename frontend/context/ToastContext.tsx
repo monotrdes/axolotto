@@ -210,6 +210,8 @@ function GameCard({ item, onDismiss }: { item: GameToast; onDismiss: () => void 
     jackpot:   { border: 'border-purple-400/50', bg: 'bg-purple-950/30', text: 'text-purple-300' },
   };
 
+  const isAFK = result.outcome && result.outcome.includes("AFK");
+
   return (
     <div
       className={`relative flex items-start gap-3 p-4 rounded-2xl bg-[#0D0D1F] border-2 shadow-2xl
@@ -229,10 +231,17 @@ function GameCard({ item, onDismiss }: { item: GameToast; onDismiss: () => void 
         <p className={`text-[10px] font-black uppercase tracking-widest mb-0.5 ${
           result.won_jackpot ? 'text-[#C084FC]' : isVictory ? 'text-[#10B981]' : 'text-[#E4007C]'
         }`}>
-          {result.won_jackpot ? '🎉 ¡JACKPOT!' : isVictory ? '¡Victoria!' : 'Partida Terminada'}
+          {result.won_jackpot ? '🎉 ¡JACKPOT!' : isVictory ? '¡Victoria!' : isAFK ? '⚠️ Penalización AFK' : 'Partida Terminada'}
         </p>
         <p className="text-white text-sm font-bold truncate">{result.axo_name}</p>
         <p className="text-slate-500 text-xs truncate">{result.room_name}</p>
+
+        {isAFK && (
+          <div className="mt-2 px-2 py-1.5 rounded-lg border border-red-500/40 bg-red-950/30 text-[10px] font-black text-red-400 flex items-center gap-1.5 animate-pulse">
+            <span>⚠️</span>
+            <span>Penalización AFK aplicada: −30% premio y −5 Lealtad</span>
+          </div>
+        )}
 
         {/* Prize breakdown */}
         {hasBreakdown && (

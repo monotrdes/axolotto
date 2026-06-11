@@ -209,17 +209,16 @@ class TestIntegerDivision:
         prize = 85 * _FRJ  # 85 FRJ de premio base
         luck_stat = 73  # 7.3% bonus
         luck_bonus = luck_stat * prize // 1000
-        expected = int(85 * _FRJ * 0.073)
-        assert luck_bonus == expected
+        assert luck_bonus == 62050
 
     def test_pool_distribution_exact_split(self):
         """Distribución de pool entre 3 ganadores: fair split sin remainder perdido."""
         pool = 1000 * _FRJ  # 1000 FRJ
         winners = 3
-        share = pool // winners  # 333 FRJ cada uno
-        remainder = pool - (share * winners)  # 1 FRJ restante
-        assert share == 333 * _FRJ
-        assert remainder == 1 * _FRJ  # 1 FRJ va a tesorería, no se pierde
+        share = pool // winners  # 3333333 units
+        remainder = pool - (share * winners)  # 1 unit (0.0001 FRJ)
+        assert share == 3_333_333
+        assert remainder == 1  # 1 unidad va a tesorería, no se pierde
 
 
 # ---------------------------------------------------------------------------

@@ -122,6 +122,7 @@ def make_user(
     wallet_address: str | None = "GENERATE_UNIQUE",
     is_vip: bool = False,
     vip_tier: str | None = None,
+    tutorial_completed: bool = True,
 ) -> User:
     from datetime import datetime, timedelta
     import uuid
@@ -138,6 +139,7 @@ def make_user(
         wallet_address=wallet_address,
         vip_tier=vip_tier if is_vip else None,
         vip_expires_at=vip_expires_at,
+        tutorial_completed=tutorial_completed,
     )
     session.add(user)
     session.commit()
@@ -151,7 +153,10 @@ def make_wallet(
     axogemas: float = 0.0,
     gemas_alga: float = 0.0,
 ) -> Wallet:
-    wallet = Wallet(user_id=user_id, axogemas=axogemas, gemas_alga=gemas_alga)
+    from app.core.config import axf_to_internal, frj_to_internal
+    axf_int = axf_to_internal(axogemas)
+    frj_int = frj_to_internal(gemas_alga)
+    wallet = Wallet(user_id=user_id, axofichas=axf_int, frijolitos=frj_int)
     session.add(wallet)
     session.commit()
     session.refresh(wallet)
@@ -169,11 +174,14 @@ def make_item(
     item_metadata: dict | None = None,
     rarity: Rarity = Rarity.COMMON,
 ) -> ItemCatalog:
+    from app.core.config import axf_to_internal, frj_to_internal
+    axf_int = axf_to_internal(price_axg) if price_axg is not None else None
+    frj_int = frj_to_internal(price_gal) if price_gal is not None else None
     item = ItemCatalog(
         name=name,
         item_type=item_type,
-        price_axg=price_axg,
-        price_gal=price_gal,
+        price_axg=axf_int,
+        price_gal=frj_int,
         is_active=is_active,
         max_supply=max_supply,
         item_metadata=item_metadata or {},

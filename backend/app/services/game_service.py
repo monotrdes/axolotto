@@ -90,6 +90,11 @@ class GameService:
         if axo.user_id != verified_user_id:
             raise HTTPException(status_code=403, detail="No eres dueño de este Axolotito.")
 
+        # 1b. Verificar tutorial completado
+        from app.core.auth import require_tutorial
+        user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+        if user: require_tutorial(user)
+
         # 2. Check Axolotito status and energy
         if axo.status == "sleeping" and axo.sleep_expires_at and axo.sleep_expires_at > datetime.utcnow():
             raise HTTPException(status_code=400, detail="Este Axolotito está durmiendo. Despiértalo primero.")
@@ -514,6 +519,11 @@ class GameService:
         if axo.user_id != verified_user_id:
             raise HTTPException(status_code=403, detail="No eres dueño de este Axolotito.")
 
+        # Verificar tutorial completado
+        from app.core.auth import require_tutorial
+        user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+        if user: require_tutorial(user)
+
         if axo.status == "sleeping":
             raise HTTPException(status_code=400, detail="No puedes alimentar a un Axolotito que está durmiendo.")
 
@@ -585,6 +595,11 @@ class GameService:
         if axo.user_id != verified_user_id:
             raise HTTPException(status_code=403, detail="No eres dueño de este Axolotito.")
 
+        # Verificar tutorial completado
+        from app.core.auth import require_tutorial
+        user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+        if user: require_tutorial(user)
+
         if axo.status == "sleeping":
             raise HTTPException(status_code=400, detail="Este Axolotito ya está durmiendo.")
 
@@ -622,6 +637,11 @@ class GameService:
             raise HTTPException(status_code=404, detail="Axolotito no encontrado.")
         if axo.user_id != verified_user_id:
             raise HTTPException(status_code=403, detail="No eres dueño de este Axolotito.")
+
+        # Verificar tutorial completado
+        from app.core.auth import require_tutorial
+        user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+        if user: require_tutorial(user)
 
         if axo.status != "sleeping":
             raise HTTPException(status_code=400, detail="Este Axolotito no está durmiendo.")

@@ -13,7 +13,7 @@ from tests.conftest import make_user, make_wallet, make_item, make_card_pool
 def mock_web3_concurrency(monkeypatch):
     from unittest.mock import MagicMock
     monkeypatch.setattr(
-        "app.services.shop_service.Web3Service.burn_booster_onchain",
+        "app.services.shop_service.Web3Service.burn_sobrecito_onchain",
         MagicMock(return_value=None),
     )
     monkeypatch.setattr(

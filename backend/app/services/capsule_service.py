@@ -83,6 +83,10 @@ def _roll_capsule(tier: str, user_id: str, session: Session) -> dict:
       3. Pool normal según tier.
       4. Para outcome "sobre": check secundario de Foil.
     """
+    from app.models.user import User
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     pity = session.exec(select(CapsulaPity).where(CapsulaPity.user_id == user_id)).first()
     if not pity:
         pity = CapsulaPity(user_id=user_id)

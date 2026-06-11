@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useWebSocket } from "./useWebSocket";
 import { API_BASE } from "@/lib/api";
+import { useToast } from "@/context/ToastContext";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -17,6 +18,7 @@ export interface ManualPlayer {
 export interface ManualGameState {
   phase: ManualGamePhase;
   error: string | null;
+  playMode: "manual" | "auto";
   /** Player's board numbers (4×4 = 16) */
   playerBoardNums: number[];
   /** Active board ID */
@@ -59,6 +61,7 @@ export interface UseManualGameOptions {
   roomId: number;
   axolotitoId: number;
   token: string | null;
+  initialPlayMode?: "manual" | "auto";
   /** Callback when game ends */
   onGameEnd?: (winnerAxoId: number | null, payout: number) => void;
 }
@@ -83,10 +86,12 @@ export function useManualGame(options: UseManualGameOptions): ManualGameState & 
   disconnect: () => void;
 } {
   const { roomId, axolotitoId, token, onGameEnd } = options;
+  const { toast } = useToast();
 
   // ── State ────────────────────────────────────────────────────────────────
   const [phase, setPhase] = useState<ManualGamePhase>("connecting");
   const [error, setError] = useState<string | null>(null);
+  const [playMode, setPlayMode] = useState<"manual" | "auto">(options.initialPlayMode ?? "manual");
   const [playerBoardNums, setPlayerBoardNums] = useState<number[]>(Array(16).fill(0));
   const [boardId, setBoardId] = useState<number | null>(null);
   const [players, setPlayers] = useState<ManualPlayer[]>([]);
@@ -185,6 +190,9 @@ export function useManualGame(options: UseManualGameOptions): ManualGameState & 
     game_state_sync: (data) => {
       // Reconnect sync — restore state
       setPhase(data.phase ?? "playing");
+      if (data.play_mode) {
+        setPlayMode(data.play_mode);
+      }
       if (data.player_marked) {
         const boardMarks = Object.values(data.player_marked) as number[][];
         setMarkedCells(boardMarks.flat());
@@ -199,6 +207,15 @@ export function useManualGame(options: UseManualGameOptions): ManualGameState & 
         });
       }
       setTurnsPlayed(data.turns_played ?? 0);
+    },
+
+    afk_warning: (data) => {
+      setPlayMode("auto");
+      toast.error(data.message ?? "El bot de tu Axolotito ha asumido el control debido a inactividad.");
+    },
+
+    player_afk: (data) => {
+      toast.info(data.message ?? `${data.axo_name} se ha quedado AFK.`);
     },
   };
 
@@ -238,6 +255,7 @@ export function useManualGame(options: UseManualGameOptions): ManualGameState & 
   return {
     phase,
     error,
+    playMode,
     playerBoardNums,
     boardId,
     players,

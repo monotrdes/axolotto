@@ -95,3 +95,46 @@ def require_admin(user_id: str = Depends(get_verified_user_id)) -> str:
     if user_id not in admin_dids:
         raise HTTPException(status_code=403, detail="Acceso de administrador requerido.")
     return user_id
+
+
+def verify_no_active_game(
+    user_id: str = Depends(get_verified_user_id)
+) -> str:
+    """
+    Verifica que el usuario no tenga una partida multijugador activa en curso.
+    Si está en partida, lanza HTTP 409 Conflict.
+    """
+    from sqlmodel import Session, select
+    from app.database import engine
+    from app.models.lobby_models import RoomRegistration, GameRoom
+    from app.models.axolotito import Axolotito
+
+    with Session(engine) as session:
+        active_game = session.exec(
+            select(RoomRegistration)
+            .join(GameRoom, RoomRegistration.room_id == GameRoom.id)
+            .join(Axolotito, RoomRegistration.axolotito_id == Axolotito.id)
+            .where(Axolotito.user_id == user_id)
+            .where(GameRoom.status == "playing")
+        ).first()
+
+        if active_game:
+            raise HTTPException(
+                status_code=409,
+                detail="IN_GAME_LOCK: Tienes una partida activa en curso. Completa el juego actual para interactuar con el resto del sistema."
+            )
+    return user_id
+
+
+def require_tutorial(user) -> None:
+    """
+    Verifica que el usuario haya completado el tutorial.
+    Bloquea CUALQUIER acción del juego hasta que el tutorial esté terminado.
+    Excepciones: perfil, auth, dev, admin, y el propio tutorial.
+    """
+    if not getattr(user, "tutorial_completed", False):
+        raise HTTPException(
+            status_code=403,
+            detail="TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.",
+        )
+

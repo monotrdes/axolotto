@@ -141,16 +141,23 @@ async def manual_game_ws(
         if board:
             board_card_ids[bid] = board.card_ids[:16] if board.card_ids else []
 
-    # 4. Registrar conexion
-    await ws_manager.connect(
-        room_id=room_id,
-        user_id=user_id,
-        ws=websocket,
-        axolotito_id=axo.id,
-        axo_name=axo.name,
-        board_ids=board_ids,
-        board_card_ids=board_card_ids,
-    )
+    # 4. Registrar conexion (intentar reconectarse si ya está registrado en la sesión activa)
+    session_obj = ws_manager.get_session(room_id)
+    reconnected = False
+    if session_obj and user_id in session_obj.players:
+        reconnected = await ws_manager.reconnect(room_id, user_id, websocket, play_mode=reg.play_mode)
+
+    if not reconnected:
+        await ws_manager.connect(
+            room_id=room_id,
+            user_id=user_id,
+            ws=websocket,
+            axolotito_id=axo.id,
+            axo_name=axo.name,
+            board_ids=board_ids,
+            board_card_ids=board_card_ids,
+            play_mode=reg.play_mode,
+        )
 
     # 5. Si la sala esta en lobby y hay suficientes jugadores, iniciar
     room = session.get(GameRoom, room_id)

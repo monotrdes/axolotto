@@ -268,51 +268,34 @@ def main():
         progress("⏳ [2c/10] Ciclo Lunar — simulando recompensas diarias...")
         state.update(phase_daily_rewards(engine, config, **state) or {})
 
-        progress("⏳ [3/10] Fondos + paquetes FRJ...")
+        progress("⏳ [3/10] Fondos iniciales + paquetes FRJ...")
         state.update(phase_fund_wallets(engine, config, **state) or {})
 
         progress("⏳ [3b/10] Cápsulas iniciales — sembrando saldo inicial...")
         state.update(phase_seed_tickets(engine, config, **state) or {})
 
-        progress("⏳ [3c/10] VIP Club — suscripciones antes de compras...")
-        state.update(phase_vip(engine, config, **state) or {})
-
-        progress("⏳ [4/10] Boosters — compra (sellados, con descuento VIP si aplica)...")
-        state.update(phase_buy_boosters(engine, config, **state) or {})
-
-        # Apertura INMEDIATA: solo los jugadores con estrategia "immediate"
-        progress("⏳ [4b/10] Boosters — apertura inmediata (whale)...")
-        state.update(phase_open_boosters(engine, config, strategy="immediate", **state) or {})
-
-        progress(f"⏳ [5/10] Incubación — tutorial + imprinting ({config.incubation}s max)...")
+        progress(f"⏳ [4/10] 🎓 TUTORIAL + Incubación ({config.incubation}s max)...")
         state.update(phase_incubation(engine, config, **state) or {})
 
-        # Apertura POST-INCUBACIÓN: selective (foils ya comprados) + random
-        progress("⏳ [5b/10] Boosters — apertura post-incubación (selective + random)...")
+        progress("⏳ [5/10] 👑 VIP Club — suscripciones (descuento para compras)...")
+        state.update(phase_vip(engine, config, **state) or {})
+
+        progress("⏳ [6/10] 🃏 Boosters — compra + apertura total...")
+        state.update(phase_buy_boosters(engine, config, **state) or {})
+        state.update(phase_open_boosters(engine, config, strategy="immediate", **state) or {})
         state.update(phase_open_boosters(engine, config, strategy="selective", **state) or {})
-
-        progress("⏳ [6/10] Gashapon + cápsulas...")
-        state.update(phase_gashapon(engine, config, **state) or {})
-
-        # Apertura FINAL antes de crear tableros: hoarders abren sus sobres
-        # (necesitan cartas para armar tableros manuales)
-        progress("⏳ [6b/10] Boosters — apertura final (hoarder + restantes)...")
         state.update(phase_open_boosters(engine, config, strategy="final", **state) or {})
 
-        progress("⏳ [7/10] Tableros...")
+        progress("⏳ [7/10] 🎰 Gashapon + cápsulas...")
+        state.update(phase_gashapon(engine, config, **state) or {})
+
+        progress("⏳ [8/10] 📋 Tableros + Mercado...")
         state.update(phase_boards(engine, config, **state) or {})
-
-        progress("⏳ [7b/10] Cenote Místico (Card Melter: Melt & Forge)...")
         state.update(phase_card_melter(engine, config, **state) or {})
-
-        progress("⏳ [7c/10] Desarme Seguro (Solvente de Pegamento)...")
         state.update(phase_board_deconstruction(engine, config, **state) or {})
-
-        progress("⏳ [7d/10] Mercado Secundario P2P...")
         state.update(phase_p2p_market(engine, config, **state) or {})
 
         progress(f"⏳ [9/10] Partidas individuales ({config.games} × jugador)...")
-        # Apply --games override to each player's personality
         for p in players:
             p["personality"] = {**p["personality"], "solo_games": config.games}
         state.update(phase_individual_play(engine, config, **state) or {})

@@ -6,7 +6,7 @@ import json
 import logging
 
 from app.database import get_session
-from app.core.auth import get_verified_user_id
+from app.core.auth import get_verified_user_id, verify_no_active_game
 from app.models.items import ItemCatalog, PlayerInventory, ItemType, InventoryMarketListing
 from app.models.user import User
 from app.models.economy import TransactionLedger, CurrencyType, TransactionType, ChainOutbox
@@ -29,9 +29,12 @@ class ListInventoryItemRequest(BaseModel):
 def list_inventory_item(
     request: ListInventoryItemRequest,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id),
+    verified_user_id: str = Depends(verify_no_active_game),
 ):
     """Lista un sobre o carta de PlayerInventory para venta P2P en el mercado."""
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     if request.quantity <= 0:
         raise HTTPException(status_code=400, detail="La cantidad debe ser mayor a 0.")
     if request.price_gal <= 0:
@@ -81,9 +84,12 @@ def list_inventory_item(
 def cancel_inventory_listing(
     listing_id: int,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id),
+    verified_user_id: str = Depends(verify_no_active_game),
 ):
     """Cancela una publicación de inventario y regresa los ítems al inventario del vendedor."""
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     listing = session.exec(
         select(InventoryMarketListing)
         .where(InventoryMarketListing.id == listing_id)
@@ -128,7 +134,7 @@ def cancel_inventory_listing(
 def buy_inventory_listing(
     listing_id: int,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id),
+    verified_user_id: str = Depends(verify_no_active_game),
 ):
     """Compra un sobre o carta listada en el mercado P2P usando Frijolitos (FRJ)."""
     listing = session.exec(
@@ -155,6 +161,8 @@ def buy_inventory_listing(
 
     # 2. Comisión P2P (con soporte para descuento de VIP del comprador)
     buyer_user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    from app.core.auth import require_tutorial
+    if buyer_user: require_tutorial(buyer_user)
     commission_rate = 0.05
     if buyer_user and buyer_user.is_vip and buyer_user.vip_tier:
         commission_rate = VIP_CONFIG.get(buyer_user.vip_tier, {}).get("p2p_commission", 0.05)

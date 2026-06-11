@@ -54,6 +54,30 @@ export default function Home() {
   const [accessToken, setAccessToken]     = useState<string | null>(null);
   const [tabActiva, setTabActiva]         = useState<TabId>('tienda');
   const [mochilaInitialTab, setMochilaInitialTab] = useState<MochilaTab>('cartas');
+  const [activeGame, setActiveGame] = useState<any>(null);
+
+  // Poll active game status to lock navigation and UI controls
+  useEffect(() => {
+    if (!accessToken || !authenticated) {
+      setActiveGame(null);
+      return;
+    }
+    const checkActiveGame = async () => {
+      try {
+        const headers = { Authorization: `Bearer ${accessToken}` };
+        const res = await axios.get(`${API_BASE}/multiplayer/active-check`, { headers });
+        setActiveGame(res.data);
+        if (res.data?.active && tabActiva !== 'jugar') {
+          setTabActiva('jugar');
+        }
+      } catch (err) {
+        console.error("Error checking active game in Home:", err);
+      }
+    };
+    checkActiveGame();
+    const interval = setInterval(checkActiveGame, 5000);
+    return () => clearInterval(interval);
+  }, [accessToken, authenticated, tabActiva]);
 
   const [onboardingPhase, setOnboardingPhase] = useState<OnboardingPhase>("loading");
   const isInTutorial = onboardingPhase === "tutorial" || onboardingPhase === "intro" || onboardingPhase === "branch";
@@ -453,6 +477,10 @@ export default function Home() {
               worldSceneRef.current = scene;
             }}
             onZoneClick={(zoneId) => {
+              if (activeGame?.active) {
+                toast.error("¡Estás en una partida activa! No puedes cambiar de zona.");
+                return;
+              }
               const zoneToTab: Record<string, TabId> = {
                 nido: "santuario",
                 tianguis: "tienda",
@@ -464,6 +492,10 @@ export default function Home() {
               if (tab) setTabActiva(tab);
             }}
             onCaveClick={(caveIndex: number) => {
+              if (activeGame?.active) {
+                toast.error("¡Estás en una partida activa! No puedes entrar a la cueva.");
+                return;
+              }
               const axo = axolotitosData.find((a) => a.caveIndex === caveIndex);
               setCaveDecorIndex(caveIndex);
               setCaveDecorAxoName(axo?.name ?? "");
@@ -478,9 +510,17 @@ export default function Home() {
               setCaveDecorOpen(true);
             }}
             onAxolotitoClick={(axoId: string) => {
+              if (activeGame?.active) {
+                toast.error("¡Estás en una partida activa!");
+                return;
+              }
               setTabActiva("santuario");
             }}
             onStallClick={(stallType) => {
+              if (activeGame?.active) {
+                toast.error("¡Estás en una partida activa! No puedes cambiar de zona.");
+                return;
+              }
               // Map stall type to tab/action
               if (stallType === "fountain") {
                 // Open bank/currency conversion (navigate to store with bank flag)
@@ -527,7 +567,14 @@ export default function Home() {
 
               {/* FRJ pill — no decimals */}
               <button
-                onClick={() => { setTabActiva('tienda'); setOpenBancoCount(c => c + 1); }}
+                onClick={() => {
+                  if (activeGame?.active) {
+                    toast.error("¡Estás en una partida activa! No puedes cambiar de zona.");
+                    return;
+                  }
+                  setTabActiva('tienda');
+                  setOpenBancoCount(c => c + 1);
+                }}
                 className="relative flex items-center gap-1.5 bg-[#1C1C35]/80 px-2.5 sm:px-3 py-1.5 rounded-full border border-amber-500/20 hover:border-amber-400/50 hover:bg-amber-900/20 transition-all active:scale-95"
                 title="Mis Frijolitos"
               >
@@ -538,29 +585,41 @@ export default function Home() {
                 <span className="text-gray-600 text-[10px] font-medium hidden sm:inline">FRJ</span>
                 {floatingGal.map(f => (
                   <span
-                    key={f.id}
-                    style={{ '--x': `${f.x}px` } as React.CSSProperties}
-                    className="absolute pointer-events-none text-xs font-black text-amber-500 animate-float-up z-50 whitespace-nowrap"
-                    onAnimationEnd={() => {
-                      setFloatingGal(prev => prev.filter(item => item.id !== f.id));
-                    }}
+                     key={f.id}
+                     style={{ '--x': `${f.x}px` } as React.CSSProperties}
+                     className="absolute pointer-events-none text-xs font-black text-amber-500 animate-float-up z-50 whitespace-nowrap"
+                     onAnimationEnd={() => {
+                       setFloatingGal(prev => prev.filter(item => item.id !== f.id));
+                     }}
                   >
                     {f.amount}
                   </span>
                 ))}
               </button>
-
+ 
               {/* VIP Chip */}
               <VipChip
                 vipTier={datosBanco.vip_tier}
                 daysRemaining={datosBanco.vip_days_remaining}
                 pendingGal={datosBanco.vip_pending_gal}
-                onClick={() => setVipModalOpen(true)}
+                onClick={() => {
+                  if (activeGame?.active) {
+                    toast.error("¡Estás en una partida activa! Termina el juego primero.");
+                    return;
+                  }
+                  setVipModalOpen(true);
+                }}
               />
-
+ 
               {/* Settings */}
               <button
-                onClick={() => setSettingsModalOpen(true)}
+                onClick={() => {
+                  if (activeGame?.active) {
+                    toast.error("¡Estás en una partida activa! No puedes abrir ajustes.");
+                    return;
+                  }
+                  setSettingsModalOpen(true);
+                }}
                 className="p-2 rounded-full bg-[#1C1C35]/80 border border-white/5 text-gray-500 hover:text-[#FF8DA1] hover:bg-[#FF8DA1]/15 hover:border-[#FF8DA1]/30 transition-all"
                 title="Ajustes"
               >
@@ -683,16 +742,22 @@ export default function Home() {
           {/* Mochila flotante — abre el dashboard unificado en la sección seleccionada */}
           <MochilaFloating
             onOpenSection={(section) => {
+              if (activeGame?.active) {
+                toast.error("¡Estás en una partida activa! No puedes abrir la mochila.");
+                return;
+              }
               setMochilaInitialTab(section);
               setTabActiva("mochila");
             }}
           />
 
           {/* Lunar claim floating button — only visible when reward available */}
-          <LunarFloating
-            token={accessToken}
-            onSuccess={actualizarSaldosSilencioso}
-          />
+          {!activeGame?.active && (
+            <LunarFloating
+              token={accessToken}
+              onSuccess={actualizarSaldosSilencioso}
+            />
+          )}
 
           {/* BOTTOM DOCK — 5 zone buttons matching the paper world */}
           <ZoneDock
@@ -700,6 +765,10 @@ export default function Home() {
             tabActiva={tabActiva}
             dailyClaimAvailable={dailyClaimAvailable}
             onTabChange={(tab, zone) => {
+              if (activeGame?.active) {
+                toast.error("¡Estás en una partida activa! No puedes cambiar de zona.");
+                return;
+              }
               setTabActiva(tab);
               gameCanvasRef.current?.navigateToZone(zone);
             }}

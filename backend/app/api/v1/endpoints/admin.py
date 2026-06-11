@@ -8,6 +8,7 @@ from app.database import get_session
 from app.core.auth import get_verified_user_id, require_admin
 from app.services.admin_service import (
     SimRunParams,
+    ChaosRunParams,
     check_admin_status,
     get_overview,
     get_players,
@@ -16,6 +17,9 @@ from app.services.admin_service import (
     get_simulation_report,
     get_simulation_status,
     run_simulation,
+    get_chaos_simulation_report,
+    get_chaos_simulation_status,
+    run_chaos_simulation,
     get_card_distribution,
 )
 
@@ -82,6 +86,27 @@ def admin_run_simulation(
     _: str = Depends(require_admin),
 ):
     return run_simulation(params, background_tasks)
+
+
+# ── Chaos & Security Simulator v2 routes ────────────────────────────────────
+
+@router.get("/simulation/chaos/report")
+def admin_chaos_simulation_report(_: str = Depends(require_admin)):
+    return get_chaos_simulation_report()
+
+
+@router.get("/simulation/chaos/status")
+def admin_chaos_simulation_status(_: str = Depends(require_admin)):
+    return get_chaos_simulation_status()
+
+
+@router.post("/simulation/chaos/run")
+def admin_run_chaos_simulation(
+    params: ChaosRunParams,
+    background_tasks: BackgroundTasks,
+    _: str = Depends(require_admin),
+):
+    return run_chaos_simulation(params, background_tasks)
 
 
 @router.get("/cards/distribution")

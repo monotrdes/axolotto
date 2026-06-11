@@ -55,6 +55,9 @@ class GameRoom(SQLModel, table=True):
     visibility: str = Field(default="public")  # "public" | "friends" | "private"
     password_hash: Optional[str] = Field(default=None)
     host_reputation_earned: int = Field(default=0)  # reputación ganada en esta sala
+    # Lobby timeout / AFK tracking
+    countdown_started_at: Optional[datetime] = Field(default=None)  # cuando el host inicia la cuenta regresiva
+    last_host_activity_at: Optional[datetime] = Field(default=None)  # última actividad del host en el lobby
 
 class RoomRegistration(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -62,6 +65,8 @@ class RoomRegistration(SQLModel, table=True):
     axolotito_id: int = Field(foreign_key="axolotito.id", index=True)
     boards_json: str # JSON list of board IDs registered e.g. "[1, 2]"
     play_mode: str = Field(default="auto")  # "auto" (AFK) o "manual" (tiempo real)
+    ready: bool = Field(default=False)  # jugador listo para comenzar la partida
+    ready_at: Optional[datetime] = Field(default=None)  # cuando marcó ready
     registered_at: datetime = Field(default_factory=datetime.utcnow)
 
 
