@@ -33,6 +33,7 @@ class RegisterRequest(BaseModel):
     budget_gal: float
     loss_limit_pct: float
     profit_limit_pct: float
+    play_mode: Optional[str] = "auto"  # "auto" (AFK) o "manual" (tiempo real)
 
 class CreateRoomRequest(BaseModel):
     name: str                                    # Nombre de la sala
@@ -51,6 +52,7 @@ class JoinRoomRequest(BaseModel):
     loss_limit_pct: float
     profit_limit_pct: float
     password: Optional[str] = None
+    play_mode: Optional[str] = "auto"  # "auto" (AFK) o "manual" (tiempo real)
 
 def _hash_password(pw: str) -> str:
     return hashlib.sha256(f"axolotto_salt_{pw}".encode()).hexdigest()
@@ -79,15 +81,24 @@ def get_unread_game_logs(
             "outcome": log.outcome,
             "axo_name": log.axo_name,
             "room_name": log.room_name,
-            "net_gal": log.net_gal,
+            # VULN-06: convertir montos monetarios de unidad mínima → display
+            "net_gal": frj_to_display(log.net_gal),
             "xp_gained": log.xp_gained,
-            # Prize breakdown (2026-06)
-            "prize_breakdown": json.loads(log.prize_breakdown_json) if log.prize_breakdown_json else [],
+            # Prize breakdown (2026-06) — convertir montos internos a display
+            "prize_breakdown": [
+                {
+                    **item,
+                    "gross_gal": frj_to_display(item.get("gross_gal", 0)),
+                    "luck_bonus": frj_to_display(item.get("luck_bonus", 0)),
+                    "vip_bonus": frj_to_display(item.get("vip_bonus", 0)),
+                }
+                for item in (json.loads(log.prize_breakdown_json) if log.prize_breakdown_json else [])
+            ],
             "won_premio_1": log.won_premio_1,
             "won_premio_2": log.won_premio_2,
             "won_jackpot": log.won_jackpot,
-            "entry_fee_paid": log.entry_fee_paid,
-            "gross_prize_gal": log.gross_prize_gal,
+            "entry_fee_paid": frj_to_display(log.entry_fee_paid),
+            "gross_prize_gal": frj_to_display(log.gross_prize_gal),
         }
         for log in logs
     ]
@@ -111,6 +122,10 @@ def register_axolotito(
     user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+    # 0.05 Verificar tutorial completado
+    from app.core.auth import require_tutorial
+    require_tutorial(user)
 
     # 0.1 Normalizar room_type: aceptar legacy keys (rookie/champion)
     _room_type = req.room_type
@@ -187,8 +202,8 @@ def register_axolotito(
     axo.bot_loss_limit_axg = _budget_int * int(req.loss_limit_pct) // 100
     axo.bot_profit_limit_axg = _budget_int * int(req.profit_limit_pct) // 100
     axo.bot_enabled = True
-    axo.status = "playing"
-    
+    axo.status = "playing_manual" if req.play_mode == "manual" else "playing"
+
     # Crear registro contable (FRJ — moneda de juego)
     ledger_entry = TransactionLedger(
         user_id=verified_user_id,
@@ -278,7 +293,8 @@ def register_axolotito(
     registration = RoomRegistration(
         room_id=room.id,
         axolotito_id=axo.id,
-        boards_json=json.dumps(req.boards)
+        boards_json=json.dumps(req.boards),
+        play_mode=req.play_mode if req.play_mode in ("auto", "manual") else "auto"
     )
     session.add(registration)
     session.add(axo)
@@ -424,8 +440,8 @@ def create_player_room(
     if not req.name or len(req.name.strip()) < 2:
         raise HTTPException(status_code=400, detail="El nombre de la sala debe tener al menos 2 caracteres.")
 
-    # Convertir buy-in FRJ a GAL para consistencia con el sistema
-    entry_fee_gal = req.buy_in_frj  # FRJ y GAL tienen paridad 1:1 en este contexto
+    # Convertir buy-in FRJ para consistencia con el sistema
+    entry_fee_gal = req.buy_in_frj  # FRJ y entry_fee_gal tienen paridad 1:1 en este contexto
 
     # Hash password si existe
     password_hash = _hash_password(req.password) if req.password else None
@@ -606,7 +622,7 @@ def join_player_room(
     axo.bot_loss_limit_axg = _budget_int * int(req.loss_limit_pct) // 100
     axo.bot_profit_limit_axg = _budget_int * int(req.profit_limit_pct) // 100
     axo.bot_enabled = True
-    axo.status = "playing"
+    axo.status = "playing_manual" if req.play_mode == "manual" else "playing"
 
     session.add(TransactionLedger(
         user_id=verified_user_id,
@@ -620,6 +636,7 @@ def join_player_room(
         room_id=room.id,
         axolotito_id=axo.id,
         boards_json=json.dumps(req.boards),
+        play_mode=req.play_mode if req.play_mode in ("auto", "manual") else "auto"
     )
     session.add(registration)
     session.add(axo)
@@ -705,18 +722,22 @@ def settle_axolotito_escrow(
             detail="Este Axolotito no está listo para liquidación. Su estado debe ser 'waiting_settlement'."
         )
         
-    # Calcular balance
+    # Calcular balance (VULN-06: todos los montos en unidad mínima entera)
     returned_amount = axo.escrow_balance_gal
     net_performance = returned_amount - axo.bot_budget_axg
-    
-    # Otorgar Bono de Afecto (Flat 5 puntos + 1 extra por cada 10 GAL de ganancia neta si aplica)
+
+    # Otorgar Bono de Afecto (Flat 5 puntos + 1 extra por cada 10 FRJ de ganancia neta si aplica)
     loyalty_gained = 5
     if net_performance > 0:
-        loyalty_gained += net_performance // 10
-        
+        loyalty_gained += net_performance // (10 * (10 ** FRJ_DECIMALS_BACKEND))  # 10 FRJ display → internal
+
     # Devolver fondos a la billetera del usuario (FRJ)
     wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
     wallet.frijolitos += returned_amount
+
+    # Display amounts para response y ledger (VULN-06: internal → human-readable)
+    _returned_display = frj_to_display(returned_amount)
+    _net_display = frj_to_display(net_performance)
 
     # Crear registro ledger (FRJ)
     ledger_entry = TransactionLedger(
@@ -724,7 +745,7 @@ def settle_axolotito_escrow(
         amount=returned_amount,
         currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.REWARD if net_performance >= 0 else TransactionType.WITHDRAW,
-        description=f"Liquidacion de Escrow FRJ para {axo.name}: {returned_amount:.2f} FRJ devueltos (Neto: {net_performance:+.2f} FRJ)"
+        description=f"Liquidacion de Escrow FRJ para {axo.name}: {_returned_display:.2f} FRJ devueltos (Neto: {_net_display:+.2f} FRJ)"
     )
     session.add(ledger_entry)
     
@@ -746,8 +767,8 @@ def settle_axolotito_escrow(
     
     return {
         "mensaje": f"¡Corte de caja exitoso para {axo.name}! Recibes tu reporte.",
-        "refunded_gal": round(returned_amount, 2),
-        "net_performance": round(net_performance, 2),
+        "refunded_gal": _returned_display,
+        "net_performance": _net_display,
         "loyalty_points_gained": loyalty_gained,
         "total_loyalty_points": axo.loyalty_points,
         "sleep_expires_at": axo.sleep_expires_at
@@ -912,3 +933,147 @@ def get_manual_env(
             luck=axo.stat_luck, marked_in_window=True
         ),
     }
+
+
+@router.get("/active-check")
+def check_active_game(
+    session: Session = Depends(get_session),
+    verified_user_id: str = Depends(get_verified_user_id)
+):
+    """
+    Verifica si el usuario tiene una partida multijugador activa.
+    Si es así, retorna los detalles para reconexión (room_id, play_mode, axolotito_id).
+    """
+    reg = session.exec(
+        select(RoomRegistration)
+        .join(GameRoom, RoomRegistration.room_id == GameRoom.id)
+        .join(Axolotito, RoomRegistration.axolotito_id == Axolotito.id)
+        .where(Axolotito.user_id == verified_user_id)
+        .where(GameRoom.status == "playing")
+    ).first()
+
+    if reg:
+        return {
+            "active": True,
+            "room_id": reg.room_id,
+            "play_mode": reg.play_mode,
+            "axolotito_id": reg.axolotito_id
+        }
+    return {"active": False}
+
+
+# ── Lobby Management: Ready / Countdown / Kick ────────────────────────────────
+
+@router.post("/rooms/{room_id}/ready")
+def player_set_ready(
+    room_id: int,
+    session: Session = Depends(get_session),
+    verified_user_id: str = Depends(get_verified_user_id)
+):
+    """Marca al jugador como listo en la sala. Debe tener al menos 1 axolotito registrado."""
+    reg = session.exec(
+        select(RoomRegistration)
+        .join(Axolotito, RoomRegistration.axolotito_id == Axolotito.id)
+        .where(RoomRegistration.room_id == room_id)
+        .where(Axolotito.user_id == verified_user_id)
+    ).first()
+
+    if not reg:
+        raise HTTPException(status_code=404, detail="No estás registrado en esta sala.")
+
+    room = session.get(GameRoom, room_id)
+    if not room or room.status != "waiting":
+        raise HTTPException(status_code=400, detail="La sala no está en fase de espera.")
+
+    reg.ready = True
+    reg.ready_at = datetime.utcnow()
+    session.add(reg)
+    session.commit()
+
+    return {"message": "Listo.", "ready": True, "axolotito_id": reg.axolotito_id}
+
+
+@router.post("/rooms/{room_id}/unready")
+def player_set_unready(
+    room_id: int,
+    session: Session = Depends(get_session),
+    verified_user_id: str = Depends(get_verified_user_id)
+):
+    """Quita la marca de listo del jugador."""
+    reg = session.exec(
+        select(RoomRegistration)
+        .join(Axolotito, RoomRegistration.axolotito_id == Axolotito.id)
+        .where(RoomRegistration.room_id == room_id)
+        .where(Axolotito.user_id == verified_user_id)
+    ).first()
+
+    if not reg:
+        raise HTTPException(status_code=404, detail="No estás registrado en esta sala.")
+
+    reg.ready = False
+    reg.ready_at = None
+    session.add(reg)
+    session.commit()
+
+    return {"message": "Ya no estás listo.", "ready": False}
+
+
+@router.post("/rooms/{room_id}/start-countdown")
+def host_start_countdown(
+    room_id: int,
+    session: Session = Depends(get_session),
+    verified_user_id: str = Depends(get_verified_user_id)
+):
+    """El anfitrión inicia la cuenta regresiva de 2 minutos para el ready-check."""
+    room = session.get(GameRoom, room_id)
+    if not room:
+        raise HTTPException(status_code=404, detail="Sala no encontrada.")
+
+    if room.host_id != verified_user_id:
+        raise HTTPException(status_code=403, detail="Solo el anfitrión puede iniciar la cuenta regresiva.")
+
+    if room.status != "waiting":
+        raise HTTPException(status_code=400, detail="La sala ya no está en espera.")
+
+    room.countdown_started_at = datetime.utcnow()
+    room.last_host_activity_at = datetime.utcnow()
+    session.add(room)
+    session.commit()
+
+    return {"message": "Cuenta regresiva iniciada. Los jugadores tienen 2 minutos para marcar Listo."}
+
+
+@router.post("/rooms/{room_id}/kick/{axolotito_id}")
+def host_kick_player(
+    room_id: int,
+    axolotito_id: int,
+    session: Session = Depends(get_session),
+    verified_user_id: str = Depends(get_verified_user_id)
+):
+    """El anfitrión expulsa a un jugador de la sala."""
+    room = session.get(GameRoom, room_id)
+    if not room:
+        raise HTTPException(status_code=404, detail="Sala no encontrada.")
+
+    if room.host_id != verified_user_id:
+        raise HTTPException(status_code=403, detail="Solo el anfitrión puede expulsar jugadores.")
+
+    if room.status != "waiting":
+        raise HTTPException(status_code=400, detail="La sala ya está en juego.")
+
+    reg = session.exec(
+        select(RoomRegistration)
+        .where(RoomRegistration.room_id == room_id)
+        .where(RoomRegistration.axolotito_id == axolotito_id)
+    ).first()
+    if not reg:
+        raise HTTPException(status_code=404, detail="Jugador no encontrado en la sala.")
+
+    axo_for_kick = session.get(Axolotito, axolotito_id)
+    session.delete(reg)
+    room.last_host_activity_at = datetime.utcnow()
+    session.add(room)
+    session.commit()
+
+    return {"message": f"{axo_for_kick.name if axo_for_kick else 'Jugador'} expulsado de la sala."}
+

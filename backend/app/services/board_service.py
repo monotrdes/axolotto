@@ -7,7 +7,7 @@ from sqlmodel import Session, select, func
 
 logger = logging.getLogger("board_service")
 
-from app.core.config import FRJ_DECIMALS_BACKEND
+from app.core.config import FRJ_DECIMALS_BACKEND, frj_to_internal, frj_to_display
 from app.core.prices import BOARD_SLOT_COSTS, CONSUMABLE_PRICES
 from app.models.board import PlayerBoard, PlayerBoardSlot
 from app.models.items import ItemCatalog, PlayerInventory, ItemType, Rarity
@@ -321,6 +321,9 @@ def _build_board_response(
 
 def get_user_boards_data(user_id: str, session: Session) -> list:
     """Devuelve las tablas que posee el usuario y las que tiene rentadas actualmente."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     now = datetime.utcnow()
 
     # 1. Tablas propias del usuario (solo activas)
@@ -366,10 +369,12 @@ def create_random_board_operation(
     user_id: str, name: str, session: Session
 ) -> dict:
     """Crea un tablero de Lotería al azar cobrando 25 GAL de comisión."""
-    # 0. Validar límite de tableros
+    # 0. Validar tutorial
     user_record = session.exec(
         select(User).where(User.privy_did == user_id)
     ).first()
+    from app.core.auth import require_tutorial
+    if user_record: require_tutorial(user_record)
     max_slots = (
         user_record.unlocked_board_slots
         if (user_record and user_record.unlocked_board_slots is not None)
@@ -394,7 +399,7 @@ def create_random_board_operation(
     if wallet.frijolitos < _cost_random:
         raise HTTPException(
             status_code=400,
-            detail=f"Saldo insuficiente. Crear un tablero aleatorio cuesta 25 GAL (tienes {wallet.frijolitos / (10 ** FRJ_DECIMALS_BACKEND):.1f} GAL).",
+            detail=f"Saldo insuficiente. Crear un tablero aleatorio cuesta 25 FRJ (tienes {frj_to_display(wallet.frijolitos):.1f} FRJ).",
         )
 
     # 2. Buscar todas las cartas del usuario que no estén en stake total
@@ -446,7 +451,7 @@ def create_random_board_operation(
     ledger = TransactionLedger(
         user_id=user_id,
         amount=_cost_random,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.MARKET_BUY,
         description=f"Creación aleatoria de tabla: {name}",
     )
@@ -530,6 +535,8 @@ def create_manual_board_operation(
     user_record = session.exec(
         select(User).where(User.privy_did == user_id)
     ).first()
+    from app.core.auth import require_tutorial
+    if user_record: require_tutorial(user_record)
     max_slots = (
         user_record.unlocked_board_slots
         if (user_record and user_record.unlocked_board_slots is not None)
@@ -554,7 +561,7 @@ def create_manual_board_operation(
     if wallet.frijolitos < _cost_manual:
         raise HTTPException(
             status_code=400,
-            detail=f"Saldo insuficiente. Crear un tablero manual cuesta 50 GAL (tienes {wallet.frijolitos / (10 ** FRJ_DECIMALS_BACKEND):.1f} GAL).",
+            detail=f"Saldo insuficiente. Crear un tablero manual cuesta 50 FRJ (tienes {frj_to_display(wallet.frijolitos):.1f} FRJ).",
         )
 
     # 2. Validar propiedad y disponibilidad de cartas
@@ -567,7 +574,7 @@ def create_manual_board_operation(
     ledger = TransactionLedger(
         user_id=user_id,
         amount=_cost_manual,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.MARKET_BUY,
         description=f"Creación manual de tabla: {name}",
     )
@@ -642,6 +649,9 @@ def edit_board_operation(
     board_id: int, user_id: str, name: Optional[str], session: Session
 ) -> dict:
     """Reconfigura una tabla existente permitiendo SOLO cambiar el nombre de forma gratuita."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -673,6 +683,9 @@ def edit_board_operation(
 
 def delete_board_operation(board_id: int, user_id: str, session: Session) -> dict:
     """Desarma la tabla: devuelve las 16 cartas, cobra 1 AXF y preserva 80% del XP en el slot."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -736,7 +749,7 @@ def delete_board_operation(board_id: int, user_id: str, session: Session) -> dic
         ledger_stake = TransactionLedger(
             user_id=user_id,
             amount=accrued,
-            currency=CurrencyType.GEMA_ALGA,
+            currency=CurrencyType.FRIJOLITO,
             tx_type=TransactionType.REWARD,
             description=f"Cobro final de staking por desarmar tabla #{board_id}",
         )
@@ -826,6 +839,9 @@ def delete_board_operation(board_id: int, user_id: str, session: Session) -> dic
 
 def claim_staking_operation(board_id: int, user_id: str, session: Session) -> dict:
     """Reclama las Gemas Alga acumuladas por el staking de las cartas de esta tabla."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -851,7 +867,7 @@ def claim_staking_operation(board_id: int, user_id: str, session: Session) -> di
     ledger = TransactionLedger(
         user_id=user_id,
         amount=accrued,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.REWARD,
         description=f"Reclamo de Staking de cartas en tabla #{board_id}",
     )
@@ -862,13 +878,16 @@ def claim_staking_operation(board_id: int, user_id: str, session: Session) -> di
     session.commit()
 
     return {
-        "mensaje": f"¡Has reclamado {round(accrued, 2)} GAL exitosamente!",
-        "claimed_amount": round(accrued, 2),
+        "mensaje": f"¡Has reclamado {frj_to_display(accrued):.2f} FRJ exitosamente!",
+        "claimed_amount": frj_to_display(accrued),
     }
 
 
 def claim_all_staking_operation(user_id: str, session: Session) -> dict:
     """Reclama las Gemas Alga acumuladas por el staking de TODAS las tablas del usuario a la vez."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     boards = session.exec(
         select(PlayerBoard)
         .where(PlayerBoard.user_id == user_id)
@@ -899,7 +918,7 @@ def claim_all_staking_operation(user_id: str, session: Session) -> dict:
     ledger = TransactionLedger(
         user_id=user_id,
         amount=total_accrued,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.REWARD,
         description=f"Reclamo masivo de Staking para tablas: {claimed_boards}",
     )
@@ -909,8 +928,8 @@ def claim_all_staking_operation(user_id: str, session: Session) -> dict:
     session.commit()
 
     return {
-        "mensaje": f"¡Has reclamado {round(total_accrued, 2)} GAL exitosamente de {len(claimed_boards)} tablas!",
-        "claimed_amount": round(total_accrued, 2),
+        "mensaje": f"¡Has reclamado {frj_to_display(total_accrued):.2f} FRJ exitosamente de {len(claimed_boards)} tablas!",
+        "claimed_amount": frj_to_display(total_accrued),
         "claimed_boards": claimed_boards,
     }
 
@@ -988,6 +1007,9 @@ def list_board_for_rent_operation(
     session: Session,
 ) -> dict:
     """Lista un tablero en el mercado de rentas fijando fee y win split."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -1036,6 +1058,9 @@ def cancel_rent_listing_operation(
     board_id: int, user_id: str, session: Session
 ) -> dict:
     """Retira un tablero del mercado de rentas."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -1067,6 +1092,9 @@ def rent_board_operation(
     board_id: int, user_id: str, session: Session
 ) -> dict:
     """Alquila una tabla del mercado de rentas por 24 horas pagando la fee de GAL por adelantado."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -1108,25 +1136,25 @@ def rent_board_operation(
         session, board.user_id, for_update=True
     )
 
-    fee = board.rent_fee_gal
-    if renter_wallet.frijolitos < fee:
+    fee_internal = frj_to_internal(board.rent_fee_gal)
+    if renter_wallet.frijolitos < fee_internal:
         raise HTTPException(
             status_code=400,
-            detail=f"Saldo de GAL insuficiente para rentar esta tabla (requieres {fee} GAL, tienes {renter_wallet.frijolitos} GAL).",
+            detail=f"Saldo de FRJ insuficiente para rentar esta tabla (requieres {board.rent_fee_gal} FRJ, tienes {frj_to_display(renter_wallet.frijolitos):.1f} FRJ).",
         )
 
     # Transferencia de saldo con 5% de burn
-    burn_amount = fee * 0.05
-    net_owner_amount = fee - burn_amount
+    burn_amount = int(round(fee_internal * 0.05))
+    net_owner_amount = fee_internal - burn_amount
 
-    renter_wallet.frijolitos -= fee
+    renter_wallet.frijolitos -= fee_internal
     owner_wallet.frijolitos += net_owner_amount
 
     # Ledger para el arrendatario
     ledger_renter = TransactionLedger(
         user_id=user_id,
-        amount=fee,
-        currency=CurrencyType.GEMA_ALGA,
+        amount=fee_internal,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.MARKET_BUY,
         description=f"Renta de tabla #{board.id} a propietario {board.user_id}",
     )
@@ -1134,7 +1162,7 @@ def rent_board_operation(
     ledger_owner = TransactionLedger(
         user_id=board.user_id,
         amount=net_owner_amount,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.REWARD,
         description=f"Ingreso de renta recibida por tabla #{board.id} de arrendatario {user_id}",
     )
@@ -1142,7 +1170,7 @@ def rent_board_operation(
     ledger_burn = TransactionLedger(
         user_id=board.user_id,
         amount=burn_amount,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.BURN,
         description=f"Comisión de plataforma (5%) por renta de tabla #{board.id}",
     )
@@ -1176,6 +1204,8 @@ def get_slot_status_data(user_id: str, session: Session) -> dict:
     user_record = session.exec(
         select(User).where(User.privy_did == user_id)
     ).first()
+    from app.core.auth import require_tutorial
+    if user_record: require_tutorial(user_record)
     unlocked_slots = (
         user_record.unlocked_board_slots
         if (user_record and user_record.unlocked_board_slots is not None)
@@ -1217,7 +1247,7 @@ def get_slot_status_data(user_id: str, session: Session) -> dict:
     if wallet.frijolitos < reqs["cost_gal"]:
         can_unlock = False
         reasons.append(
-            f"Faltan {reqs['cost_gal'] - wallet.frijolitos:.1f} GAL"
+            f"Faltan {frj_to_display(reqs['cost_gal'] - wallet.frijolitos):.1f} FRJ"
         )
 
     # Validar partidas jugadas
@@ -1272,6 +1302,8 @@ def unlock_slot_operation(user_id: str, session: Session) -> dict:
     ).first()
     if not user_record:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    from app.core.auth import require_tutorial
+    require_tutorial(user_record)
 
     unlocked_slots = (
         user_record.unlocked_board_slots
@@ -1314,7 +1346,7 @@ def unlock_slot_operation(user_id: str, session: Session) -> dict:
     if wallet.frijolitos < reqs["cost_gal"]:
         raise HTTPException(
             status_code=400,
-            detail=f"Saldo insuficiente. Desbloquear el slot {unlocked_slots + 1} cuesta {reqs['cost_gal']} GAL.",
+            detail=f"Saldo insuficiente. Desbloquear el slot {unlocked_slots + 1} cuesta {frj_to_display(reqs['cost_gal']):.0f} FRJ.",
         )
 
     # 3. Cobrar y actualizar
@@ -1324,7 +1356,7 @@ def unlock_slot_operation(user_id: str, session: Session) -> dict:
     ledger = TransactionLedger(
         user_id=user_id,
         amount=reqs["cost_gal"],
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.MARKET_BUY,
         description=f"Desbloqueo de slot de tabla #{unlocked_slots + 1}",
     )
@@ -1405,6 +1437,9 @@ def list_board_for_sale_operation(
     session: Session,
 ) -> dict:
     """Publica un tablero en el mercado de venta definitiva."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -1434,7 +1469,7 @@ def list_board_for_sale_operation(
         )
     if sale_price_gal <= 0:
         raise HTTPException(
-            status_code=400, detail="El precio de venta debe ser mayor a 0 GAL."
+            status_code=400, detail="El precio de venta debe ser mayor a 0 FRJ."
         )
 
     board.is_listed_for_sale = True
@@ -1444,7 +1479,7 @@ def list_board_for_sale_operation(
     session.commit()
 
     return {
-        "mensaje": f"Tabla '{board.name}' publicada en venta por {board.sale_price_gal} GAL.",
+        "mensaje": f"Tabla '{board.name}' publicada en venta por {board.sale_price_gal} FRJ.",
         "sale_price_gal": board.sale_price_gal,
     }
 
@@ -1453,6 +1488,9 @@ def cancel_sale_operation(
     board_id: int, user_id: str, session: Session
 ) -> dict:
     """Cancela la publicación de venta de un tablero."""
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")
@@ -1507,16 +1545,19 @@ def buy_board_operation(
     )
 
     price = board.sale_price_gal
-    if buyer_wallet.frijolitos < price:
+    price_internal = frj_to_internal(price)
+    if buyer_wallet.frijolitos < price_internal:
         raise HTTPException(
             status_code=400,
-            detail=f"Saldo de GAL insuficiente para comprar esta tabla (cuesta {price} GAL, tienes {buyer_wallet.frijolitos} GAL).",
+            detail=f"Saldo de FRJ insuficiente para comprar esta tabla (cuesta {price} FRJ, tienes {frj_to_display(buyer_wallet.frijolitos):.1f} FRJ).",
         )
 
     # --- Validar slots disponibles para el comprador ---
     buyer_record = session.exec(
         select(User).where(User.privy_did == user_id)
     ).first()
+    from app.core.auth import require_tutorial
+    if buyer_record: require_tutorial(buyer_record)
     max_slots = (
         buyer_record.unlocked_board_slots
         if (buyer_record and buyer_record.unlocked_board_slots is not None)
@@ -1534,38 +1575,38 @@ def buy_board_operation(
         )
 
     # 1. Transferencia económica con 5% de comisión (burn)
-    commission = price * 0.05
-    seller_net = price - commission
+    commission = int(round(price_internal * 0.05))
+    seller_net = price_internal - commission
 
-    buyer_wallet.frijolitos -= price
+    buyer_wallet.frijolitos -= price_internal
     seller_wallet.frijolitos += seller_net
 
     # 2. Registrar comisión en el tesoro (AXG)
     treasury = session.exec(select(TreasuryVault)).first()
     if not treasury:
-        treasury = TreasuryVault(balance=0.0)
+        treasury = TreasuryVault(balance=0)
         session.add(treasury)
     treasury.balance += commission
 
     # Ledgers
     ledger_buyer = TransactionLedger(
         user_id=user_id,
-        amount=price,
-        currency=CurrencyType.GEMA_ALGA,
+        amount=price_internal,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.MARKET_BUY,
         description=f"Compra de tabla #{board.id} al propietario {board.user_id}",
     )
     ledger_seller = TransactionLedger(
         user_id=board.user_id,
         amount=seller_net,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.REWARD,
         description=f"Venta de tabla #{board.id} al comprador {user_id}",
     )
     ledger_commission = TransactionLedger(
         user_id=board.user_id,
         amount=commission,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.BURN,
         description=f"Comisión de plataforma (5%) por venta de tabla #{board.id}",
     )

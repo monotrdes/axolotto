@@ -12,19 +12,25 @@ import AdminOverview from "@/components/admin/AdminOverview";
 import AdminPlayerList from "@/components/admin/AdminPlayerList";
 import AdminEconomyCharts from "@/components/admin/AdminEconomyCharts";
 import AdminSimReport from "@/components/admin/AdminSimReport";
+import AdminChaosSimV2 from "@/components/admin/AdminChaosSimV2";
 import AdminCardDistribution from "@/components/admin/AdminCardDistribution";
+import AdminEvents from "@/components/admin/AdminEvents";
+import AdminPromos from "@/components/admin/AdminPromos";
 
 
 
 const API = `${API_BASE}`;
 
-type Tab = "resumen" | "jugadores" | "economia" | "cartas" | "simulacion";
+type Tab = "resumen" | "jugadores" | "economia" | "cartas" | "eventos" | "promos" | "simulacion" | "caos";
 const TABS: { id: Tab; label: string; emoji: string }[] = [
   { id: "resumen",    label: "Resumen",    emoji: "📊" },
   { id: "jugadores",  label: "Jugadores",  emoji: "👥" },
   { id: "economia",   label: "Economía",   emoji: "💹" },
   { id: "cartas",     label: "Cartas",     emoji: "🃏" },
+  { id: "eventos",    label: "Eventos",    emoji: "🎮" },
+  { id: "promos",     label: "Promociones", emoji: "🪅" },
   { id: "simulacion", label: "Simulación", emoji: "🧪" },
+  { id: "caos",       label: "Caos V2",    emoji: "⚡" },
 ];
 
 function parsePrivyDid(token: string | null): string {
@@ -155,7 +161,10 @@ export default function AdminPage() {
         {activeTab === "jugadores"  && <AdminPlayerList token={token} />}
         {activeTab === "economia"   && <AdminEconomyCharts token={token} />}
         {activeTab === "cartas"     && <AdminCardDistribution token={token} />}
+        {activeTab === "eventos"    && <AdminEvents token={token} />}
+        {activeTab === "promos"     && <AdminPromos token={token} />}
         {activeTab === "simulacion" && <AdminSimReport token={token} />}
+        {activeTab === "caos"       && <AdminChaosSimV2 token={token} />}
       </main>
     </div>
   );

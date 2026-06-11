@@ -68,6 +68,8 @@ from phase_07e_cave_expansion import phase_cave_expansion
 from phase_07f_cave_decor import phase_cave_decor
 from phase_08_solo import phase_individual_play
 from phase_09_multi import phase_multiplayer
+from phase_09e_social import phase_social_simulation
+from phase_07g_staking import phase_staking_start, phase_staking_end
 from phase_10_errors import phase_error_tests
 
 
@@ -264,54 +266,38 @@ def main():
         progress("⏳ [2b/10] Corcholatas — canjeando código promocional...")
         state.update(phase_redeem_corcholata(engine, config, **state) or {})
 
-        progress("⏳ [2c/10] Ciclo Lunar — simulando recompensas diarias...")
-        state.update(phase_daily_rewards(engine, config, **state) or {})
-
-        progress("⏳ [3/10] Fondos + paquetes FRJ...")
+        progress("⏳ [3/10] Fondos iniciales + paquetes FRJ...")
         state.update(phase_fund_wallets(engine, config, **state) or {})
 
         progress("⏳ [3b/10] Cápsulas iniciales — sembrando saldo inicial...")
         state.update(phase_seed_tickets(engine, config, **state) or {})
 
-        progress("⏳ [3c/10] VIP Club — suscripciones antes de compras...")
-        state.update(phase_vip(engine, config, **state) or {})
-
-        progress("⏳ [4/10] Boosters — compra (sellados, con descuento VIP si aplica)...")
-        state.update(phase_buy_boosters(engine, config, **state) or {})
-
-        # Apertura INMEDIATA: solo los jugadores con estrategia "immediate"
-        progress("⏳ [4b/10] Boosters — apertura inmediata (whale)...")
-        state.update(phase_open_boosters(engine, config, strategy="immediate", **state) or {})
-
-        progress(f"⏳ [5/10] Incubación — tutorial + imprinting ({config.incubation}s max)...")
+        progress(f"⏳ [4/10] 🎓 TUTORIAL + Incubación ({config.incubation}s max)...")
         state.update(phase_incubation(engine, config, **state) or {})
 
-        # Apertura POST-INCUBACIÓN: selective (foils ya comprados) + random
-        progress("⏳ [5b/10] Boosters — apertura post-incubación (selective + random)...")
+        progress("⏳ [4b/10] Ciclo Lunar — simulando recompensas diarias...")
+        state.update(phase_daily_rewards(engine, config, **state) or {})
+
+        progress("⏳ [5/10] 👑 VIP Club — suscripciones (descuento para compras)...")
+        state.update(phase_vip(engine, config, **state) or {})
+
+        progress("⏳ [6/10] 🃏 Boosters — compra + apertura total...")
+        state.update(phase_buy_boosters(engine, config, **state) or {})
+        state.update(phase_open_boosters(engine, config, strategy="immediate", **state) or {})
         state.update(phase_open_boosters(engine, config, strategy="selective", **state) or {})
-
-        progress("⏳ [6/10] Gashapon + cápsulas...")
-        state.update(phase_gashapon(engine, config, **state) or {})
-
-        # Apertura FINAL antes de crear tableros: hoarders abren sus sobres
-        # (necesitan cartas para armar tableros manuales)
-        progress("⏳ [6b/10] Boosters — apertura final (hoarder + restantes)...")
         state.update(phase_open_boosters(engine, config, strategy="final", **state) or {})
 
-        progress("⏳ [7/10] Tableros...")
+        progress("⏳ [7/10] 🎰 Gashapon + cápsulas...")
+        state.update(phase_gashapon(engine, config, **state) or {})
+
+        progress("⏳ [8/10] 📋 Tableros + Mercado...")
         state.update(phase_boards(engine, config, **state) or {})
-
-        progress("⏳ [7b/10] Cenote Místico (Card Melter: Melt & Forge)...")
         state.update(phase_card_melter(engine, config, **state) or {})
-
-        progress("⏳ [7c/10] Desarme Seguro (Solvente de Pegamento)...")
         state.update(phase_board_deconstruction(engine, config, **state) or {})
-
-        progress("⏳ [7d/10] Mercado Secundario P2P...")
         state.update(phase_p2p_market(engine, config, **state) or {})
+        state.update(phase_staking_start(engine, config, **state) or {})
 
         progress(f"⏳ [9/10] Partidas individuales ({config.games} × jugador)...")
-        # Apply --games override to each player's personality
         for p in players:
             p["personality"] = {**p["personality"], "solo_games": config.games}
         state.update(phase_individual_play(engine, config, **state) or {})
@@ -324,6 +310,10 @@ def main():
 
         progress("⏳ [9d/10] Decoración del Cenote (CAVE_ITEMs)...")
         state.update(phase_cave_decor(engine, config, **state) or {})
+
+        progress("⏳ [9e/10] Capa Social — Amigos y Referidos...")
+        state.update(phase_social_simulation(engine, config, **state) or {})
+        state.update(phase_staking_end(engine, config, **state) or {})
 
         progress("⏳ [10/10] Tests de errores...")
         state.update(phase_error_tests(engine, config, **state) or {})
@@ -382,17 +372,16 @@ def main():
 😇  Karma Lucky:               {stats.get('karma_lucky', 0)}
 🧂  Karma Salty:               {stats.get('karma_salty', 0)}
 💧  Recompensas Salty (FRJ):   {stats.get('salty_rewards_received', 0)}
-🌤️  Clima incubación:          {stats.get('weather_logged', '?')}
 🎉  Evento de prueba creado:   {"Sí" if stats.get('test_event_created') else "No"}
 {'-'*70}
 🎰  Gashapon rolls:            {stats.get('gashapon_rolls', 0)}
 💊  Cápsulas reclamadas:       {stats.get('capsule_claims', 0)}
 🌟  Triple Suerte:             {stats.get('triple_suerte', 0)}
 📋  Tableros creados:          {stats.get('boards_created', 0)}  ({stats.get('manual_boards', 0)} manuales)
-🏪  Tableros en venta P2P:     {stats.get('boards_listed_sale', 0)}
-🏠  Tableros en renta:         {stats.get('boards_listed_rent', 0)}
+🏪  Tableros en venta P2P:     {stats.get('boards_listed_sale', 0)} (Comprados: {stats.get('boards_bought_p2p', 0)})
+🏠  Tableros en renta:         {stats.get('boards_listed_rent', 0)} (Rentados: {stats.get('boards_rented_p2p', 0)})
 📈  Slots desbloqueados:       {stats.get('slot_upgrades', 0)}
-🦎  Axos en venta P2P:         {stats.get('axos_listed_sale', 0)}
+🦎  Axos en venta P2P:         {stats.get('axos_listed_sale', 0)} (Comprados: {stats.get('axos_bought_p2p', 0)})
 {'-'*70}
 👑  VIP activados:             {stats.get('vip_activations', 0)}
 🔄  VIP Auto-Renovación:       {stats.get('vip_auto_renew', 0)}
@@ -403,7 +392,7 @@ def main():
   🏆 Victorias:               {stats.get('wins', 0)}  ({win_rate:.1f}%)
   💔 Derrotas:                {stats.get('losses', 0)}
   🤖 Autojuego:               {stats.get('autogames', 0)} partidas
-  💰 GAL obtenidas:           {stats.get('total_prize_gal', 0.0):.2f}
+  💰 FRJ obtenidas:           {stats.get('total_prize_gal', 0.0):.2f}
   🍽️  Alimentaciones:          {stats.get('feedings', 0)}
   😴 Ciclos sueño:            {stats.get('sleeps', 0)}
   🔧 Cave items equipados:    {stats.get('cave_equips', 0)}
@@ -423,7 +412,7 @@ def main():
         report += f"""
   📊 Partidas jugadas:         {len(match_logs)}
   🏆 Victorias:               {multi_victories}  ({multi_victories/len(match_logs)*100:.0f}%)
-  💸 GAL neto total:          {multi_net:+.1f}
+  💸 FRJ neto total:          {multi_net:+.1f}
   Detalle:
 """
         for log in match_logs:
@@ -431,7 +420,7 @@ def main():
             axo_name = log["axo_name"][:20]
             room_name = log["room_name"][:24]
             report += (f"    {icon} {axo_name:<20} │ {room_name:<24} │ "
-                       f"Neto: {log['net_gal']:+7.1f} GAL │ XP: +{log['xp_gained']}\n")
+                       f"Neto: {log['net_gal']:+7.1f} FRJ │ XP: +{log['xp_gained']}\n")
 
     report += f"""
 {'-'*70}
@@ -450,6 +439,32 @@ def main():
   🎨 Items equipados:         {stats.get('cave_items_equipped', 0)}
   🔒 Tests seguridad slot:    {stats.get('cave_decor_slot_mismatch_checked', 0)}
   🧬 Tests límite mentoría:   {stats.get('padrino_mentorship_errors_checked', 0)}
+{'-'*70}
+👑  Staking de Axolotitos:
+  🥚 Axolotitos en staking:    {stats.get('axolotitos_staked', 0)}
+  🔓 Axolotitos retirados:     {stats.get('axolotitos_unstaked', 0)}
+  💰 FRJ ganado en staking:    {stats.get('staking_rewards_frj', 0.0):.2f} FRJ
+{'-'*70}
+👥  Capa Social — Amigos:
+  📨 Solicitudes enviadas:     {stats.get('social_friend_requests_sent', 0)}
+  ✅ Solicitudes aceptadas:    {stats.get('social_friend_requests_accepted', 0)}
+  ❌ Solicitudes rechazadas:   {stats.get('social_friend_requests_rejected', 0)}
+  🤝 Amistades activas total:  {stats.get('social_total_active_friendships', 0)}
+  ❤️  Likes dados:             {stats.get('social_likes_given', 0)} (total BD: {stats.get('social_total_likes_logged', 0)})
+  🏠 Cuevas visitadas:         {stats.get('social_cave_visits', 0)} (total BD: {stats.get('social_total_visits_logged', 0)})
+  🚫 Bloqueos:                 {stats.get('social_blocks_created', 0)}
+  💔 Amistades eliminadas:     {stats.get('social_friends_removed', 0)}
+  🔍 Sugerencias encontradas:  {stats.get('social_suggestions_checked', 0)}
+{'-'*70}
+🔗  Capa Social — Referidos:
+  🏷️  Códigos generados:       {stats.get('social_codes_generated', 0)} (total BD: {stats.get('social_total_codes', 0)})
+  📥 Códigos canjeados:        {stats.get('social_codes_claimed', 0)}
+  🎯 Milestones procesados:    {stats.get('social_milestones_processed', 0)}
+  👶 Referidos totales:        {stats.get('social_total_referrals', 0)}
+{'-'*70}
+🛡️  Capa Social — Anti-Abuso:
+  🔒 Anti-fraud bloqueos:      {stats.get('social_anti_fraud_blocks', 0)}
+  ⏱️  Rate-limit hits:         {stats.get('social_rate_limit_hits', 0)}
 {'-'*70}
 🚫  Tests de errores:
   ✅ Pasaron:                 {stats.get('error_tests_passed', 0)}

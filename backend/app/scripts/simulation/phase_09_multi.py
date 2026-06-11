@@ -10,7 +10,7 @@ from app.models.board import PlayerBoard
 from app.models.lobby_models import GameRoom, RoomRegistration, JackpotVault, JackpotWin
 from app.services.bank_service import BankService
 from app.services.game_service import GameService
-from app.core.config import frj_to_internal
+from app.core.config import frj_to_internal, frj_to_display
 from app.api.v1.endpoints.multiplayer import (
     register_axolotito, recall_axolotito,
     settle_axolotito_escrow, RegisterRequest,
@@ -188,8 +188,22 @@ def phase_multiplayer(engine, config, **state) -> dict:
             axo.status = "idle"
             session.add(axo)
         if axo.energy_current < 10:
-            axo.energy_current = axo.stat_stamina or 100
-            session.add(axo)
+            try:
+                if wallet.frijolitos < frj_to_internal(150.0):
+                    wallet.frijolitos = max(wallet.frijolitos or 0, frj_to_internal(300.0))
+                    session.add(wallet)
+                    session.commit()
+                GameService.feed_axolotito(
+                    axo_id=axo.id,
+                    food_type="shrimp",
+                    session=session,
+                    verified_user_id=user_id,
+                )
+                session.refresh(axo)
+                stats["feedings"] = stats.get("feedings", 0) + 1
+                print(f"  🍽️  {user_id}: {axo.name} alimentado con shrimp para multijugador")
+            except Exception as e:
+                print(f"  ⚠️  {user_id}: Fallo al alimentar a {axo.name} para multijugador: {e}")
         session.commit()
 
         loss_pct = _rng.choice([20.0, 30.0, 40.0])
@@ -298,14 +312,14 @@ def phase_multiplayer(engine, config, **state) -> dict:
                         axolotito_id=axo_id, session=session, verified_user_id=info["user_id"]
                     )
                     stats["multi_axos_settled"] = stats.get("multi_axos_settled", 0) + 1
-                    print(f"  💵 '{axo.name}' (forzado) → {res['refunded_gal']:.1f} GAL")
+                    print(f"  💵 '{axo.name}' (forzado) → {res['refunded_gal']:.1f} FRJ")
                 except HTTPException as e:
                     errors.append(f"multi_settle_forced {info['user_id']}: {e.detail}")
 
     # ── ESTADO DEL JACKPOT ───────────────────────────────────────────────────
     jackpot = session.exec(select(JackpotVault)).first()
     if jackpot:
-        print(f"\n  💰 Jackpot actual: {jackpot.current_amount:.2f} GAL")
+        print(f"\n  💰 Jackpot actual: {frj_to_display(jackpot.current_amount):.2f} FRJ")
         recent_wins = session.exec(
             select(JackpotWin).order_by(JackpotWin.won_at.desc()).limit(5)
         ).all()
@@ -314,7 +328,7 @@ def phase_multiplayer(engine, config, **state) -> dict:
             for jw in recent_wins:
                 jp_axo = session.get(Axolotito, jw.axo_id)
                 print(f"  🎰 JACKPOT: {jp_axo.name if jp_axo else '?'} "
-                      f"ganó {jw.amount_won:.0f} GAL en turno #{jw.cards_drawn_count}")
+                      f"ganó {frj_to_display(jw.amount_won):.0f} FRJ en turno #{jw.cards_drawn_count}")
 
     stats["multi_match_logs"] = all_match_logs
 
@@ -325,7 +339,7 @@ def phase_multiplayer(engine, config, **state) -> dict:
         f"  ✅ Multi: {stats.get('multi_rooms_simulated', 0)} salas │ "
         f"{len(all_match_logs)} partidas │ "
         f"{victories} victorias │ "
-        f"Neto total: {total_net:+.1f} GAL │ "
+        f"Neto total: {total_net:+.1f} FRJ │ "
         f"{stats.get('recall_tests_passed', 0)} recall(s) pasaron │ "
         f"{stats.get('multi_axos_settled', 0)} liquidados."
     )

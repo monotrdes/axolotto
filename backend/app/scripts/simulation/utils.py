@@ -8,6 +8,7 @@ from app.models.axolotito import Axolotito
 from app.models.lobby_models import GameRoom, RoomRegistration, MultiplayerGameLog, JackpotVault, JackpotWin
 from app.models.items import WebitoIncubation
 from app.services.multiplayer_service import MultiplayerService
+from app.core.config import frj_to_display
 from fastapi import HTTPException
 
 import time
@@ -81,14 +82,15 @@ def _read_new_logs(
         for log in new_logs:
             seen_ids.add(log.id)
             icon = "🏆" if log.outcome == "Victoria" else "💔"
+            net_display = frj_to_display(log.net_gal)
             print(f"    {icon} {log.axo_name:<22} │ {log.room_name:<26} │ "
-                  f"Neto: {log.net_gal:+7.1f} GAL │ XP: +{log.xp_gained}")
+                  f"Neto: {net_display:+7.1f} FRJ │ XP: +{log.xp_gained}")
             all_logs.append({
                 "user_id": user_id,
                 "axo_name": log.axo_name,
                 "room_name": log.room_name,
                 "outcome": log.outcome,
-                "net_gal": log.net_gal,
+                "net_gal": net_display,
                 "xp_gained": log.xp_gained,
             })
             log.notified = True
@@ -105,14 +107,15 @@ def _read_new_logs(
         if log.id in seen_ids:
             continue
         icon = "🏆" if log.outcome == "Victoria" else "💔"
+        net_display = frj_to_display(log.net_gal)
         print(f"    {icon} {log.axo_name:<22} │ {log.room_name:<26} │ "
-              f"Neto: {log.net_gal:+7.1f} GAL │ XP: +{log.xp_gained}")
+              f"Neto: {net_display:+7.1f} FRJ │ XP: +{log.xp_gained}")
         all_logs.append({
             "user_id": log.user_id,
             "axo_name": log.axo_name,
             "room_name": log.room_name,
             "outcome": log.outcome,
-            "net_gal": log.net_gal,
+            "net_gal": net_display,
             "xp_gained": log.xp_gained,
         })
         log.notified = True

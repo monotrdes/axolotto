@@ -122,7 +122,14 @@ export default function AdminPlayerList({ token }: { token: string | null }) {
               const vip = p.vip_tier ? VIP_BADGE[p.vip_tier] : null;
               return (
                 <tr key={p.privy_did} className="border-t border-white/5 hover:bg-white/[0.02] transition-colors">
-                  <td className="px-3 py-2 font-semibold text-white whitespace-nowrap">{p.nickname || <span className="text-gray-700">—</span>}</td>
+                  <td className="px-3 py-2 font-semibold text-white whitespace-nowrap">
+                    {p.nickname || <span className="text-gray-700">—</span>}
+                    {!p.is_active && (
+                      <span className="ml-1.5 px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 text-[9px] font-black uppercase tracking-wider">
+                        Susp
+                      </span>
+                    )}
+                  </td>
                   <td className="px-3 py-2 text-gray-400 text-xs">{p.email || <span className="text-gray-700">—</span>}</td>
                   <td className="px-3 py-2">
                     {vip ? (

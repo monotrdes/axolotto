@@ -26,7 +26,7 @@ export default function BudgetScreen({
   onContinue,
   error,
 }: BudgetScreenProps) {
-  const saldo      = Math.floor(balances?.gemas_alga ?? 0);
+  const saldo      = Math.floor(balances?.frijolitos ?? 0);
   const maxBudget  = Math.max(100, saldo);
   const lossValue  = Math.round((budget * lossLimitPct) / 100);
   const profitValue= Math.round((budget * profitLimitPct) / 100);

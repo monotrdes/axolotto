@@ -5,7 +5,7 @@ from sqlmodel import Session, select, func
 from pydantic import BaseModel
 from typing import List, Optional
 from app.database import get_session
-from app.core.config import FRJ_DECIMALS_BACKEND
+from app.core.config import FRJ_DECIMALS_BACKEND, frj_to_internal, frj_to_display, axf_to_internal, axf_to_display
 from app.models.economy import CurrencyType, TransactionType
 from app.services.shop_service import ShopService
 from app.services.bank_service import BankService
@@ -29,7 +29,7 @@ from app.models.items import ItemCatalog, PlayerInventory, ItemType, Rarity, Cap
 from app.models.economy import TransactionLedger, Wallet
 from app.models.user import User
 from app.models.axolotito import Axolotito
-from app.core.auth import get_verified_user_id
+from app.core.auth import get_verified_user_id, verify_no_active_game
 
 router = APIRouter()
 _rng = random.SystemRandom()
@@ -194,7 +194,7 @@ def get_store_items(user_id: Optional[str] = None, session: Session = Depends(ge
 def buy_item(
     request: BuyRequest,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id)
+    verified_user_id: str = Depends(verify_no_active_game)
 ):
     """Compra un ítem usando Gemas de Alga o Axogemas."""
     return ShopService.buy_item(
@@ -270,7 +270,7 @@ class GashaponRollRequest(BaseModel):
 def roll_gashapon(
     request: GashaponRollRequest,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id)
+    verified_user_id: str = Depends(verify_no_active_game)
 ):
     """Lanza el Gashapón de Axolotto consumiendo FRJ para obtener un accesorio o comida premium."""
     wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
@@ -279,7 +279,7 @@ def roll_gashapon(
     if wallet.frijolitos < cost:
         raise HTTPException(
             status_code=400,
-            detail=f"Saldo de FRJ insuficiente para lanzar el Gashapón (cuesta {cost} FRJ, tienes {wallet.frijolitos} FRJ)."
+            detail=f"Saldo de FRJ insuficiente para lanzar el Gashapón (cuesta {frj_to_display(cost)} FRJ, tienes {frj_to_display(wallet.frijolitos):.1f} FRJ)."
         )
 
     # ── 1. Pre-check drop legendario (Booster Foil) ────────────────────────────
@@ -304,7 +304,7 @@ def roll_gashapon(
         return {
             **legendary,
             "roll_type": request.roll_type,
-            "cost_frj": cost,
+            "cost_frj": frj_to_display(cost),
         }
 
     # ── 2. Roll normal: accesorio por rareza ──────────────────────────────────
@@ -362,7 +362,7 @@ def roll_gashapon(
         "item": drop_item,
         "rarity": chosen_rarity.value,
         "roll_type": request.roll_type,
-        "cost_frj": cost,
+        "cost_frj": frj_to_display(cost),
     }
 
 
@@ -415,7 +415,7 @@ def claim_daily_capsule(
 def roll_capsule(
     request: CapsuleRollRequest,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id),
+    verified_user_id: str = Depends(verify_no_active_game),
 ):
     tier = request.tier.lower()
     if tier not in TIER_COSTS:
@@ -453,19 +453,19 @@ def roll_capsule(
             session.delete(inv_item)
         else:
             session.add(inv_item)
-        cost = 0.0
     else:
-        if wallet.frijolitos < cost:
+        cost_internal = frj_to_internal(cost)
+        if wallet.frijolitos < cost_internal:
             raise HTTPException(
                 status_code=400,
-                detail=f"FRJ insuficientes. Necesitas {cost} FRJ, tienes {wallet.frijolitos:.1f} FRJ.",
+                detail=f"FRJ insuficientes. Necesitas {cost} FRJ, tienes {frj_to_display(wallet.frijolitos):.1f} FRJ.",
             )
-        wallet.frijolitos -= cost
+        wallet.frijolitos -= cost_internal
         session.add(wallet)
 
     result = _roll_capsule(tier, verified_user_id, session)
     session.commit()
-    result["balance_after"] = wallet.frijolitos
+    result["balance_after"] = frj_to_display(wallet.frijolitos)
     return result
 
 
@@ -473,16 +473,17 @@ def roll_capsule(
 def roll_triple_suerte(
     request: TripleSuerteRequest = TripleSuerteRequest(),
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id),
+    verified_user_id: str = Depends(verify_no_active_game),
 ):
     wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
 
-    if wallet.frijolitos < TRIPLE_COST:
+    triple_cost_internal = frj_to_internal(TRIPLE_COST)
+    if wallet.frijolitos < triple_cost_internal:
         raise HTTPException(
             status_code=400,
-            detail=f"FRJ insuficientes para Triple Suerte. Necesitas {TRIPLE_COST} FRJ, tienes {wallet.frijolitos:.1f} FRJ.",
+            detail=f"FRJ insuficientes para Triple Suerte. Necesitas {TRIPLE_COST} FRJ, tienes {frj_to_display(wallet.frijolitos):.1f} FRJ.",
         )
-    wallet.frijolitos -= TRIPLE_COST
+    wallet.frijolitos -= triple_cost_internal
     session.add(wallet)
 
     results = [_roll_capsule(t, verified_user_id, session) for t in ("bronce", "plata", "oro")]
@@ -492,7 +493,7 @@ def roll_triple_suerte(
         "results": results,
         "total_cost": TRIPLE_COST,
         "saved": 400,
-        "balance_after": wallet.frijolitos,
+        "balance_after": frj_to_display(wallet.frijolitos),
     }
 
 
@@ -570,7 +571,7 @@ class OpenBoosterRequest(BaseModel):
 def open_booster(
     request: OpenBoosterRequest,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id),
+    verified_user_id: str = Depends(verify_no_active_game),
 ):
     """Abre un sobre sellado de manera diferida en la mochila del usuario."""
     return ShopService.open_booster(session, verified_user_id, request.item_id)
@@ -589,7 +590,7 @@ class ForgeCardRequest(BaseModel):
 def melt_card_endpoint(
     request: MeltCardRequest,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id),
+    verified_user_id: str = Depends(verify_no_active_game),
 ):
     """Fundir 5 copias de una carta de rareza común, rara o épica para obtener fragmentos y una carta aleatoria superior."""
     return melt_card(session, verified_user_id, request.card_id, request.is_first_edition)
@@ -599,7 +600,7 @@ def melt_card_endpoint(
 def forge_card_endpoint(
     request: ForgeCardRequest,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id),
+    verified_user_id: str = Depends(verify_no_active_game),
 ):
-    """Forjar una carta específica consumiendo fragmentos de su rareza y GAL."""
+    """Forjar una carta específica consumiendo fragmentos de su rareza y FRJ."""
     return forge_card(session, verified_user_id, request.target_card_id)

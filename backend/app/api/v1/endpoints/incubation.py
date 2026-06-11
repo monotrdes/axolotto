@@ -16,7 +16,7 @@ import sqlalchemy as sa
 from app.models.axolotito import Axolotito
 from app.services.web3_service import Web3Service
 
-from app.core.auth import get_verified_user_id
+from app.core.auth import get_verified_user_id, verify_no_active_game
 from app.services.imprinting_service import (
     initial_base_stats,
     required_games_for_rarity,
@@ -220,7 +220,7 @@ def map_stats_to_traits(stats: dict) -> dict:
 def hatch_webito(
     incubation_id: int,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id)
+    verified_user_id: str = Depends(verify_no_active_game)
 ):
     # 1. Buscar la incubación con lock pesimista para prevenir double-hatch
     incubation = session.exec(
@@ -543,7 +543,7 @@ def _perform_hatch(
 def start_imprinting(
     payload: StartImprintingPayload,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id),
+    verified_user_id: str = Depends(verify_no_active_game),
 ):
     """Inicia el imprinting de un Webito. Asigna padrino y genera stats base."""
     incubation = session.exec(

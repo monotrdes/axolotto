@@ -1,4 +1,4 @@
-﻿from sqlmodel import Session, select, func
+from sqlmodel import Session, select, func
 from sqlalchemy import delete, text as sa_text
 from sqlmodel import SQLModel
 
@@ -9,7 +9,10 @@ from app.models.axolotito import Axolotito
 from app.models.lobby_models import GameRoom, RoomRegistration, JackpotVault, TreasuryVault, MultiplayerGameLog, JackpotWin
 from app.models.economy import Wallet
 from app.models.promo import PromoCode, PendingReward
+from app.models.social import FriendRelation, SocialActionLog, ReferralCode, ReferralTracking
+from app.models.user import User
 from app.core.config import settings
+from sim_types import PRO_USER_DID, ADMIN_REFERRAL_CODE
 
 
 def phase_reset(engine, config, **state) -> dict:
@@ -39,6 +42,9 @@ def phase_reset(engine, config, **state) -> dict:
             "cryptopaymentattempt", "cryptopurchaseorder",
             "chainoutbox", "playerboardslot", "activegamestate",
             "manualmodeevent",
+            # Social tables — se limpian en cada simulación
+            "friend_relations", "social_action_logs",
+            "referral_codes", "referral_tracking",
         ]
         try:
             # Verificar qué tablas existen realmente (evita que una tabla missing rompa todo el TRUNCATE)
@@ -75,6 +81,7 @@ def phase_reset(engine, config, **state) -> dict:
             TransactionLedger, PlayerInventory, Wallet,
             JackpotVault, TreasuryVault, AxgPurchaseRecord,
             PendingReward,
+            FriendRelation, SocialActionLog, ReferralCode, ReferralTracking,
         ]:
             try:
                 session.execute(delete(model))
@@ -139,11 +146,55 @@ def phase_reset(engine, config, **state) -> dict:
     except Exception:
         session.rollback()
 
-    progress("  ✅ Reset completo — BD virgen (wallets, axolotitos, tableros, VIP, jackpot).")
+    # 5. Re-crear el código de referido hardcodeado del admin
+    #    (debe sobrevivir resets — es el link público que se comparte externamente)
+    _ensure_admin_referral_code(session, progress)
+
+    progress("  ✅ Reset completo — BD virgen (wallets, axolotitos, tableros, VIP, jackpot, social).")
 
     # Limpiar PromoCodes de simulación previos (se recrean en phase_01b)
     _ensure_sim_promocode(session)
     return {}
+
+
+def _ensure_admin_referral_code(session: Session, progress) -> None:
+    """Re-crea el código de referido hardcodeado del admin después del reset.
+
+    El admin (PRO_USER_DID) siempre debe tener el mismo código de referido
+    para que su link público no cambie entre simulaciones/resets.
+    """
+    from datetime import datetime
+    try:
+        # Verificar si el admin ya existe en la BD
+        admin_exists = session.exec(
+            select(User).where(User.privy_did == PRO_USER_DID)
+        ).first()
+        if not admin_exists:
+            progress("  ⚠️  Admin no encontrado en BD — el código se creará en phase_01_users.")
+            return
+
+        # Insertar el código hardcodeado del admin
+        existing = session.exec(
+            select(ReferralCode).where(ReferralCode.user_id == PRO_USER_DID)
+        ).first()
+        if existing:
+            # Ya existe (posible si no se truncó), actualizar al código hardcodeado
+            existing.code = ADMIN_REFERRAL_CODE
+            existing.updated_at = datetime.utcnow()
+            session.add(existing)
+        else:
+            rc = ReferralCode(
+                user_id=PRO_USER_DID,
+                code=ADMIN_REFERRAL_CODE,
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+            )
+            session.add(rc)
+        session.commit()
+        progress(f"  🔗 Código de referido del admin asegurado: {ADMIN_REFERRAL_CODE}")
+    except Exception as e:
+        session.rollback()
+        progress(f"  ⚠️  No se pudo crear código de referido del admin: {e}")
 
 
 def _ensure_sim_promocode(session: Session) -> str:

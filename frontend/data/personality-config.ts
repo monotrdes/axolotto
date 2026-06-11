@@ -1,343 +1,195 @@
-// ── Personality Reactions Configuration ──────────────────────────────────────
-// Mapea cada naturaleza × trigger a su emoji, animación CSS, aura y descripción.
-// Use: import { PERSONALITY_REACTIONS } from "@/data/personality-config";
+﻿/**
+ * personality-config.ts — Axolotito Nature personality phrases and chat effects.
+ *
+ * Used by QuickReactionWheel and SpeechBubble to customize chat behavior
+ * based on the Axolotito's nature (personality trait).
+ */
 
-// ── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-export type NatureType = "hyperactive" | "shy" | "showoff" | "curious";
+export type Nature = "hyperactive" | "shy" | "showoff" | "curious";
 
-export type NatureTrigger =
-  | "hit"
-  | "miss"
-  | "near_win"
-  | "won"
-  | "lost"
-  | "idle"
-  | "card_called"
-  | "tension_critical";
-
-export interface PersonalityReaction {
-  /** Emoji principal que se muestra */
-  emoji: string;
-  /** Clase de animacion CSS (animate-*) */
-  animClass: string;
-  /** Clase CSS del aura de particulas */
-  auraClass?: string;
-  /** Texto corto que aparece junto al avatar */
-  label: string;
-  /** Descripcion (espanol) de lo que hace el axolotito */
-  description: string;
+export interface PersonalityPhrases {
+  greeting: string;
+  nearWin: string;
+  victory: string;
+  defeat: string;
+  taunt: string;
 }
 
-// ── Full mapping: 4 natures × 8 triggers = 32 reactions ──────────────────────
+export interface NatureChatEffect {
+  className: string;
+  particleEmoji: string;
+}
 
-export const PERSONALITY_REACTIONS: Record<
-  NatureType,
-  Record<NatureTrigger, PersonalityReaction>
-> = {
-  // ══════════════════════════════════════════════════════════════════════════
-  // HYPERACTIVE — ⚡ energia electrica, rapido, explosivo
-  // ══════════════════════════════════════════════════════════════════════════
+// ── Quick phrases by nature ───────────────────────────────────────────────────
+
+export const PERSONALITY_PHRASES: Record<Nature, PersonalityPhrases> = {
   hyperactive: {
-    idle: {
-      emoji: "⚡",
-      animClass: "animate-hyper-bounce",
-      auraClass: "aura-spark",
-      label: "",
-      description: "Tembloroso y listo para la accion",
-    },
-    card_called: {
-      emoji: "👀",
-      animClass: "animate-hyper-tremble",
-      auraClass: "aura-spark",
-      label: "¡MI CARTAAA!",
-      description: "Se estira hacia el frente como para atrapar la carta",
-    },
-    hit: {
-      emoji: "🎯",
-      animClass: "animate-hyper-bounce",
-      auraClass: "aura-spark",
-      label: "¡CAZADO!",
-      description: "Brinca de emocion y da una voltereta",
-    },
-    miss: {
-      emoji: "💥",
-      animClass: "animate-hyper-tremble",
-      auraClass: "aura-spark",
-      label: "¡NOOO!",
-      description: "Se sacude con frustracion electrica",
-    },
-    tension_critical: {
-      emoji: "🌀",
-      animClass: "animate-hyper-spiral",
-      auraClass: "aura-spark",
-      label: "¡TENSION!",
-      description: "Gira como un torbellino de nervios",
-    },
-    won: {
-      emoji: "🏆",
-      animClass: "animate-hyper-flip",
-      auraClass: "aura-spark",
-      label: "¡SOY EL MEJOR!",
-      description: "Hace una voltereta hacia atras y aterriza en pose de poder",
-    },
-    lost: {
-      emoji: "😤",
-      animClass: "animate-hyper-tantrum",
-      auraClass: "aura-spark",
-      label: "¡RABIETA!",
-      description: "Se pone boca abajo y patalea furiosamente",
-    },
-    near_win: {
-      emoji: "🎆",
-      animClass: "animate-hyper-spiral",
-      auraClass: "aura-spark",
-      label: "¡CERCA!",
-      description: "Da vueltas en circulo de la emocion",
-    },
+    greeting: "HOLA A TODOS!",
+    nearWin: "A UNA CARTA!! AAAH!",
+    victory: "GANEEEE! TOMA!",
+    defeat: "Grrr, revancha ya!",
+    taunt: "QUE ESPERAN?!",
   },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // SHY / TIMID — 😊 gentil, lento, sutil, sonrojado
-  // ══════════════════════════════════════════════════════════════════════════
   shy: {
-    idle: {
-      emoji: "😊",
-      animClass: "animate-shy-blush",
-      auraClass: "aura-droplet",
-      label: "",
-      description: "Sonrie timidamente mientras se mece",
-    },
-    card_called: {
-      emoji: "👂",
-      animClass: "animate-shy-peek",
-      auraClass: "aura-droplet",
-      label: "¿Mi carta?",
-      description: "Se asoma curioso pero se esconde rapido",
-    },
-    hit: {
-      emoji: "🌟",
-      animClass: "animate-shy-blush",
-      auraClass: "aura-droplet",
-      label: "¡Bien!",
-      description: "Sonrie y se sonroja suavemente",
-    },
-    miss: {
-      emoji: "😅",
-      animClass: "animate-shy-shrink",
-      auraClass: "aura-droplet",
-      label: "Oops...",
-      description: "Se encoge un poco avergonzado",
-    },
-    tension_critical: {
-      emoji: "💓",
-      animClass: "animate-shy-bounce",
-      auraClass: "aura-droplet",
-      label: "Ayayay...",
-      description: "Se mece nerviosamente de lado a lado",
-    },
-    won: {
-      emoji: "🎀",
-      animClass: "animate-shy-applaud",
-      auraClass: "aura-droplet",
-      label: "Gane...",
-      description: "Aplaude lentamente con una sonrisa nerviosa",
-    },
-    lost: {
-      emoji: "💧",
-      animClass: "animate-shy-shrink",
-      auraClass: "aura-droplet",
-      label: "Otra vez sera...",
-      description: "Suspira y se encoge con resignacion",
-    },
-    near_win: {
-      emoji: "🫣",
-      animClass: "animate-shy-peek",
-      auraClass: "aura-droplet",
-      label: "Ay no...",
-      description: "Se tapa los ojos y asoma entre los dedos",
-    },
+    greeting: "hola...",
+    nearWin: "estoy cerca... creo",
+    victory: "gane... que bien",
+    defeat: "ni modo, felicidades",
+    taunt: "suerte a todos...",
   },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // SHOW-OFF / PROUD — ✨ orgulloso, dramático, llamativo
-  // ══════════════════════════════════════════════════════════════════════════
   showoff: {
-    idle: {
-      emoji: "✨",
-      animClass: "animate-showoff-pose",
-      auraClass: "aura-sparkle",
-      label: "",
-      description: "Se pavonea con actitud de superioridad",
-    },
-    card_called: {
-      emoji: "💅",
-      animClass: "animate-showoff-pose",
-      auraClass: "aura-sparkle",
-      label: "Obvio...",
-      description: "Se arregla las unas con indiferencia",
-    },
-    hit: {
-      emoji: "😎",
-      animClass: "animate-showoff-shades",
-      auraClass: "aura-sparkle",
-      label: "Facil.",
-      description: "Se pone lentes oscuros con estilo",
-    },
-    miss: {
-      emoji: "🤨",
-      animClass: "animate-showoff-backturn",
-      auraClass: "aura-sparkle",
-      label: "Bah...",
-      description: "Voltea la cara con desde",
-    },
-    tension_critical: {
-      emoji: "🔥",
-      animClass: "animate-showoff-pose",
-      auraClass: "aura-sparkle",
-      label: "Miren esto...",
-      description: "Flexiona un musculo imaginario",
-    },
-    won: {
-      emoji: "👑",
-      animClass: "animate-showoff-bow",
-      auraClass: "aura-sparkle",
-      label: "¡SOY DIOS!",
-      description: "Hace una reverencia dramatica para el publico",
-    },
-    lost: {
-      emoji: "💢",
-      animClass: "animate-showoff-backturn",
-      auraClass: "aura-sparkle",
-      label: "Me aburri...",
-      description: "Voltea la espalda y se cruza de brazos",
-    },
-    near_win: {
-      emoji: "⭐",
-      animClass: "animate-showoff-pose",
-      auraClass: "aura-sparkle",
-      label: "Clase mundial",
-      description: "Infla el pecho con orgullo",
-    },
+    greeting: "Llego el rey/pro!",
+    nearWin: "Ya pueden irse a casa",
+    victory: "ESO ES TODO! FACIL!",
+    defeat: "Estaba arreglado.",
+    taunt: "A ver, impresionenme.",
   },
-
-  // ══════════════════════════════════════════════════════════════════════════
-  // CURIOUS — 🔍 investigativo, analítico, observador
-  // ══════════════════════════════════════════════════════════════════════════
   curious: {
-    idle: {
-      emoji: "🔍",
-      animClass: "animate-curious-examine",
-      auraClass: "aura-eye-float",
-      label: "",
-      description: "Examina el tablero con atencion",
-    },
-    card_called: {
-      emoji: "🧐",
-      animClass: "animate-curious-zoom",
-      auraClass: "aura-eye-float",
-      label: "Interesante...",
-      description: "Saca una lupa y examina la carta",
-    },
-    hit: {
-      emoji: "📌",
-      animClass: "animate-curious-examine",
-      auraClass: "aura-eye-float",
-      label: "Anotado.",
-      description: "Asiente con satisfaccion intelectual",
-    },
-    miss: {
-      emoji: "📝",
-      animClass: "animate-curious-notebook",
-      auraClass: "aura-eye-float",
-      label: "Tomare nota...",
-      description: "Saca una libreta y escribe algo",
-    },
-    tension_critical: {
-      emoji: "🤔",
-      animClass: "animate-curious-zoom",
-      auraClass: "aura-eye-float",
-      label: "El patron...",
-      description: "Se acerca al tablero estudiando el patron",
-    },
-    won: {
-      emoji: "🧠",
-      animClass: "animate-curious-examine",
-      auraClass: "aura-eye-float",
-      label: "Predecible.",
-      description: "Ajusta sus lentes con aire de sabiduria",
-    },
-    lost: {
-      emoji: "📚",
-      animClass: "animate-curious-notebook",
-      auraClass: "aura-eye-float",
-      label: "Para la proxima...",
-      description: "Toma notas sobre la estrategia del rival",
-    },
-    near_win: {
-      emoji: "🔎",
-      animClass: "animate-curious-zoom",
-      auraClass: "aura-eye-float",
-      label: "Casi...",
-      description: "Saca una lupa gigante para buscar la carta faltante",
-    },
+    greeting: "Listos para perder?",
+    nearWin: "Que carta falta? Ah!",
+    victory: "Interesante resultado!",
+    defeat: "Interesante jugada...",
+    taunt: "Cual es su estrategia?",
   },
 };
 
-// ── Aura particle config ─────────────────────────────────────────────────────
-// Define las particulas que flotan alrededor del avatar segun la naturaleza.
+// ── Chat visual effects by nature ─────────────────────────────────────────────
+
+export const NATURE_CHAT_EFFECTS: Record<Nature, NatureChatEffect> = {
+  hyperactive: {
+    className: "font-bold",
+    particleEmoji: "⚡",
+  },
+  shy: {
+    className: "text-xs opacity-80",
+    particleEmoji: "💧",
+  },
+  showoff: {
+    className: "italic",
+    particleEmoji: "✨",
+  },
+  curious: {
+    className: "font-mono text-xs",
+    particleEmoji: "🔍",
+  },
+};
+
+// ── Default phrases for the QuickReactionWheel (3-phrase slots) ───────────────
+
+export function getQuickPhrases(nature: Nature | null | undefined): string[] {
+  const n = nature ?? "curious";
+  const phrases = PERSONALITY_PHRASES[n] ?? PERSONALITY_PHRASES.curious;
+  return [phrases.greeting, phrases.taunt, phrases.nearWin];
+}
+
+// ── Victory/defeat phrase for result screen ───────────────────────────────────
+
+export function getResultPhrase(
+  nature: Nature | null | undefined,
+  won: boolean
+): string {
+  const n = nature ?? "curious";
+  const phrases = PERSONALITY_PHRASES[n] ?? PERSONALITY_PHRASES.curious;
+  return won ? phrases.victory : phrases.defeat;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Personality Reactions API (used by PersonalityReactions.tsx)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export type NatureType = Nature;
+
+export type NatureTrigger =
+  | "join"
+  | "near_win"
+  | "victory"
+  | "defeat"
+  | "idle"
+  | "card_called"
+  | "tension_high"
+  | "afk";
 
 export interface AuraParticle {
   emoji: string;
-  animClass: string;
-  /** Posicion vertical relativa (%) */
-  y: number;
-  /** Posicion horizontal relativa (%) */
   x: number;
-  /** Color CSS para la particula */
+  y: number;
+  animClass: string;
   color: string;
 }
 
-/** Genera 5 particulas de aura con posiciones semi-aleatorias para una naturaleza. */
-export function generateAuraParticles(nature: NatureType): AuraParticle[] {
-  const base: Pick<AuraParticle, "emoji" | "animClass" | "color"> =
-    AURA_PARTICLE_BASE[nature];
-
-  // 4-6 particulas con posiciones fijas estilo reloj
-  const positions = [
-    { y: 5, x: 5 },
-    { y: 10, x: 80 },
-    { y: 75, x: 5 },
-    { y: 80, x: 80 },
-    { y: 50, x: -5 },
-    { y: 45, x: 95 },
-  ];
-
-  return positions.map((pos) => ({
-    ...base,
-    ...pos,
-  }));
+interface ReactionConfig {
+  emoji: string;
+  animClass: string;
+  description: string;
 }
 
-const AURA_PARTICLE_BASE: Record<
-  NatureType,
-  Pick<AuraParticle, "emoji" | "animClass" | "color">
-> = {
-  hyperactive: { emoji: "⚡", animClass: "animate-aura-spark", color: "#FFD700" },
-  shy: { emoji: "💧", animClass: "animate-aura-droplet", color: "#87CEEB" },
-  showoff: { emoji: "✨", animClass: "animate-aura-sparkle", color: "#FFD700" },
-  curious: { emoji: "👁️", animClass: "animate-aura-eye-float", color: "#00CED1" },
+type ReactionMap = Record<NatureTrigger, ReactionConfig>;
+
+export const PERSONALITY_REACTIONS: Record<NatureType, ReactionMap> = {
+  hyperactive: {
+    join:        { emoji: "⚡", animClass: "animate-axo-bob", description: "Entrando con energia" },
+    near_win:    { emoji: "🔥", animClass: "animate-pulse", description: "Temblando de emocion" },
+    victory:     { emoji: "🎉", animClass: "animate-axo-bob", description: "Celebrando freneticamente" },
+    defeat:      { emoji: "💢", animClass: "animate-shake", description: "Frustrado" },
+    idle:        { emoji: "⚡", animClass: "animate-axo-bob", description: "Inquieto" },
+    card_called: { emoji: "👀", animClass: "animate-bounce", description: "Carta cantada!" },
+    tension_high:{ emoji: "⚡", animClass: "animate-pulse", description: "Tension electrica" },
+    afk:         { emoji: "💤", animClass: "animate-pulse", description: "Se quedo dormido" },
+  },
+  shy: {
+    join:        { emoji: "💧", animClass: "animate-nest-idle", description: "Entrando timidamente" },
+    near_win:    { emoji: "😳", animClass: "animate-pulse", description: "Nervioso" },
+    victory:     { emoji: "🥺", animClass: "animate-nest-idle", description: "Feliz pero timido" },
+    defeat:      { emoji: "😔", animClass: "animate-nest-idle", description: "Decepcionado" },
+    idle:        { emoji: "💧", animClass: "animate-nest-idle", description: "Tranquilo" },
+    card_called: { emoji: "👁️", animClass: "animate-pulse", description: "Atento" },
+    tension_high:{ emoji: "💧", animClass: "animate-pulse", description: "Tenso" },
+    afk:         { emoji: "💤", animClass: "animate-nest-idle", description: "Escondido" },
+  },
+  showoff: {
+    join:        { emoji: "👑", animClass: "animate-axo-wander", description: "Llego la realeza" },
+    near_win:    { emoji: "😎", animClass: "animate-axo-bob", description: "Confiado" },
+    victory:     { emoji: "🏆", animClass: "animate-axo-wander", description: "Triunfante" },
+    defeat:      { emoji: "🤨", animClass: "animate-shake", description: "Incredulo" },
+    idle:        { emoji: "✨", animClass: "animate-axo-wander", description: "Presumiendo" },
+    card_called: { emoji: "🧐", animClass: "animate-axo-bob", description: "Analizando" },
+    tension_high:{ emoji: "✨", animClass: "animate-pulse", description: "Brillando bajo presion" },
+    afk:         { emoji: "💤", animClass: "animate-axo-wander", description: "Descansando con estilo" },
+  },
+  curious: {
+    join:        { emoji: "🔍", animClass: "animate-axo-bob", description: "Explorando" },
+    near_win:    { emoji: "🤔", animClass: "animate-pulse", description: "Intrigado" },
+    victory:     { emoji: "💡", animClass: "animate-axo-bob", description: "Descubrimiento!" },
+    defeat:      { emoji: "📝", animClass: "animate-nest-idle", description: "Tomando notas" },
+    idle:        { emoji: "🔍", animClass: "animate-axo-bob", description: "Curioseando" },
+    card_called: { emoji: "👀", animClass: "animate-bounce", description: "Observando" },
+    tension_high:{ emoji: "🔍", animClass: "animate-pulse", description: "Escudrinando" },
+    afk:         { emoji: "💤", animClass: "animate-nest-idle", description: "Investigando en sueños" },
+  },
 };
 
-// ── Helper: mapea AxoReaction → NatureTrigger ───────────────────────────────
+export function generateAuraParticles(nature: NatureType): AuraParticle[] {
+  const particleMap: Record<NatureType, { emoji: string; color: string; count: number }> = {
+    hyperactive: { emoji: "⚡", color: "#FFD700", count: 6 },
+    shy:         { emoji: "💧", color: "#60A5FA", count: 4 },
+    showoff:     { emoji: "✨", color: "#FBBF24", count: 5 },
+    curious:     { emoji: "🔍", color: "#00CED1", count: 5 },
+  };
 
-/** Mapa de compatibilidad entre AxoReaction (legacy) y NatureTrigger. */
-export const AXO_REACTION_TO_TRIGGER: Record<string, NatureTrigger> = {
-  idle: "idle",
-  card_called: "card_called",
-  cell_marked: "hit",
-  cell_missed: "miss",
-  tension_critical: "tension_critical",
-  won: "won",
-  lost: "lost",
-};
+  const config = particleMap[nature] ?? particleMap.curious;
+  const particles: AuraParticle[] = [];
+
+  for (let i = 0; i < config.count; i++) {
+    particles.push({
+      emoji: config.emoji,
+      x: Math.round(20 + Math.random() * 60),
+      y: Math.round(20 + Math.random() * 60),
+      animClass: i % 2 === 0 ? "animate-axo-bob" : "animate-nest-idle",
+      color: config.color,
+    });
+  }
+
+  return particles;
+}

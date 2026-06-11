@@ -19,7 +19,7 @@ from app.services.user_service import (
     list_axolotito_for_rent as _list_for_rent,
     cancel_axolotito_rent as _cancel_rent,
     get_vip_status as _get_vip_status,
-    claim_vip_gal as _claim_vip_gal,
+    claim_vip_frj as _claim_vip_frj,
     set_vip_auto_renew as _set_vip_auto_renew,
     rent_axolotito as _rent_axolotito,
     buy_axolotito as _buy_axolotito,
@@ -202,12 +202,12 @@ def get_vip_status(
     return _get_vip_status(session, verified_user_id)
 
 
-@router.post("/vip/claim-daily-gal")
-def claim_vip_gal(
+@router.post("/vip/claim-daily-frj")
+def claim_vip_frj(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id),
 ):
-    return _claim_vip_gal(session, verified_user_id)
+    return _claim_vip_frj(session, verified_user_id)
 
 
 @router.post("/vip/auto-renew")

@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 """
 cave_expansion.py — Endpoints de expansión del Cenote (sistema de cueva única que crece).
 
@@ -21,6 +21,7 @@ from sqlmodel import Session, func, select
 
 from app.core.auth import get_verified_user_id
 from app.database import get_session
+from app.core.config import frj_to_internal, frj_to_display, axf_to_internal, axf_to_display
 from app.models.axolotito import Axolotito
 from app.models.economy import (
     CurrencyType,
@@ -192,13 +193,13 @@ CAVE_LEVEL_DEFINITIONS: dict[int, dict] = {
 # ── Bonos pasivos por nivel ─────────────────────────────────────────────────
 CAVE_PASSIVE_BONUSES: dict[int, dict] = {
     1: {},
-    2: {"gal_multiplier": 1.02},           # +2% GAL
+    2: {"gal_multiplier": 1.02},           # +2% FRJ
     3: {"extra_starting_card": True},       # +1 carta en mano inicial
     4: {"booster_chance_bonus": 0.05},      # +5% prob booster
     5: {"global_incubation_slot": 1},       # +1 slot incubación global
     6: {"p2p_fee_reduction": 0.05},         # -5% comisión P2P
     7: {"monthly_foil_booster": 1},         # 1 booster foil/mes
-    8: {"axg_multiplier": 1.10},            # +10% AXG en ecosistema
+    8: {"axg_multiplier": 1.10},            # +10% AXF en ecosistema
 }
 
 
@@ -418,6 +419,8 @@ def get_cave_status(
     ).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    from app.core.auth import require_tutorial
+    require_tutorial(user)
 
     # ── AUTO-RESOLVER EXPANSIÓN COMPLETADA POR TIEMPO ──
     # with_for_update() previene que dos requests concurrentes otorguen el huevo dos veces
@@ -510,8 +513,8 @@ def get_cave_status(
     }
 
     wallet_data = {
-        "frijolitos": wallet.frijolitos if wallet else 0,
-        "axogemas": wallet.axofichas if wallet else 0,
+        "frijolitos": frj_to_display(wallet.frijolitos) if wallet else 0.0,
+        "axofichas": axf_to_display(wallet.axofichas) if wallet else 0.0,
     }
 
     total_axolotitos = session.exec(
@@ -554,6 +557,8 @@ def start_expansion(
     user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    from app.core.auth import require_tutorial
+    require_tutorial(user)
 
     current_level = user.cave_level
     target_level = current_level + 1
@@ -602,19 +607,20 @@ def start_expansion(
     cost_frj_effective = int(cost_frj * 0.5) if is_vip else cost_frj
 
     # Verificar saldo FRJ suficiente (wallet ya bloqueado con FOR UPDATE via BankService)
-    if wallet.frijolitos < cost_frj_effective:
+    cost_frj_effective_internal = frj_to_internal(cost_frj_effective)
+    if wallet.frijolitos < cost_frj_effective_internal:
         raise HTTPException(
             status_code=403,
             detail=(
                 f"Frijolitos insuficientes. Iniciar excavación de '{level_def['name']}' "
                 f"cuesta {cost_frj_effective} FRJ"
                 + (" (descuento VIP 50% aplicado)" if is_vip else "")
-                + f". Tienes {int(wallet.frijolitos)} FRJ."
+                + f". Tienes {frj_to_display(wallet.frijolitos):.1f} FRJ."
             ),
         )
 
     # Descontar FRJ
-    wallet.frijolitos -= cost_frj_effective
+    wallet.frijolitos -= cost_frj_effective_internal
     session.add(wallet)
 
     # Calcular tiempo de excavación con descuento VIP del 50%
@@ -634,8 +640,8 @@ def start_expansion(
 
     session.add(TransactionLedger(
         user_id=verified_user_id,
-        amount=float(cost_frj_effective),
-        currency=CurrencyType.GEMA_ALGA,
+        amount=cost_frj_effective_internal,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.WEBITO_UNLOCK,
         description=(
             f"Excavación iniciada — Cenote Nivel {target_level} '{level_def['name']}' "
@@ -682,6 +688,8 @@ def accelerate_expansion(
     user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    from app.core.auth import require_tutorial
+    require_tutorial(user)
 
     if not user.cave_expansion_target_level or not user.cave_expansion_started_at:
         raise HTTPException(status_code=400, detail="No hay excavación en curso.")
@@ -719,23 +727,25 @@ def accelerate_expansion(
         # Calcular costo de aceleración: 4 AXF por hora, redondeado arriba
         axf_needed = max(1, math.ceil(remaining_hours * 4))
 
+        axf_needed_internal = axf_to_internal(axf_needed)
+
         wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
-        if wallet.axofichas < axf_needed:
+        if wallet.axofichas < axf_needed_internal:
             raise HTTPException(
                 status_code=403,
                 detail=(
                     f"Saldo insuficiente. Acelerar la excavación cuesta {axf_needed} AXF "
-                    f"({remaining_hours:.1f}h restantes × 4 AXF/h). Tienes {wallet.axofichas} AXF."
+                    f"({remaining_hours:.1f}h restantes × 4 AXF/h). Tienes {axf_to_display(wallet.axofichas):.1f} AXF."
                 ),
             )
 
-        wallet.axofichas -= axf_needed
+        wallet.axofichas -= axf_needed_internal
         session.add(wallet)
 
         session.add(TransactionLedger(
             user_id=verified_user_id,
-            amount=float(axf_needed),
-            currency=CurrencyType.AXOGEMA,
+            amount=axf_needed_internal,
+            currency=CurrencyType.AXOFICHA,
             tx_type=TransactionType.WEBITO_UNLOCK,
             description=f"Aceleración excavación Nivel {target_level} '{level_def['name']}' — {axf_needed} AXF",
         ))
@@ -823,6 +833,9 @@ def visit_cave(
     Registra una visita a la cueva de otro jugador y deja un aplauso.
     Máximo 1 aplauso por visita.
     """
+    visitor = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    from app.core.auth import require_tutorial
+    if visitor: require_tutorial(visitor)
     if verified_user_id == user_id:
         raise HTTPException(status_code=400, detail="No puedes visitar tu propia cueva.")
 

@@ -93,7 +93,7 @@ def reset_tutorial(
         user.vip_expires_at = None
         user.vip_streak_months = 0
         user.vip_streak_last_renewed = None
-        user.vip_pending_gal = 0.0
+        user.vip_pending_gal = 0
         user.vip_pending_gal_expires_at = None
         user.vip_last_daily_gal_at = None
         user.vip_tiers_activated = "[]"
@@ -155,6 +155,105 @@ def reset_tutorial(
         "actions": actions,
         "user_id": user_id,
     }
+
+
+@router.post("/skip-tutorial")
+def skip_tutorial(
+    session: Session = Depends(get_session),
+    user_id: str = Depends(get_verified_user_id),
+    _admin: str = Depends(require_admin),
+):
+    """
+    Brinca el tutorial del usuario de inmediato:
+    - Asegura que exista una incubación tutorial (si no, la crea).
+    - Fuerza phase = 4 y completa el tutorial (lo que hace nacer el axolotito y crea la tabla).
+    - Asigna un número aleatorio de victorias y derrotas en la tabla creada.
+    - Devuelve el resultado de la eclosión.
+    """
+    from app.services.tutorial_service import TutorialService
+    from app.api.v1.endpoints.tutorial import _board_from_user_id
+
+    # 1. Obtener o crear incubación de tutorial
+    incubation = session.exec(
+        select(WebitoIncubation)
+        .where(WebitoIncubation.user_id == user_id)
+        .where(WebitoIncubation.tutorial_phase < 5)
+    ).first()
+
+    if not incubation:
+        # Buscar primer huevo del catálogo para crear incubación
+        egg_item = session.exec(
+            select(ItemCatalog).where(ItemCatalog.item_type == ItemType.EGG)
+        ).first()
+        if not egg_item:
+            raise HTTPException(
+                status_code=500,
+                detail="No hay huevos en el catálogo para iniciar tutorial.",
+            )
+        incubation = WebitoIncubation(
+            user_id=user_id,
+            item_id=egg_item.id,
+            fecha_eclosion_estimada=datetime.utcnow(),
+            bonus_focus=20.0,
+            bonus_luck=20.0,
+            bonus_agility=20.0,
+            bonus_stamina=100,
+            bonus_salinity_adj=5.0,
+            tutorial_phase=0,
+            tutorial_act_index=0,
+        )
+        session.add(incubation)
+        session.flush()
+
+    # Asegurar que tenga card ids asignados
+    if not incubation.tutorial_board_card_ids:
+        incubation.tutorial_board_card_ids = _board_from_user_id(user_id, session)
+
+    # 2. Forzar phase = 4 y karma aleatorio
+    incubation.tutorial_phase = 4
+    incubation.tutorial_karma = _rng.choice(["lucky", "salty"])
+    session.add(incubation)
+    session.flush()
+
+    # 3. Completar tutorial (eclosiona + crea tabla tutorial)
+    result = TutorialService.complete_tutorial(session, user_id, incubation)
+
+    # 4. Asignar victorias y derrotas aleatorias al tablero creado
+    # El tablero creado por complete_tutorial tiene is_tutorial=True y pertenece al usuario
+    board = session.exec(
+        select(PlayerBoard)
+        .where(PlayerBoard.user_id == user_id)
+        .where(PlayerBoard.is_tutorial == True)
+    ).first()
+
+    if board:
+        # Generar victorias/derrotas aleatorias
+        games_played = _rng.randint(5, 30)
+        games_won = _rng.randint(0, games_played)
+        
+        board.games_played = games_played
+        board.games_won = games_won
+        
+        # Llenar recent_games_results
+        recent_len = min(5, games_played)
+        recent_results = []
+        for _ in range(recent_len):
+            if games_played > 0 and (_rng.random() < (games_won / games_played)):
+                recent_results.append(True)
+            else:
+                recent_results.append(False)
+        board.recent_games_results = recent_results
+        
+        session.add(board)
+        session.commit()
+
+    return {
+        "ok": True,
+        "message": "Tutorial brincado con éxito. Se asignaron estadísticas aleatorias a tu tabla.",
+        "tutorial_result": result,
+    }
+
+
 
 
 @router.post("/fill-multiplayer-rooms")

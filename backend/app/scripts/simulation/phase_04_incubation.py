@@ -205,16 +205,7 @@ def phase_incubation(engine, config, **state) -> dict:
 
     progress("  🥚 Fase de incubación — flujo imprinting...")
 
-    # ── Weather logging ──────────────────────────────────────────────────
-    try:
-        from app.core.weather import get_current_weather
-        weather = get_current_weather()
-        progress(f"  🌤️  Clima en Xochimilco: {weather.get('name', '?')} — {weather.get('desc', '?')[:80]}")
-        if weather.get("freeze_chance", 0) > 0.15:
-            progress(f"  ⚠️  Alto riesgo de congelamiento ({weather['freeze_chance']*100:.0f}%/h)")
-        stats["weather_logged"] = weather.get("id", "?")
-    except Exception:
-        pass  # Weather module may not be available
+
 
     initial_egg = session.exec(
         select(ItemCatalog).where(
@@ -463,8 +454,8 @@ def phase_incubation(engine, config, **state) -> dict:
             ).all()
 
             for inc in new_incs:
-                # El del tutorial ya se eclosionó y borró, pero por seguridad evitamos re-procesar
-                if inc.tutorial_phase < 5:
+                # Solo saltar si es la incubación del tutorial que está activa/incompleta
+                if 0 < inc.tutorial_phase < 5:
                     continue
 
                 _live(f"  🧬 {user_id}: imprinting huevo #{inc.id} con padrino {first_axo.name if first_axo else '?'}")

@@ -16,7 +16,7 @@ from tests.conftest import make_user, make_wallet, make_item
 def mock_web3(monkeypatch):
     """Mock Web3Service to prevent real blockchain calls during tests."""
     monkeypatch.setattr(
-        "app.services.web3_service.Web3Service.burn_gal",
+        "app.services.web3_service.Web3Service.burn_frj",
         MagicMock(return_value=None),
     )
 
@@ -110,7 +110,7 @@ def test_melt_card_insufficient_gal(session):
         melt_card(request=req, session=session, verified_user_id=user.privy_did)
 
     assert exc.value.status_code == 400
-    assert "GAL insuficientes" in exc.value.detail
+    assert "Frijolitos insuficientes" in exc.value.detail
 
 
 def test_forge_card_success(session):

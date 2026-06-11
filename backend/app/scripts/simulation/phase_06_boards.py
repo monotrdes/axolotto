@@ -1,4 +1,4 @@
-﻿from sqlmodel import Session, select, func
+from sqlmodel import Session, select, func
 from fastapi import HTTPException
 
 from app.models.user import User
@@ -11,6 +11,7 @@ from app.api.v1.endpoints.board import (
     ListSaleRequest, ListRentRequest,
 )
 from app.services.bank_service import BankService
+from app.core.config import frj_to_internal
 
 from sim_types import _rng
 
@@ -48,26 +49,7 @@ def phase_boards(engine, config, **state) -> dict:
             session.commit()
             print(f"  🔓 {user_id}: slots ampliados a {user.unlocked_board_slots}")
 
-        # Tableros aleatorios
-        for b_i in range(n_random):
-            try:
-                res = create_random_board(
-                    payload=CreateManualBoardRequest(
-                        name=f"Tabla {personality['name'].title()} #{b_i+1}",
-                        card_ids=[],
-                    ),
-                    session=session,
-                    verified_user_id=user_id,
-                )
-                bid = res.get("board_id")
-                if bid:
-                    ids.append(bid)
-                    stats["boards_created"] = stats.get("boards_created", 0) + 1
-                    print(f"  📋 {user_id}: tabla aleatoria #{bid} ({len(res.get('card_ids',[]))} cartas)")
-            except HTTPException as e:
-                errors.append(f"board_random {user_id}: {e.detail}")
-
-        # Tablero manual (con las cartas del inventario)
+        # Obtener todas las cartas en inventario
         inv_cards = session.exec(
             select(PlayerInventory)
             .join(ItemCatalog, PlayerInventory.item_id == ItemCatalog.id)
@@ -90,6 +72,36 @@ def phase_boards(engine, config, **state) -> dict:
             if b.card_ids:
                 used_card_ids.update(b.card_ids)
 
+        # Tableros aleatorios
+        for b_i in range(n_random):
+            # Calcular cuántas cartas únicas quedan disponibles
+            unique_available_ids = {inv.item_id for inv in inv_cards if inv.item_id not in used_card_ids}
+            if len(unique_available_ids) < 16:
+                print(f"  ℹ️  {user_id}: saltando tabla aleatoria #{b_i+1} por cartas insuficientes ({len(unique_available_ids)} únicas libres)")
+                continue
+
+            try:
+                res = create_random_board(
+                    payload=CreateManualBoardRequest(
+                        name=f"Tabla {personality['name'].title()} #{b_i+1}",
+                        card_ids=[],
+                    ),
+                    session=session,
+                    verified_user_id=user_id,
+                )
+                bid = res.get("board_id")
+                if bid:
+                    ids.append(bid)
+                    stats["boards_created"] = stats.get("boards_created", 0) + 1
+                    # Registrar las cartas elegidas para este tablero aleatorio
+                    new_board = session.get(PlayerBoard, bid)
+                    if new_board and new_board.card_ids:
+                        used_card_ids.update(new_board.card_ids)
+                    print(f"  📋 {user_id}: tabla aleatoria #{bid} ({len(res.get('card_ids',[]))} cartas)")
+            except HTTPException as e:
+                errors.append(f"board_random {user_id}: {e.detail}")
+
+        # Tablero manual (con las cartas del inventario)
         # Deduplicar por item_id y filtrar cartas ya usadas en otros tableros
         unique_available: dict[int, PlayerInventory] = {}
         for inv in inv_cards:
@@ -150,7 +162,7 @@ def phase_boards(engine, config, **state) -> dict:
                     verified_user_id=user_id,
                 )
                 stats["boards_listed_sale"] = stats.get("boards_listed_sale", 0) + 1
-                progress(f"  🏪 {user_id}: tablero #{board_to_sell.id} listado en venta a {price:.0f} GAL")
+                progress(f"  🏪 {user_id}: tablero #{board_to_sell.id} listado en venta a {price:.0f} FRJ")
             except HTTPException as e:
                 errors.append(f"board_sale_list {user_id}: {e.detail}")
 
@@ -181,7 +193,7 @@ def phase_boards(engine, config, **state) -> dict:
                     verified_user_id=user_id,
                 )
                 stats["boards_listed_rent"] = stats.get("boards_listed_rent", 0) + 1
-                progress(f"  🏠 {user_id}: tablero #{board.id} listado en renta a {fee:.0f} GAL/día")
+                progress(f"  🏠 {user_id}: tablero #{board.id} listado en renta a {fee:.0f} FRJ/día")
             except HTTPException as e:
                 errors.append(f"board_rent_list {user_id}: {e.detail}")
 
@@ -200,8 +212,8 @@ def phase_boards(engine, config, **state) -> dict:
             continue
 
         wallet = BankService.get_or_create_wallet(session, user_id)
-        if wallet.frijolitos < 500:
-            wallet.frijolitos += 1000
+        if wallet.frijolitos < frj_to_internal(500):
+            wallet.frijolitos += frj_to_internal(1000)
             session.add(wallet)
             session.commit()
 

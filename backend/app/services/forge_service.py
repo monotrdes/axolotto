@@ -1,4 +1,4 @@
-﻿"""
+"""
 Forge Service — logica de fundicion (melt) y forja (forge) de cartas.
 
 Contiene la logica de negocio de los endpoints /melter/melt y /melter/forge
@@ -15,13 +15,19 @@ from app.models.user import User
 logger = logging.getLogger("forge_service")
 from app.services.bank_service import BankService
 from app.services.web3_service import Web3Service
-from app.core.config import settings
+from app.core.config import settings, frj_to_internal, frj_to_display
 
 _rng = random.SystemRandom()
 
 
 def melt_card(session: Session, user_id: str, card_id: int, is_first_edition: bool = False) -> dict:
     """Fundir 5 copias de una carta de rareza común, rara o épica para obtener fragmentos y una carta aleatoria superior."""
+    # 0. Verificar tutorial completado
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    if user:
+        from app.core.auth import require_tutorial
+        require_tutorial(user)
+
     # 1. Obtener la carta
     card = session.get(ItemCatalog, card_id)
     if not card or card.item_type != ItemType.CARD:
@@ -68,11 +74,12 @@ def melt_card(session: Session, user_id: str, card_id: int, is_first_edition: bo
         frag_field = "frag_epico"
         next_rarity = Rarity.LEGENDARY
 
+    price_internal = frj_to_internal(price)
     wallet = BankService.get_or_create_wallet(session, user_id, for_update=True)
-    if wallet.frijolitos < price:
+    if wallet.frijolitos < price_internal:
         raise HTTPException(
             status_code=400,
-            detail=f"GAL insuficientes. Cuesta {price} GAL, tienes {wallet.frijolitos:.1f} GAL."
+            detail=f"Frijolitos insuficientes. Cuesta {price} FRJ, tienes {frj_to_display(wallet.frijolitos):.1f} FRJ."
         )
 
     # 4. Obtener cartas de la rareza superior
@@ -90,7 +97,7 @@ def melt_card(session: Session, user_id: str, card_id: int, is_first_edition: bo
         )
 
     # 5. Ejecutar cobro y deducción
-    wallet.frijolitos -= price
+    wallet.frijolitos -= price_internal
 
     current_frags = getattr(wallet, frag_field) + 10
     setattr(wallet, frag_field, current_frags)
@@ -104,7 +111,7 @@ def melt_card(session: Session, user_id: str, card_id: int, is_first_edition: bo
     user = session.exec(select(User).where(User.privy_did == user_id)).first()
     if user and user.wallet_address and settings.GEMA_ALGA_ADDRESS:
         try:
-            Web3Service.burn_frj(user.wallet_address, price)
+            Web3Service.burn_frj(user.wallet_address, price_internal)
         except Exception as e:
             logger.error("Error al quemar GAL on-chain en fundición: %s", e)
 
@@ -133,8 +140,8 @@ def melt_card(session: Session, user_id: str, card_id: int, is_first_edition: bo
 
     ledger = TransactionLedger(
         user_id=user_id,
-        amount=price,
-        currency=CurrencyType.GEMA_ALGA,
+        amount=price_internal,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.CRAFTING,
         description=f"Fundición de 5 cartas id={card_id} -> Carta superior id={chosen_card.id}",
         item_id=chosen_card.id
@@ -150,7 +157,7 @@ def melt_card(session: Session, user_id: str, card_id: int, is_first_edition: bo
             "name": chosen_card.name,
             "rarity": chosen_card.rarity.value,
         },
-        "balance_gal": wallet.frijolitos,
+        "balance_gal": frj_to_display(wallet.frijolitos),
         "fragments": {
             "frag_comun": wallet.frag_comun,
             "frag_raro": wallet.frag_raro,
@@ -162,6 +169,12 @@ def melt_card(session: Session, user_id: str, card_id: int, is_first_edition: bo
 
 def forge_card(session: Session, user_id: str, target_card_id: int) -> dict:
     """Forjar una carta específica consumiendo fragmentos de su rareza y GAL."""
+    # 0. Verificar tutorial completado
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    if user:
+        from app.core.auth import require_tutorial
+        require_tutorial(user)
+
     card = session.get(ItemCatalog, target_card_id)
     if not card or card.item_type != ItemType.CARD:
         raise HTTPException(status_code=404, detail="La carta no existe en el catálogo.")
@@ -197,21 +210,22 @@ def forge_card(session: Session, user_id: str, target_card_id: int) -> dict:
             detail=f"Fragmentos insuficientes. Cuesta {frag_cost} fragmentos ({rarity.value}), tienes {user_frags}."
         )
 
-    if wallet.frijolitos < gal_cost:
+    gal_cost_internal = frj_to_internal(gal_cost)
+    if wallet.frijolitos < gal_cost_internal:
         raise HTTPException(
             status_code=400,
-            detail=f"GAL insuficientes. Cuesta {gal_cost} GAL, tienes {wallet.frijolitos:.1f} GAL."
+            detail=f"Frijolitos insuficientes. Cuesta {gal_cost} FRJ, tienes {frj_to_display(wallet.frijolitos):.1f} FRJ."
         )
 
     setattr(wallet, frag_field, user_frags - frag_cost)
-    wallet.frijolitos -= gal_cost
+    wallet.frijolitos -= gal_cost_internal
 
     user = session.exec(select(User).where(User.privy_did == user_id)).first()
     if user and user.wallet_address and settings.GEMA_ALGA_ADDRESS:
         try:
-            Web3Service.burn_frj(user.wallet_address, gal_cost)
+            Web3Service.burn_frj(user.wallet_address, gal_cost_internal)
         except Exception as e:
-            print(f"⚠️ Error al quemar GAL on-chain en forja: {e}")
+            print(f"⚠️ Error al quemar FRJ on-chain en forja: {e}")
 
     inv = session.exec(
         select(PlayerInventory)
@@ -235,8 +249,8 @@ def forge_card(session: Session, user_id: str, target_card_id: int) -> dict:
 
     ledger = TransactionLedger(
         user_id=user_id,
-        amount=gal_cost,
-        currency=CurrencyType.GEMA_ALGA,
+        amount=gal_cost_internal,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.CRAFTING,
         description=f"Forja de carta id={target_card_id} (Rarity: {rarity.value}) usando {frag_cost} fragmentos",
         item_id=target_card_id
@@ -252,7 +266,7 @@ def forge_card(session: Session, user_id: str, target_card_id: int) -> dict:
             "name": card.name,
             "rarity": card.rarity.value,
         },
-        "balance_gal": wallet.frijolitos,
+        "balance_gal": frj_to_display(wallet.frijolitos),
         "fragments": {
             "frag_comun": wallet.frag_comun,
             "frag_raro": wallet.frag_raro,

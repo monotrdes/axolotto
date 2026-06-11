@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 
 from sqlmodel import Session, select
 from fastapi import HTTPException
@@ -8,7 +8,7 @@ from app.models.economy import Wallet, CurrencyType, AxgPurchaseRecord
 from app.models.items import ItemCatalog, ItemType
 from app.services.bank_service import BankService
 from app.services.shop_service import ShopService
-from app.core.config import VIP_CONFIG, frj_to_internal, FRJ_DECIMALS_BACKEND
+from app.core.config import VIP_CONFIG, frj_to_internal, FRJ_DECIMALS_BACKEND, axf_to_internal
 
 from sim_types import _rng
 
@@ -132,10 +132,10 @@ def phase_fund_wallets(engine, config, **state) -> dict:
 
         # Actualizar saldo del wallet — usar valores custom si se especificaron
         if config.initial_axf > 0:
-            wallet.axofichas = config.initial_axf
+            wallet.axofichas = axf_to_internal(config.initial_axf)
         else:
-            wallet.axofichas = current_obtained
-        wallet.frijolitos = 0.0
+            wallet.axofichas = axf_to_internal(current_obtained)
+        wallet.frijolitos = 0
         session.add(wallet)
         session.commit()
 
@@ -177,7 +177,7 @@ def phase_fund_wallets(engine, config, **state) -> dict:
             print(f"  🌿 {user_id}: {wallet.frijolitos / (10**FRJ_DECIMALS_BACKEND):.0f} FRJ (custom inicial, {config.initial_frj} FRJ)")
 
         # 4. Activar VIP ahora que ya tiene GAL — compras futuras (boosters, huevos) gozarán descuento
-        if vip_tier and vip_tier in vip_catalog:
+        if user.tutorial_completed and vip_tier and vip_tier in vip_catalog:
             vip_item = vip_catalog[vip_tier]
             try:
                 res = ShopService.buy_item(

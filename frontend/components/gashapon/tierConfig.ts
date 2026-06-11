@@ -17,7 +17,7 @@ export interface TierConfig {
 
 export const TIER_CONFIG: Record<Tier, TierConfig> = {
   bronce: {
-    label: 'Bronce', emoji: '🟠', cost: 150,
+    label: 'Bronce', emoji: '🟠', cost: 1500,
     color: '#D97706', glow: 'rgba(217,119,6,0.4)', border: 'rgba(217,119,6,0.5)',
     pityLimit: 10,
     desc: 'Cartas, accesorios y sobres. Sin webitos.',
@@ -30,7 +30,7 @@ export const TIER_CONFIG: Record<Tier, TierConfig> = {
     ],
   },
   plata: {
-    label: 'Plata', emoji: '⚪', cost: 500,
+    label: 'Plata', emoji: '⚪', cost: 5000,
     color: '#94A3B8', glow: 'rgba(148,163,184,0.35)', border: 'rgba(148,163,184,0.5)',
     pityLimit: 5,
     desc: 'Balance entre riesgo y recompensa.',
@@ -43,7 +43,7 @@ export const TIER_CONFIG: Record<Tier, TierConfig> = {
     ],
   },
   oro: {
-    label: 'Oro', emoji: '🟡', cost: 2000,
+    label: 'Oro', emoji: '🟡', cost: 20000,
     color: '#EAB308', glow: 'rgba(234,179,8,0.4)', border: 'rgba(234,179,8,0.55)',
     pityLimit: 3,
     desc: 'Máximo potencial. Alta chance de Cartas Épicas y Legendarias.',
@@ -57,4 +57,4 @@ export const TIER_CONFIG: Record<Tier, TierConfig> = {
   },
 };
 
-export const TRIPLE_COST = 2250;
+export const TRIPLE_COST = 22500;

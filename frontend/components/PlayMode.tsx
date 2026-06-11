@@ -17,6 +17,7 @@ import SalaSelectScreen    from './screens/SalaSelectScreen';
 import CpuGameWrapper      from './CpuGameWrapper';
 import PlayingScreen       from './screens/PlayingScreen';
 import SettlingScreen      from './screens/SettlingScreen';
+import ManualGameWrapper   from './multiplayer/ManualGameWrapper';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -64,6 +65,7 @@ export default function PlayMode({
   lastGameEvent,
   earningsQueue,
   onEarningsSeen,
+  onGameSessionChange,
 }: {
   userId: string;
   token: string | null;
@@ -72,6 +74,7 @@ export default function PlayMode({
   lastGameEvent?: number;
   earningsQueue?: number[];
   onEarningsSeen?: () => void;
+  onGameSessionChange?: (active: boolean) => void;
 }) {
   // ── Data state ──────────────────────────────────────────────────────────────
   const [axolotitos,   setAxolotitos]   = useState<any[]>([]);
@@ -89,6 +92,7 @@ export default function PlayMode({
   const [singleBoardId,    setSingleBoardId]    = useState<number | null>(null);
   const [multiBoards,      setMultiBoards]      = useState<number[]>([]);
   const [selectedRoom,     setSelectedRoom]     = useState<'rookie' | 'champion'>('rookie');
+  const [playMode,         setPlayMode]         = useState<'auto' | 'manual'>('auto');
   const [multiplier,       setMultiplier]       = useState<number>(1);
   const [budget,           setBudget]           = useState(100);
   const [lossLimitPct,     setLossLimitPct]     = useState(30);
@@ -102,12 +106,28 @@ export default function PlayMode({
   const [recalling,      setRecalling]      = useState(false);
   const [recallRequested,setRecallRequested]= useState(false);
   const [showReport,     setShowReport]     = useState(false);
+  const [activeGame,     setActiveGame]     = useState<any>(null);
   const [settlementReport, setSettlementReport] = useState<any | null>(null);
 
   // CPU sim replay key — incrementing remounts CpuGameWrapper with fresh state
   const [cpuSimKey, setCpuSimKey] = useState(0);
   // Which axo is being settled inline (for loading spinner in AxoSelectScreen)
   const [settlingAxoId, setSettlingAxoId] = useState<number | null>(null);
+
+  // ── Game session locking ────────────────────────────────────────────────────
+  // Tracks whether a CPU game animation is currently active (set by CpuGameWrapper)
+  const [cpuGameActive, setCpuGameActive] = useState(false);
+
+  // isGameSessionActive: true when the user is in any active game session
+  // — backend status playing/waiting_settlement OR cpu animation in progress
+  const backendPlaying =
+    selectedAxo?.status === 'playing' || selectedAxo?.status === 'waiting_settlement';
+  const isGameSessionActive = backendPlaying || cpuGameActive;
+
+  // Notify parent (play/page.tsx) about game session changes so it can lock tabs
+  useEffect(() => {
+    onGameSessionChange?.(isGameSessionActive);
+  }, [isGameSessionActive, onGameSessionChange]);
 
   // Floating earnings
   type EscrowNotif = { id: number; amount: number };
@@ -214,7 +234,7 @@ export default function PlayMode({
   }, [now]);
 
   // Polling while axo is playing
-  const hasPlayingAxo = axolotitos.some(a => a.status === 'playing');
+  const hasPlayingAxo = axolotitos.some(a => a.status === 'playing' || a.status === 'playing_manual');
   useEffect(() => {
     if (!hasPlayingAxo) return;
     const id = setInterval(() => { loadData(); recargarSaldos(); }, 15_000);
@@ -222,21 +242,41 @@ export default function PlayMode({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasPlayingAxo]);
 
-  // Intercept browser back button inside the Wizard to avoid losing state
+  // Intercept browser back button during active game OR wizard to avoid losing state
   useEffect(() => {
     const wizardViews: GameView[] = ['mode-select', 'board-select', 'budget', 'sala-select', 'game'];
-    if (!wizardViews.includes(gameView)) return;
+    // Always block back when a game session is active (any view)
+    // Also block back inside wizard views (normal navigation)
+    const shouldBlock = isGameSessionActive || wizardViews.includes(gameView);
+    if (!shouldBlock) return;
 
     window.history.pushState({ playMode: true }, '');
 
     const handlePopState = () => {
-      onBackRef.current();
-      window.history.pushState({ playMode: true }, '');
+      if (isGameSessionActive) {
+        // Game is active — block back entirely, just re-push state
+        window.history.pushState({ playMode: true }, '');
+      } else {
+        // Normal wizard navigation — go back one step
+        onBackRef.current();
+        window.history.pushState({ playMode: true }, '');
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [gameView]);
+  }, [gameView, isGameSessionActive]);
+
+  // Warn before leaving page during active game session
+  useEffect(() => {
+    if (!isGameSessionActive) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = ''; // Chrome requires returnValue to be set
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isGameSessionActive]);
 
   // Recall cleared when axo stops playing
   useEffect(() => {
@@ -246,7 +286,7 @@ export default function PlayMode({
   // Auto-navigate to playing/settling if selected axo changes status
   useEffect(() => {
     if (!selectedAxo) return;
-    if (selectedAxo.status === 'playing' && gameView !== 'playing' && gameView !== 'settling') {
+    if ((selectedAxo.status === 'playing' || selectedAxo.status === 'playing_manual') && gameView !== 'playing' && gameView !== 'settling') {
       navigate('playing');
     }
     // Don't auto-navigate if on axo-select — user handles settlement inline there
@@ -255,6 +295,36 @@ export default function PlayMode({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedAxo?.status]);
+
+  const checkActiveGame = useCallback(async () => {
+    if (!userId || !token) return;
+    try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await axios.get(`${API_BASE}/multiplayer/active-check`, { headers });
+      setActiveGame(res.data);
+      if (res.data?.active) {
+        const axo = axolotitos.find(a => a.id === res.data.axolotito_id);
+        if (axo) {
+          setSelectedAxo(axo);
+        }
+      }
+    } catch (err) {
+      console.error("Error running active-check:", err);
+    }
+  }, [userId, token, axolotitos]);
+
+  useEffect(() => {
+    checkActiveGame();
+    const id = setInterval(checkActiveGame, 5000);
+    return () => clearInterval(id);
+  }, [checkActiveGame]);
+
+  // Navigate to playing if active game is detected
+  useEffect(() => {
+    if (activeGame?.active && gameView !== 'playing' && gameView !== 'settling') {
+      navigate('playing');
+    }
+  }, [activeGame, gameView]);
 
   // ── Action handlers ────────────────────────────────────────────────────────
 
@@ -317,6 +387,7 @@ export default function PlayMode({
           budget_gal: budget,
           loss_limit_pct: lossLimitPct,
           profit_limit_pct: profitLimitPct,
+          play_mode: playMode,
         },
         { headers }
       );
@@ -425,6 +496,8 @@ export default function PlayMode({
   };
 
   const onBack = () => {
+    // Block back navigation during active game session
+    if (isGameSessionActive) return;
     if (gameView === 'mode-select')  return navigate('axo-select',  'back');
     if (gameView === 'board-select') return navigate('mode-select', 'back');
     if (gameView === 'budget')       return navigate('board-select','back');
@@ -575,6 +648,8 @@ export default function PlayMode({
             token={token}
             selectedRoom={selectedRoom}
             onRoomSelect={setSelectedRoom}
+            playMode={playMode}
+            onPlayModeChange={setPlayMode}
             onPlay={handleRegisterMultiplayer}
             registering={saving}
             error={errorMsg}
@@ -598,30 +673,51 @@ export default function PlayMode({
             selectedRoom={selectedRoom}
             multiplier={multiplier}
             onDone={() => { recargarSaldos(); loadData(); }}
-            onPlayAgainInPlace={() => setCpuSimKey(k => k + 1)}
+            onPlayAgainInPlace={() => {
+              setCpuGameActive(true);
+              setCpuSimKey(k => k + 1);
+            }}
             onChangeBoard={() => {
+              setCpuGameActive(false);
               setSingleBoardId(null);
               navigate('board-select');
             }}
             onChangeAll={() => {
+              setCpuGameActive(false);
               setSingleBoardId(null);
               setMultiBoards([]);
               setSelectedAxo(null);
               navigate('axo-select');
             }}
+            onGameActiveChange={setCpuGameActive}
           />
         )}
 
         {/* ── playing ───────────────────────────────────────────────────────── */}
         {gameView === 'playing' && selectedAxo && (
-          <PlayingScreen
-            selectedAxo={selectedAxo}
-            budget={budget}
-            recallRequested={recallRequested}
-            recalling={recalling}
-            onRecall={handleRecall}
-            escrowNotifs={escrowNotifs}
-          />
+          activeGame?.active && activeGame?.play_mode === "manual" ? (
+            <ManualGameWrapper
+              roomId={activeGame.room_id}
+              axolotitoId={activeGame.axolotito_id}
+              token={token}
+              playMode={activeGame.play_mode}
+              onDone={() => {
+                setActiveGame(null);
+                recargarSaldos();
+                loadData();
+                navigate('axo-select');
+              }}
+            />
+          ) : (
+            <PlayingScreen
+              selectedAxo={selectedAxo}
+              budget={budget}
+              recallRequested={recallRequested}
+              recalling={recalling}
+              onRecall={handleRecall}
+              escrowNotifs={escrowNotifs}
+            />
+          )
         )}
 
         {/* ── settling ──────────────────────────────────────────────────────── */}

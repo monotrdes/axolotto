@@ -2,6 +2,7 @@ import pytest
 from datetime import datetime
 from fastapi import HTTPException
 from sqlmodel import Session, select
+from app.core.config import axf_to_display, frj_to_display
 
 from app.models.user import User
 from app.models.promo import PromoCode
@@ -89,8 +90,8 @@ def test_redeem_promo_code_success(session: Session):
     # Verificar balances en Wallet
     wallet = session.exec(select(Wallet).where(Wallet.user_id == user.privy_did)).first()
     assert wallet is not None
-    assert wallet.frijolitos == 1000.0
-    assert wallet.axofichas == 139.0
+    assert frj_to_display(wallet.frijolitos) == 1000.0
+    assert axf_to_display(wallet.axofichas) == 139.0
 
     # Verificar inventario
     inv = session.exec(select(PlayerInventory).where(PlayerInventory.user_id == user.privy_did)).first()

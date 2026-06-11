@@ -520,3 +520,44 @@ body {
 .animate-webito-float {
   animation: webito-float 2.5s ease-in-out infinite;
 }
+
+/* ========== CHAT — SPEECH BUBBLE ANIMATIONS ========== */
+
+@keyframes chat-bubble-in {
+  0%   { opacity: 0; transform: scale(0) translateY(8px); }
+  50%  { opacity: 0.8; transform: scale(1.1) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes chat-bubble-float {
+  0%, 100% { transform: translateY(0px); }
+  50%      { transform: translateY(-4px); }
+}
+
+@keyframes chat-bubble-out {
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.8) translateY(-8px); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.animate-chat-bubble-in {
+  animation: chat-bubble-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-chat-bubble-float {
+  animation: chat-bubble-float 2s ease-in-out infinite;
+}
+
+.animate-chat-bubble-out {
+  animation: chat-bubble-out 0.3s ease-out forwards;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}

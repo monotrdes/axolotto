@@ -3,134 +3,595 @@
 📊  REPORTE FINAL — SIMULADOR AXOLOTTO v3
 ======================================================================
 👥  Usuarios creados:          0
-🎟️  Corcholatas canjeadas:     8
+🎟️  Corcholatas canjeadas:     102
 🎁  Corcholatas reclamadas:    5
-💸  AXF comprados (Sim.):      63500 AXF (Pesos: $7946.00 MXN)
-💎  Paquetes FRJ comprados:    34
-🃏  Boosters normales:         80
+💸  AXF comprados (Sim.):      1209650 AXF (Pesos: $162251.00 MXN)
+💎  Paquetes FRJ comprados:    462
+🃏  Boosters normales:         1411
 ✨  Boosters foil:             0
 🎯  Boosters extra (abiertos): 0
-🎴  Cartas abiertas total:     392
-🥚  Webitos adoptados:         0
-🐣  Axolotitos eclosionados:   8
-🎓  Tutoriales completados:    8 (Tabla Tutorial creada)
-🧬  Naturalezas obtenidas:     hyperactive: 1, glutton: 1, methodical: 1, shy: 3, wise: 2
-😇  Karma Lucky:               7
-🧂  Karma Salty:               1
-💧  Gotas Anti-Escarcha:       0
-🌤️  Clima incubación:          energizing_dew
+🎴  Cartas abiertas total:     7602
+🥚  Webitos adoptados:         202
+🐣  Axolotitos eclosionados:   304
+🎓  Tutoriales completados:    102 (Tabla Tutorial creada)
+🧬  Naturalezas obtenidas:     wise: 55, glutton: 44, methodical: 63, shy: 48, lucky: 48, hyperactive: 46
+😇  Karma Lucky:               89
+🧂  Karma Salty:               13
+💧  Recompensas Salty (FRJ):   13
 🎉  Evento de prueba creado:   No
 ----------------------------------------------------------------------
-🎰  Gashapon rolls:            26
+🎰  Gashapon rolls:            346
 💊  Cápsulas reclamadas:       0
-🌟  Triple Suerte:             3
-📋  Tableros creados:          16  (0 manuales)
-🏪  Tableros en venta P2P:     1
-🏠  Tableros en renta:         0
-📈  Slots desbloqueados:       3
-🦎  Axos en venta P2P:         0
+🌟  Triple Suerte:             40
+📋  Tableros creados:          125  (0 manuales)
+🏪  Tableros en venta P2P:     21 (Comprados: 11)
+🏠  Tableros en renta:         0 (Rentados: 0)
+📈  Slots desbloqueados:       40
+🦎  Axos en venta P2P:         25 (Comprados: 25)
 ----------------------------------------------------------------------
-👑  VIP activados:             0
-🔄  VIP Auto-Renovación:       0
+👑  VIP activados:             82
+🔄  VIP Auto-Renovación:       40
 🌿  FRJ VIP reclamados:        0
-💸  Ahorro jugadores (VIP):    0.00 AXF  ← ingresos perdidos por la casa
+💸  Ahorro jugadores (VIP):    2123.77 AXF  ← ingresos perdidos por la casa
 ----------------------------------------------------------------------
-🎮  Partidas individuales:     98
-  🏆 Victorias:               29  (29.6%)
-  💔 Derrotas:                69
-  🤖 Autojuego:               18 partidas
-  💰 GAL obtenidas:           2828.00
-  🍽️  Alimentaciones:          5
-  😴 Ciclos sueño:            1
+🎮  Partidas individuales:     2303
+  🏆 Victorias:               776  (33.7%)
+  💔 Derrotas:                1527
+  🤖 Autojuego:               243 partidas
+  💰 FRJ obtenidas:           70344.79
+  🍽️  Alimentaciones:          310
+  😴 Ciclos sueño:            5
   🔧 Cave items equipados:    0
-  💍 Accesorios equipados:    18
+  💍 Accesorios equipados:    254
 ----------------------------------------------------------------------
-⚔️  Salas multijugador:        6
+⚔️  Salas multijugador:        5
   📞 Recall pasó:             1
-  💵 Axos liquidados:         8
+  💵 Axos liquidados:         102
   💰 Jackpots ganados:        0
 ----------------------------------------------------------------------
-  📊 Partidas jugadas:         15
-  🏆 Victorias:               6  (40%)
-  💸 GAL neto total:          -2275000.0
+  📊 Partidas jugadas:         209
+  🏆 Victorias:               26  (12%)
+  💸 FRJ neto total:          -917.0
   Detalle:
-    🏆 Huitzilopochtli Dura │ Charco de Novatos        │ Neto: +45000.0 GAL │ XP: +25
-    💔 Centeotl Perdurable  │ Charco de Novatos        │ Neto: -100000.0 GAL │ XP: +5
-    💔 Cenote Inagotable    │ Charco de Novatos        │ Neto: -200000.0 GAL │ XP: +10
-    🏆 Requinto Perpetuo    │ Charco de Novatos        │ Neto: +285000.0 GAL │ XP: +50
-    💔 Arpa Inextinguible   │ Fosa del Campeón         │ Neto: -500000.0 GAL │ XP: +5
-    🏆 Tepetate Estratégico │ Fosa del Campeón         │ Neto: +25000.0 GAL │ XP: +20
-    💔 Quetzal Inmortal     │ Charco de Novatos        │ Neto: -100000.0 GAL │ XP: +5
-    💔 Cotorra Floreciente  │ Fosa del Campeón         │ Neto: -500000.0 GAL │ XP: +5
-    🏆 Huitzilopochtli Dura │ Charco de Novatos        │ Neto: +160000.0 GAL │ XP: +75
-    💔 Cenote Inagotable    │ Charco de Novatos        │ Neto: -200000.0 GAL │ XP: +10
-    🏆 Tepetate Estratégico │ Fosa del Campeón         │ Neto: -150000.0 GAL │ XP: +20
-    💔 Cotorra Floreciente  │ Fosa del Campeón         │ Neto: -500000.0 GAL │ XP: +5
-    💔 Huitzilopochtli Dura │ Charco de Novatos        │ Neto: -200000.0 GAL │ XP: +10
-    🏆 Cenote Inagotable    │ Charco de Novatos        │ Neto: +160000.0 GAL │ XP: +75
-    💔 Tepetate Estratégico │ Fosa del Campeón         │ Neto: -500000.0 GAL │ XP: +5
+    💔 Huitzilopochtli Dura │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Huitzilopochtli Dura │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Huitzilopochtli Dura │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Camarón Correoso     │ Charco de Novatos        │ Neto:   -30.0 FRJ │ XP: +15
+    💔 Camarón Correoso     │ Charco de Novatos        │ Neto:   -30.0 FRJ │ XP: +15
+    💔 Godínez Frondoso     │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Godínez Frondoso     │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Godínez Frondoso     │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Caracol Vigoroso     │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    🏆 Caracol Vigoroso     │ Charco de Novatos        │ Neto:   +85.0 FRJ │ XP: +25
+    💔 Caracol Vigoroso     │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Ceniza Lozana        │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Ceniza Lozana        │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Cobalto Resuelto     │ Charco de Novatos        │ Neto:   -30.0 FRJ │ XP: +15
+    💔 Cuauhtli Dichoso     │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Relente Perpetuo     │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Relente Perpetuo     │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Pera Vigorosa        │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Marejada Correosa    │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Marejada Correosa    │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    🏆 Iztaccihuatl Intermi │ Charco de Novatos        │ Neto:   +75.0 FRJ │ XP: +30
+    🏆 Iztaccihuatl Intermi │ Charco de Novatos        │ Neto:  +135.0 FRJ │ XP: +60
+    💔 Cañada Vivaz         │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Cañada Vivaz         │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Soldado Inagotable   │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    🏆 Soldado Inagotable   │ Fosa del Campeón         │ Neto:  +425.0 FRJ │ XP: +25
+    💔 Soldado Inagotable   │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    🏆 Soldado Inagotable   │ Fosa del Campeón         │ Neto:  +180.0 FRJ │ XP: +25
+    💔 Alacrán Frondoso     │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Requinto Interminabl │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Requinto Interminabl │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Requinto Interminabl │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Ámbar Pujante        │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Ámbar Pujante        │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Ámbar Pujante        │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Firulais Próspero    │ Charco de Novatos        │ Neto:   -30.0 FRJ │ XP: +15
+    🏆 Tormenta Interminabl │ Fosa del Campeón         │ Neto:  +475.0 FRJ │ XP: +20
+    🏆 Axolote Robusto      │ Charco de Novatos        │ Neto:  +145.0 FRJ │ XP: +55
+    💔 Tambora Perpetua     │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Tambora Perpetua     │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Orión Vital          │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Orión Vital          │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Orión Vital          │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Tenochtitlan Durader │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Tenochtitlan Durader │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Garza Lozana         │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Garza Lozana         │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Cantona Imperecedera │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Calakmul Contundente │ Fosa del Campeón         │ Neto:  -150.0 FRJ │ XP: +15
+    💔 Pléyade Perpetua     │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Pléyade Perpetua     │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Pléyade Perpetua     │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Godínez Fornido      │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Godínez Fornido      │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Camaron Perdurable   │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    🏆 Camaron Perdurable   │ Fosa del Campeón         │ Neto:  +725.0 FRJ │ XP: +55
+    💔 Lluvia Inmortal      │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Lluvia Inmortal      │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Lluvia Inmortal      │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Manantial Duradero   │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Manantial Duradero   │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Uxmal Inagotable     │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Uxmal Inagotable     │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Uxmal Inagotable     │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Tajín Perenne        │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Tajín Perenne        │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Soldado Bendito      │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Celeste Determinada  │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Celeste Determinada  │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Supernova Correosa   │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Supernova Correosa   │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Supernova Correosa   │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Pelusa Correosa      │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Lluvia Inagotable    │ Charco de Novatos        │ Neto:   -30.0 FRJ │ XP: +15
+    💔 Lluvia Inagotable    │ Charco de Novatos        │ Neto:   -30.0 FRJ │ XP: +15
+    🏆 Xóchitl Certera      │ Fosa del Campeón         │ Neto:  +775.0 FRJ │ XP: +50
+    💔 Ahuehuete Perpetuo   │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Ahuehuete Perpetuo   │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Tlaloc Fecundo       │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Tlaloc Fecundo       │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Nopal Vivaz          │ Charco de Novatos        │ Neto:   -30.0 FRJ │ XP: +15
+    💔 Nopal Vivaz          │ Charco de Novatos        │ Neto:   -30.0 FRJ │ XP: +15
+    💔 Ahuizotl Elegido     │ Charco de Novatos        │ Neto:   -30.0 FRJ │ XP: +15
+    💔 Bonampak Lozano      │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Bonampak Lozano      │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Obsidiana Pujante    │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Atole Frondoso       │ Fosa del Campeón         │ Neto:  -150.0 FRJ │ XP: +15
+    💔 Atole Frondoso       │ Fosa del Campeón         │ Neto:  -150.0 FRJ │ XP: +15
+    💔 Cantarito Vigoroso   │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Cantarito Vigoroso   │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Cantarito Vigoroso   │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Bonampak Inquebranta │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Bonampak Inquebranta │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Mixcoatl Lúcido      │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Mixcoatl Lúcido      │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Mixcoatl Lúcido      │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Ventarrón Frondoso   │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Draco Incesante      │ Fosa del Campeón         │ Neto:  -150.0 FRJ │ XP: +15
+    💔 Draco Incesante      │ Fosa del Campeón         │ Neto:  -150.0 FRJ │ XP: +15
+    💔 Pirúl Interminable   │ Charco de Novatos        │ Neto:   -30.0 FRJ │ XP: +15
+    🏆 Pirúl Interminable   │ Charco de Novatos        │ Neto:  +135.0 FRJ │ XP: +60
+    🏆 Jacaranda Lúcida     │ Charco de Novatos        │ Neto:  +260.0 FRJ │ XP: +70
+    💔 Tabachín Inconmovibl │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Tabachín Inconmovibl │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Horchata Sempiterna  │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Horchata Sempiterna  │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Tlaltecuhtli Incesan │ Fosa del Campeón         │ Neto:  -150.0 FRJ │ XP: +15
+    💔 Tlaltecuhtli Incesan │ Fosa del Campeón         │ Neto:  -150.0 FRJ │ XP: +15
+    💔 Tlaltecuhtli Incesan │ Fosa del Campeón         │ Neto:  -150.0 FRJ │ XP: +15
+    💔 Neblina Resistente   │ Charco de Novatos        │ Neto:   -30.0 FRJ │ XP: +15
+    🏆 Neblina Resistente   │ Charco de Novatos        │ Neto:   +75.0 FRJ │ XP: +30
+    🏆 Neblina Resistente   │ Charco de Novatos        │ Neto:   +41.5 FRJ │ XP: +60
+    💔 Chapulín Invulnerabl │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Chapulín Invulnerabl │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Chapulín Invulnerabl │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Tejuino Perpetuo     │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Tejuino Perpetuo     │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Tejuino Perpetuo     │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Ámbar Vigoroso       │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Ámbar Vigoroso       │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Huitzilopochtli Lúci │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    🏆 Huitzilopochtli Lúci │ Fosa del Campeón         │ Neto: +1300.0 FRJ │ XP: +70
+    💔 Axayácatl Inagotable │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Axayácatl Inagotable │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Bonampak Maravilloso │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Bonampak Maravilloso │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Araña Imperecedera   │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Xochiquetzal Perdura │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Xochiquetzal Perdura │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Teponaztli Fornido   │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Teponaztli Fornido   │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    🏆 Teponaztli Fornido   │ Fosa del Campeón         │ Neto:  +390.0 FRJ │ XP: +50
+    💔 Teocintle Pujante    │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Supernova Lúcida     │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Supernova Lúcida     │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Tambor Resistente    │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Ventisca Duradera    │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Manantial Incesante  │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Manantial Incesante  │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Ahuehuete Inagotable │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Ahuehuete Inagotable │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    🏆 Ehécatl Iluminado    │ Charco de Novatos        │ Neto:  +145.0 FRJ │ XP: +55
+    💔 Quiote Lúcido        │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Quiote Lúcido        │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Chilaquil Lúcido     │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Chilaquil Lúcido     │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Chilaquil Lúcido     │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Yolotli Vital        │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Aurora Interminable  │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Teponaztli Eterno    │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Ópalo Legendario     │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Ópalo Legendario     │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Firulais Lúcido      │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Firulais Lúcido      │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    🏆 Firulais Lúcido      │ Charco de Novatos        │ Neto:   +81.0 FRJ │ XP: +20
+    💔 Melón Invulnerable   │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Melón Invulnerable   │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Dama Férrea          │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Tepetate Eterno      │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Tepetate Eterno      │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    🏆 Aurora Vivaz         │ Fosa del Campeón         │ Neto:  +725.0 FRJ │ XP: +55
+    💔 Camaron Meticuloso   │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    🏆 Tepozán Interminable │ Fosa del Campeón         │ Neto:  +425.0 FRJ │ XP: +25
+    💔 Tepozán Interminable │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Tepozán Interminable │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Barril Vital         │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    🏆 Mazorca Inagotable   │ Charco de Novatos        │ Neto:   +95.0 FRJ │ XP: +20
+    💔 Tepache Robusto      │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Tepache Robusto      │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Tepache Robusto      │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Rigel Sagrado        │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Rigel Sagrado        │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    🏆 Rigel Sagrado        │ Charco de Novatos        │ Neto:   +61.5 FRJ │ XP: +50
+    💔 Calakmul Robusto     │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Calakmul Robusto     │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Calakmul Robusto     │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Lyra Excelsa         │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Lyra Excelsa         │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Naolin Inextinguible │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Naolin Inextinguible │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Calakmul Resistente  │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Calakmul Resistente  │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Calakmul Resistente  │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Monte Albán Imperece │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Monte Albán Imperece │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Palenque Inconmovibl │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Palenque Inconmovibl │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Palenque Inconmovibl │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Paraguas Robusto     │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Paraguas Robusto     │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Jade Consecuente     │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Amoxtli Venerable    │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Amoxtli Venerable    │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Pedernal Inextinguib │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Pedernal Inextinguib │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Chela Frondosa       │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Pirita Inmortal      │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Pirita Inmortal      │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Huitzilopochtli Dura │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Caracol Vigoroso     │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Cantarito Vigoroso   │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    🏆 Neblina Resistente   │ Charco de Novatos        │ Neto:    +5.0 FRJ │ XP: +30
+    🏆 Tepozán Interminable │ Fosa del Campeón         │ Neto:   -65.0 FRJ │ XP: +25
+    🏆 Monte Albán Imperece │ Charco de Novatos        │ Neto:   +45.0 FRJ │ XP: +50
+    💔 Paraguas Robusto     │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Tlayuda Inconmovible │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    🏆 Caracol Vigoroso     │ Charco de Novatos        │ Neto:    +1.0 FRJ │ XP: +25
+    🏆 Neblina Resistente   │ Charco de Novatos        │ Neto:    +3.0 FRJ │ XP: +60
+    💔 Monte Albán Imperece │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
 
 ----------------------------------------------------------------------
 🌙  Ciclo Lunar (Daily):
-  💰 FRJ acumulados:          3310 FRJ
-  💊 Cápsulas ganadas:        4
+  💰 FRJ acumulados:          44295 FRJ
+  💊 Cápsulas ganadas:        60
   🌕 Máx Luna alcanzada:      2
   📅 Máx racha diaria:        6
 ----------------------------------------------------------------------
 ⛏️  Expansión del Cenote:
-  🏗️  Expansiones totales:     32
-  💸 AXF gastados (aceler.):  1840
+  🏗️  Expansiones totales:     371
+  💸 AXF gastados (aceler.):  9960
   🏆 Máx nivel alcanzado:     8
 ----------------------------------------------------------------------
 🖼️  Decoración del Cenote:
   🎨 Items equipados:         0
-  🔒 Tests seguridad slot:    0
+  🔒 Tests seguridad slot:    89
   🧬 Tests límite mentoría:   0
 ----------------------------------------------------------------------
+👑  Staking de Axolotitos:
+  🥚 Axolotitos en staking:    201
+  🔓 Axolotitos retirados:     0
+  💰 FRJ ganado en staking:    0.00 FRJ
+----------------------------------------------------------------------
+👥  Capa Social — Amigos:
+  📨 Solicitudes enviadas:     1020
+  ✅ Solicitudes aceptadas:    739
+  ❌ Solicitudes rechazadas:   281
+  🤝 Amistades activas total:  40
+  ❤️  Likes dados:             402 (total BD: 0)
+  🏠 Cuevas visitadas:         290 (total BD: 0)
+  🚫 Bloqueos:                 114
+  💔 Amistades eliminadas:     92
+  🔍 Sugerencias encontradas:  0
+----------------------------------------------------------------------
+🔗  Capa Social — Referidos:
+  🏷️  Códigos generados:       102 (total BD: 102)
+  📥 Códigos canjeados:        40
+  🎯 Milestones procesados:    80
+  👶 Referidos totales:        40
+----------------------------------------------------------------------
+🛡️  Capa Social — Anti-Abuso:
+  🔒 Anti-fraud bloqueos:      3
+  ⏱️  Rate-limit hits:         2675
+----------------------------------------------------------------------
 🚫  Tests de errores:
-  ✅ Pasaron:                 4
-  ❌ Fallaron:                1
+  ✅ Pasaron:                 1
+  ❌ Fallaron:                2
 ======================================================================
 
-⚠️  ERRORES (41):
-  x2  acc_equip did:privy:sim_player_2/body: No posees este accesorio en tu inventario.
-  x1  vip_buy_early did:privy:cmnn1tv0o02au0ckzho9ugkb2 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_1 coral: Saldo insuficiente. Necesitas 50000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_3 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_4 axolite: Saldo insuficiente. Necesitas 300000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_5 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_6 coral: Saldo insuficiente. Necesitas 50000000 AXF.
-  x1  vip_buy_early did:privy:cmpl1jf3t01cc0ck4gqt004l5 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
-  x1  vip_buy did:privy:cmnn1tv0o02au0ckzho9ugkb2 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
-  x1  vip_buy did:privy:sim_player_1 coral: Saldo insuficiente. Necesitas 50000000 AXF.
-  x1  vip_buy did:privy:sim_player_3 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
-  x1  vip_buy did:privy:sim_player_4 axolite: Saldo insuficiente. Necesitas 300000000 AXF.
-  x1  vip_buy did:privy:sim_player_5 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
-  x1  vip_buy did:privy:sim_player_6 coral: Saldo insuficiente. Necesitas 50000000 AXF.
-  x1  vip_buy did:privy:cmpl1jf3t01cc0ck4gqt004l5 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
-  x1  block_test did:privy:cmnn1tv0o02au0ckzho9ugkb2: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  block_test did:privy:sim_player_1: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  block_test did:privy:sim_player_2: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  block_test did:privy:sim_player_3: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  block_test did:privy:sim_player_4: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
+⚠️  ERRORES (803):
+  x16  booster_buy did:privy:sim_player_78: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x15  booster_buy did:privy:sim_player_85: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x13  booster_buy did:privy:sim_player_90: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x13  booster_buy did:privy:sim_player_91: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x13  booster_buy did:privy:sim_player_98: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x13  booster_buy did:privy:sim_player_100: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x12  booster_buy did:privy:sim_player_71: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x12  booster_buy did:privy:sim_player_75: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x12  booster_buy did:privy:sim_player_76: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x12  booster_buy did:privy:sim_player_77: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x12  booster_buy did:privy:sim_player_84: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x12  booster_buy did:privy:sim_player_97: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x11  booster_buy did:privy:sim_player_73: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x11  booster_buy did:privy:sim_player_80: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x11  booster_buy did:privy:sim_player_93: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x11  booster_buy did:privy:sim_player_96: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x11  booster_buy did:privy:cmpl1jf3t01cc0ck4gqt004l5: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x10  booster_buy did:privy:sim_player_67: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x10  booster_buy did:privy:sim_player_69: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x10  booster_buy did:privy:sim_player_81: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x10  booster_buy did:privy:sim_player_83: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x10  booster_buy did:privy:sim_player_94: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x10  booster_buy did:privy:sim_player_95: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x9  booster_buy did:privy:sim_player_68: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x9  booster_buy did:privy:sim_player_70: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x9  booster_buy did:privy:sim_player_82: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x9  booster_buy did:privy:sim_player_86: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x9  booster_buy did:privy:sim_player_87: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x9  booster_buy did:privy:sim_player_99: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x8  booster_buy did:privy:sim_player_25: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x8  booster_buy did:privy:sim_player_45: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x8  booster_buy did:privy:sim_player_51: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x8  booster_buy did:privy:sim_player_56: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x8  booster_buy did:privy:sim_player_57: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x8  booster_buy did:privy:sim_player_58: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x8  booster_buy did:privy:sim_player_61: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x8  booster_buy did:privy:sim_player_72: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x8  booster_buy did:privy:sim_player_74: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x8  booster_buy did:privy:sim_player_89: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x8  booster_buy did:privy:sim_player_92: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x7  booster_buy did:privy:sim_player_28: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x7  booster_buy did:privy:sim_player_30: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x7  booster_buy did:privy:sim_player_31: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x7  booster_buy did:privy:sim_player_35: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x7  booster_buy did:privy:sim_player_79: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x6  booster_buy did:privy:sim_player_2: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x6  booster_buy did:privy:sim_player_44: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x6  booster_buy did:privy:sim_player_62: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x6  booster_buy did:privy:sim_player_63: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x6  booster_buy did:privy:sim_player_88: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x5  booster_buy did:privy:sim_player_27: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x5  booster_buy did:privy:sim_player_33: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x5  booster_buy did:privy:sim_player_36: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x5  booster_buy did:privy:sim_player_37: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x5  booster_buy did:privy:sim_player_42: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x5  booster_buy did:privy:sim_player_49: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x5  booster_buy did:privy:sim_player_54: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x5  booster_buy did:privy:sim_player_65: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x5  booster_buy did:privy:sim_player_66: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x4  booster_buy did:privy:sim_player_8: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x4  booster_buy did:privy:sim_player_19: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x4  booster_buy did:privy:sim_player_29: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x4  booster_buy did:privy:sim_player_32: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x4  booster_buy did:privy:sim_player_34: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x4  booster_buy did:privy:sim_player_38: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x4  booster_buy did:privy:sim_player_41: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x4  booster_buy did:privy:sim_player_48: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x4  booster_buy did:privy:sim_player_55: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x4  booster_buy did:privy:sim_player_59: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x3  booster_buy did:privy:sim_player_26: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x3  booster_buy did:privy:sim_player_50: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x3  booster_buy did:privy:sim_player_53: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x3  booster_buy did:privy:sim_player_64: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x3  booster_buy did:privy:sim_player_64: Límite de 8 unidades por wallet alcanzado para este ítem.
+  x2  booster_buy did:privy:cmnn1tv0o02au0ckzho9ugkb2: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x2  booster_buy did:privy:sim_player_12: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x2  booster_buy did:privy:sim_player_27: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x2  booster_buy did:privy:sim_player_29: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x2  booster_buy did:privy:sim_player_34: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x2  booster_buy did:privy:sim_player_38: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x2  booster_buy did:privy:sim_player_39: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x2  booster_buy did:privy:sim_player_40: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x2  booster_buy did:privy:sim_player_43: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x2  booster_buy did:privy:sim_player_46: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x2  booster_buy did:privy:sim_player_47: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x2  booster_buy did:privy:sim_player_47: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x2  booster_buy did:privy:sim_player_49: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x2  booster_buy did:privy:sim_player_52: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x2  booster_buy did:privy:sim_player_53: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x2  booster_buy did:privy:sim_player_54: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x2  booster_buy did:privy:sim_player_60: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x2  booster_buy did:privy:sim_player_60: Límite de 8 unidades por wallet alcanzado para este ítem.
   x1  claim_corcholata_unexpected did:privy:sim_player_5: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_5: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
   x1  claim_corcholata_unexpected did:privy:sim_player_6: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_6: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
+  x1  claim_corcholata_unexpected did:privy:sim_player_7: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_8: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_9: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_10: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_11: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_12: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_13: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_14: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_15: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_16: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_17: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_18: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_19: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_20: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_21: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_22: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_23: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_24: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_25: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_26: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_27: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_28: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_29: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_30: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_31: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_32: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_33: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_34: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_35: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_36: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_37: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_38: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_39: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_40: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_41: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_42: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_43: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_44: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_45: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_46: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_47: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_48: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_49: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_50: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_51: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_52: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_53: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_54: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_55: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_56: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_57: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_58: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_59: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_60: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_61: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_62: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_63: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_64: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_65: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_66: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_67: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_68: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_69: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_70: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_71: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_72: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_73: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_74: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_75: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_76: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_77: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_78: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_79: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_80: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_81: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_82: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_83: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_84: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_85: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_86: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_87: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_88: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_89: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_90: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_91: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_92: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_93: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_94: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_95: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_96: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_97: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_98: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_99: 429: 5 per 1 minute
+  x1  claim_corcholata_unexpected did:privy:sim_player_100: 429: 5 per 1 minute
+  x1  egg_buy_after_expand did:privy:sim_player_100: Límite de 1 unidades por wallet alcanzado para este ítem.
   x1  claim_corcholata_unexpected did:privy:cmpl1jf3t01cc0ck4gqt004l5: 429: 5 per 1 minute
-  x1  block_test did:privy:cmpl1jf3t01cc0ck4gqt004l5: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  board_sale_list did:privy:sim_player_5: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:cmpl1jf3t01cc0ck4gqt004l5: La Tabla Tutorial no se puede vender.
-  x1  board_rent_list did:privy:sim_player_1: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_5: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_6: La Tabla Tutorial no se puede rentar.
+  x1  egg_buy_after_expand did:privy:cmpl1jf3t01cc0ck4gqt004l5: Límite de 1 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_5: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_7: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_13: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_16: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_20: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_23: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_24: ¡Límite mensual alcanzado! Solo se pueden vender 100 Boosters Brillantes al mes globalmente.
+  x1  booster_buy did:privy:sim_player_26: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_32: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_39: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_44: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_45: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_48: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_51: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_52: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_59: Límite de 8 unidades por wallet alcanzado para este ítem.
+  x1  board_manual did:privy:sim_player_1: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
+  x1  board_manual did:privy:sim_player_4: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
+  x1  board_manual did:privy:sim_player_5: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
+  x1  board_manual did:privy:sim_player_9: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
+  x1  board_manual did:privy:sim_player_14: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
+  x1  board_manual did:privy:sim_player_15: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
+  x1  board_manual did:privy:sim_player_19: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
+  x1  board_manual did:privy:sim_player_32: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
+  x1  board_manual did:privy:sim_player_50: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
+  x1  board_manual did:privy:sim_player_52: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
+  x1  board_sale_list did:privy:sim_player_7: La Tabla Tutorial no se puede vender.
+  x1  board_sale_list did:privy:sim_player_17: La Tabla Tutorial no se puede vender.
+  x1  board_sale_list did:privy:sim_player_44: La Tabla Tutorial no se puede vender.
+  x1  board_sale_list did:privy:sim_player_47: La Tabla Tutorial no se puede vender.
+  x1  board_sale_list did:privy:sim_player_49: La Tabla Tutorial no se puede vender.
+  x1  board_sale_list did:privy:sim_player_59: La Tabla Tutorial no se puede vender.
+  x1  board_sale_list did:privy:sim_player_84: La Tabla Tutorial no se puede vender.
+  x1  board_sale_list did:privy:sim_player_94: La Tabla Tutorial no se puede vender.
+  x1  board_rent_list did:privy:sim_player_2: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_3: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_7: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_8: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_12: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_13: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_17: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_18: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_22: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_23: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_27: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_28: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_32: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_33: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_37: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_38: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_42: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_43: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_47: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_48: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_52: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_53: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_57: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_58: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_62: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_63: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_67: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_68: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_72: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_73: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_77: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_78: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_82: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_83: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_87: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_88: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_92: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_93: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_97: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_98: La Tabla Tutorial no se puede rentar.
   x1  board_rent_list did:privy:cmpl1jf3t01cc0ck4gqt004l5: La Tabla Tutorial no se puede rentar.
-  x1  acc_equip did:privy:cmnn1tv0o02au0ckzho9ugkb2/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_1/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_1/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_2: 'gal'
-  x1  acc_equip did:privy:sim_player_2/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_5/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_6/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_6/body: No posees este accesorio en tu inventario.
+  x1  axo_sale_list did:privy:cmnn1tv0o02au0ckzho9ugkb2: El Axolotito del tutorial no se puede vender.
+  x1  axo_sale_list did:privy:sim_player_53: El Axolotito del tutorial no se puede vender.
+  x1  axo_sale_list did:privy:sim_player_55: El Axolotito del tutorial no se puede vender.
+  x1  axo_sale_list did:privy:sim_player_59: El Axolotito del tutorial no se puede vender.
+  x1  axo_sale_list did:privy:sim_player_78: El Axolotito del tutorial no se puede vender.
+  x1  axo_sale_list did:privy:sim_player_85: El Axolotito del tutorial no se puede vender.
+  x1  axo_sale_list did:privy:sim_player_94: El Axolotito del tutorial no se puede vender.
+  x1  axo_sale_list did:privy:sim_player_95: El Axolotito del tutorial no se puede vender.
+  x1  axo_sale_list did:privy:sim_player_99: El Axolotito del tutorial no se puede vender.
+  x1  board_buy_p2p did:privy:sim_player_20 board #176: Límite de tableros alcanzado. Tienes 3/3 tableros activos. Desbloquea un nuevo slot para poder adquirir más.
+  x1  board_buy_p2p did:privy:sim_player_41 board #207: Límite de tableros alcanzado. Tienes 3/3 tableros activos. Desbloquea un nuevo slot para poder adquirir más.
+  x1  board_buy_p2p did:privy:sim_player_10 board #107: Límite de tableros alcanzado. Tienes 3/3 tableros activos. Desbloquea un nuevo slot para poder adquirir más.
+  x1  board_buy_p2p did:privy:sim_player_25 board #112: Límite de tableros alcanzado. Tienes 3/3 tableros activos. Desbloquea un nuevo slot para poder adquirir más.
+  x1  stake_axolotito did:privy:sim_player_9: Límite de slots de staking alcanzado (4/4). Mejora tu cueva para desbloquear más.
+  x1  cave_item_buy did:privy:sim_player_60/Ambiente Templo Maya: Límite de 1 unidades por wallet alcanzado para este ítem.
+  x1  error_test_wrong_code_compra_sin_saldo_403
 ======================================================================

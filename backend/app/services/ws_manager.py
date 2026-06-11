@@ -12,6 +12,7 @@ endpoint WebSocket y el scheduler de salas.
 from __future__ import annotations
 import asyncio
 import json
+import logging
 import random
 import secrets
 import time
@@ -19,6 +20,8 @@ from dataclasses import dataclass, field as dc_field
 from typing import Any
 
 from fastapi import WebSocket
+
+logger = logging.getLogger("ws.manager")
 
 # Generador criptográficamente seguro para barajar el mazo
 _rng = random.SystemRandom()
@@ -36,11 +39,16 @@ class PlayerState:
     axo_name: str
     board_ids: list[int]                # IDs de tablas registradas
     board_card_ids: dict[int, list[int]]  # board_id -> lista de 16 card_ids
-    marked_indices: dict[int, set[int]]   # board_id -> set de índices marcados
+    marked_indices: dict[int, set[int]] = dc_field(default_factory=dict)   # board_id -> set de índices marcados
     hints_remaining: int = 3
+    play_mode: str = "manual"
+    missed_turns_count: int = 0
     ws: WebSocket | None = None
     connected: bool = True
     joined_at: float = dc_field(default_factory=time.time)
+    # Chat integration
+    vip_tier: str | None = None         # "coral" | "dorado" | "axolite"
+    nature: str | None = None           # "hyperactive" | "shy" | "showoff" | "curious"
 
 
 @dataclass
@@ -97,8 +105,25 @@ class GameWSManager:
         axo_name: str,
         board_ids: list[int],
         board_card_ids: dict[int, list[int]],
+        play_mode: str = "manual",
+        vip_tier: str | None = None,
+        nature: str | None = None,
     ) -> None:
         """Acepta la conexión WebSocket y registra al jugador en la sesión."""
+        # 1. Si ya existe una conexión para este usuario en esta sala, desplazarla
+        session_obj = self.sessions.get(room_id)
+        if session_obj:
+            existing_player = session_obj.players.get(user_id)
+            if existing_player and existing_player.ws and existing_player.ws != ws:
+                try:
+                    await existing_player.ws.send_json({
+                        "type": "session_replaced",
+                        "message": "Se ha iniciado sesión en otra pestaña. Esta sesión ha sido desconectada."
+                    })
+                    await existing_player.ws.close(code=4008, reason="session_replaced")
+                except Exception as ws_err:
+                    logger.debug(f"Error cerrando WebSocket desplazado en connect para {user_id}: {ws_err}")
+
         await ws.accept()
 
         async with self._lock:
@@ -112,7 +137,10 @@ class GameWSManager:
                 axo_name=axo_name,
                 board_ids=board_ids,
                 board_card_ids=board_card_ids,
+                play_mode=play_mode,
                 ws=ws,
+                vip_tier=vip_tier,
+                nature=nature,
             )
             session.players[user_id] = player
 
@@ -124,13 +152,18 @@ class GameWSManager:
             "player_count": len(session.players),
         }, exclude=user_id)
 
-    async def disconnect(self, room_id: int, user_id: str) -> None:
-        """Maneja la desconexión de un jugador. Mantiene el estado 30s para reconnect."""
+    async def disconnect(self, room_id: int, user_id: str, ws: WebSocket) -> None:
+        """Maneja la desconexión de un jugador. Mantiene el estado 15s para reconnect."""
         session = self.sessions.get(room_id)
         if not session:
             return
         player = session.players.get(user_id)
         if player:
+            # Validar que la desconexión proviene del WebSocket activo actualmente
+            if player.ws != ws:
+                logger.info(f"Desconexión obsoleta ignorada para el usuario {user_id} en sala {room_id}")
+                return
+            
             player.connected = False
             player.ws = None
 
@@ -140,8 +173,43 @@ class GameWSManager:
             "player_count": sum(1 for p in session.players.values() if p.connected),
         })
 
+        if player and player.play_mode == "manual":
+            asyncio.create_task(self._disconnect_grace_period(room_id, user_id))
+
+    async def _disconnect_grace_period(self, room_id: int, user_id: str) -> None:
+        """Espera 15 segundos de gracia y, si no se ha reconectado, cambia a modo auto-play."""
+        await asyncio.sleep(15)
+        session = self.sessions.get(room_id)
+        if not session or session.phase == "finished":
+            return
+        player = session.players.get(user_id)
+        if player and not player.connected and player.play_mode == "manual":
+            player.play_mode = "auto"
+            try:
+                from app.database import engine
+                from sqlmodel import Session as DBSession, select
+                from app.models.lobby_models import RoomRegistration
+                with DBSession(engine) as db_session:
+                    db_reg = db_session.exec(
+                        select(RoomRegistration)
+                        .where(RoomRegistration.room_id == room_id)
+                        .where(RoomRegistration.axolotito_id == player.axolotito_id)
+                    ).first()
+                    if db_reg:
+                        db_reg.play_mode = "auto"
+                        db_session.add(db_reg)
+                        db_session.commit()
+            except Exception as db_err:
+                logger.warning(f"Error actualizando play_mode a auto tras desconexión en DB para room {room_id}, axo {player.axolotito_id}: {db_err}")
+
+            await self.broadcast(room_id, {
+                "type": "player_afk",
+                "axo_name": player.axo_name,
+                "message": f"{player.axo_name} no reconectó en 15 segundos. El bot asume el control."
+            })
+
     async def reconnect(
-        self, room_id: int, user_id: str, ws: WebSocket
+        self, room_id: int, user_id: str, ws: WebSocket, play_mode: str = "manual"
     ) -> bool:
         """Intenta reconectar a un jugador. Retorna True si exitoso."""
         session = self.sessions.get(room_id)
@@ -151,14 +219,28 @@ class GameWSManager:
         if not player:
             return False
 
+        # Si ya hay un WebSocket diferente conectado, notificar y desplazar
+        if player.ws and player.ws != ws:
+            try:
+                await player.ws.send_json({
+                    "type": "session_replaced",
+                    "message": "Se ha iniciado sesión en otra pestaña. Esta sesión ha sido desconectada."
+                })
+                await player.ws.close(code=4008, reason="session_replaced")
+            except Exception as ws_err:
+                logger.debug(f"Error cerrando WebSocket desplazado en reconnect para {user_id}: {ws_err}")
+
         await ws.accept()
         player.ws = ws
         player.connected = True
+        player.play_mode = play_mode
+        player.missed_turns_count = 0
 
         # Enviar estado actual para que el frontend se sincronice
         await ws.send_json({
             "type": "game_state_sync",
             "phase": session.phase,
+            "play_mode": player.play_mode,
             "cards_history": session.cards_history,
             "current_card_id": session.current_card_id,
             "player_marked": {str(bid): list(s) for bid, s in player.marked_indices.items()},
@@ -247,6 +329,52 @@ class GameWSManager:
             # Esperar la ventana de highlight
             await asyncio.sleep(session.highlight_window_ms / 1000.0)
 
+            # AFK Detection: check if any manual player missed marking this card
+            for p in list(session.players.values()):
+                if p.play_mode == "manual":
+                    primary_board = p.board_ids[0] if p.board_ids else None
+                    if primary_board:
+                        board_cards = p.board_card_ids.get(primary_board, [])
+                        if card_id in board_cards:
+                            idx = board_cards.index(card_id)
+                            marked_set = p.marked_indices.get(primary_board, set())
+                            if idx not in marked_set:
+                                p.missed_turns_count += 1
+                                if p.missed_turns_count >= 3:
+                                    p.play_mode = "auto"
+                                    try:
+                                        from app.database import engine
+                                        from sqlmodel import Session as DBSession, select
+                                        from app.models.lobby_models import RoomRegistration
+                                        with DBSession(engine) as db_session:
+                                            db_reg = db_session.exec(
+                                                select(RoomRegistration)
+                                                .where(RoomRegistration.room_id == room_id)
+                                                .where(RoomRegistration.axolotito_id == p.axolotito_id)
+                                            ).first()
+                                            if db_reg:
+                                                db_reg.play_mode = "auto"
+                                                db_session.add(db_reg)
+                                                db_session.commit()
+                                    except Exception as db_err:
+                                        logger.warning(f"Error actualizando play_mode a auto en DB para room {room_id}, axo {p.axolotito_id}: {db_err}")
+
+                                    # Warn player
+                                    if p.ws and p.connected:
+                                        try:
+                                            await p.ws.send_json({
+                                                "type": "afk_warning",
+                                                "message": "El bot de tu Axolotito ha asumido el control debido a inactividad prolongada (+3 turnos perdidos). Estás en modo espectador."
+                                            })
+                                        except Exception:
+                                            pass
+                                    # Broadcast AFK event
+                                    await self.broadcast(room_id, {
+                                        "type": "player_afk",
+                                        "axo_name": p.axo_name,
+                                        "message": f"{p.axo_name} se ha quedado AFK. El bot asume el control."
+                                    })
+
             # Evaluar tensión entre cartas
             tension = check_tension_status([
                 {
@@ -285,6 +413,10 @@ class GameWSManager:
         if not player or not player.connected:
             return
 
+        if player.play_mode == "auto":
+            await self._send_error(player, "El bot de tu Axolotito ha asumido el control debido a inactividad prolongada (+3 turnos perdidos). Estás en modo espectador.")
+            return
+
         # Validar que la celda sea válida (0-15)
         if not (0 <= cell_index <= 15):
             await self._send_error(player, "Celda inválida.")
@@ -318,6 +450,7 @@ class GameWSManager:
             return  # ya marcada, ignorar silenciosamente
 
         player.marked_indices[primary_board].add(cell_index)
+        player.missed_turns_count = 0
 
         # Confirmar al jugador
         if player.ws:
@@ -334,6 +467,10 @@ class GameWSManager:
             return
         player = session.players.get(user_id)
         if not player or not player.connected:
+            return
+
+        if player.play_mode == "auto":
+            await self._send_error(player, "El bot de tu Axolotito ha asumido el control debido a inactividad prolongada (+3 turnos perdidos). Estás en modo espectador.")
             return
 
         # Validar cada board del jugador
@@ -385,6 +522,10 @@ class GameWSManager:
         if not player or not player.connected:
             return
 
+        if player.play_mode == "auto":
+            await self._send_error(player, "El bot de tu Axolotito ha asumido el control debido a inactividad prolongada (+3 turnos perdidos). Estás en modo espectador.")
+            return
+
         if player.hints_remaining <= 0:
             await self._send_error(player, "No te quedan pistas disponibles.")
             return
@@ -412,6 +553,91 @@ class GameWSManager:
             })
 
     # ------------------------------------------------------------------
+    # Chat messaging
+    # ------------------------------------------------------------------
+
+    async def handle_chat_message(
+        self,
+        room_id: int,
+        user_id: str,
+        text: str = "",
+        is_reaction: bool = False,
+        sticker_id: str | None = None,
+        megaphone: bool = False,
+    ) -> None:
+        """
+        Process a chat message: sanitize, rate-limit, enrich, and broadcast.
+
+        Called from the WebSocket endpoint when action='chat_message' is received.
+        """
+        from app.services.chat_moderator import chat_moderator
+
+        session = self.sessions.get(room_id)
+        if not session:
+            return
+        player = session.players.get(user_id)
+        if not player or not player.connected:
+            return
+
+        # 1. Rate limit check
+        rate_result = chat_moderator.check_rate_limit(user_id, is_reaction=is_reaction)
+        if not rate_result.allowed:
+            await self._send_error(player, rate_result.reason)
+            return
+
+        # 2. Sanitize (public room = strict filters; private rooms skip some filters)
+        is_public = True  # default; could be read from room config in Fase 3
+        if sticker_id:
+            result = chat_moderator.sanitize_sticker(sticker_id)
+        else:
+            result = chat_moderator.sanitize(text, is_public_room=is_public)
+
+        if not result.allowed:
+            await self._send_error(player, result.reason)
+            return
+
+        # 3. Megaphone: validate FRJ balance (deferred — handled on broadcast)
+        if megaphone:
+            try:
+                from app.database import engine
+                from sqlmodel import Session as DBSession
+                from app.services.bank_service import BankService
+                from app.core.config import FRJ_DECIMALS_BACKEND
+
+                with DBSession(engine) as db_session:
+                    wallet = BankService.get_or_create_wallet(db_session, user_id, for_update=True)
+                    megaphone_check = chat_moderator.validate_megaphone(
+                        wallet.frijolitos, frj_decimals=FRJ_DECIMALS_BACKEND
+                    )
+                    if not megaphone_check.allowed:
+                        await self._send_error(player, megaphone_check.reason)
+                        megaphone = False  # send without megaphone highlight
+                    else:
+                        # Charge FRJ for megaphone
+                        wallet.frijolitos -= megaphone_check.megaphone_cost_frj * (10 ** FRJ_DECIMALS_BACKEND)
+                        db_session.add(wallet)
+                        db_session.commit()
+            except Exception as meg_err:
+                logger.warning(f"Megaphone charge failed for user {user_id}: {meg_err}")
+                megaphone = False  # graceful degradation: send without megaphone
+
+        # 4. Enrich and broadcast
+        broadcast_msg = chat_moderator.enrich_for_broadcast(
+            user_id=user_id,
+            username=player.axo_name,
+            text=result.sanitized_text,
+            vip_tier=player.vip_tier,
+            nature=player.nature,
+            sticker_id=result.sticker_id,
+            megaphone=megaphone,
+        )
+
+        await self.broadcast(room_id, {
+            "type": "chat_broadcast",
+            "data": broadcast_msg,
+        })
+
+    # ------------------------------------------------------------------
     # Game end
     # ------------------------------------------------------------------
 
@@ -421,6 +647,30 @@ class GameWSManager:
         if not session:
             return
         session.phase = "finished"
+
+        # Resolve the match in the database using the actual marks and turns
+        try:
+            from app.services.multiplayer_service import MultiplayerService
+            player_marked_data = {}
+            for p in list(session.players.values()):
+                primary_board = p.board_ids[0] if p.board_ids else None
+                if primary_board:
+                    player_marked_data[p.axolotito_id] = list(p.marked_indices.get(primary_board, set()))
+                else:
+                    player_marked_data[p.axolotito_id] = []
+
+            loop = asyncio.get_event_loop()
+            await loop.run_in_executor(
+                None,
+                MultiplayerService.resolve_multiplayer_match,
+                room_id,
+                winner_axo_id,
+                session.turns_played,
+                player_marked_data,
+                list(session.cards_called)
+            )
+        except Exception as e:
+            logger.error(f"Error resolving manual match in DB for room {room_id}: {e}", exc_info=True)
 
         await self.broadcast(room_id, {
             "type": "game_end",

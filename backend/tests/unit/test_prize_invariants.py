@@ -25,6 +25,7 @@ from app.models.lobby_models import (
 from app.models.user import User
 from app.services.multiplayer_service import MultiplayerService
 from tests.conftest import make_user, make_wallet, make_card_pool
+from app.core.config import frj_to_display
 
 ENTRY_FEE = 100.0  # FRJ por tabla — valor simple para pruebas
 ESCROW = 500.0     # saldo inicial en custodia (> entry fee)
@@ -147,9 +148,9 @@ def test_prize_pool_invariant_no_bonuses(session):
     total_collected = 2 * room.entry_fee_gal
     player_pool = total_collected * 0.90  # 35% + 55% = 90% del collected
 
-    assert total_prizes <= player_pool + 0.01, (
-        f"VULN-05: premios {total_prizes:.4f} exceden pool {player_pool:.4f} "
-        f"(overflow: {total_prizes - player_pool:.4f})"
+    assert frj_to_display(total_prizes) <= player_pool + 0.01, (
+        f"VULN-05: premios {frj_to_display(total_prizes):.4f} exceden pool {player_pool:.4f} "
+        f"(overflow: {frj_to_display(total_prizes) - player_pool:.4f})"
     )
 
 
@@ -192,9 +193,9 @@ def test_prize_pool_invariant_vip_max_luck(session):
     total_collected = 2 * room.entry_fee_gal
     player_pool = total_collected * 0.90
 
-    assert total_prizes <= player_pool + 0.01, (
-        f"VULN-05 VIP+luck: premios {total_prizes:.4f} exceden pool {player_pool:.4f}. "
-        f"Inflación: {total_prizes - player_pool:.4f}"
+    assert frj_to_display(total_prizes) <= player_pool + 0.01, (
+        f"VULN-05 VIP+luck: premios {frj_to_display(total_prizes):.4f} exceden pool {player_pool:.4f}. "
+        f"Inflación: {frj_to_display(total_prizes) - player_pool:.4f}"
     )
 
 
@@ -248,12 +249,12 @@ def test_bot_share_credited_to_treasury(session):
     player_pool = total_collected * 0.90  # 90% va a premios jugadores
     treasury_min_increase = total_collected * 0.05  # al menos el 5% de corte base
 
-    assert total_prizes <= player_pool + 0.01, (
-        f"Premios {total_prizes:.4f} exceden pool {player_pool:.4f}"
+    assert frj_to_display(total_prizes) <= player_pool + 0.01, (
+        f"Premios {frj_to_display(total_prizes):.4f} exceden pool {player_pool:.4f}"
     )
-    assert treasury_after >= treasury_before + treasury_min_increase - 0.01, (
-        f"Tesorería no creció lo esperado: antes={treasury_before:.2f} "
-        f"después={treasury_after:.2f} corte_mín={treasury_min_increase:.2f}"
+    assert frj_to_display(treasury_after) >= frj_to_display(treasury_before) + treasury_min_increase - 0.01, (
+        f"Tesorería no creció lo esperado: antes={frj_to_display(treasury_before):.2f} "
+        f"después={frj_to_display(treasury_after):.2f} corte_mín={treasury_min_increase:.2f}"
     )
 
 
@@ -280,6 +281,6 @@ def test_single_human_max_luck_invariant(session):
     total_prizes = sum(log.gross_prize_gal for log in logs)
     player_pool = room.entry_fee_gal * 0.90
 
-    assert total_prizes <= player_pool + 0.01, (
-        f"VULN-05 solo+luck: premios {total_prizes:.4f} exceden pool {player_pool:.4f}"
+    assert frj_to_display(total_prizes) <= player_pool + 0.01, (
+        f"VULN-05 solo+luck: premios {frj_to_display(total_prizes):.4f} exceden pool {player_pool:.4f}"
     )

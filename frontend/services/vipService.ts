@@ -110,12 +110,12 @@ export async function purchaseVIPAPI(
   }
 }
 
-// ── Claim daily GAL ──
-export async function claimDailyGalAPI(
+// ── Claim daily FRJ ──
+export async function claimDailyFrjAPI(
   token: string | null
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const res = await fetch(`${API}/auth/vip/claim-daily-gal`, {
+    const res = await fetch(`${API}/auth/vip/claim-daily-frj`, {
       method: "POST",
       headers: authHeaders(token),
     });

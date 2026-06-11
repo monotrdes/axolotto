@@ -15,6 +15,7 @@ from datetime import datetime, timedelta
 from unittest.mock import patch, MagicMock
 
 from fastapi import HTTPException
+from app.core.config import axf_to_display, frj_to_display
 from sqlmodel import Session, select
 
 from app.models.economy import (
@@ -62,15 +63,15 @@ def _make_egg(session, price_gal=200.0, max_supply=None):
 def mock_web3(monkeypatch):
     """Reemplaza todos los métodos externos de Web3Service por no-ops."""
     monkeypatch.setattr(
-        "app.services.shop_service.Web3Service.burn_axogemas",
+        "app.services.shop_service.Web3Service.burn_axofichas",
         MagicMock(return_value=None),
     )
     monkeypatch.setattr(
-        "app.services.shop_service.Web3Service.burn_gal",
+        "app.services.shop_service.Web3Service.burn_frj",
         MagicMock(return_value=None),
     )
     monkeypatch.setattr(
-        "app.services.shop_service.Web3Service.mint_gal",
+        "app.services.shop_service.Web3Service.mint_frj",
         MagicMock(return_value=None),
     )
     monkeypatch.setattr(
@@ -82,11 +83,11 @@ def mock_web3(monkeypatch):
         MagicMock(return_value="0xfaketxhash"),
     )
     monkeypatch.setattr(
-        "app.services.shop_service.Web3Service.mint_booster_onchain",
+        "app.services.shop_service.Web3Service.mint_sobrecito_onchain",
         MagicMock(return_value="0xfaketxhash"),
     )
     monkeypatch.setattr(
-        "app.services.shop_service.Web3Service.burn_booster_onchain",
+        "app.services.shop_service.Web3Service.burn_sobrecito_onchain",
         MagicMock(return_value="0xburnhash"),
     )
 
@@ -487,7 +488,7 @@ class TestBoosterPurchase:
         ShopService.buy_item(session, user.privy_did, item.id, CurrencyType.AXOGEMA)
 
         wallet = session.exec(select(Wallet).where(Wallet.user_id == user.privy_did)).first()
-        assert wallet.axogemas == pytest.approx(450.0)
+        assert axf_to_display(wallet.axogemas) == pytest.approx(450.0)
 
     def test_buy_booster_creates_ledger_entry(self, session):
         user = make_user(session)
@@ -503,7 +504,7 @@ class TestBoosterPurchase:
             .where(TransactionLedger.tx_type == TransactionType.BOOSTER_PURCHASE)
         ).first()
         assert ledger is not None
-        assert ledger.amount == pytest.approx(50.0)
+        assert axf_to_display(ledger.amount) == pytest.approx(50.0)
 
     def test_buy_booster_tx_hash_returned(self, session):
         user = make_user(session)
@@ -670,7 +671,7 @@ class TestEggPurchase:
         ShopService.buy_item(session, user.privy_did, item.id, CurrencyType.GEMA_ALGA)
 
         wallet = session.exec(select(Wallet).where(Wallet.user_id == user.privy_did)).first()
-        assert wallet.gemas_alga == pytest.approx(300.0)
+        assert frj_to_display(wallet.gemas_alga) == pytest.approx(300.0)
 
     def test_egg_creates_inventory_entry(self, session):
         user = make_user(session)
@@ -723,7 +724,7 @@ class TestEggPurchase:
             .where(TransactionLedger.tx_type == TransactionType.MARKET_BUY)
         ).first()
         assert ledger is not None
-        assert ledger.amount == pytest.approx(200.0)
+        assert frj_to_display(ledger.amount) == pytest.approx(200.0)
 
 
 # ===========================================================================
@@ -772,7 +773,7 @@ class TestVIPMechanics:
         wallet = session.exec(select(Wallet).where(Wallet.user_id == user.privy_did)).first()
         expected_spent = round(base_price * (1 - discount), 2)
         expected_remaining = round(base_price - expected_spent, 2)
-        assert wallet.axogemas == pytest.approx(expected_remaining, abs=0.01)
+        assert axf_to_display(wallet.axogemas) == pytest.approx(expected_remaining, abs=0.01)
 
     def test_vip_discount_not_applied_to_eggs(self, session):
         """Los webitos (EGG) están excluidos del descuento VIP."""
@@ -801,7 +802,7 @@ class TestVIPMechanics:
         ShopService.buy_item(session, user.privy_did, item.id, CurrencyType.GEMA_ALGA)
 
         wallet = session.exec(select(Wallet).where(Wallet.user_id == user.privy_did)).first()
-        assert wallet.gemas_alga == pytest.approx(300.0)
+        assert frj_to_display(wallet.gemas_alga) == pytest.approx(300.0)
 
 
 # ===========================================================================
@@ -811,9 +812,9 @@ class TestVIPMechanics:
 class TestWeb3ErrorHandling:
 
     def test_burn_axg_failure_does_not_block_purchase(self, session, monkeypatch):
-        """Si burn_axogemas falla, la compra igual debe completarse (swallowed)."""
+        """Si burn_axofichas falla, la compra igual debe completarse (swallowed)."""
         monkeypatch.setattr(
-            "app.services.shop_service.Web3Service.burn_axogemas",
+            "app.services.shop_service.Web3Service.burn_axofichas",
             MagicMock(side_effect=Exception("RPC timeout")),
         )
         user = make_user(session)
@@ -828,7 +829,7 @@ class TestWeb3ErrorHandling:
     def test_burn_axg_failure_still_decrements_wallet(self, session, monkeypatch):
         """Aunque el burn on-chain falle, el saldo interno sí debe decrementarse."""
         monkeypatch.setattr(
-            "app.services.shop_service.Web3Service.burn_axogemas",
+            "app.services.shop_service.Web3Service.burn_axofichas",
             MagicMock(side_effect=Exception("nodo caído")),
         )
         user = make_user(session)
@@ -839,11 +840,11 @@ class TestWeb3ErrorHandling:
         ShopService.buy_item(session, user.privy_did, item.id, CurrencyType.AXOGEMA)
 
         wallet = session.exec(select(Wallet).where(Wallet.user_id == user.privy_did)).first()
-        assert wallet.axogemas == pytest.approx(450.0)
+        assert axf_to_display(wallet.axogemas) == pytest.approx(450.0)
 
     def test_burn_gal_failure_does_not_block_purchase(self, session, monkeypatch):
         monkeypatch.setattr(
-            "app.services.shop_service.Web3Service.burn_gal",
+            "app.services.shop_service.Web3Service.burn_frj",
             MagicMock(side_effect=Exception("timeout")),
         )
         user = make_user(session)

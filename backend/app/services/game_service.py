@@ -1,4 +1,4 @@
-﻿"""
+"""
 game_service.py — CPU-mode game logic and Axolotito lifecycle management.
 
 Contains:
@@ -13,7 +13,7 @@ from typing import Optional
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
-from app.core.config import settings
+from app.core.config import settings, FRJ_DECIMALS_BACKEND, frj_to_internal, frj_to_display
 from app.core.prices import CONSUMABLE_PRICES
 from app.models.axolotito import Axolotito
 from app.models.board import PlayerBoard
@@ -90,7 +90,14 @@ class GameService:
         if axo.user_id != verified_user_id:
             raise HTTPException(status_code=403, detail="No eres dueño de este Axolotito.")
 
+        # 1b. Verificar tutorial completado
+        from app.core.auth import require_tutorial
+        user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+        if user: require_tutorial(user)
+
         # 2. Check Axolotito status and energy
+        if axo.status in ("playing", "waiting_settlement"):
+            raise HTTPException(status_code=400, detail="Este Axolotito ya está en partida. Espera a que termine.")
         if axo.status == "sleeping" and axo.sleep_expires_at and axo.sleep_expires_at > datetime.utcnow():
             raise HTTPException(status_code=400, detail="Este Axolotito está durmiendo. Despiértalo primero.")
         if axo.energy_current < 10:
@@ -111,9 +118,11 @@ class GameService:
             raise HTTPException(status_code=400, detail="Multiplicador no soportado. Valores válidos: 1, 2, 5, 10.")
 
         room = ROOM_CONFIG[room_name]
-        entry_fee       = room["fee"] * multiplier
-        win_prize       = room["prize"] * multiplier
-        loss_consolation = room["consolation"] * multiplier
+        # VULN-06: ROOM_CONFIG almacena montos en FRJ human-readable.
+        # Convertir a unidad mínima entera para operar contra wallet (que usa internal).
+        entry_fee        = frj_to_internal(room["fee"] * multiplier)
+        win_prize        = frj_to_internal(room["prize"] * multiplier)
+        loss_consolation = frj_to_internal(room["consolation"] * multiplier)
         difficulty_label = room["difficulty_label"]
         
         # Sub-linear XP scaling (using square root) to prevent excessive level-ups at high stakes
@@ -132,7 +141,7 @@ class GameService:
         if wallet.frijolitos < entry_fee:
             raise HTTPException(
                 status_code=400,
-                detail=f"Saldo insuficiente. Entrar a {room_title} ({multiplier}x) cuesta {entry_fee} GAL."
+                detail=f"Saldo insuficiente. Entrar a {room_title} ({multiplier}x) cuesta {frj_to_display(entry_fee):.1f} FRJ."
             )
 
         # --- DEDUCT COST AND ENERGY ---
@@ -150,7 +159,7 @@ class GameService:
         ledger_fee = TransactionLedger(
             user_id=verified_user_id,
             amount=entry_fee,
-            currency=CurrencyType.GEMA_ALGA,
+            currency=CurrencyType.FRIJOLITO,
             tx_type=TransactionType.MARKET_BUY,
             description=f"Entrada a sala {room_title} con Axolotito {axo.name} ({multiplier}x)"
         )
@@ -317,7 +326,7 @@ class GameService:
             ledger_win = TransactionLedger(
                 user_id=verified_user_id,
                 amount=prize_awarded,
-                currency=CurrencyType.GEMA_ALGA,
+                currency=CurrencyType.FRIJOLITO,
                 tx_type=TransactionType.REWARD,
                 description=f"🏆 ¡Victoria en sala {room_title}! Premio: {_prize_display:.2f} FRJ{streak_note}"
             )
@@ -340,7 +349,7 @@ class GameService:
             ledger_loss = TransactionLedger(
                 user_id=verified_user_id,
                 amount=prize_awarded,
-                currency=CurrencyType.GEMA_ALGA,
+                currency=CurrencyType.FRIJOLITO,
                 tx_type=TransactionType.REWARD,
                 description=f"Consolación en sala {room_title}. Premio: {_prize_display:.2f} FRJ"
             )
@@ -474,7 +483,7 @@ class GameService:
             "room_title": room_title,
             "winner": winner_label,
             "turns": turns,
-            "prize_gal": prize_awarded,
+            "prize_gal": frj_to_display(prize_awarded),
             "board_xp_gained": win_xp_board if is_win else loss_xp_board,
             "board_level_current": board.level,
             "axo_xp_gained": win_xp_axo if is_win else loss_xp_axo,
@@ -512,6 +521,11 @@ class GameService:
         if axo.user_id != verified_user_id:
             raise HTTPException(status_code=403, detail="No eres dueño de este Axolotito.")
 
+        # Verificar tutorial completado
+        from app.core.auth import require_tutorial
+        user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+        if user: require_tutorial(user)
+
         if axo.status == "sleeping":
             raise HTTPException(status_code=400, detail="No puedes alimentar a un Axolotito que está durmiendo.")
 
@@ -533,7 +547,7 @@ class GameService:
 
         wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
         if wallet.frijolitos < cost:
-            raise HTTPException(status_code=400, detail=f"Saldo insuficiente. Comprar {food_name} cuesta {cost} GAL.")
+            raise HTTPException(status_code=400, detail=f"Saldo insuficiente. Comprar {food_name} cuesta {frj_to_display(cost):.0f} FRJ.")
 
         # Deduct cost and add energy
         wallet.frijolitos -= cost
@@ -552,7 +566,7 @@ class GameService:
         ledger = TransactionLedger(
             user_id=verified_user_id,
             amount=cost,
-            currency=CurrencyType.GEMA_ALGA,
+            currency=CurrencyType.FRIJOLITO,
             tx_type=TransactionType.MARKET_BUY,
             description=f"Alimentar a {axo.name} con {food_name}"
         )
@@ -582,6 +596,11 @@ class GameService:
             raise HTTPException(status_code=404, detail="Axolotito no encontrado.")
         if axo.user_id != verified_user_id:
             raise HTTPException(status_code=403, detail="No eres dueño de este Axolotito.")
+
+        # Verificar tutorial completado
+        from app.core.auth import require_tutorial
+        user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+        if user: require_tutorial(user)
 
         if axo.status == "sleeping":
             raise HTTPException(status_code=400, detail="Este Axolotito ya está durmiendo.")
@@ -620,6 +639,11 @@ class GameService:
             raise HTTPException(status_code=404, detail="Axolotito no encontrado.")
         if axo.user_id != verified_user_id:
             raise HTTPException(status_code=403, detail="No eres dueño de este Axolotito.")
+
+        # Verificar tutorial completado
+        from app.core.auth import require_tutorial
+        user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+        if user: require_tutorial(user)
 
         if axo.status != "sleeping":
             raise HTTPException(status_code=400, detail="Este Axolotito no está durmiendo.")

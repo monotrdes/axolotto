@@ -81,6 +81,10 @@ def mock_web3_checkout(monkeypatch):
         return True
 
     monkeypatch.setattr(
+        "app.services.checkout_service.settings.ALLOW_DEV_PAYMENTS",
+        True,
+    )
+    monkeypatch.setattr(
         "app.services.checkout_service.Web3Service.verify_usdc_payment",
         mock_verify,
     )

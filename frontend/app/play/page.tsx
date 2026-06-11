@@ -5,11 +5,10 @@ import axios from "axios";
 
 import { usePrivy } from "@privy-io/react-auth";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { LogOut, Settings } from "lucide-react";
+import { Settings } from "lucide-react";
 import { useBlockchainEvents } from "@/hooks/useBlockchainEvents";
 import { useToast } from "@/context/ToastContext";
 
-import DailyClaim from "@/components/DailyClaim";
 import AxolottoStore from "@/components/Store";
 import Inventory from "@/components/Inventory";
 import Santuario from "@/components/Santuario";
@@ -26,6 +25,7 @@ import type { WorldScene } from "@/components/world/WorldScene";
 import type { AxolotitoData } from "@/components/world/entities/AxolotitoSprite";
 import { DecorSlotPanel } from "@/components/world/hud/DecorSlotPanel";
 import { MochilaFloating } from "@/components/world/hud/MochilaFloating";
+import LunarFloating from "@/components/world/hud/LunarFloating";
 import WebitoIntroAnimation from "@/components/onboarding/WebitoIntroAnimation";
 import PostTutorialBranch from "@/components/onboarding/PostTutorialBranch";
 import { TutorialFlow } from "@/components/tutorial/TutorialFlow";
@@ -97,8 +97,64 @@ export default function Home() {
   const [hostingInvite, setHostingInvite] = useState<string | null>(null);
   const [hostingSeats, setHostingSeats] = useState(0);
   const caveSeatsRef = useRef<number | null>(null); // cache: asientos de la mesa de la cueva
+  const [activeGame, setActiveGame] = useState<any>(null);
+
+  // ── Game session locking (from PlayMode — covers CPU games and backend status) ──
+  const [gameSessionActive, setGameSessionActive] = useState(false);
+  const [tabBlocked, setTabBlocked] = useState(false);
+
+  // Combined lock: activeGame (multiplayer from /active-check) OR gameSessionActive (CPU/animation)
+  const isGameLocked = !!(activeGame?.active) || gameSessionActive;
+
+  // Force tab to 'jugar' when game becomes active
+  useEffect(() => {
+    if (isGameLocked && tabActiva !== 'jugar') {
+      setTabActiva('jugar');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGameLocked]);
+
+  // Clear tab blocked message after 3 seconds
+  useEffect(() => {
+    if (!tabBlocked) return;
+    const t = setTimeout(() => setTabBlocked(false), 3000);
+    return () => clearTimeout(t);
+  }, [tabBlocked]);
+
+  // Guarded tab switcher: blocks non-jugar tabs during active game session
+  const safeSetTab = useCallback((tab: TabId) => {
+    if (isGameLocked && tab !== 'jugar') {
+      setTabBlocked(true);
+      return;
+    }
+    setTabActiva(tab);
+  }, [isGameLocked]);
+
+  // Poll active game status to lock navigation and UI controls
+  useEffect(() => {
+    if (!accessToken || !authenticated) {
+      setActiveGame(null);
+      return;
+    }
+    const checkActiveGame = async () => {
+      try {
+        const headers = { Authorization: `Bearer ${accessToken}` };
+        const res = await axios.get(`${API_BASE}/multiplayer/active-check`, { headers });
+        setActiveGame(res.data);
+        if (res.data?.active && tabActiva !== 'jugar') {
+          setTabActiva('jugar'); // Force to jugar — direct set, not safeSetTab
+        }
+      } catch (err) {
+        console.error("Error checking active game in Home:", err);
+      }
+    };
+    checkActiveGame();
+    const interval = setInterval(checkActiveGame, 5000);
+    return () => clearInterval(interval);
+  }, [accessToken, authenticated, tabActiva]);
 
   const [onboardingPhase, setOnboardingPhase] = useState<OnboardingPhase>("loading");
+  const isInTutorial = onboardingPhase === "tutorial" || onboardingPhase === "intro" || onboardingPhase === "branch";
   const [syncData, setSyncData] = useState<SyncData | null>(null);
   const [tutorialKarma, setTutorialKarma] = useState<"lucky" | "salty">("lucky");
   const [tutorialAxoName, setTutorialAxoName] = useState("Axolotito Bebé");
@@ -532,7 +588,7 @@ export default function Home() {
         <p className="relative z-10 text-[#FF8DA1] text-xl font-bold animate-pulse tracking-wide">
           Sincronizando…
         </p>
-        <TutorialResetButton onReset={handleDevReset} />
+        <TutorialResetButton onReset={handleDevReset} inTutorial={isInTutorial} />
       </div>
     );
   }
@@ -541,7 +597,7 @@ export default function Home() {
     return (
       <>
         <WebitoIntroAnimation onComplete={() => setOnboardingPhase("tutorial")} />
-        <TutorialResetButton onReset={handleDevReset} />
+        <TutorialResetButton onReset={handleDevReset} inTutorial={isInTutorial} />
       </>
     );
   }
@@ -573,7 +629,7 @@ export default function Home() {
               actualizarSaldosSilencioso();
             }}
           />
-          <TutorialResetButton onReset={handleDevReset} />
+          <TutorialResetButton onReset={handleDevReset} inTutorial={isInTutorial} />
         </div>
       </div>
     );
@@ -594,7 +650,7 @@ export default function Home() {
             setTabActiva("jugar");
           }}
         />
-        <TutorialResetButton onReset={handleDevReset} />
+        <TutorialResetButton onReset={handleDevReset} inTutorial={isInTutorial} />
       </>
     );
   }
@@ -617,6 +673,10 @@ export default function Home() {
               setCanvasReady(true);
             }}
             onZoneClick={(zoneId) => {
+              if (isGameLocked) {
+                setTabBlocked(true);
+                return;
+              }
               const zoneToTab: Record<string, TabId> = {
                 nido: "santuario",
                 tianguis: "tienda",
@@ -628,10 +688,18 @@ export default function Home() {
               if (tab) setTabActiva(tab);
             }}
             onAxolotitoClick={(_axoId: string) => {
+              if (isGameLocked) {
+                setTabBlocked(true);
+                return;
+              }
               setTabActiva("santuario");
               setPanelVisible(true);
             }}
             onStallClick={(stallType) => {
+              if (isGameLocked) {
+                setTabBlocked(true);
+                return;
+              }
               // Hotspots del diorama → abrir el panel HTML correspondiente
               if (stallType.startsWith("decor:")) {
                 // Slot de decoración de la sala → panel filtrado a su categoría
@@ -701,26 +769,18 @@ export default function Home() {
             initialZone={PAPER_WORLD ? "tianguis" : "nido"}
           />
 
-          {/* HUD TOP BAR */}
+          {/* HUD TOP BAR — brand (desktop only) → tokens → VIP → settings */}
           <header className="fixed top-0 left-0 right-0 z-40 h-14 flex items-center justify-between px-4 sm:px-6 bg-[#060610]/80 backdrop-blur-xl border-b border-white/5">
-            {/* Brand */}
-            <div className="flex items-center gap-2 select-none">
+            {/* Brand — solo visible en desktop */}
+            <div className="hidden sm:flex items-center gap-2 select-none">
               <span className="text-xl">🦎</span>
               <span className="font-extrabold text-base sm:text-lg text-[#FF8DA1] tracking-tight drop-shadow-[0_0_8px_rgba(255,141,161,0.4)]">
                 AXOLOTTO
               </span>
             </div>
 
-            {/* VIP chip + Currencies + logout */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {/* VIP Chip */}
-              <VipChip
-                vipTier={datosBanco.vip_tier}
-                daysRemaining={datosBanco.vip_days_remaining}
-                pendingGal={datosBanco.vip_pending_gal}
-                onClick={() => setVipModalOpen(true)}
-              />
-
+              {/* AXF pill */}
               <div className="relative flex items-center gap-1.5 bg-[#1C1C35]/80 px-2.5 sm:px-3 py-1.5 rounded-full border border-[#E4007C]/20">
                 <span className="text-sm select-none">💎</span>
                 <span className="text-[#E4007C] font-bold text-sm tabular-nums">{datosBanco.axofichas}</span>
@@ -738,48 +798,66 @@ export default function Home() {
                   </span>
                 ))}
               </div>
+
+              {/* FRJ pill — no decimals */}
               <button
-                onClick={() => { setTabActiva('tienda'); setOpenBancoCount(c => c + 1); }}
+                onClick={() => {
+                  if (isGameLocked) {
+                    setTabBlocked(true);
+                    return;
+                  }
+                  setTabActiva('tienda');
+                  setOpenBancoCount(c => c + 1);
+                }}
                 className="relative flex items-center gap-1.5 bg-[#1C1C35]/80 px-2.5 sm:px-3 py-1.5 rounded-full border border-amber-500/20 hover:border-amber-400/50 hover:bg-amber-900/20 transition-all active:scale-95"
                 title="Mis Frijolitos"
               >
                 <span className="text-sm select-none">🪙</span>
                 <span className="text-amber-500 font-bold text-sm tabular-nums">
-                  {Number(datosBanco.frijolitos || 0).toFixed(2)}
+                  {Number(datosBanco.frijolitos || 0).toFixed(0)}
                 </span>
                 <span className="text-gray-600 text-[10px] font-medium hidden sm:inline">FRJ</span>
                 {floatingGal.map(f => (
                   <span
-                    key={f.id}
-                    style={{ '--x': `${f.x}px` } as React.CSSProperties}
-                    className="absolute pointer-events-none text-xs font-black text-amber-500 animate-float-up z-50 whitespace-nowrap"
-                    onAnimationEnd={() => {
-                      setFloatingGal(prev => prev.filter(item => item.id !== f.id));
-                    }}
+                     key={f.id}
+                     style={{ '--x': `${f.x}px` } as React.CSSProperties}
+                     className="absolute pointer-events-none text-xs font-black text-amber-500 animate-float-up z-50 whitespace-nowrap"
+                     onAnimationEnd={() => {
+                       setFloatingGal(prev => prev.filter(item => item.id !== f.id));
+                     }}
                   >
                     {f.amount}
                   </span>
                 ))}
               </button>
-              {/* Daily FRJ Claim */}
-              <DailyClaim
-                token={accessToken}
-                onSuccess={actualizarSaldosSilencioso}
+ 
+              {/* VIP Chip */}
+              <VipChip
+                vipTier={datosBanco.vip_tier}
+                daysRemaining={datosBanco.vip_days_remaining}
+                pendingGal={datosBanco.vip_pending_gal}
+                onClick={() => {
+                  if (isGameLocked) {
+                    setTabBlocked(true);
+                    return;
+                  }
+                  setVipModalOpen(true);
+                }}
               />
-
+ 
+              {/* Settings */}
               <button
-                onClick={() => setSettingsModalOpen(true)}
+                onClick={() => {
+                  if (isGameLocked) {
+                    setTabBlocked(true);
+                    return;
+                  }
+                  setSettingsModalOpen(true);
+                }}
                 className="p-2 rounded-full bg-[#1C1C35]/80 border border-white/5 text-gray-500 hover:text-[#FF8DA1] hover:bg-[#FF8DA1]/15 hover:border-[#FF8DA1]/30 transition-all"
                 title="Ajustes"
               >
                 <Settings size={13} />
-              </button>
-              <button
-                onClick={logout}
-                className="p-2 rounded-full bg-[#1C1C35]/80 border border-white/5 text-gray-500 hover:text-red-400 hover:bg-red-900/20 hover:border-red-500/30 transition-all"
-                title="Desconectar"
-              >
-                <LogOut size={13} />
               </button>
             </div>
           </header>
@@ -868,6 +946,12 @@ export default function Home() {
               PAPER_WORLD && !panelVisible ? 'pointer-events-none' : ''
             }`}
           >
+            {/* Tab-lock banner */}
+            {tabBlocked && (
+              <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 px-5 py-2 bg-amber-950/90 border border-amber-500/40 text-amber-300 text-xs font-bold rounded-full shadow-[0_0_20px_rgba(245,158,11,0.25)] animate-toast-in">
+                🔒 Termina tu partida actual antes de cambiar de zona
+              </div>
+            )}
             {(!PAPER_WORLD || panelVisible) && (
             <div key={tabActiva} className="max-w-5xl mx-auto px-3 sm:px-6 py-4 animate-tab-fade">
               {tabActiva === 'tienda' && (
@@ -892,6 +976,7 @@ export default function Home() {
                   lastGameEvent={lastGameEvent}
                   earningsQueue={earningsQueue}
                   onEarningsSeen={() => setEarningsQueue([])}
+                  onGameSessionChange={setGameSessionActive}
                 />
               )}
               {/* Mochila unificada: tabs cartas/tablas/items en un solo componente */}
@@ -940,11 +1025,23 @@ export default function Home() {
           {/* Mochila flotante — abre el dashboard unificado en la sección seleccionada */}
           <MochilaFloating
             onOpenSection={(section) => {
+              if (isGameLocked) {
+                setTabBlocked(true);
+                return;
+              }
               setMochilaInitialTab(section);
               setTabActiva("mochila");
               setPanelVisible(true);
             }}
           />
+
+          {/* Lunar claim floating button — only visible when reward available */}
+          {!activeGame?.active && (
+            <LunarFloating
+              token={accessToken}
+              onSuccess={actualizarSaldosSilencioso}
+            />
+          )}
 
           {/* BOTTOM DOCK — 3 macrozonas (flag) o 5 zonas legacy */}
           {PAPER_WORLD ? (
@@ -952,6 +1049,10 @@ export default function Home() {
               tabActiva={tabActiva}
               dailyClaimAvailable={dailyClaimAvailable}
               onNavigate={(tab, zone) => {
+                if (isGameLocked && tab !== 'jugar') {
+                  setTabBlocked(true);
+                  return;
+                }
                 setTabActiva(tab);
                 setPanelVisible(false); // navegar muestra el mundo limpio
                 gameCanvasRef.current?.navigateToZone(zone);
@@ -962,7 +1063,12 @@ export default function Home() {
               zoneTabs={ZONE_TABS}
               tabActiva={tabActiva}
               dailyClaimAvailable={dailyClaimAvailable}
+              gameSessionActive={isGameLocked}
               onTabChange={(tab, zone) => {
+                if (isGameLocked && tab !== 'jugar') {
+                  setTabBlocked(true);
+                  return;
+                }
                 setTabActiva(tab);
                 gameCanvasRef.current?.navigateToZone(zone);
               }}
@@ -995,7 +1101,7 @@ export default function Home() {
         </div>
       )}
 
-      <TutorialResetButton onReset={handleDevReset} />
+      <TutorialResetButton onReset={handleDevReset} inTutorial={isInTutorial} />
 
     </div>
   </RealtimeProvider>

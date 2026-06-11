@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from typing import Optional
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.database import get_session
 from app.core.auth import get_verified_user_id

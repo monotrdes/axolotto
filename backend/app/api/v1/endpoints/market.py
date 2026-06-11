@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import Session, select
 from typing import Optional, List
 from datetime import datetime
@@ -6,14 +6,14 @@ import json
 import logging
 
 from app.database import get_session
-from app.core.auth import get_verified_user_id
+from app.core.auth import get_verified_user_id, verify_no_active_game
 from app.models.items import ItemCatalog, PlayerInventory, ItemType, InventoryMarketListing
 from app.models.user import User
 from app.models.economy import TransactionLedger, CurrencyType, TransactionType, ChainOutbox
 from app.models.lobby_models import TreasuryVault
 from app.services.bank_service import BankService
 from app.services.rarity_service import get_card_dynamic_rarities
-from app.core.config import VIP_CONFIG
+from app.core.config import VIP_CONFIG, frj_to_internal, frj_to_display
 
 logger = logging.getLogger("market")
 from pydantic import BaseModel
@@ -29,13 +29,16 @@ class ListInventoryItemRequest(BaseModel):
 def list_inventory_item(
     request: ListInventoryItemRequest,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id),
+    verified_user_id: str = Depends(verify_no_active_game),
 ):
     """Lista un sobre o carta de PlayerInventory para venta P2P en el mercado."""
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     if request.quantity <= 0:
         raise HTTPException(status_code=400, detail="La cantidad debe ser mayor a 0.")
     if request.price_gal <= 0:
-        raise HTTPException(status_code=400, detail="El precio de venta debe ser mayor a 0 GAL.")
+        raise HTTPException(status_code=400, detail="El precio de venta debe ser mayor a 0 FRJ.")
 
     # 1. Obtener la fila del inventario
     inv_item = session.exec(
@@ -81,9 +84,12 @@ def list_inventory_item(
 def cancel_inventory_listing(
     listing_id: int,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id),
+    verified_user_id: str = Depends(verify_no_active_game),
 ):
     """Cancela una publicación de inventario y regresa los ítems al inventario del vendedor."""
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     listing = session.exec(
         select(InventoryMarketListing)
         .where(InventoryMarketListing.id == listing_id)
@@ -128,9 +134,9 @@ def cancel_inventory_listing(
 def buy_inventory_listing(
     listing_id: int,
     session: Session = Depends(get_session),
-    verified_user_id: str = Depends(get_verified_user_id),
+    verified_user_id: str = Depends(verify_no_active_game),
 ):
-    """Compra un sobre o carta listada en el mercado P2P usando gemas de alga (GAL)."""
+    """Compra un sobre o carta listada en el mercado P2P usando Frijolitos (FRJ)."""
     listing = session.exec(
         select(InventoryMarketListing)
         .where(InventoryMarketListing.id == listing_id)
@@ -148,20 +154,23 @@ def buy_inventory_listing(
     buyer_wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
     seller_wallet = BankService.get_or_create_wallet(session, listing.seller_id, for_update=True)
     price = listing.price_gal
+    price_internal = frj_to_internal(price)
 
-    if buyer_wallet.frijolitos < price:
-        raise HTTPException(status_code=400, detail=f"Saldo GAL insuficiente (requieres {price} GAL).")
+    if buyer_wallet.frijolitos < price_internal:
+        raise HTTPException(status_code=400, detail=f"Saldo FRJ insuficiente (requieres {price} FRJ, tienes {frj_to_display(buyer_wallet.frijolitos):.1f} FRJ).")
 
     # 2. Comisión P2P (con soporte para descuento de VIP del comprador)
     buyer_user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    from app.core.auth import require_tutorial
+    if buyer_user: require_tutorial(buyer_user)
     commission_rate = 0.05
     if buyer_user and buyer_user.is_vip and buyer_user.vip_tier:
         commission_rate = VIP_CONFIG.get(buyer_user.vip_tier, {}).get("p2p_commission", 0.05)
-    commission = round(price * commission_rate, 2)
-    seller_share = price - commission
+    commission = int(round(price_internal * commission_rate))
+    seller_share = price_internal - commission
 
     # 3. Transacción financiera interna
-    buyer_wallet.frijolitos -= price
+    buyer_wallet.frijolitos -= price_internal
     seller_wallet.frijolitos += seller_share
 
     vault = session.exec(select(TreasuryVault)).first()
@@ -175,15 +184,15 @@ def buy_inventory_listing(
     item_name = item.name if item else f"Item #{listing.item_id}"
     
     ledger_buyer = TransactionLedger(
-        user_id=verified_user_id, amount=price, currency=CurrencyType.GEMA_ALGA,
+        user_id=verified_user_id, amount=price_internal, currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.MARKET_BUY, description=f"Compra P2P: {item_name} x{listing.quantity}"
     )
     ledger_seller = TransactionLedger(
-        user_id=listing.seller_id, amount=seller_share, currency=CurrencyType.GEMA_ALGA,
+        user_id=listing.seller_id, amount=seller_share, currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.REWARD, description=f"Venta P2P: {item_name} x{listing.quantity} (comisión {commission_rate*100:.1f}%)"
     )
     ledger_commission = TransactionLedger(
-        user_id="treasury", amount=commission, currency=CurrencyType.GEMA_ALGA,
+        user_id="treasury", amount=commission, currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.BURN, description=f"Comisión P2P {commission_rate*100:.1f}% {item_name} x{listing.quantity}"
     )
 

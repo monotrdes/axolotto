@@ -550,7 +550,7 @@ export default function Santuario({
                 </div>
                 {Object.keys(passiveBonuses).length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-teal-500/10">
-                    {passiveBonuses.frj_multiplier > 1 && <span className="text-[7px] font-black text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full border border-emerald-500/20">+{Math.round((passiveBonuses.frj_multiplier-1)*100)}% GAL</span>}
+                    {passiveBonuses.frj_multiplier > 1 && <span className="text-[7px] font-black text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full border border-emerald-500/20">+{Math.round((passiveBonuses.frj_multiplier-1)*100)}% FRJ</span>}
                     {passiveBonuses.extra_starting_card && <span className="text-[7px] font-black text-indigo-400 bg-indigo-950/50 px-1.5 py-0.5 rounded-full border border-indigo-500/20">+1 Carta</span>}
                     {passiveBonuses.sobrecito_chance_bonus > 0 && <span className="text-[7px] font-black text-purple-400 bg-purple-950/50 px-1.5 py-0.5 rounded-full border border-purple-500/20">+{Math.round(passiveBonuses.sobrecito_chance_bonus*100)}% Boosters</span>}
                     {passiveBonuses.axf_multiplier > 1 && <span className="text-[7px] font-black text-amber-300 bg-amber-950/50 px-1.5 py-0.5 rounded-full border border-amber-500/20">+{Math.round((passiveBonuses.axf_multiplier-1)*100)}% AXF</span>}

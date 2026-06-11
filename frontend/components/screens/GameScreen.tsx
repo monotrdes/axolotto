@@ -9,6 +9,7 @@ import TensionEffects, { type TensionLevel } from "../ui/TensionEffects";
 import AxoAvatar, { type AxoReaction } from "../ui/AxoAvatar";
 import MiniGriton from "../ui/MiniGriton";
 import CalledCardsHistory, { type CardHistoryEntry } from "../ui/CalledCardsHistory";
+import ChatFeed, { type ChatMessage } from "../chat/ChatFeed";
 import { LOTERIA_EMOJI, CARD_IMAGE } from "../ui/LoteriaCard";
 import Image from "next/image";
 
@@ -132,6 +133,16 @@ export interface GameScreenProps {
   // ── Win patterns ────────────────────────────────────────────────────────────
   winPatterns?: string[];
 
+  // ── Chat ─────────────────────────────────────────────────────────────────
+  /** Chat messages for the ChatFeed */
+  chatMessages?: ChatMessage[];
+  /** WebSocket send function for chat */
+  onSendChat?: ((msg: any) => void) | null;
+  /** Whether the chat feed is collapsed */
+  chatCollapsed?: boolean;
+  /** Toggle chat collapse */
+  onToggleChat?: () => void;
+
   // ── Actions ─────────────────────────────────────────────────────────────
   onPlayAgain?: () => void;
   onChangeBoard?: () => void;
@@ -203,6 +214,10 @@ export default function GameScreen(props: GameScreenProps) {
     onChangeAll,
     onSpeedChange,
     speedMultiplier = 1,
+    chatMessages = [],
+    onSendChat,
+    chatCollapsed = true,
+    onToggleChat,
   } = props;
 
   const patternHintCells = useMemo(() => getPatternHintCells(winPatterns), [winPatterns]);
@@ -583,6 +598,17 @@ export default function GameScreen(props: GameScreenProps) {
             </div>
           </div>
         </div>
+        {/* Chat Feed for result phase (always expanded) */}
+        {onSendChat && onToggleChat && (
+          <ChatFeed
+            messages={chatMessages ?? []}
+            send={onSendChat ?? null}
+            phase="result"
+            playMode={mode === "manual" ? "manual" : "auto"}
+            collapsed={false}
+            onToggleCollapse={onToggleChat}
+          />
+        )}
       </TensionEffects>
     );
   }
@@ -590,13 +616,25 @@ export default function GameScreen(props: GameScreenProps) {
   // ── Playing (mode = cpu | auto | manual) ─────────────────────────────────
   return (
     <TensionEffects level={tensionLevel} disableHeartbeat={mode === "auto"}>
-      <div
-        className="space-y-3 animate-slide-step"
-        onPointerDown={handleSpeedHoldStart}
-        onPointerUp={handleSpeedHoldEnd}
-        onPointerLeave={handleSpeedHoldEnd}
-        onPointerCancel={handleSpeedHoldEnd}
-      >
+      <div className="relative">
+        {/* Chat Feed */}
+        {onSendChat && onToggleChat && (
+          <ChatFeed
+            messages={chatMessages ?? []}
+            send={onSendChat ?? null}
+            phase={phase}
+            playMode={mode === "manual" ? "manual" : "auto"}
+            collapsed={chatCollapsed ?? true}
+            onToggleCollapse={onToggleChat}
+          />
+        )}
+        <div
+          className="space-y-3 animate-slide-step"
+          onPointerDown={handleSpeedHoldStart}
+          onPointerUp={handleSpeedHoldEnd}
+          onPointerLeave={handleSpeedHoldEnd}
+          onPointerCancel={handleSpeedHoldEnd}
+        >
         {/* ── Speed badge (CPU mode only) ──────────────────────────────────── */}
         {mode === "cpu" && holding && (
           <div className="flex justify-center -mb-1">
@@ -717,6 +755,7 @@ export default function GameScreen(props: GameScreenProps) {
           </button>
         )}
       </div>
+      </div> {/* close relative wrapper */}
     </TensionEffects>
   );
 }

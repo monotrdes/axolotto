@@ -1,4 +1,4 @@
-﻿"""rewards.py — Endpoints para reclamar premios.
+"""rewards.py — Endpoints para reclamar premios.
 
 - POST /claim                 — Reclamar premio Corcholata post-tutorial
 - GET  /daily-claim/status    — Estado de la recompensa diaria F2P
@@ -17,6 +17,7 @@ from app.models.promo import PendingReward
 from app.models.user import User
 from app.services.bank_service import BankService
 from app.core.limiter import limiter
+from app.core.config import axf_to_internal, frj_to_internal, axf_to_display, frj_to_display
 
 router = APIRouter()
 
@@ -46,8 +47,11 @@ def claim_pending_reward(
     # ENTREGAR
     wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
 
-    wallet.axofichas = (wallet.axofichas or 0) + pending.reward_axf
-    wallet.frijolitos = (wallet.frijolitos or 0) + pending.reward_frj
+    reward_axf_int = axf_to_internal(pending.reward_axf)
+    reward_frj_int = frj_to_internal(pending.reward_frj)
+
+    wallet.axofichas = (wallet.axofichas or 0) + reward_axf_int
+    wallet.frijolitos = (wallet.frijolitos or 0) + reward_frj_int
     wallet.last_updated = datetime.utcnow()
     session.add(wallet)
 
@@ -66,18 +70,18 @@ def claim_pending_reward(
         session.add(inv)
 
     # Registrar en ledger para trazabilidad y métricas de admin
-    if pending.reward_axf and pending.reward_axf > 0:
+    if reward_axf_int > 0:
         session.add(TransactionLedger(
             user_id=verified_user_id,
-            amount=pending.reward_axf,
-            currency=CurrencyType.AXOGEMA,
+            amount=reward_axf_int,
+            currency=CurrencyType.AXOFICHA,
             tx_type=TransactionType.PROMO_REWARD,
             description=f"Corcholata reclamada (promo_id={pending.promo_code_id})",
         ))
-    if pending.reward_frj and pending.reward_frj > 0:
+    if reward_frj_int > 0:
         session.add(TransactionLedger(
             user_id=verified_user_id,
-            amount=pending.reward_frj,
+            amount=reward_frj_int,
             currency=CurrencyType.FRIJOLITO,
             tx_type=TransactionType.PROMO_REWARD,
             description=f"Corcholata reclamada (promo_id={pending.promo_code_id})",
@@ -98,8 +102,8 @@ def claim_pending_reward(
             "item_id": pending.reward_item_id,
         },
         "wallet": {
-            "axogemas": wallet.axofichas,
-            "gemas_alga": wallet.frijolitos,
+            "axofichas": axf_to_display(wallet.axofichas),
+            "frijolitos": frj_to_display(wallet.frijolitos),
         },
     }
 

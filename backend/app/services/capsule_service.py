@@ -14,6 +14,7 @@ from app.models.items import (
 )
 from app.models.economy import TransactionLedger, TransactionType, CurrencyType, Wallet
 from app.services.bank_service import BankService
+from app.core.config import frj_to_internal
 from app.services.drop_service import (
     _try_legendary_drop,
     _try_tabla_forjada_drop,
@@ -82,6 +83,10 @@ def _roll_capsule(tier: str, user_id: str, session: Session) -> dict:
       3. Pool normal según tier.
       4. Para outcome "sobre": check secundario de Foil.
     """
+    from app.models.user import User
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    from app.core.auth import require_tutorial
+    if user: require_tutorial(user)
     pity = session.exec(select(CapsulaPity).where(CapsulaPity.user_id == user_id)).first()
     if not pity:
         pity = CapsulaPity(user_id=user_id)
@@ -152,7 +157,7 @@ def _roll_capsule(tier: str, user_id: str, session: Session) -> dict:
         lo, hi = FRJ_RANGES[tier]
         gal_rewarded = round(_rng.uniform(lo, hi), 1)
         wallet = BankService.get_or_create_wallet(session, user_id)
-        wallet.frijolitos += gal_rewarded
+        wallet.frijolitos += frj_to_internal(gal_rewarded)
         session.add(wallet)
         outcome_text = f"{gal_rewarded} FRJ"
 

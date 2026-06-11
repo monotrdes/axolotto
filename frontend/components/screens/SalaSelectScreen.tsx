@@ -3,12 +3,14 @@ import { API_BASE } from "@/lib/api";
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Play, Users, Coins, Lock, Home } from 'lucide-react';
+import { Play, Users, Coins, Lock, Home, Zap, MousePointerClick } from 'lucide-react';
 
 interface SalaSelectScreenProps {
   token: string | null;
   selectedRoom: 'rookie' | 'champion';
   onRoomSelect: (r: 'rookie' | 'champion') => void;
+  playMode: 'auto' | 'manual';
+  onPlayModeChange: (m: 'auto' | 'manual') => void;
   onPlay: () => void;
   registering: boolean;
   error: string | null;
@@ -42,6 +44,8 @@ export default function SalaSelectScreen({
   token,
   selectedRoom,
   onRoomSelect,
+  playMode,
+  onPlayModeChange,
   onPlay,
   registering,
   error,
@@ -214,6 +218,63 @@ export default function SalaSelectScreen({
           accentText="text-pink-300"
           accentBg="bg-pink-950/60 border-pink-500/30"
         />
+      </div>
+
+      {/* Play Mode Toggle — Auto (AFK) vs Manual (Real-time) */}
+      <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 space-y-3">
+        <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+          Modo de Juego
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => onPlayModeChange('auto')}
+            className={`relative text-left p-3.5 rounded-xl border transition-all ${
+              playMode === 'auto'
+                ? 'bg-indigo-950/60 border-indigo-500/70 shadow-[0_0_15px_rgba(99,102,241,0.15)]'
+                : 'bg-slate-900/40 border-slate-700/50 hover:border-slate-600'
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <Zap size={14} className={playMode === 'auto' ? 'text-indigo-400' : 'text-slate-500'} />
+              <span className={`text-xs font-black uppercase ${playMode === 'auto' ? 'text-white' : 'text-slate-400'}`}>
+                Automático
+              </span>
+            </div>
+            <p className="text-[9px] text-slate-500 leading-relaxed">
+              AFK — el bot juega por ti. Recibe notificaciones y recoge ganancias.
+            </p>
+            {playMode === 'auto' && (
+              <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center">
+                <span className="text-white text-[8px] font-black">✓</span>
+              </div>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => onPlayModeChange('manual')}
+            className={`relative text-left p-3.5 rounded-xl border transition-all ${
+              playMode === 'manual'
+                ? 'bg-amber-950/60 border-amber-500/70 shadow-[0_0_15px_rgba(245,158,11,0.15)]'
+                : 'bg-slate-900/40 border-slate-700/50 hover:border-slate-600'
+            }`}
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <MousePointerClick size={14} className={playMode === 'manual' ? 'text-amber-400' : 'text-slate-500'} />
+              <span className={`text-xs font-black uppercase ${playMode === 'manual' ? 'text-white' : 'text-slate-400'}`}>
+                Manual
+              </span>
+            </div>
+            <p className="text-[9px] text-slate-500 leading-relaxed">
+              En vivo — tú marcas tus cartas y gritas ¡Lotería! en tiempo real.
+            </p>
+            {playMode === 'manual' && (
+              <div className="absolute top-2 right-2 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center">
+                <span className="text-white text-[8px] font-black">✓</span>
+              </div>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Player-Hosted Rooms */}

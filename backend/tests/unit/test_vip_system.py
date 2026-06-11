@@ -77,7 +77,7 @@ def test_vip_welcome_gift(session):
 
     # Caso 1: Usuario compra Coral por primera vez
     user_a = make_user(session, privy_did="user_a")
-    make_wallet(session, user_id="user_a", axogemas=160 * 10**6) # 160 AXF, fondos suficientes
+    make_wallet(session, user_id="user_a", axogemas=160.0) # 160 AXF, fondos suficientes
 
     ShopService.buy_item(session, user_id="user_a", item_id=vip_coral.id, payment_currency=CurrencyType.AXOGEMA)
 
@@ -113,7 +113,7 @@ def test_vip_welcome_gift(session):
 
     # Caso 3: Usuario compra Dorado (da 500 GAL + 1 booster normal + capsulas: bronce=2, plata=1)
     user_b = make_user(session, privy_did="user_b")
-    make_wallet(session, user_id="user_b", axogemas=180 * 10**6)
+    make_wallet(session, user_id="user_b", axogemas=180.0)
 
     ShopService.buy_item(session, user_id="user_b", item_id=vip_dorado.id, payment_currency=CurrencyType.AXOGEMA)
 
@@ -152,7 +152,7 @@ def test_vip_welcome_gift(session):
 
     # Caso 4: Usuario compra Axolite (da 1000 GAL + 1 booster foil + capsulas: bronce=3, plata=2, oro=1)
     user_c = make_user(session, privy_did="user_c")
-    make_wallet(session, user_id="user_c", axogemas=350 * 10**6)
+    make_wallet(session, user_id="user_c", axogemas=350.0)
 
     ShopService.buy_item(session, user_id="user_c", item_id=vip_axolite.id, payment_currency=CurrencyType.AXOGEMA)
 
@@ -210,7 +210,7 @@ def test_vip_auto_renewal_success(session):
     session.add(user)
     
     # Wallet con fondos suficientes (precio Axolite = 300 AXF, §1 del plan)
-    make_wallet(session, user_id="user_renew", axogemas=360 * 10**6)
+    make_wallet(session, user_id="user_renew", axogemas=360.0)
     session.commit()
 
     # 2. Ejecutar tareas del scheduler
@@ -262,7 +262,7 @@ def test_vip_streak_tracking(session):
 
     # 1. Compra inicial
     user = make_user(session, privy_did="user_streak")
-    make_wallet(session, user_id="user_streak", axogemas=200 * 10**6)
+    make_wallet(session, user_id="user_streak", axogemas=200.0)
     
     ShopService.buy_item(session, user_id="user_streak", item_id=vip_coral.id, payment_currency=CurrencyType.AXOGEMA)
     session.refresh(user)
@@ -334,23 +334,21 @@ def test_get_vip_tiers_claves_traducidas():
       welcome_gal→ welcome_frj: 200 / 500 / 1000 FRJ
     """
     tiers = {t["id"]: t for t in ShopService.get_vip_tiers()}
-    AXF = 10 ** 6
-    FRJ = 10 ** 4
 
     # Precios AXF (1 AXF = $2 MXN → $100 / $240 / $600 MXN/mes)
-    assert tiers["coral"]["price_axf"] == 50 * AXF
-    assert tiers["dorado"]["price_axf"] == 120 * AXF
-    assert tiers["axolite"]["price_axf"] == 300 * AXF
+    assert tiers["coral"]["price_axf"] == 50
+    assert tiers["dorado"]["price_axf"] == 120
+    assert tiers["axolite"]["price_axf"] == 300
 
     # FRJ diario
-    assert tiers["coral"]["frj_daily"] == 20 * FRJ
-    assert tiers["dorado"]["frj_daily"] == 50 * FRJ
-    assert tiers["axolite"]["frj_daily"] == 130 * FRJ
+    assert tiers["coral"]["frj_daily"] == 20
+    assert tiers["dorado"]["frj_daily"] == 50
+    assert tiers["axolite"]["frj_daily"] == 130
 
     # Welcome FRJ
-    assert tiers["coral"]["welcome_frj"] == 200 * FRJ
-    assert tiers["dorado"]["welcome_frj"] == 500 * FRJ
-    assert tiers["axolite"]["welcome_frj"] == 1000 * FRJ
+    assert tiers["coral"]["welcome_frj"] == 200
+    assert tiers["dorado"]["welcome_frj"] == 500
+    assert tiers["axolite"]["welcome_frj"] == 1000
 
     # Las claves legacy no deben aparecer en el contrato
     for tier in tiers.values():
@@ -390,11 +388,12 @@ def test_get_vip_tiers_consistent_with_vip_config():
     no hay hardcoding paralelo.
     """
     tiers = {t["id"]: t for t in ShopService.get_vip_tiers()}
+    from app.core.config import axf_to_display, frj_to_display
     for tier_id, cfg in VIP_CONFIG.items():
         t = tiers[tier_id]
-        assert t["price_axf"] == cfg["price_axg"]
-        assert t["frj_daily"] == cfg["gal_daily"]
-        assert t["welcome_frj"] == cfg["welcome_gal"]
+        assert t["price_axf"] == axf_to_display(cfg["price_axg"])
+        assert t["frj_daily"] == frj_to_display(cfg["gal_daily"])
+        assert t["welcome_frj"] == frj_to_display(cfg["welcome_gal"])
         assert t["discount"] == cfg["discount"]
         assert t["capsulas_mensuales"] == cfg["capsulas_mensuales"]
         assert t["p2p_commission"] == cfg["p2p_commission"]
