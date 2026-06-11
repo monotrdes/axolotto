@@ -24,9 +24,7 @@ import { GameCanvas } from "@/components/world/GameCanvas";
 import type { GameCanvasHandle } from "@/components/world/GameCanvas";
 import type { WorldScene } from "@/components/world/WorldScene";
 import type { AxolotitoData } from "@/components/world/entities/AxolotitoSprite";
-import type { DecorationItem } from "@/components/world/zones/NidoZone";
-import { CuevaDecorPanel } from "@/components/world/hud/CuevaDecorPanel";
-import { loadCaveDecor, saveCaveDecor } from "@/lib/world/decorStorage";
+import { DecorSlotPanel } from "@/components/world/hud/DecorSlotPanel";
 import { MochilaFloating } from "@/components/world/hud/MochilaFloating";
 import WebitoIntroAnimation from "@/components/onboarding/WebitoIntroAnimation";
 import PostTutorialBranch from "@/components/onboarding/PostTutorialBranch";
@@ -128,12 +126,9 @@ export default function Home() {
   // del mundo deben esperar a que exista o sus set* caen al vacío.
   const [canvasReady, setCanvasReady] = useState(false);
 
-  // Decoration panel state
-  const [caveDecorOpen, setCaveDecorOpen] = useState(false);
-  const [caveDecorIndex, setCaveDecorIndex] = useState(0);
-  const [caveDecorAxoName, setCaveDecorAxoName] = useState("");
-  const [placedDecorations, setPlacedDecorations] = useState<DecorationItem[]>([]);
-  const [availableDecorations, setAvailableDecorations] = useState<DecorationItem[]>([]);
+  // Panel de decoración de la sala (slot tipado tocado en el diorama)
+  const [decorSlotId, setDecorSlotId] = useState<string | null>(null);
+  const [decorNonce, setDecorNonce] = useState(0);
   const [axolotitosData, setAxolotitosData] = useState<AxolotitoData[]>([]);
 
   // Poll global capsule feed for ticker
@@ -250,7 +245,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, canvasReady]);
+  }, [accessToken, canvasReady, decorNonce]);
 
   // Mundo papel picado: top-3 del ranking para el podio de la Pirámide (endpoint público).
   useEffect(() => {
@@ -632,16 +627,6 @@ export default function Home() {
               const tab = zoneToTab[zoneId];
               if (tab) setTabActiva(tab);
             }}
-            onCaveClick={(caveIndex: number) => {
-              const axo = axolotitosData.find((a) => a.caveIndex === caveIndex);
-              setCaveDecorIndex(caveIndex);
-              setCaveDecorAxoName(axo?.name ?? "");
-              // Decoraciones guardadas en localStorage (endpoint backend = sub-tarea).
-              setPlacedDecorations(user?.id ? (loadCaveDecor(user.id)[caveIndex] ?? []) : []);
-              // Catálogo mock hasta que el inventario tenga decoraciones reales.
-              setAvailableDecorations(getMockDecorations());
-              setCaveDecorOpen(true);
-            }}
             onAxolotitoClick={(_axoId: string) => {
               setTabActiva("santuario");
               setPanelVisible(true);
@@ -649,10 +634,9 @@ export default function Home() {
             onStallClick={(stallType) => {
               // Hotspots del diorama → abrir el panel HTML correspondiente
               if (stallType.startsWith("decor:")) {
-                // Slot de decoración de la sala → panel de decoración
-                // filtrado a esa categoría (se conecta en la fase del panel).
-                toast.info("🏺 El panel de decoración llega en el siguiente paso");
-                return;
+                // Slot de decoración de la sala → panel filtrado a su categoría
+                setDecorSlotId(stallType.slice("decor:".length));
+                return; // panel sobre el mundo, sin abrir pergamino
               }
               if (stallType.startsWith("nido-")) {
                 // Zona de crianza: huevo/camita → gestión en el panel
@@ -800,19 +784,16 @@ export default function Home() {
             </div>
           </header>
 
-          {/* Cave Decoration Panel */}
-          <CuevaDecorPanel
-            isOpen={caveDecorOpen}
-            onClose={() => setCaveDecorOpen(false)}
-            caveIndex={caveDecorIndex}
-            axolotitoName={caveDecorAxoName}
-            placedDecorations={placedDecorations}
-            availableDecorations={availableDecorations}
-            onSave={(caveIdx, decorations) => {
-              if (user?.id) saveCaveDecor(user.id, caveIdx, decorations);
-              gameCanvasRef.current?.setCaveDecorations(caveIdx, decorations);
-              setPlacedDecorations(decorations);
-              setCaveDecorOpen(false);
+          {/* Panel de decoración de la sala (slot tipado del diorama) */}
+          <DecorSlotPanel
+            isOpen={decorSlotId !== null}
+            onClose={() => setDecorSlotId(null)}
+            slotId={decorSlotId}
+            token={accessToken}
+            userId={user?.id || ""}
+            onChanged={() => {
+              setDecorNonce((n) => n + 1); // re-fetch /cave/decorations → diorama
+              actualizarSaldosSilencioso(); // la compra gasta FRJ
             }}
           />
 
@@ -1021,16 +1002,3 @@ export default function Home() {
   );
 }
 
-/** Mock available decorations for Phase 2 testing */
-function getMockDecorations(): DecorationItem[] {
-  return [
-    { id: "deco-1", type: "bed", gridX: 0, gridY: 0, gridW: 2, gridH: 1, emoji: "🛏️", label: "Cama de Alga" },
-    { id: "deco-2", type: "light", gridX: 0, gridY: 0, gridW: 1, gridH: 1, emoji: "🏮", label: "Lámpara Coral" },
-    { id: "deco-3", type: "rug", gridX: 0, gridY: 0, gridW: 2, gridH: 2, emoji: "🟫", label: "Tapete Picado" },
-    { id: "deco-4", type: "plant", gridX: 0, gridY: 0, gridW: 1, gridH: 2, emoji: "🪴", label: "Helecho Marino" },
-    { id: "deco-5", type: "toy", gridX: 0, gridY: 0, gridW: 1, gridH: 1, emoji: "🎈", label: "Globo de Papel" },
-    { id: "deco-6", type: "trophy", gridX: 0, gridY: 0, gridW: 1, gridH: 1, emoji: "🏅", label: "Medalla" },
-    { id: "deco-7", type: "wall", gridX: 0, gridY: 0, gridW: 2, gridH: 1, emoji: "🖼️", label: "Cuadro Loteria" },
-    { id: "deco-8", type: "bed", gridX: 0, gridY: 0, gridW: 1, gridH: 1, emoji: "🪹", label: "Nido Burbuja" },
-  ];
-}

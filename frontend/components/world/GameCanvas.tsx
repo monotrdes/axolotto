@@ -2,7 +2,6 @@
 import React, { forwardRef, useImperativeHandle, useRef, useEffect } from "react";
 import type { WorldScene } from "./WorldScene";
 import type { AxolotitoData } from "./entities/AxolotitoSprite";
-import type { DecorationItem } from "./zones/NidoZone";
 import PaperCurtain, { type PaperCurtainHandle } from "@/components/play/PaperCurtain";
 import type { WorldEngine } from "./engine/WorldEngine";
 import type { ZoneManager } from "./zones/ZoneManager";
@@ -25,7 +24,6 @@ const PAPER_WORLD_ENABLED = process.env.NEXT_PUBLIC_PAPER_WORLD === "1";
 
 export interface GameCanvasHandle {
   setAxolotitos(data: AxolotitoData[]): void;
-  setCaveDecorations(caveIndex: number, decorations: DecorationItem[]): void;
   focusZone(zoneId: string): void;
   navigateToZone(zoneId: string): void;
   /** Top-3 del ranking para el podio de la Pirámide (mundo papel picado). */
@@ -61,7 +59,7 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
     visible = false,
     onReady,
     onZoneClick,
-    onCaveClick,
+    onCaveClick: _onCaveClick,
     onAxolotitoClick: _onAxolotitoClick,
     onStallClick,
     initialZone = "nido",
@@ -79,11 +77,9 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
   const amigosRef = useRef<AmigoData[]>([]);
   const caveStatusRef = useRef<CaveStatusData | null>(null);
   const decoracionesRef = useRef<DecoracionesData | null>(null);
-  // Refs para evitar closures viejos dentro del listener del bridge.
+  // Ref para evitar closures viejos dentro del listener del bridge.
   const onStallClickRef = useRef(onStallClick);
   onStallClickRef.current = onStallClick;
-  const onCaveClickRef = useRef(onCaveClick);
-  onCaveClickRef.current = onCaveClick;
 
   useImperativeHandle(ref, () => ({
     setAxolotitos(data: AxolotitoData[]) {
@@ -91,10 +87,6 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
       if (santuarioRef.current && !santuarioRef.current.destroyed) {
         santuarioRef.current.setAxolotitos(data);
       }
-    },
-    setCaveDecorations(_caveIndex: number, _decorations: DecorationItem[]) {
-      // Obsoleto: la decoración tipada de la sala llega vía setDecoraciones
-      // (Fase 4 del rediseño); se retira del contrato en la limpieza final.
     },
     setCaveStatus(status: CaveStatusData) {
       caveStatusRef.current = status;
@@ -188,11 +180,6 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
         return scene;
       });
       engine.bridge.on("hotspot", ({ kind, id }) => {
-        if (kind === "cueva") {
-          // Nido/camita del Santuario → panel de decoración de la cueva.
-          onCaveClickRef.current?.(Number(id));
-          return;
-        }
         onStallClickRef.current?.(id ? `${kind}:${id}` : kind);
       });
       engineRef.current = engine;
