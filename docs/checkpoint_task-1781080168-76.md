@@ -100,7 +100,11 @@
 - [x] page.tsx: `mesa-amigos` y burbuja 🎲 → HostingSetupModal sobre el mundo
       (visibilidad inicial "friends"; con invitado prellena nombre + banner).
       Valida mesa vía fetchCaveStatus (cacheado); sin mesa → toast + panel
-      Santuario. Al crear: toast + abre lobby (tab jugar)
+      Santuario. Al crear: toast y se queda en el mundo
+- [x] Fix carrera de datos del mundo: `canvasReady` (onReady de GameCanvas) gatea
+      los fetch de axolotitos/amigos/podio — antes corrían con el token pero sin
+      canvas montado (onboarding/datosBanco) y los `set*` caían al vacío (amigos
+      nunca aparecían en el embarcadero)
 - [ ] Decoraciones reales (⚠️ endpoint backend = sub-tarea; mientras localStorage)
 - [ ] Transformación animada nido→camita (hoy es swap estático)
 - [x] Mundo activo validado por usuario en móvil y web ✓
@@ -117,6 +121,14 @@
       booster/adopción→official (cableado en page.tsx onStallClick)
 
 ### Fase 3 — Cenote de las Salas y mesa de competencia
+
+> ⚠️ **Gap descubierto (2026-06-11)**: las salas hosteadas NO tienen UI de listado
+> ni de join hoy — `MultiplayerLobby.tsx` quedó huérfano tras PlayMode v2 (nadie lo
+> renderiza) y el wizard solo ofrece CPU/oficiales. Además `GET /multiplayer/player-rooms`
+> solo lista `visibility == "public"` (las salas "friends" de la mesa de amigos son
+> invisibles incluso ahí). Las "trajineras hosted" del Cenote deben resolver listado
+> + join, y necesitarán endpoint autenticado que incluya salas de amigos (sub-tarea
+> backend).
 - [x] `lib/loteria/winPatterns.ts`: espejo cliente de los patrones del backend
       (line/cuadrito/pocito/esquinas/cruz/cruz_diagonal/l_shape/z_shape/full_board)
       + `cartasFaltantes(marked, winPatterns)` + `tablillaTension(faltantes)`
@@ -151,7 +163,8 @@
 | 2026-06-11 | 91af004 | Pirámide re-layout 5160px: subzonas separadas — en web una sección a la vez, extremas centradas. Validado ✓ ("quedó conmadres") |
 | 2026-06-11 | 6fcfa82 | Store abre sección por puesto (forja→melter, p2p→market) + winPatterns.ts (cartasFaltantes/tablillaTension) base de Fase 3 |
 | 2026-06-11 | 2d51702 | Burbujas de acción ❤️/👁/🎲 en trajineritas (like en sitio, visita directa a FriendCaveView, invitar provisional). Rama renombrada a task/task-1781159264-84-rediseno-visual-papel-picado |
-| 2026-06-11 | (este) | Mesa de amigos y burbuja 🎲 → HostingSetupModal sobre el mundo (visibilidad friends, invitado preseleccionado, validación de mesa en la cueva) |
+| 2026-06-11 | b4b649c | Mesa de amigos y burbuja 🎲 → HostingSetupModal sobre el mundo (visibilidad friends, invitado preseleccionado, validación de mesa en la cueva) |
+| 2026-06-11 | (este) | Fix QA usuario: canvasReady gatea fetches del mundo (amigos no salían), crear sala se queda en el mundo con toast (PlayMode no lista hosteadas). Gap Fase 3 documentado: salas hosteadas sin UI de listado/join |
 
 ## Notas para el verificador humano
 

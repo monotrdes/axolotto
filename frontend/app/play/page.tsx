@@ -123,6 +123,9 @@ export default function Home() {
   const [tickerFeed, setTickerFeed]     = useState<any[]>([]);
   const worldSceneRef = useRef<WorldScene | null>(null);
   const gameCanvasRef = useRef<GameCanvasHandle | null>(null);
+  // GameCanvas solo se monta con datosBanco + onboarding terminado: los fetch
+  // del mundo deben esperar a que exista o sus set* caen al vacío.
+  const [canvasReady, setCanvasReady] = useState(false);
 
   // Decoration panel state
   const [caveDecorOpen, setCaveDecorOpen] = useState(false);
@@ -169,7 +172,7 @@ export default function Home() {
   // Mundo papel picado: los axolotitos reales viven en /auth/axolotitos/{userId},
   // no en el payload de /auth/sync — cargarlos directo para el canvas.
   useEffect(() => {
-    if (!PAPER_WORLD || !accessToken || !user?.id) return;
+    if (!PAPER_WORLD || !canvasReady || !accessToken || !user?.id) return;
     let cancelled = false;
     Promise.all([
       fetchAxolotitos(user.id, accessToken),
@@ -188,11 +191,11 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, user?.id]);
+  }, [accessToken, user?.id, canvasReady]);
 
   // Mundo papel picado: amigos para el embarcadero del Santuario.
   useEffect(() => {
-    if (!PAPER_WORLD || !accessToken) return;
+    if (!PAPER_WORLD || !canvasReady || !accessToken) return;
     let cancelled = false;
     axios
       .get(`${API_BASE}/social/friends`, { headers: { Authorization: `Bearer ${accessToken}` } })
@@ -206,11 +209,11 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken]);
+  }, [accessToken, canvasReady]);
 
   // Mundo papel picado: top-3 del ranking para el podio de la Pirámide (endpoint público).
   useEffect(() => {
-    if (!PAPER_WORLD) return;
+    if (!PAPER_WORLD || !canvasReady) return;
     let cancelled = false;
     axios
       .get(`${API_BASE}/ranking/axolotitos?sort_by=level&limit=3`)
@@ -222,7 +225,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [canvasReady]);
 
   // Sync axolotito data to the paper world
   useEffect(() => {
@@ -575,6 +578,7 @@ export default function Home() {
             ref={gameCanvasRef}
             onReady={(_app, scene) => {
               worldSceneRef.current = scene;
+              setCanvasReady(true);
             }}
             onZoneClick={(zoneId) => {
               const zoneToTab: Record<string, TabId> = {
@@ -778,9 +782,9 @@ export default function Home() {
               isOpen
               onClose={() => setHostingOpen(false)}
               onCreated={() => {
-                toast.ok("🎴 ¡Sala creada! Revisa el lobby.");
-                setTabActiva("jugar");
-                setPanelVisible(true);
+                // Quedarse en el mundo: el wizard de PlayMode no lista salas
+                // hosteadas (eso llega en Fase 3 con el Cenote de las Salas).
+                toast.ok("🎴 ¡Tu mesa quedó abierta! Tus amigos ya pueden unirse.");
               }}
               tableSeats={hostingSeats}
               initialVisibility="friends"
