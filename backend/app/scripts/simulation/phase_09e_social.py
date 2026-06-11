@@ -375,27 +375,23 @@ def phase_social_simulation(engine, config, **state) -> dict:
              f"Rate-limit: {rate_limit_hits} hits")
     progress(f"  ✅ Simulación social completada.")
 
-    # ── Retornar estadísticas ──────────────────────────────────────────────
-    return {
-        "stats": {
-            **stats,
-            "social_friend_requests_sent": friend_requests_sent,
-            "social_friend_requests_accepted": friend_requests_accepted,
-            "social_friend_requests_rejected": friend_requests_rejected,
-            "social_likes_given": likes_given,
-            "social_cave_visits": cave_visits,
-            "social_blocks_created": blocks_created,
-            "social_friends_removed": friends_removed,
-            "social_codes_generated": codes_generated,
-            "social_codes_claimed": codes_claimed,
-            "social_milestones_processed": milestones_processed,
-            "social_rate_limit_hits": rate_limit_hits,
-            "social_anti_fraud_blocks": anti_fraud_blocks,
-            "social_suggestions_checked": suggestions_checked,
-            "social_total_active_friendships": total_active_friendships,
-            "social_total_codes": total_codes,
-            "social_total_referrals": total_referrals,
-            "social_total_likes_logged": total_likes,
-            "social_total_visits_logged": total_cave_visits_logged,
-        }
-    }
+    # ── Actualizar estadísticas in-place (mismo patrón que otros phases) ──
+    stats["social_friend_requests_sent"] = friend_requests_sent
+    stats["social_friend_requests_accepted"] = friend_requests_accepted
+    stats["social_friend_requests_rejected"] = friend_requests_rejected
+    stats["social_likes_given"] = likes_given
+    stats["social_cave_visits"] = cave_visits
+    stats["social_blocks_created"] = blocks_created
+    stats["social_friends_removed"] = friends_removed
+    stats["social_codes_generated"] = codes_generated
+    stats["social_codes_claimed"] = codes_claimed
+    stats["social_milestones_processed"] = milestones_processed
+    stats["social_rate_limit_hits"] = rate_limit_hits
+    stats["social_anti_fraud_blocks"] = anti_fraud_blocks
+    stats["social_suggestions_checked"] = suggestions_checked
+    stats["social_total_active_friendships"] = total_active_friendships
+    stats["social_total_codes"] = total_codes
+    stats["social_total_referrals"] = total_referrals
+    stats["social_total_likes_logged"] = total_likes
+    stats["social_total_visits_logged"] = total_cave_visits_logged
+    return {}
