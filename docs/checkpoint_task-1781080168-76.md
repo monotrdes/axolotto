@@ -74,6 +74,11 @@
       deambular con pausas, mesa de amigos como hotspot interactivo
 - [x] GameCanvas: builder del Santuario registrado, `setAxolotitos` en vivo,
       hotspots → `onStallClick` vía WorldBridge
+- [x] Datos reales: `mapBackendAxolotito` (rows de GET /auth/axolotitos/{userId} →
+      AxolotitoData) + fetch en page.tsx con flag (los axolotitos NO vienen en /auth/sync)
+- [x] Santuario HTML viejo oculto con flag (tab santuario muestra el diorama;
+      main con pointer-events-none para tocar el mundo)
+- [x] Dev proxy same-origin `/api/v1`→:8001 en next.config (pruebas en :3001/LAN sin CORS)
 - [ ] Embarcadero social: trajineritas + burbujas like/visitar/invitar; canasta → AmigosPage
 - [ ] page.tsx: manejar `onStallClick("mesa-amigos")` → HostingSetupModal
 - [ ] Decoraciones reales (⚠️ endpoint backend = sub-tarea; mientras localStorage)
@@ -99,7 +104,9 @@
 | :--- | :--- | :--- |
 | 2026-06-11 | 4601ff3 | Worktree + rama creados; plan v2.1 y checkpoint iniciales |
 | 2026-06-11 | 06466f7 | Fase 0 completa: motor Pixi v8, cámara, zonas, cortina, dock macro, flag |
-| 2026-06-11 | (este) | Fase 1 núcleo: rig puppet cut-out + SantuarioScene (nidos/camitas, deambular, mesa hotspot) |
+| 2026-06-11 | 0f961a4 | Fase 1 núcleo: rig puppet cut-out + SantuarioScene (nidos/camitas, deambular, mesa hotspot) |
+| 2026-06-11 | 94a0174 | Dev proxy same-origin para probar en :3001/LAN sin CORS |
+| 2026-06-11 | (este) | Axolotitos reales en el diorama (fetch /auth/axolotitos + mapper) y Santuario HTML oculto con flag |
 
 ## Notas para el verificador humano
 

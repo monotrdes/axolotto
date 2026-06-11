@@ -34,6 +34,8 @@ import VipChip from "@/components/play/VipChip";
 import WorldOrbs from "@/components/play/WorldOrbs";
 import ZoneDock from "@/components/play/ZoneDock";
 import ZoneDockMacro from "@/components/play/ZoneDockMacro";
+import { fetchAxolotitos } from "@/services/santuarioService";
+import { mapBackendAxolotito, type BackendAxolotito } from "@/components/world/mapBackendAxolotito";
 import type { TabId, OnboardingPhase, SyncData } from '@/types/play';
 import type { MochilaTab } from '@/types/inventory';
 
@@ -125,6 +127,24 @@ export default function Home() {
   const [floatingGal, setFloatingGal] = useState<{ id: string; amount: string; x: number }[]>([]);
   const [floatingAxg, setFloatingAxg] = useState<{ id: string; amount: string; x: number }[]>([]);
   const prevBalancesRef = useRef<{ frijolitos: number; axofichas: number } | null>(null);
+
+  // Mundo papel picado: los axolotitos reales viven en /auth/axolotitos/{userId},
+  // no en el payload de /auth/sync — cargarlos directo para el canvas.
+  useEffect(() => {
+    if (!PAPER_WORLD || !accessToken || !user?.id) return;
+    let cancelled = false;
+    fetchAxolotitos(user.id, accessToken)
+      .then((rows: BackendAxolotito[]) => {
+        if (cancelled || !Array.isArray(rows)) return;
+        const data = rows.map(mapBackendAxolotito);
+        setAxolotitosData(data);
+        gameCanvasRef.current?.setAxolotitos(data);
+      })
+      .catch((e) => console.error("PaperWorld: error cargando axolotitos", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, user?.id]);
 
   // Sync axolotito data to the paper world
   useEffect(() => {
@@ -640,8 +660,16 @@ export default function Home() {
             </div>
           )}
 
-          {/* CONTENT AREA — padded away from HUD and dock */}
-          <main className={`relative z-10 ${tickerFeed.length > 0 ? 'pt-20' : 'pt-14'} pb-20 min-h-screen`}>
+          {/* CONTENT AREA — padded away from HUD and dock.
+              En el santuario del mundo papel picado el main queda vacío:
+              pointer-events-none para que los taps lleguen al diorama. */}
+          <main
+            className={`relative z-10 ${tickerFeed.length > 0 ? 'pt-20' : 'pt-14'} pb-20 min-h-screen ${
+              PAPER_WORLD && (tabActiva === 'santuario' || tabActiva === 'criadero' || tabActiva === 'axolotitos')
+                ? 'pointer-events-none'
+                : ''
+            }`}
+          >
             <div key={tabActiva} className="max-w-5xl mx-auto px-3 sm:px-6 py-4 animate-tab-fade">
               {tabActiva === 'tienda' && (
                 <AxolottoStore
@@ -675,8 +703,9 @@ export default function Home() {
                   recargarSaldos={actualizarSaldosSilencioso}
                 />
               )}
-              {/* santuario = El Nido (merged webitos + axolotitos). Legacy criadero/axolotitos ids redirect here */}
-              {(tabActiva === 'santuario' || tabActiva === 'criadero' || tabActiva === 'axolotitos') && (
+              {/* santuario = El Nido (merged webitos + axolotitos). Legacy criadero/axolotitos ids redirect here.
+                  Con el mundo papel picado activo, el diorama Pixi ES el santuario — el HTML viejo se oculta. */}
+              {(tabActiva === 'santuario' || tabActiva === 'criadero' || tabActiva === 'axolotitos') && !PAPER_WORLD && (
                 <Santuario userId={user?.id || ""} token={accessToken} cambiarTab={(tab) => setTabActiva(tab as TabId)} vipTier={datosBanco?.vip_tier} />
               )}
               {tabActiva === 'rankings'   && <Rankings  userId={user?.id || ""} token={accessToken} cambiarTab={setTabActiva}                   />}
