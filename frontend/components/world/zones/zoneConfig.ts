@@ -17,6 +17,12 @@ export interface Framing {
   y: number;
   w: number;
   h: number;
+  /**
+   * En pantallas anchas, máximo ancho visible para que el encuadre se sienta
+   * como "enfoque de sección" (deja recorrido de paneo). Sin este valor la
+   * cámara revela todo el overscan disponible.
+   */
+  focusMaxW?: number;
 }
 
 /** Espacio de diseño por macrozona. Base vertical 9:16; la Pirámide es ancha (3 pantallas). */
@@ -52,9 +58,9 @@ export const MACRO_FRAMINGS: Record<MacroZoneId, Framing> = {
  * capsulas = desvío lateral (izquierda).
  */
 export const PIRAMIDE_FRAMINGS: Record<PiramideSubZoneId, Framing> = {
-  rankings: { x: 1080, y: 0, w: 1080, h: 1920 },
-  capsulas: { x: 0, y: 200, w: 1080, h: 1920 },
-  salas: { x: 2160, y: 400, w: 1080, h: 1920 },
+  rankings: { x: 1080, y: 0, w: 1080, h: 1920, focusMaxW: 1900 },
+  capsulas: { x: 0, y: 200, w: 1080, h: 1920, focusMaxW: 1900 },
+  salas: { x: 2160, y: 400, w: 1080, h: 1920, focusMaxW: 1900 },
 };
 
 /** Tab HTML que corresponde a cada destino del mundo. */

@@ -136,7 +136,8 @@
 | 2026-06-11 | 9164784 | Fix cámara desktop (overscan + alto completo); mesa-amigos → tab amigos. Validado por usuario en móvil y web ✓ |
 | 2026-06-11 | 4997950 | Paneles overlay ocultos por defecto + TianguisScene con 5 puestos + huevos de incubación reales. Validado ✓ |
 | 2026-06-11 | df12139 | PiramideScene: 3 subzonas con paneo, podio top-3 con puppets reales, gashapones y pozas tocables. Validado ✓ |
-| 2026-06-11 | (este) | Embarcadero social (trajineritas + canasta) y partículas Zzz/burbujas por tier |
+| 2026-06-11 | a9a296f | Embarcadero social (trajineritas + canasta) y partículas Zzz/burbujas por tier |
+| 2026-06-11 | (este) | Fix centrado de subzonas en web: `focusMaxW` (zoom de enfoque con recorrido de paneo) + clamp vertical de cámara |
 
 ## Notas para el verificador humano
 

@@ -4,6 +4,7 @@ import {
   framingFor,
   resolveZoneTarget,
   PAINTED_BOUNDS,
+  DESIGN_SPACE,
   type MacroZoneId,
   type ZoneTarget,
 } from "./zoneConfig";
@@ -92,7 +93,11 @@ export class ZoneManager {
   private async mount(target: ZoneTarget): Promise<void> {
     const scene = await this.builders[target.macro](this.engine);
     this.engine.stage.addChild(scene);
-    this.engine.camera.attach(scene, PAINTED_BOUNDS[target.macro]);
+    this.engine.camera.attach(scene, {
+      ...PAINTED_BOUNDS[target.macro],
+      y0: 0,
+      h: DESIGN_SPACE[target.macro].h,
+    });
     this.engine.camera.snapTo(framingFor(target));
     this.current = { target, scene };
     this.engine.bridge.emit("zoneSettled", { macro: target.macro, sub: target.sub });
