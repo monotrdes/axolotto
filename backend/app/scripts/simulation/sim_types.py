@@ -101,6 +101,10 @@ PERSONALITY_POOL = [
 
 PRO_USER_DID = "did:privy:cmnn1tv0o02au0ckzho9ugkb2"
 
+# Código de referido hardcodeado del admin — debe sobrevivir resets
+# porque es el link público que se comparte externamente.
+ADMIN_REFERRAL_CODE = "AX-CREADOR"
+
 # Estrategia de apertura por personalidad:
 #   "immediate"  → abre todo en cuanto compra
 #   "selective"  → abre solo foils ahora, guarda normales para después
