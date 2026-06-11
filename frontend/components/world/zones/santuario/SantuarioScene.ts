@@ -115,6 +115,8 @@ interface BoatEntry {
   phase: number;
 }
 
+type NestKind = "locked" | "egg" | "camita" | "empty";
+
 export class SantuarioScene extends Container {
   private engine: WorldEngine;
   private puppetLayer = new Container();
@@ -129,6 +131,8 @@ export class SantuarioScene extends Container {
   private decoraciones: DecoracionesData | null = null;
   private particles: Particle[] = [];
   private boats: BoatEntry[] = [];
+  private prevNestKinds = new Map<number, NestKind>();
+  private hatchTweens: gsap.core.Timeline[] = [];
   private actionBubbles: Container | null = null;
   private actionBubblesFor: string | null = null;
   private actionBubblesTimer: gsap.core.Tween | null = null;
@@ -155,6 +159,7 @@ export class SantuarioScene extends Container {
   override destroy(options?: Parameters<Container["destroy"]>[0]): void {
     this.engine.app.ticker.remove(this.tick);
     this.closeActionBubbles();
+    this.killHatchTweens();
     this.puppets.clear();
     this.particles = [];
     this.boats = [];
@@ -272,15 +277,18 @@ export class SantuarioScene extends Container {
    * Tap: huevo/camita → gestión en el panel Santuario; bloqueado → expandir.
    */
   private rebuildNests(): void {
+    this.killHatchTweens();
     this.nestLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
     const eggs = this.lastAxolotitos.filter((a) => a.isEgg);
     const axos = this.lastAxolotitos.filter((a) => !a.isEgg);
     const spots = Math.max(1, Math.min(this.caveStatus.spots, MAX_NEST_SLOTS));
+    const kinds = new Map<number, NestKind>();
 
     for (let slot = 0; slot < MAX_NEST_SLOTS; slot++) {
       const { x, y } = nestSlotPos(slot);
       if (slot >= spots) {
         // Slot bloqueado: roca sin excavar — el spot i se abre en nivel i+1.
+        kinds.set(slot, "locked");
         const node = buildLockedNest(x, y, slot + 1);
         this.hotspot(node, "nido-bloqueado");
         this.nestLayer.addChild(node);
@@ -288,6 +296,8 @@ export class SantuarioScene extends Container {
       }
       const egg = eggs.find((e) => e.caveIndex === slot) ?? eggs[slot];
       const owner = axos.find((a) => a.caveIndex === slot);
+      const kind: NestKind = egg ? "egg" : owner ? "camita" : "empty";
+      kinds.set(slot, kind);
       const node = egg
         ? buildNestWithEgg(x, y, egg)
         : owner
@@ -297,7 +307,76 @@ export class SantuarioScene extends Container {
       else if (owner) this.hotspot(node, "nido-axo", owner.id);
       else this.hotspot(node, "nido-vacio");
       this.nestLayer.addChild(node);
+      // Eclosión: este slot tenía huevo y ahora tiene camita (plan §2).
+      if (kind === "camita" && this.prevNestKinds.get(slot) === "egg") {
+        this.playHatchAnimation(node, x, y);
+      }
     }
+    this.prevNestKinds = kinds;
+  }
+
+  /**
+   * Transformación nido→camita al eclosionar: un huevo efímero tiembla cada
+   * vez más fuerte, revienta en cascaritas y la camita brota con rebote de
+   * cartón. Con prefers-reduced-motion el swap queda instantáneo (como antes).
+   */
+  private playHatchAnimation(camita: Container, x: number, y: number): void {
+    if (this.engine.camera.reducedMotion) return;
+
+    // Huevo efímero encima de la camita (mismas formas que buildNestWithEgg, listo/dorado).
+    const egg = new Container();
+    egg.position.set(x, y);
+    egg.addChild(
+      new Graphics()
+        .ellipse(0, 26, 56, 20)
+        .fill(0x8b5e34)
+        .stroke({ color: 0xfff7ec, width: 4 })
+        .ellipse(0, 0, 32, 40)
+        .fill(0xfff3c4)
+        .stroke({ color: 0xf5c542, width: 4 }),
+    );
+    this.nestLayer.addChild(egg);
+    camita.scale.set(0);
+
+    const tl = gsap.timeline({
+      onComplete: () => {
+        if (!egg.destroyed) egg.destroy({ children: true });
+      },
+    });
+    tl.to(egg, { rotation: 0.12, duration: 0.07, yoyo: true, repeat: 9, ease: "sine.inOut" });
+    tl.add(() => this.spawnShellBurst(x, y));
+    tl.to(egg.scale, { x: 1.35, y: 1.35, duration: 0.16, ease: "power2.out" });
+    tl.to(egg, { alpha: 0, duration: 0.16 }, "<");
+    tl.to(camita.scale, { x: 1, y: 1, duration: 0.45, ease: "back.out(2.2)" }, ">-0.04");
+    this.hatchTweens.push(tl);
+  }
+
+  /** Cascaritas + destello al reventar el huevo (no en tier ligera). */
+  private spawnShellBurst(x: number, y: number): void {
+    if (this.destroyed || this.engine.quality === "ligera") return;
+    for (let i = 0; i < 8; i++) {
+      const bit = new Graphics()
+        .poly([0, -8, 7, 5, -7, 5])
+        .fill(i % 2 ? 0xfff3c4 : 0xf5c542)
+        .stroke({ color: 0xfff7ec, width: 2 });
+      bit.rotation = Math.random() * Math.PI * 2;
+      this.spawnParticle(
+        bit,
+        x + (Math.random() - 0.5) * 80,
+        y + (Math.random() - 0.5) * 36,
+        30 + Math.random() * 55,
+        0.9,
+      );
+    }
+    const spark = new Text({ text: "✨", style: { fontSize: 36 } });
+    spark.anchor.set(0.5);
+    this.spawnParticle(spark, x, y - 20, 40, 1.1);
+  }
+
+  /** Mata timelines de eclosión vivos (rebuild o destroy a mitad de animación). */
+  private killHatchTweens(): void {
+    this.hatchTweens.forEach((t) => t.kill());
+    this.hatchTweens = [];
   }
 
   /**

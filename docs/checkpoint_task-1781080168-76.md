@@ -44,13 +44,14 @@
   integró el locking de partida de dev (`isGameLocked`) a los hotspots/dock
   del mundo y se descartó el cableado viejo de decoración v1 que vivía en dev.
 - **SIGUIENTE PASO**:
-  1. ⚠️ **Reiniciar el backend** (`docker restart axolotto_backend`) para que
-     cargue el router `cave_decor` (bugfix: existía pero nunca se montó →
-     GET /cave/decorations daba 404 y el diorama no pintaba chips de slot).
-     Seed del catálogo YA corrido (23 items) ✓.
-  2. **Validación visual del usuario** (móvil y web): nidos bloqueados,
-     slots de la sala, comprar+equipar, tinte AMBIENTE, bazar en tienda.
-  3. **Transformación animada nido→camita** al eclosionar (sigue pendiente).
+  1. ✅ Backend reiniciado (2026-06-11): GET /cave/decorations responde 401
+     (auth requerida) en vez de 404 — router `cave_decor` montado. Seed 23 items ✓.
+  2. ✅ Transformación animada nido→camita al eclosionar (huevo tiembla →
+     revienta en cascaritas → camita brota con rebote; reduced-motion = swap
+     instantáneo; partículas no en tier ligera).
+  3. **Validación visual del usuario** (móvil y web): nidos bloqueados,
+     slots de la sala, comprar+equipar, tinte AMBIENTE, bazar en tienda,
+     y la eclosión animada si hay huevo por nacer.
   Después → Fase 2 restante: re-skin HTML por tokens (Store boletos, SettlingScreen
   recibo, Inventory códice, VipModal) y luego Fase 3 (re-skin de la mesa de
   competencia + tablillas con `winPatterns.ts`).
@@ -136,7 +137,9 @@
       - `DecorSlotPanel` (tabs Equipar/Comprar con FRJ, bonos al pie) + fila
         "Bazar del Cenote" en OfficialTab. Borrados: decorStorage.ts,
         CuevaDecorPanel, CaveDecorationPanel legacy huérfano.
-- [ ] Transformación animada nido→camita (hoy es swap estático)
+- [x] Transformación animada nido→camita (`playHatchAnimation`: huevo efímero
+      tiembla → cascaritas + destello → camita con back.out; tracking de
+      `prevNestKinds` por slot; reduced-motion lo salta)
 - [x] Mundo activo validado por usuario en móvil y web ✓
 
 ### Fase 2 — Tianguis, esqueleto Pirámide, transiciones
@@ -201,7 +204,8 @@
 | 2026-06-11 | f6b8792 | Diorama: zona de crianza dinámica — 8 nidos en 2 filas, bloqueados con candado/Nv, hotspots nido-* |
 | 2026-06-11 | 1991cc2 | Diorama: sala con slots tipados — mesa skin/mantel/sillas, tinte AMBIENTE, chips decor:<slot_id> |
 | 2026-06-11 | — | DecorSlotPanel (Equipar/Comprar FRJ/bonos) + Bazar del Cenote en tienda + limpieza del sistema v1 |
-| 2026-06-11 | (este) | Fix 404: registrar `cave_decor.router` en main.py (nunca se montó — el diorama no mostraba slots). Seed corrido (23 items). ⏳ Falta: reinicio backend + validación visual |
+| 2026-06-11 | (anterior) | Fix 404: registrar `cave_decor.router` en main.py (nunca se montó — el diorama no mostraba slots). Seed corrido (23 items) |
+| 2026-06-11 | (este) | Backend reiniciado (router OK, 401 vs 404) + sync dev→rama + eclosión animada nido→camita en SantuarioScene. ⏳ Falta: validación visual del usuario |
 
 ## Notas para el verificador humano
 
