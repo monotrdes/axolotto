@@ -84,6 +84,9 @@ export default function Home() {
   // Mundo papel picado: los paneles HTML viven ocultos y se abren como overlay
   // (hotspots del diorama o botón 📜). Sin flag siempre visibles (legacy).
   const [panelVisible, setPanelVisible]   = useState(!PAPER_WORLD);
+  // Sección del Store a abrir según el puesto tocado en el Tianguis
+  const [storeSection, setStoreSection]   = useState<'official' | 'melter' | 'market' | undefined>(undefined);
+  const [storeSectionNonce, setStoreSectionNonce] = useState(0);
   const [mochilaInitialTab, setMochilaInitialTab] = useState<MochilaTab>('cartas');
 
   const [onboardingPhase, setOnboardingPhase] = useState<OnboardingPhase>("loading");
@@ -590,8 +593,11 @@ export default function Home() {
                 setTabActiva("tienda");
                 setOpenBancoCount((c) => c + 1);
               } else {
-                // Puestos del Tianguis (booster/adopcion/forja/p2p) → tienda
-                // TODO(Fase 2): seleccionar sub-tab del Store según el puesto
+                // Puestos del Tianguis → tienda en su sección
+                const seccion =
+                  stallType === "forja" ? "melter" : stallType === "p2p" ? "market" : "official";
+                setStoreSection(seccion);
+                setStoreSectionNonce((n) => n + 1);
                 setTabActiva("tienda");
               }
               setPanelVisible(true);
@@ -761,6 +767,8 @@ export default function Home() {
                   recargarSaldos={actualizarSaldosSilencioso}
                   lastShopEvent={lastShopEvent}
                   openBanco={openBancoCount}
+                  initialSection={storeSection}
+                  sectionNonce={storeSectionNonce}
                 />
               )}
               {tabActiva === 'jugar' && (

@@ -65,6 +65,10 @@ export interface StoreProps {
   token: string | null;
   cambiarTab: (tab: any) => void;
   recargarSaldos: () => void;
+  /** Mundo papel picado: sección a abrir al tocar un puesto del Tianguis. */
+  initialSection?: StoreTab;
+  /** Nonce para re-disparar initialSection aunque sea la misma sección. */
+  sectionNonce?: number;
   [key: string]: any;
 }
 

@@ -113,10 +113,20 @@
       (Charco de Novatos + Fosa del Campeón). Hotspots: podio→rankings,
       gashapon→cápsulas, salas→jugar. `GameCanvasHandle.setPodio` + fetch en page.tsx
 - [ ] Re-skin HTML por tokens (Store boletos, SettlingScreen recibo, Inventory códice, VipModal)
-- [ ] Store: prop initialTab para abrir melter (forja) / market (p2p) según puesto
+- [x] Store: props `initialSection`/`sectionNonce` — forja→melter, p2p→market,
+      booster/adopción→official (cableado en page.tsx onStallClick)
 
 ### Fase 3 — Cenote de las Salas y mesa de competencia
-- [ ] (ver plan §8 Fase 3)
+- [x] `lib/loteria/winPatterns.ts`: espejo cliente de los patrones del backend
+      (line/cuadrito/pocito/esquinas/cruz/cruz_diagonal/l_shape/z_shape/full_board)
+      + `cartasFaltantes(marked, winPatterns)` + `tablillaTension(faltantes)`
+      (escala 0.6/1.0/1.4 + matchPoint). ⚠️ Mantener sincronizado con game_logic.py
+- [ ] Re-skin papel de CenoteRoom/CircularTable/TableSeat/GritonCharacter
+- [ ] Tablillas sobre cada asiento usando cartasFaltantes + tablillaTension
+      (datos: player_states_json del game-state + win_patterns del room_config)
+- [ ] PersonalityReactions extendido a 6 naturalezas (tabla en plan §5)
+- [ ] Robo-Axolotes para boards NPC (is_npc_pool) — set de texturas latón en el puppet
+- [ ] tension_level del backend → ambiente global (música/caustics/gritón)
 
 ### Fase 4 — Cámara de la Suerte, cielo lunar, tutorial
 - [ ] (ver plan §8 Fase 4)
@@ -138,7 +148,8 @@
 | 2026-06-11 | df12139 | PiramideScene: 3 subzonas con paneo, podio top-3 con puppets reales, gashapones y pozas tocables. Validado ✓ |
 | 2026-06-11 | a9a296f | Embarcadero social (trajineritas + canasta) y partículas Zzz/burbujas por tier |
 | 2026-06-11 | 61cfd5f | Fix centrado de subzonas en web: `focusMaxW` (zoom de enfoque con recorrido de paneo) + clamp vertical de cámara |
-| 2026-06-11 | (este) | Pirámide re-layout 5160px: subzonas separadas por agua abierta (480) + orillas (480) — en web solo se ve una sección a la vez y las extremas centran bien; columnas/algas decoran los tramos de paneo |
+| 2026-06-11 | 91af004 | Pirámide re-layout 5160px: subzonas separadas — en web una sección a la vez, extremas centradas. Validado ✓ ("quedó conmadres") |
+| 2026-06-11 | (este) | Store abre sección por puesto (forja→melter, p2p→market) + winPatterns.ts (cartasFaltantes/tablillaTension) base de Fase 3 |
 
 ## Notas para el verificador humano
 
