@@ -188,8 +188,22 @@ def phase_multiplayer(engine, config, **state) -> dict:
             axo.status = "idle"
             session.add(axo)
         if axo.energy_current < 10:
-            axo.energy_current = axo.stat_stamina or 100
-            session.add(axo)
+            try:
+                if wallet.frijolitos < frj_to_internal(150.0):
+                    wallet.frijolitos = max(wallet.frijolitos or 0, frj_to_internal(300.0))
+                    session.add(wallet)
+                    session.commit()
+                GameService.feed_axolotito(
+                    axo_id=axo.id,
+                    food_type="shrimp",
+                    session=session,
+                    verified_user_id=user_id,
+                )
+                session.refresh(axo)
+                stats["feedings"] = stats.get("feedings", 0) + 1
+                print(f"  🍽️  {user_id}: {axo.name} alimentado con shrimp para multijugador")
+            except Exception as e:
+                print(f"  ⚠️  {user_id}: Fallo al alimentar a {axo.name} para multijugador: {e}")
         session.commit()
 
         loss_pct = _rng.choice([20.0, 30.0, 40.0])
