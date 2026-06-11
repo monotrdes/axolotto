@@ -37,9 +37,12 @@
   (aprobado) — backend taxonomía+catálogo+shop y frontend diorama+panel+bazar.
 - **Último commit de avance**: el commit que contiene esta edición
 - **SIGUIENTE PASO**:
-  1. ⚠️ **Correr el seed del catálogo** (requiere DATABASE_URL real):
-     `docker exec axolotto_backend python app/scripts/seed_cave_decor.py`
-     (idempotente; sin él, el Bazar y la tab Comprar salen vacíos).
+  1. ⚠️ **Reiniciar el backend** (`docker restart axolotto_backend`) para que
+     cargue el router `cave_decor` recién registrado en main.py (bugfix: el
+     router existía pero nunca se montó → GET /cave/decorations daba 404 y el
+     diorama no pintaba ningún chip de slot). Seed del catálogo YA corrido
+     (23 items) ✓. Sincronizados al checkout principal (runtime Docker):
+     main.py, seed_cave_decor.py y el parche CAVE_ITEM de shop_service.py.
   2. **Validación visual del usuario** (móvil y web): nidos bloqueados,
      slots de la sala, comprar+equipar, tinte AMBIENTE, bazar en tienda.
   3. **Transformación animada nido→camita** al eclosionar (sigue pendiente).
@@ -192,7 +195,8 @@
 | 2026-06-11 | 547566d | Backend: seed de 23 decoraciones FRJ + CAVE_ITEM sin requisito de wallet en /shop/buy |
 | 2026-06-11 | f6b8792 | Diorama: zona de crianza dinámica — 8 nidos en 2 filas, bloqueados con candado/Nv, hotspots nido-* |
 | 2026-06-11 | 1991cc2 | Diorama: sala con slots tipados — mesa skin/mantel/sillas, tinte AMBIENTE, chips decor:<slot_id> |
-| 2026-06-11 | (este) | DecorSlotPanel (Equipar/Comprar FRJ/bonos) + Bazar del Cenote en tienda + limpieza del sistema v1. ⏳ Falta: correr seed en BD y validación visual |
+| 2026-06-11 | — | DecorSlotPanel (Equipar/Comprar FRJ/bonos) + Bazar del Cenote en tienda + limpieza del sistema v1 |
+| 2026-06-11 | (este) | Fix 404: registrar `cave_decor.router` en main.py (nunca se montó — el diorama no mostraba slots). Seed corrido (23 items). ⏳ Falta: reinicio backend + validación visual |
 
 ## Notas para el verificador humano
 
