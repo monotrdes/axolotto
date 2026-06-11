@@ -12,6 +12,7 @@ import type {
 } from "./zones/santuario/SantuarioScene";
 import type { PiramideScene } from "./zones/piramide/PiramideScene";
 import type { AmigoData } from "./mapBackendAxolotito";
+import { TIANGUIS_STALL_FRAMINGS, framingFor } from "./zones/zoneConfig";
 
 /**
  * Mundo 2.5D de papel picado (plan task-84). Detrás del flag
@@ -26,6 +27,8 @@ export interface GameCanvasHandle {
   setAxolotitos(data: AxolotitoData[]): void;
   focusZone(zoneId: string): void;
   navigateToZone(zoneId: string): void;
+  focusStall(stallId: string): void;
+  resetFocus(): void;
   /** Top-3 del ranking para el podio de la Pirámide (mundo papel picado). */
   setPodio?(data: AxolotitoData[]): void;
   /** Amigos para el embarcadero del Santuario (mundo papel picado). */
@@ -110,6 +113,18 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
     },
     navigateToZone(zoneId: string) {
       zonesRef.current?.navigate(zoneId, curtainRef.current);
+    },
+    focusStall(stallId: string) {
+      const framing = TIANGUIS_STALL_FRAMINGS[stallId];
+      if (framing && engineRef.current) {
+        engineRef.current.camera.panTo(framing);
+      }
+    },
+    resetFocus() {
+      if (!engineRef.current || !zonesRef.current) return;
+      const activeTarget = zonesRef.current.activeTarget;
+      if (!activeTarget) return;
+      engineRef.current.camera.panTo(framingFor(activeTarget));
     },
     setPodio(data: AxolotitoData[]) {
       podioRef.current = data;

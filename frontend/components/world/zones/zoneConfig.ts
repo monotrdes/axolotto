@@ -54,6 +54,15 @@ export const MACRO_FRAMINGS: Record<MacroZoneId, Framing> = {
   piramide: { x: 2040, y: 0, w: 1080, h: 1920, focusMaxW: 1900 },
 };
 
+/** Encuadres zoom-in (1.5x) para enfocar los puestos del Tianguis al abrirlos (plan Fase 2). */
+export const TIANGUIS_STALL_FRAMINGS: Record<string, Framing> = {
+  booster: { x: -110, y: 180, w: 720, h: 1280 },
+  adopcion: { x: 470, y: 180, w: 720, h: 1280 },
+  fountain: { x: 180, y: 380, w: 720, h: 1280 },
+  forja: { x: -110, y: 640, w: 720, h: 1280 },
+  p2p: { x: 470, y: 640, w: 720, h: 1280 },
+};
+
 /**
  * Encuadres de subzonas de la Pirámide. Narrativa de cámara (plan §2):
  * rankings = asciende (centro-arriba), salas = se sumerge (derecha-abajo),

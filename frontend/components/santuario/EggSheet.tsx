@@ -1,9 +1,10 @@
 "use client";
 import React from 'react';
-import { Clock, X, Star } from 'lucide-react';
+import { Clock, X, Star, Sparkles } from 'lucide-react';
 import BottomSheet from '@/components/ui/BottomSheet';
 import { obtenerEstiloHuevo, obtenerFaseHuevo } from '@/utils/santuario';
 import { ImprintingProgress } from '../ImprintingProgress';
+import PadrinoSelectSheet from './PadrinoSelectSheet';
 
 interface EggSheetProps {
   inc: any;
@@ -26,21 +27,17 @@ export default function EggSheet({
   const faseInfo = obtenerFaseHuevo(inc);
   const purity   = inc.genetic_purity ?? 100.0;
 
-  const [chosenPadrinoId, setChosenPadrinoId] = React.useState<number | null>(null);
+  const [showPadrinoSelect, setShowPadrinoSelect] = React.useState(false);
 
   const isTutorial = (inc.tutorial_phase ?? 0) > 0;
   const isReady = isTutorial ? inc.horasRestantes === 0 : !!inc.imprinting_complete;
-
-  const eligibleAxos = (axolotitos || []).filter(axo => 
-    !axo.is_frozen_by_vip && 
-    axo.status !== "sleeping"
-  );
 
   const totalBonos = [
     inc.bonus_focus, inc.bonus_stamina, inc.bonus_luck,
   ].reduce((s: number, v: number) => s + (v || 0), 0);
 
   return (
+    <>
     <BottomSheet open={true} onClose={onClose}>
           <div className="px-5 pb-6 pt-3">
             {/* Header */}
@@ -83,7 +80,7 @@ export default function EggSheet({
                   ? 'El webito eclosionará solo al cumplir su tiempo de incubación.'
                   : inc.imprinting_padrino_id
                     ? 'Juega partidas con el Padrino seleccionado para imprimir el huevo.'
-                    : 'Selecciona un padrino para iniciar el imprinting.'}
+                    : 'Toca "Seleccionar Padrino" para iniciar el imprinting.'}
             </p>
 
             {/* Bars */}
@@ -116,64 +113,29 @@ export default function EggSheet({
               )}
             </div>
 
-            {/* Godfather selection for non-tutorial eggs */}
+            {/* Godfather selection trigger for non-tutorial eggs */}
             {!isReady && !isTutorial && !inc.imprinting_padrino_id && (
-              <div className="mb-5 p-4 rounded-2xl bg-slate-950/40 border border-white/5">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2 text-center">
-                  Seleccionar Padrino (Axolotito)
-                </span>
-                
-                {eligibleAxos.length === 0 ? (
-                  <div className="text-center py-4">
-                    <p className="text-xs font-bold text-slate-500">
-                      No tienes axolotitos elegibles para apadrinar.
-                    </p>
-                    <p className="text-[9px] text-slate-600 mt-1">
-                      Deben estar despiertos y no estar congelados por VIP.
-                    </p>
+              <div className="mb-5">
+                <button
+                  type="button"
+                  onClick={() => setShowPadrinoSelect(true)}
+                  className="w-full p-4 rounded-2xl bg-gradient-to-br from-purple-950/30 to-slate-950/40 border border-purple-500/20 hover:border-purple-500/50 transition-all group text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-purple-900/30 border border-purple-500/30 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
+                      🐾
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-black text-purple-300 group-hover:text-purple-200 transition-colors">
+                        Seleccionar Padrino
+                      </div>
+                      <div className="text-[9px] text-slate-500 font-bold mt-0.5">
+                        Elige un Axolotito para guiar el imprinting
+                      </div>
+                    </div>
+                    <Sparkles size={16} className="text-purple-500 shrink-0 group-hover:text-purple-400 transition-colors" />
                   </div>
-                ) : (
-                  <div className="max-h-36 overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-slate-800">
-                    {eligibleAxos.map((axo) => {
-                      const isSelected = chosenPadrinoId === axo.id;
-                      return (
-                        <button
-                          key={axo.id}
-                          type="button"
-                          onClick={() => setChosenPadrinoId(axo.id)}
-                          className={`w-full text-left p-2.5 rounded-xl border flex items-center justify-between transition-all ${
-                            isSelected
-                              ? 'bg-purple-950/40 border-purple-500/80 text-purple-200'
-                              : 'bg-slate-900/60 border-white/5 text-slate-300 hover:border-slate-700'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-lg">🐾</span>
-                            <div>
-                              <div className="text-xs font-black">{axo.name || `Axolotito #${axo.id}`}</div>
-                              <div className="text-[9px] text-slate-500 font-semibold">
-                                Nivel {axo.level} · Mentoring: {axo.mentorship_count ?? 0}
-                              </div>
-                            </div>
-                          </div>
-                          {isSelected && (
-                            <span className="text-xs text-purple-400 font-black">✓ Seleccionado</span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {chosenPadrinoId !== null && (
-                  <button
-                    type="button"
-                    onClick={() => onStartImprinting(inc.id, chosenPadrinoId)}
-                    className="w-full mt-3 py-2.5 rounded-xl font-black uppercase text-xs tracking-wider bg-purple-600 hover:bg-purple-500 text-white transition-all shadow-md active:scale-95"
-                  >
-                    🐾 Apadrinar Huevo
-                  </button>
-                )}
+                </button>
               </div>
             )}
 
@@ -215,10 +177,24 @@ export default function EggSheet({
                   ? 'Vuelve cuando el webito esté listo. 🥚'
                   : inc.imprinting_padrino_id
                     ? 'El webito estará listo tras jugar las partidas requeridas con su padrino. 🐾'
-                    : 'Asigna un padrino para poder iniciar el imprinting. 🥚'}
+                    : 'Asigna un padrino para iniciar el imprinting. 🥚'}
               </div>
             )}
           </div>
     </BottomSheet>
+
+    {/* ── Padrino Selection Sheet ── */}
+    {showPadrinoSelect && (
+      <PadrinoSelectSheet
+        inc={inc}
+        axolotitos={axolotitos}
+        onClose={() => setShowPadrinoSelect(false)}
+        onConfirm={(incId, padrinoId) => {
+          onStartImprinting(incId, padrinoId);
+          setShowPadrinoSelect(false);
+        }}
+      />
+    )}
+  </>
   );
 }

@@ -271,6 +271,14 @@ export default function Home() {
     };
   }, [accessToken, canvasReady]);
 
+  // Mundo papel picado: resetear zoom/enfoque de cámara al cerrar los paneles overlay (Fase 2).
+  useEffect(() => {
+    if (!PAPER_WORLD || !canvasReady) return;
+    if (!panelVisible) {
+      gameCanvasRef.current?.resetFocus?.();
+    }
+  }, [panelVisible, canvasReady]);
+
   // Mundo papel picado: estado de la cueva (nivel/spots/mesa) → nidos
   // dinámicos del diorama; de paso cachea los asientos para hostear.
   useEffect(() => {
@@ -763,6 +771,7 @@ export default function Home() {
                 // Fuente-banco: conversión FRJ↔AXF
                 setTabActiva("tienda");
                 setOpenBancoCount((c) => c + 1);
+                gameCanvasRef.current?.focusStall?.("fountain");
               } else {
                 // Puestos del Tianguis → tienda en su sección
                 const seccion =
@@ -770,6 +779,7 @@ export default function Home() {
                 setStoreSection(seccion);
                 setStoreSectionNonce((n) => n + 1);
                 setTabActiva("tienda");
+                gameCanvasRef.current?.focusStall?.(stallType);
               }
               setPanelVisible(true);
             }}
