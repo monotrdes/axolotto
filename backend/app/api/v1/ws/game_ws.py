@@ -166,7 +166,7 @@ async def manual_game_ws(
             nature=axo.nature,
         )
 
-    # 5. Si la sala esta en lobby y hay suficientes jugadores, iniciar
+    # 6. Si la sala esta en lobby y hay suficientes jugadores, iniciar
     room = session.get(GameRoom, room_id)
     session_obj = ws_manager.get_session(room_id)
 
