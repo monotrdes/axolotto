@@ -1,7 +1,7 @@
 ---
 tags: [changelog]
 description: "Historial de todos los cambios al wiki con fecha, motivo, autor y referencia al código"
-last_modified: "2026-06-10"
+last_modified: "2026-06-11"
 ---
 
 # Wiki Changelog — Axolotto
@@ -21,6 +21,14 @@ last_modified: "2026-06-10"
 ```
 
 ---
+
+## 2026-06-11 | backend/app/services/ws_manager.py | Concurrencia Multi-Ventana y Desplazamiento de WebSocket (task-89)
+- **Campo**: `GameWSManager.connect`, `GameWSManager.reconnect`, `GameWSManager.disconnect` y `manual_game_ws`
+- **Anterior**: Conexiones WebSocket concurrentes para el mismo usuario y sala pisaban la propiedad del WS en el estado, y cualquier desconexión (incluso de pestañas antiguas) cerraba la sesión activa del usuario forzando AFK kick erróneo.
+- **Nuevo**: Implementado desplazamiento activo de WebSocket con código de salida `4008` (session replaced) y validación de instancia de WebSocket física al desconectar para ignorar cierres de conexiones obsoletas.
+- **Motivo**: Control de concurrencia y prevención de bugs por session splitting en multijugador.
+- **Autor**: AGY
+- **Fuente en código**: backend/app/services/ws_manager.py, backend/app/api/v1/ws/game_ws.py (commit `d3bf66e`)
 
 ## 2026-06-11 | backend/app/core/prices.py | Remoción de consumibles de calor (task-78)
 - **Campo**: `CONSUMABLE_PRICES`
