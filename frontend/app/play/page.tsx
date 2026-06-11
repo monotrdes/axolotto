@@ -56,6 +56,37 @@ export default function Home() {
   const [mochilaInitialTab, setMochilaInitialTab] = useState<MochilaTab>('cartas');
   const [activeGame, setActiveGame] = useState<any>(null);
 
+  // ── Game session locking (from PlayMode — covers CPU games and backend status) ──
+  const [gameSessionActive, setGameSessionActive] = useState(false);
+  const [tabBlocked, setTabBlocked] = useState(false);
+
+  // Combined lock: activeGame (multiplayer from /active-check) OR gameSessionActive (CPU/animation)
+  const isGameLocked = !!(activeGame?.active) || gameSessionActive;
+
+  // Force tab to 'jugar' when game becomes active
+  useEffect(() => {
+    if (isGameLocked && tabActiva !== 'jugar') {
+      setTabActiva('jugar');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGameLocked]);
+
+  // Clear tab blocked message after 3 seconds
+  useEffect(() => {
+    if (!tabBlocked) return;
+    const t = setTimeout(() => setTabBlocked(false), 3000);
+    return () => clearTimeout(t);
+  }, [tabBlocked]);
+
+  // Guarded tab switcher: blocks non-jugar tabs during active game session
+  const safeSetTab = useCallback((tab: TabId) => {
+    if (isGameLocked && tab !== 'jugar') {
+      setTabBlocked(true);
+      return;
+    }
+    setTabActiva(tab);
+  }, [isGameLocked]);
+
   // Poll active game status to lock navigation and UI controls
   useEffect(() => {
     if (!accessToken || !authenticated) {
@@ -68,7 +99,7 @@ export default function Home() {
         const res = await axios.get(`${API_BASE}/multiplayer/active-check`, { headers });
         setActiveGame(res.data);
         if (res.data?.active && tabActiva !== 'jugar') {
-          setTabActiva('jugar');
+          setTabActiva('jugar'); // Force to jugar — direct set, not safeSetTab
         }
       } catch (err) {
         console.error("Error checking active game in Home:", err);
@@ -477,8 +508,8 @@ export default function Home() {
               worldSceneRef.current = scene;
             }}
             onZoneClick={(zoneId) => {
-              if (activeGame?.active) {
-                toast.error("¡Estás en una partida activa! No puedes cambiar de zona.");
+              if (isGameLocked) {
+                setTabBlocked(true);
                 return;
               }
               const zoneToTab: Record<string, TabId> = {
@@ -492,8 +523,8 @@ export default function Home() {
               if (tab) setTabActiva(tab);
             }}
             onCaveClick={(caveIndex: number) => {
-              if (activeGame?.active) {
-                toast.error("¡Estás en una partida activa! No puedes entrar a la cueva.");
+              if (isGameLocked) {
+                setTabBlocked(true);
                 return;
               }
               const axo = axolotitosData.find((a) => a.caveIndex === caveIndex);
@@ -510,15 +541,15 @@ export default function Home() {
               setCaveDecorOpen(true);
             }}
             onAxolotitoClick={(axoId: string) => {
-              if (activeGame?.active) {
-                toast.error("¡Estás en una partida activa!");
+              if (isGameLocked) {
+                setTabBlocked(true);
                 return;
               }
               setTabActiva("santuario");
             }}
             onStallClick={(stallType) => {
-              if (activeGame?.active) {
-                toast.error("¡Estás en una partida activa! No puedes cambiar de zona.");
+              if (isGameLocked) {
+                setTabBlocked(true);
                 return;
               }
               // Map stall type to tab/action
@@ -568,8 +599,8 @@ export default function Home() {
               {/* FRJ pill — no decimals */}
               <button
                 onClick={() => {
-                  if (activeGame?.active) {
-                    toast.error("¡Estás en una partida activa! No puedes cambiar de zona.");
+                  if (isGameLocked) {
+                    setTabBlocked(true);
                     return;
                   }
                   setTabActiva('tienda');
@@ -603,8 +634,8 @@ export default function Home() {
                 daysRemaining={datosBanco.vip_days_remaining}
                 pendingGal={datosBanco.vip_pending_gal}
                 onClick={() => {
-                  if (activeGame?.active) {
-                    toast.error("¡Estás en una partida activa! Termina el juego primero.");
+                  if (isGameLocked) {
+                    setTabBlocked(true);
                     return;
                   }
                   setVipModalOpen(true);
@@ -614,8 +645,8 @@ export default function Home() {
               {/* Settings */}
               <button
                 onClick={() => {
-                  if (activeGame?.active) {
-                    toast.error("¡Estás en una partida activa! No puedes abrir ajustes.");
+                  if (isGameLocked) {
+                    setTabBlocked(true);
                     return;
                   }
                   setSettingsModalOpen(true);
@@ -689,6 +720,12 @@ export default function Home() {
 
           {/* CONTENT AREA — padded away from HUD and dock */}
           <main className={`relative z-10 ${tickerFeed.length > 0 ? 'pt-20' : 'pt-14'} pb-20 min-h-screen`}>
+            {/* Tab-lock banner */}
+            {tabBlocked && (
+              <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 px-5 py-2 bg-amber-950/90 border border-amber-500/40 text-amber-300 text-xs font-bold rounded-full shadow-[0_0_20px_rgba(245,158,11,0.25)] animate-toast-in">
+                🔒 Termina tu partida actual antes de cambiar de zona
+              </div>
+            )}
             <div key={tabActiva} className="max-w-5xl mx-auto px-3 sm:px-6 py-4 animate-tab-fade">
               {tabActiva === 'tienda' && (
                 <AxolottoStore
@@ -710,6 +747,7 @@ export default function Home() {
                   lastGameEvent={lastGameEvent}
                   earningsQueue={earningsQueue}
                   onEarningsSeen={() => setEarningsQueue([])}
+                  onGameSessionChange={setGameSessionActive}
                 />
               )}
               {/* Mochila unificada: tabs cartas/tablas/items en un solo componente */}
@@ -742,8 +780,8 @@ export default function Home() {
           {/* Mochila flotante — abre el dashboard unificado en la sección seleccionada */}
           <MochilaFloating
             onOpenSection={(section) => {
-              if (activeGame?.active) {
-                toast.error("¡Estás en una partida activa! No puedes abrir la mochila.");
+              if (isGameLocked) {
+                setTabBlocked(true);
                 return;
               }
               setMochilaInitialTab(section);
@@ -764,9 +802,10 @@ export default function Home() {
             zoneTabs={ZONE_TABS}
             tabActiva={tabActiva}
             dailyClaimAvailable={dailyClaimAvailable}
+            gameSessionActive={isGameLocked}
             onTabChange={(tab, zone) => {
-              if (activeGame?.active) {
-                toast.error("¡Estás en una partida activa! No puedes cambiar de zona.");
+              if (isGameLocked && tab !== 'jugar') {
+                setTabBlocked(true);
                 return;
               }
               setTabActiva(tab);

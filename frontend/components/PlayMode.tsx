@@ -65,6 +65,7 @@ export default function PlayMode({
   lastGameEvent,
   earningsQueue,
   onEarningsSeen,
+  onGameSessionChange,
 }: {
   userId: string;
   token: string | null;
@@ -73,6 +74,7 @@ export default function PlayMode({
   lastGameEvent?: number;
   earningsQueue?: number[];
   onEarningsSeen?: () => void;
+  onGameSessionChange?: (active: boolean) => void;
 }) {
   // ── Data state ──────────────────────────────────────────────────────────────
   const [axolotitos,   setAxolotitos]   = useState<any[]>([]);
@@ -111,6 +113,21 @@ export default function PlayMode({
   const [cpuSimKey, setCpuSimKey] = useState(0);
   // Which axo is being settled inline (for loading spinner in AxoSelectScreen)
   const [settlingAxoId, setSettlingAxoId] = useState<number | null>(null);
+
+  // ── Game session locking ────────────────────────────────────────────────────
+  // Tracks whether a CPU game animation is currently active (set by CpuGameWrapper)
+  const [cpuGameActive, setCpuGameActive] = useState(false);
+
+  // isGameSessionActive: true when the user is in any active game session
+  // — backend status playing/waiting_settlement OR cpu animation in progress
+  const backendPlaying =
+    selectedAxo?.status === 'playing' || selectedAxo?.status === 'waiting_settlement';
+  const isGameSessionActive = backendPlaying || cpuGameActive;
+
+  // Notify parent (play/page.tsx) about game session changes so it can lock tabs
+  useEffect(() => {
+    onGameSessionChange?.(isGameSessionActive);
+  }, [isGameSessionActive, onGameSessionChange]);
 
   // Floating earnings
   type EscrowNotif = { id: number; amount: number };
@@ -225,21 +242,41 @@ export default function PlayMode({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasPlayingAxo]);
 
-  // Intercept browser back button inside the Wizard to avoid losing state
+  // Intercept browser back button during active game OR wizard to avoid losing state
   useEffect(() => {
     const wizardViews: GameView[] = ['mode-select', 'board-select', 'budget', 'sala-select', 'game'];
-    if (!wizardViews.includes(gameView)) return;
+    // Always block back when a game session is active (any view)
+    // Also block back inside wizard views (normal navigation)
+    const shouldBlock = isGameSessionActive || wizardViews.includes(gameView);
+    if (!shouldBlock) return;
 
     window.history.pushState({ playMode: true }, '');
 
     const handlePopState = () => {
-      onBackRef.current();
-      window.history.pushState({ playMode: true }, '');
+      if (isGameSessionActive) {
+        // Game is active — block back entirely, just re-push state
+        window.history.pushState({ playMode: true }, '');
+      } else {
+        // Normal wizard navigation — go back one step
+        onBackRef.current();
+        window.history.pushState({ playMode: true }, '');
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [gameView]);
+  }, [gameView, isGameSessionActive]);
+
+  // Warn before leaving page during active game session
+  useEffect(() => {
+    if (!isGameSessionActive) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = ''; // Chrome requires returnValue to be set
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isGameSessionActive]);
 
   // Recall cleared when axo stops playing
   useEffect(() => {
@@ -459,6 +496,8 @@ export default function PlayMode({
   };
 
   const onBack = () => {
+    // Block back navigation during active game session
+    if (isGameSessionActive) return;
     if (gameView === 'mode-select')  return navigate('axo-select',  'back');
     if (gameView === 'board-select') return navigate('mode-select', 'back');
     if (gameView === 'budget')       return navigate('board-select','back');
@@ -634,17 +673,23 @@ export default function PlayMode({
             selectedRoom={selectedRoom}
             multiplier={multiplier}
             onDone={() => { recargarSaldos(); loadData(); }}
-            onPlayAgainInPlace={() => setCpuSimKey(k => k + 1)}
+            onPlayAgainInPlace={() => {
+              setCpuGameActive(true);
+              setCpuSimKey(k => k + 1);
+            }}
             onChangeBoard={() => {
+              setCpuGameActive(false);
               setSingleBoardId(null);
               navigate('board-select');
             }}
             onChangeAll={() => {
+              setCpuGameActive(false);
               setSingleBoardId(null);
               setMultiBoards([]);
               setSelectedAxo(null);
               navigate('axo-select');
             }}
+            onGameActiveChange={setCpuGameActive}
           />
         )}
 

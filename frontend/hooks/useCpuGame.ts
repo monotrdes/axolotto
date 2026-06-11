@@ -93,6 +93,8 @@ export interface UseCpuGameState {
   nameToNum: Map<string, number>;
   /** Already resolved (true after loading phase) */
   ready: boolean;
+  /** True while the game is active (loading + animating) — false when result shown */
+  gameActive: boolean;
   /** Animation speed multiplier (1 = normal, 2 = fast) */
   speedMultiplier: number;
   setSpeedMultiplier: (multiplier: number) => void;
@@ -482,6 +484,7 @@ export function useCpuGame(options: UseCpuGameOptions): UseCpuGameState {
     playerBoardNums,
     nameToNum,
     ready: phase !== "loading",
+    gameActive: phase === "loading" || phase === "animating",
     speedMultiplier,
     setSpeedMultiplier,
   };
