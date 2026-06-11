@@ -4,7 +4,7 @@ phase_07f_cave_decor.py — Decoración del Cenote (CAVE_ITEM).
 Simula la compra y colocación de decoraciones en el Cenote:
   1. Comprar CAVE_ITEMs en la tienda usando FRJ (Frijolitos)
   2. Colocar decoraciones en slots válidos según subcategoría
-  3. Validar que el backend rechaza slot incorrecto (ej. WALL en FLOOR_0)
+  3. Validar que el backend rechaza slot incorrecto (ej. FONDO en LUZ_0)
   4. Validar límite de slots por nivel de cueva
 """
 import json
@@ -20,29 +20,17 @@ from app.services.shop_service import ShopService
 from app.api.v1.endpoints.cave_decor import (
     update_cave_decorations,
     UpdateDecorationsRequest,
-    _get_decor_slots,
+    SUBCATEGORY_ORDER,
+    _slot_layout,
     _subcategory_from_slot,
 )
 
 _rng = random.SystemRandom()
 
 
-# ── Slot names for each cave level ──────────────────────────────────────────
-# Level 1: 2 slots → FLOOR_0, WALL_0
-# Level 2: 4 slots → FLOOR_0, FLOOR_1, WALL_0, WALL_1
-# Level 3: 6 slots → FLOOR_0-1, WALL_0-1, WATER_0, SPECIAL_0
-# (simplified: we assign FLOOR, WALL, WATER, SPECIAL round-robin)
 def _slot_names_for_level(cave_level: int) -> list[str]:
-    """Genera nombres de slot para un nivel de cueva dado."""
-    total = _get_decor_slots(cave_level)
-    categories = ["FLOOR", "WALL", "WATER", "SPECIAL"]
-    slots = []
-    counts = {"FLOOR": 0, "WALL": 0, "WATER": 0, "SPECIAL": 0}
-    for i in range(total):
-        cat = categories[i % len(categories)]
-        slots.append(f"{cat}_{counts[cat]}")
-        counts[cat] += 1
-    return slots
+    """Slots reales del nivel según el layout del backend (fuente de verdad)."""
+    return [s["slot_id"] for s in _slot_layout(cave_level)]
 
 
 def phase_cave_decor(engine, config, **state) -> dict:
@@ -68,10 +56,10 @@ def phase_cave_decor(engine, config, **state) -> dict:
         return {}
 
     # Agrupar por subcategoría
-    items_by_subcat: dict[str, list] = {"FLOOR": [], "WALL": [], "WATER": [], "SPECIAL": []}
+    items_by_subcat: dict[str, list] = {subcat: [] for subcat in SUBCATEGORY_ORDER}
     for item in cave_items_catalog:
         meta = item.item_metadata or {}
-        subcat = meta.get("cave_subcategory", "SPECIAL")
+        subcat = meta.get("cave_subcategory", "ESPECIAL")
         if subcat not in items_by_subcat:
             items_by_subcat[subcat] = []
         items_by_subcat[subcat].append(item)
@@ -148,7 +136,7 @@ def phase_cave_decor(engine, config, **state) -> dict:
         placed = 0
         for item in purchased:
             meta = item.item_metadata or {}
-            item_subcat = meta.get("cave_subcategory", "SPECIAL")
+            item_subcat = meta.get("cave_subcategory", "ESPECIAL")
 
             # Encontrar un slot vacío que coincida con la subcategoría
             matching_slot = None
@@ -186,7 +174,7 @@ def phase_cave_decor(engine, config, **state) -> dict:
             # Intentar colocar el primer item comprado en un slot de tipo diferente
             test_item = purchased[0]
             test_meta = test_item.item_metadata or {}
-            test_subcat = test_meta.get("cave_subcategory", "SPECIAL")
+            test_subcat = test_meta.get("cave_subcategory", "ESPECIAL")
 
             wrong_slot = None
             for slot_id in available_slots:

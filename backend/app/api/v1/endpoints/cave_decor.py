@@ -31,8 +31,14 @@ from app.api.v1.endpoints.cave_expansion import CAVE_LEVEL_DEFINITIONS
 router = APIRouter()
 _rng = random.SystemRandom()
 
-# ── Slot naming: {subcategory}_{index}  e.g. "FLOOR_0", "WALL_1" ──────
-VALID_SUBCATEGORIES = {"FLOOR", "WALL", "WATER", "SPECIAL"}
+# ── Slot naming: {subcategory}_{index}  e.g. "AMBIENTE_0", "FONDO_2" ──────
+# Taxonomía del diorama (plan task-84): la zona central de la cueva tiene
+# slots tipados — ambiente/color, iluminación, mesa de juego, mantel,
+# sillas, decoración de fondo e items especiales (rocola, vasijas...).
+VALID_SUBCATEGORIES = {"AMBIENTE", "LUZ", "MESA", "MANTEL", "SILLAS", "FONDO", "ESPECIAL"}
+
+# Orden canónico de render/listado.
+SUBCATEGORY_ORDER = ("AMBIENTE", "LUZ", "MESA", "MANTEL", "SILLAS", "FONDO", "ESPECIAL")
 
 
 # ── Request / Response schemas ─────────────────────────────────────────
@@ -49,6 +55,34 @@ def _get_decor_slots(cave_level: int) -> int:
         return 2
     level_def = CAVE_LEVEL_DEFINITIONS.get(cave_level, {})
     return level_def.get("decor_slots", 2)
+
+
+def _slot_layout(cave_level: int) -> list[dict]:
+    """
+    Layout de slots de decoración por nivel de cueva — fuente de verdad para
+    backend y diorama. Los slots únicos (AMBIENTE/LUZ/MESA/MANTEL/SILLAS) son
+    skins intercambiables; FONDO y ESPECIAL crecen con el nivel. La suma por
+    nivel cuadra exactamente con `decor_slots` de CAVE_LEVEL_DEFINITIONS.
+
+    MESA/SILLAS requieren mesa de juego (has_table, nivel 3+); MANTEL además
+    requiere nivel 4+ (y una MESA equipada, validado en /decorations/update).
+    """
+    level = max(1, min(cave_level, max(CAVE_LEVEL_DEFINITIONS)))
+    has_table = level > 1 and CAVE_LEVEL_DEFINITIONS.get(level, {}).get("has_table", False)
+    counts = {
+        "AMBIENTE": 1,
+        "LUZ": 1 if level >= 2 else 0,
+        "MESA": 1 if has_table else 0,
+        "MANTEL": 1 if has_table and level >= 4 else 0,
+        "SILLAS": 1 if has_table else 0,
+        "FONDO": 1 if level == 1 else (2 if level <= 4 else level - 2),
+        "ESPECIAL": max(0, level - 3),
+    }
+    return [
+        {"slot_id": f"{subcat}_{i}", "subcategory": subcat}
+        for subcat in SUBCATEGORY_ORDER
+        for i in range(counts[subcat])
+    ]
 
 
 def _subcategory_from_slot(slot_id: str) -> str:
@@ -83,14 +117,23 @@ def _build_decorations_response(user: User, session) -> dict:
         decorations = json.loads(decorations_raw)
     except (json.JSONDecodeError, TypeError):
         decorations = {}
+    if not isinstance(decorations, dict):
+        decorations = {}
+
+    layout = _slot_layout(user.cave_level)
+    valid_slot_ids = {s["slot_id"] for s in layout}
+    # Descartar en lectura slots con prefijo viejo/desconocido (migración de
+    # la taxonomía FLOOR/WALL/WATER/SPECIAL — no había catálogo sembrado).
+    decorations = {k: v for k, v in decorations.items() if k in valid_slot_ids}
 
     placed_decorations = {k: v for k, v in decorations.items() if v is not None}
     used_slots = len(placed_decorations)
-    max_slots = _get_decor_slots(user.cave_level)
+    max_slots = len(layout)
 
     focus_total = 0.0
     staking_total = 0.0
     incubation_total = 0.0
+    items_detail: Dict[str, dict] = {}
 
     for slot_id, item_id in placed_decorations.items():
         catalog = session.get(ItemCatalog, item_id)
@@ -100,6 +143,18 @@ def _build_decorations_response(user: User, session) -> dict:
         focus_total += float(meta.get("focus_bonus", 0.0))
         staking_total += float(meta.get("staking_bonus", 0.0))
         incubation_total += float(meta.get("incubation_boost", 0.0))
+        # Detalle para que el diorama pueda dibujar el item equipado.
+        items_detail[str(item_id)] = {
+            "id": catalog.id,
+            "name": catalog.name,
+            "rarity": catalog.rarity,
+            "subcategory": meta.get("cave_subcategory", ""),
+            "emoji": meta.get("emoji", "🏺"),
+            "color": meta.get("color"),
+            "focus_bonus": float(meta.get("focus_bonus", 0.0)),
+            "staking_bonus": float(meta.get("staking_bonus", 0.0)),
+            "incubation_boost": float(meta.get("incubation_boost", 0.0)),
+        }
 
     # Contar axolotitos para el cap de staking
     active_axolotitos = session.exec(
@@ -113,6 +168,8 @@ def _build_decorations_response(user: User, session) -> dict:
 
     return {
         "decorations": decorations,
+        "slots": layout,
+        "items": items_detail,
         "max_slots": max_slots,
         "used_slots": used_slots,
         "bonuses": {
@@ -160,7 +217,7 @@ def get_cave_decorations_inventory(
 ):
     """
     Devuelve el inventario de CAVE_ITEM del usuario, agrupado por subcategoría
-    (FLOOR, WALL, WATER, SPECIAL).
+    (AMBIENTE, LUZ, MESA, MANTEL, SILLAS, FONDO, ESPECIAL).
     """
     results = session.exec(
         select(PlayerInventory, ItemCatalog)
@@ -170,16 +227,11 @@ def get_cave_decorations_inventory(
         .where(ItemCatalog.item_type == ItemType.CAVE_ITEM)
     ).all()
 
-    items_by_category: Dict[str, list] = {
-        "FLOOR": [],
-        "WALL": [],
-        "WATER": [],
-        "SPECIAL": [],
-    }
+    items_by_category: Dict[str, list] = {subcat: [] for subcat in SUBCATEGORY_ORDER}
 
     for inv, cat in results:
         meta = cat.item_metadata or {}
-        subcat = meta.get("cave_subcategory", "SPECIAL")
+        subcat = meta.get("cave_subcategory", "ESPECIAL")
         if subcat not in items_by_category:
             items_by_category[subcat] = []
         items_by_category[subcat].append({
@@ -213,14 +265,17 @@ def update_cave_decorations(
     """
     Actualiza las decoraciones del Cenote.
 
-    Body: { "decorations": { "FLOOR_0": 123, "WALL_0": null, ... } }
+    Body: { "decorations": { "AMBIENTE_0": 123, "FONDO_0": null, ... } }
+      — es el ESTADO DESEADO COMPLETO: los slots ausentes del body se tratan
+        como removidos (el item vuelve al inventario).
       - item_id = int: colocar ese item en el slot
       - item_id = null: remover el item del slot
 
     Validaciones:
-      - Prefijo del slot (FLOOR/WALL/WATER/SPECIAL) debe coincidir con cave_subcategory del item
+      - slot_id debe existir en el layout del nivel actual (_slot_layout)
+      - Subcategoría del slot debe coincidir con cave_subcategory del item
       - Item debe ser CAVE_ITEM y existir en el inventario del usuario
-      - Total items colocados <= decor_slots del nivel actual
+      - MANTEL requiere una MESA equipada en el estado resultante
 
     Usa SELECT FOR UPDATE en inventario para prevenir condiciones de carrera.
     """
@@ -232,13 +287,29 @@ def update_cave_decorations(
 
     new_decorations = body.decorations or {}
 
-    # ── 1. Validar límite de slots ──
-    max_slots = _get_decor_slots(user.cave_level)
-    placed_count = sum(1 for v in new_decorations.values() if v is not None)
-    if placed_count > max_slots:
+    # ── 1. Validar slots contra el layout del nivel ──
+    layout = _slot_layout(user.cave_level)
+    valid_slot_ids = {s["slot_id"] for s in layout}
+    for slot_id in new_decorations:
+        if slot_id not in valid_slot_ids:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    f"Slot '{slot_id}' no disponible en tu cueva (nivel {user.cave_level}). "
+                    f"Expande la cueva para desbloquear más slots."
+                ),
+            )
+
+    # Estado resultante (solo colocaciones efectivas).
+    final_state = {k: v for k, v in new_decorations.items() if v is not None}
+
+    # MANTEL solo tiene sentido sobre una mesa equipada.
+    mantel_placed = any(_subcategory_from_slot(s) == "MANTEL" for s in final_state)
+    mesa_placed = any(_subcategory_from_slot(s) == "MESA" for s in final_state)
+    if mantel_placed and not mesa_placed:
         raise HTTPException(
             status_code=400,
-            detail=f"Límite de {max_slots} decoraciones excedido. Tienes {placed_count} items colocados.",
+            detail="Necesitas una mesa equipada para ponerle mantel.",
         )
 
     # ── 2. Cargar estado actual ──
@@ -253,19 +324,14 @@ def update_cave_decorations(
     removals: list[int] = []
     placements: list[tuple[str, int]] = []
 
+    # Slots equipados hoy que el body ya no menciona → devolver al inventario
+    # (antes se perdían silenciosamente al sobreescribir el JSON).
+    for slot_id, old_item_id in current_decorations.items():
+        if old_item_id is not None and slot_id not in new_decorations:
+            removals.append(old_item_id)
+
     for slot_id, new_item_id in new_decorations.items():
         slot_prefix = _subcategory_from_slot(slot_id)
-        if not slot_prefix:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Formato de slot inválido: '{slot_id}'. Debe ser 'SUBCATEGORIA_INDICE'.",
-            )
-        if slot_prefix not in VALID_SUBCATEGORIES:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Prefijo de slot inválido: '{slot_prefix}'. Debe ser FLOOR, WALL, WATER o SPECIAL.",
-            )
-
         old_item_id = current_decorations.get(slot_id)
 
         if new_item_id == old_item_id:
@@ -324,8 +390,8 @@ def update_cave_decorations(
         else:
             session.delete(inv)
 
-    # ── 6. Guardar nuevo estado ──
-    user.cave_decorations = json.dumps(new_decorations)
+    # ── 6. Guardar nuevo estado (solo slots ocupados) ──
+    user.cave_decorations = json.dumps(final_state)
     session.add(user)
     session.commit()
     session.refresh(user)
