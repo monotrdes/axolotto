@@ -14,6 +14,7 @@ import CardGrid from '@/components/inventory/CardGrid';
 import AxolotitoCard from '@/components/inventory/AxolotitoCard';
 import ItemList from '@/components/inventory/ItemList';
 import type { MochilaTab } from '@/types/inventory';
+import { PAPER_WORLD } from '@/lib/paperWorld';
 
 function renderPortal(content: React.ReactNode) {
   if (typeof window === 'undefined') return null;
@@ -120,7 +121,13 @@ export default function Inventory({
   const emptySlotsCount = Math.max(0, numUnlocked - numBoards);
 
   return (
-    <div className={`w-full mt-4 bg-slate-950/80 backdrop-blur-xl rounded-[2.5rem] p-6 sm:p-10 border ${headerInfo.border} ${headerInfo.shadow} transition-all duration-300`}>
+    <div
+      className={
+        PAPER_WORLD
+          ? 'w-full mt-4 papel-panel papel-codice backdrop-blur-xl rounded-[2.5rem] p-6 sm:p-10 transition-all duration-300'
+          : `w-full mt-4 bg-slate-950/80 backdrop-blur-xl rounded-[2.5rem] p-6 sm:p-10 border ${headerInfo.border} ${headerInfo.shadow} transition-all duration-300`
+      }
+    >
 
       {/* ── HEADER ── */}
       <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4">

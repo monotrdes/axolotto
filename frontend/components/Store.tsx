@@ -9,6 +9,7 @@ import UnboxingFlow from '@/components/store/UnboxingFlow';
 import StoreHeader from '@/components/store/StoreHeader';
 import StoreHelpModal from '@/components/store/StoreHelpModal';
 import type { StoreProps } from '@/types/store';
+import { PAPER_WORLD } from '@/lib/paperWorld';
 
 export default function AxolottoStore({
   userId,
@@ -45,7 +46,13 @@ export default function AxolottoStore({
   };
 
   return (
-    <div className="w-full mt-6 bg-slate-950/80 backdrop-blur-md text-white rounded-[2rem] p-5 sm:p-8 border border-[#E4007C]/30 shadow-[0_0_40px_rgba(228,0,124,0.15)] relative">
+    <div
+      className={
+        PAPER_WORLD
+          ? 'w-full mt-6 papel-panel backdrop-blur-md text-white rounded-[2rem] p-5 sm:p-8 relative'
+          : 'w-full mt-6 bg-slate-950/80 backdrop-blur-md text-white rounded-[2rem] p-5 sm:p-8 border border-[#E4007C]/30 shadow-[0_0_40px_rgba(228,0,124,0.15)] relative'
+      }
+    >
       <StoreHeader storeTab={store.storeTab} onBack={handleBack} onHelp={() => store.setHelpOpen(true)} />
 
       {store.storeTab === 'official' && (

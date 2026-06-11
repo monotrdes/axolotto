@@ -49,12 +49,13 @@
   2. ✅ Transformación animada nido→camita al eclosionar (huevo tiembla →
      revienta en cascaritas → camita brota con rebote; reduced-motion = swap
      instantáneo; partículas no en tier ligera).
-  3. **Validación visual del usuario** (móvil y web): nidos bloqueados,
-     slots de la sala, comprar+equipar, tinte AMBIENTE, bazar en tienda,
-     y la eclosión animada si hay huevo por nacer.
-  Después → Fase 2 restante: re-skin HTML por tokens (Store boletos, SettlingScreen
-  recibo, Inventory códice, VipModal) y luego Fase 3 (re-skin de la mesa de
-  competencia + tablillas con `winPatterns.ts`).
+  3. ✅ Decoraciones validadas visualmente por el usuario (2026-06-11) ✓.
+  4. ✅ Re-skin HTML por tokens (Store/Inventory/VipModal/SettlingScreen) —
+     **pendiente validación visual del usuario** (requiere rebuild con flag).
+  Después → **Fase 2 queda completa** al validar el re-skin. Sigue Fase 3:
+  re-skin de la mesa de competencia (CenoteRoom/CircularTable/TableSeat/
+  GritonCharacter) + tablillas con `winPatterns.ts` (ojo al gap documentado
+  de salas hosteadas sin UI de listado/join).
 
 ## Checklist de fases (espejo del plan §8 — marcar aquí, no en el plan)
 
@@ -149,7 +150,12 @@
       **puppets reales del top-3** vía GET /ranking/axolotitos), Cenote de las Salas
       (Charco de Novatos + Fosa del Campeón). Hotspots: podio→rankings,
       gashapon→cápsulas, salas→jugar. `GameCanvasHandle.setPodio` + fetch en page.tsx
-- [ ] Re-skin HTML por tokens (Store boletos, SettlingScreen recibo, Inventory códice, VipModal)
+- [x] Re-skin HTML por tokens, gateado por flag vía `lib/paperWorld.ts` (sin flag,
+      cadenas de clases idénticas): clases `.papel-*` en globals.css + tokens
+      nuevos (`--papel-tinta*`, `--papel-metalico*`). Store y Inventory →
+      `.papel-panel` (guirnalda / lomo códice), VipModal → `.papel-marco-vip`
+      (papel metálico dorado), SettlingScreen → `.papel-recibo` (amate claro,
+      tinta, borde dentado de caja registradora, celdas impresas)
 - [x] Store: props `initialSection`/`sectionNonce` — forja→melter, p2p→market,
       booster/adopción→official (cableado en page.tsx onStallClick)
 
@@ -205,7 +211,8 @@
 | 2026-06-11 | 1991cc2 | Diorama: sala con slots tipados — mesa skin/mantel/sillas, tinte AMBIENTE, chips decor:<slot_id> |
 | 2026-06-11 | — | DecorSlotPanel (Equipar/Comprar FRJ/bonos) + Bazar del Cenote en tienda + limpieza del sistema v1 |
 | 2026-06-11 | (anterior) | Fix 404: registrar `cave_decor.router` en main.py (nunca se montó — el diorama no mostraba slots). Seed corrido (23 items) |
-| 2026-06-11 | (este) | Backend reiniciado (router OK, 401 vs 404) + sync dev→rama + eclosión animada nido→camita en SantuarioScene. ⏳ Falta: validación visual del usuario |
+| 2026-06-11 | 18ea371 | Backend reiniciado (router OK, 401 vs 404) + sync dev→rama + eclosión animada nido→camita en SantuarioScene |
+| 2026-06-11 | (este) | Decoraciones validadas por usuario ✓. Re-skin HTML por tokens (Fase 2): `.papel-*` en globals.css + `lib/paperWorld.ts`; Store/Inventory panel cartón+guirnalda/códice, VipModal marco metálico, SettlingScreen recibo de amate. ⏳ Falta: validación visual con flag |
 
 ## Notas para el verificador humano
 

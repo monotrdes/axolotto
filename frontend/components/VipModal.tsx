@@ -6,6 +6,7 @@ import { useVip } from "@/hooks/useVip";
 import ModeA from "@/components/vip/ModeA";
 import ModeB from "@/components/vip/ModeB";
 import TierBadge from "@/components/vip/TierBadge";
+import { PAPER_WORLD } from "@/lib/paperWorld";
 
 // Re-export for backward compatibility (used by app/play/page.tsx and ToastContext.tsx)
 export type { VipNotification };
@@ -53,9 +54,21 @@ export default function VipModal({
       />
 
       {/* Modal */}
-      <div className="relative z-10 w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl bg-[#0A0A1A] border border-white/10 shadow-2xl">
+      <div
+        className={
+          PAPER_WORLD
+            ? "relative z-10 w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl papel-marco-vip shadow-2xl"
+            : "relative z-10 w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-2xl bg-[#0A0A1A] border border-white/10 shadow-2xl"
+        }
+      >
         {/* Header sticky */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-5 pt-5 pb-3 bg-[#0A0A1A] border-b border-white/5">
+        <div
+          className={
+            PAPER_WORLD
+              ? "sticky top-0 z-10 flex items-center justify-between px-5 pt-5 pb-3 papel-marco-vip-header"
+              : "sticky top-0 z-10 flex items-center justify-between px-5 pt-5 pb-3 bg-[#0A0A1A] border-b border-white/5"
+          }
+        >
           <div className="flex items-center gap-2">
             <Crown size={18} className="text-yellow-400" />
             <span className="font-black text-base text-white tracking-tight">

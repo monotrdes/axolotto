@@ -33,6 +33,12 @@
   /* Luz cálida (velas/faroles) */
   --vela-calida:       #FFD68C;
   --vela-glow:         rgba(255, 214, 140, 0.35);
+  /* Tinta sobre amate (re-skin de paneles HTML, plan §4) */
+  --papel-tinta:       #3B2A18;
+  --papel-tinta-suave: #7A5C38;
+  /* Papel metálico (marcos VIP) */
+  --papel-metalico:      #D4AF37;
+  --papel-metalico-glow: rgba(212, 175, 55, 0.25);
 }
 
 @theme inline {
@@ -560,4 +566,92 @@ body {
   background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.15) 50%, transparent 100%);
   background-size: 200% 100%;
   animation: shimmer 2s linear infinite;
+}
+
+/* ========== PAPER SKIN — re-skin HTML por tokens (plan task-84 §4, Fase 2) ==========
+   Los componentes aplican estas clases SOLO con NEXT_PUBLIC_PAPER_WORLD=1
+   (constante build-time en lib/paperWorld.ts). Sin el flag, cero cambios. */
+
+/* Panel principal flotando sobre el diorama: cartón forrado, guirnalda de
+   banderines arriba y luz de vela en vez de neón. */
+.papel-panel {
+  position: relative;
+  background: linear-gradient(180deg, rgba(10, 37, 64, 0.92), rgba(6, 20, 35, 0.94));
+  border: 3px solid var(--papel-carton);
+  box-shadow:
+    0 0 0 2px rgba(232, 213, 176, 0.18),
+    0 0 36px var(--vela-glow),
+    inset 0 0 80px rgba(10, 37, 64, 0.55);
+}
+
+.papel-panel::before {
+  content: "";
+  position: absolute;
+  top: 10px;
+  left: 26px;
+  right: 26px;
+  height: 7px;
+  border-radius: 4px;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--papel-bugambilia)  0 44px,
+    var(--papel-cempasuchil) 44px 88px,
+    var(--papel-turquesa)    88px 132px,
+    var(--papel-terracota)   132px 176px,
+    var(--papel-hoja)        176px 220px
+  );
+  opacity: 0.85;
+}
+
+/* Variante códice (Inventory): lomo de amate en vez de guirnalda. */
+.papel-codice {
+  border-color: var(--papel-amate-sombra);
+}
+
+.papel-codice::before {
+  background: linear-gradient(90deg, var(--papel-amate-sombra), var(--papel-amate), var(--papel-amate-sombra));
+}
+
+/* Marco de papel metálico (VipModal). */
+.papel-marco-vip {
+  background: linear-gradient(180deg, #1a1408 0%, var(--agua-profunda) 45%);
+  border: 3px solid var(--papel-metalico);
+  box-shadow:
+    0 0 0 2px var(--papel-metalico-glow),
+    0 0 40px var(--papel-metalico-glow);
+}
+
+.papel-marco-vip-header {
+  background: #1a1408;
+  border-bottom: 1px solid var(--papel-metalico-glow);
+}
+
+/* Recibo de papel impreso (SettlingScreen): amate claro con tinta y borde
+   inferior dentado de caja registradora. */
+.papel-recibo {
+  background:
+    radial-gradient(circle at 18% 0%, rgba(184, 153, 104, 0.28), transparent 55%),
+    radial-gradient(circle at 85% 100%, rgba(184, 153, 104, 0.18), transparent 50%),
+    var(--papel-amate);
+  color: var(--papel-tinta);
+  clip-path: polygon(
+    0 0, 100% 0, 100% calc(100% - 12px),
+    95% 100%, 90% calc(100% - 12px), 85% 100%, 80% calc(100% - 12px),
+    75% 100%, 70% calc(100% - 12px), 65% 100%, 60% calc(100% - 12px),
+    55% 100%, 50% calc(100% - 12px), 45% 100%, 40% calc(100% - 12px),
+    35% 100%, 30% calc(100% - 12px), 25% 100%, 20% calc(100% - 12px),
+    15% 100%, 10% calc(100% - 12px), 5% 100%, 0 calc(100% - 12px)
+  );
+}
+
+/* Celda impresa del recibo (stats, historial). */
+.papel-recibo-celda {
+  background: rgba(184, 153, 104, 0.16);
+  border: 1px solid var(--papel-amate-sombra);
+}
+
+/* Separador de perforación del recibo. */
+.papel-recibo-linea {
+  border-bottom: 2px dashed var(--papel-amate-sombra);
 }
