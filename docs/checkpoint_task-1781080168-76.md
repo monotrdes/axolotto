@@ -36,13 +36,18 @@
   FRJ, abajo amigos. Plan detallado: `C:\Users\imzet\.claude\plans\creo-que-no-se-sunny-pony.md`
   (aprobado) — backend taxonomía+catálogo+shop y frontend diorama+panel+bazar.
 - **Último commit de avance**: el commit que contiene esta edición
+- **⚠️ NUEVO FLUJO (2026-06-11)**: la rama se MERGEÓ a `dev` (merge `f82dd79`,
+  con aprobación del usuario) para evitar divergencia con el trabajo activo en
+  dev. A partir de aquí: seguir trabajando en este worktree, pero **mergear
+  `dev` a la rama seguido** (mínimo antes de cada unidad de trabajo) y mergear
+  de vuelta a `dev` (con aprobación) al cerrar cada fase. En el merge se
+  integró el locking de partida de dev (`isGameLocked`) a los hotspots/dock
+  del mundo y se descartó el cableado viejo de decoración v1 que vivía en dev.
 - **SIGUIENTE PASO**:
   1. ⚠️ **Reiniciar el backend** (`docker restart axolotto_backend`) para que
-     cargue el router `cave_decor` recién registrado en main.py (bugfix: el
-     router existía pero nunca se montó → GET /cave/decorations daba 404 y el
-     diorama no pintaba ningún chip de slot). Seed del catálogo YA corrido
-     (23 items) ✓. Sincronizados al checkout principal (runtime Docker):
-     main.py, seed_cave_decor.py y el parche CAVE_ITEM de shop_service.py.
+     cargue el router `cave_decor` (bugfix: existía pero nunca se montó →
+     GET /cave/decorations daba 404 y el diorama no pintaba chips de slot).
+     Seed del catálogo YA corrido (23 items) ✓.
   2. **Validación visual del usuario** (móvil y web): nidos bloqueados,
      slots de la sala, comprar+equipar, tinte AMBIENTE, bazar en tienda.
   3. **Transformación animada nido→camita** al eclosionar (sigue pendiente).
