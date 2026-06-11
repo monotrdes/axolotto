@@ -34,6 +34,8 @@ export interface GameCanvasHandle {
   setCaveStatus?(status: CaveStatusData): void;
   /** Decoraciones equipadas + layout de slots (GET /cave/decorations). */
   setDecoraciones?(data: DecoracionesData): void;
+  /** Fase lunar 1-6 (🌑→🌟) — tiñe la luz superficial de las 3 macrozonas. */
+  setLunarPhase?(phase: number): void;
 }
 
 interface GameCanvasProps {
@@ -99,6 +101,9 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
       if (santuarioRef.current && !santuarioRef.current.destroyed) {
         santuarioRef.current.setDecoraciones(data);
       }
+    },
+    setLunarPhase(phase: number) {
+      if (engineRef.current) engineRef.current.lunarPhase = phase;
     },
     focusZone(zoneId: string) {
       zonesRef.current?.navigate(zoneId, null);

@@ -188,6 +188,18 @@ def unstake_axolotito(
             detail="Este Axolotito no está en staking."
         )
 
+    # Check minimum lock duration (2 mins in dev, 60 mins in prod)
+    from app.core.config import settings
+    lock_minutes = 2 if settings.BLOCKCHAIN_MODE == "local" else 60
+    if axolotito.last_staking_claim:
+        elapsed_seconds = (datetime.utcnow() - axolotito.last_staking_claim).total_seconds()
+        if elapsed_seconds < (lock_minutes * 60):
+            remaining = int((lock_minutes * 60) - elapsed_seconds)
+            raise HTTPException(
+                status_code=400,
+                detail=f"Este Axolotito está ocupado y no puede volver aún. Faltan {remaining} segundos."
+            )
+
     # Claim rewards first (this locks wallet, adds FRJ, resets timers)
     claim_result = StakingService.claim_staking_reward(session, axolotito_id, user)
 

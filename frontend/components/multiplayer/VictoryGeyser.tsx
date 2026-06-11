@@ -13,10 +13,10 @@ interface VictoryGeyserProps {
   position?: { x: number; y: number };
 }
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Papel picado palette (plan task-84 §5) ────────────────────────────────────
 
-const VICTORY_COLORS = ["#FBBF24", "#34D399", "#6366F1", "#EC4899"];
-const SPLASH_COLORS = ["#38BDF8", "#22D3EE", "#67E8F9", "#7DD3FC"];
+const VICTORY_COLORS = ["#E4007C", "#F59E0B", "#2DD4BF", "#4ADE80", "#C2410C"];
+const SPLASH_COLORS = ["#FFD68C", "#FBD38D", "#FFF7EC", "#E8D5B0"];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -189,7 +189,7 @@ export default function VictoryGeyser({
           />
         ))}
 
-      {/* Winner floating text — appears after the flash, floats up slowly */}
+      {/* Winner floating text — papel amate con tinta */}
       <div
         className="absolute left-1/2"
         style={{
@@ -197,8 +197,12 @@ export default function VictoryGeyser({
           animation: "winner-text-float 2.5s ease-out 0.3s forwards",
         }}
       >
-        <span className="relative inline-block text-lg font-black text-yellow-300 tracking-wide drop-shadow-[0_0_10px_rgba(251,191,36,0.7)]">
-          GANADOR: {winnerName}
+        <span className="relative inline-block text-lg font-black tracking-wide"
+          style={{
+            color: "#F59E0B",
+            textShadow: "0 0 12px rgba(245,158,11,0.6), 1px 1px 0 rgba(0,0,0,0.3)",
+          }}>
+          ¡GANADOR! {winnerName}
         </span>
       </div>
     </div>

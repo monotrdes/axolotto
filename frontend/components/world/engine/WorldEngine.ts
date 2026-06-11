@@ -14,6 +14,8 @@ export class WorldEngine {
   camera = new CameraRig();
   bridge = new WorldBridge();
   quality: QualityTier = "media";
+  /** Fase lunar actual (1-6) — tiñe la luz superficial de las 3 macrozonas (plan task-84 §2 Subzona 3b, §4 Fase 4). */
+  lunarPhase = 1;
 
   private host!: HTMLElement;
   private resizeObserver: ResizeObserver | null = null;

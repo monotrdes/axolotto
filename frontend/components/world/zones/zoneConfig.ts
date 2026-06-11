@@ -114,3 +114,22 @@ export function framingFor(target: ZoneTarget): Framing {
   }
   return MACRO_FRAMINGS[target.macro];
 }
+
+/**
+ * Color de la banda superficial del agua según la fase lunar (1-6).
+ * (plan task-84 §2 Subzona 3b, §4 Fase 4).
+ *
+ * 🌑 Nueva → azul profundo   🌒 Creciente → índigo   🌓 Cuarto → turquesa tenue
+ * 🌔 Gibosa → cian suave      🌕 Llena → dorado tenue  🌟 Axoluna → rosa/violeta
+ */
+export function lunarSurfaceTint(phase: number): number {
+  switch (phase) {
+    case 1: return 0x0a2d45; // Luna Nueva: azul profundo frío
+    case 2: return 0x163a5c; // Creciente: índigo
+    case 3: return 0x1a6c7a; // Cuarto: turquesa tenue
+    case 4: return 0x1e8a8a; // Gibosa: cian suave
+    case 5: return 0x2a7a6c; // Llena: dorado/verde reflejo
+    case 6: return 0x4a3a7a; // Axoluna: violeta/rosa
+    default: return 0x1b7a8c; // Default: atardecer en el cenote
+  }
+}

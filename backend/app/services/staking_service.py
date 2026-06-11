@@ -265,6 +265,17 @@ class StakingService:
                 "message": "No hay FRJ acumulado. El temporizador se ha reiniciado.",
             }
 
+        # If resting (Limpiar Cenote), apply variable luck-based multiplier
+        multiplier = 1.0
+        if axolotito.status == "resting":
+            import random
+            luck = axolotito.stat_luck if axolotito.stat_luck is not None else 10.0
+            luck_bonus = (luck / 100.0) * 0.8
+            min_mult = 0.4 + luck_bonus
+            max_mult = 1.8 + luck_bonus
+            multiplier = random.SystemRandom().uniform(min_mult, max_mult)
+            total_claimable = total_claimable * multiplier
+
         # Lock wallet with SELECT FOR UPDATE
         wallet = BankService.get_or_create_wallet(
             session, user.privy_did, for_update=True,
@@ -273,12 +284,13 @@ class StakingService:
         wallet.last_updated = datetime.utcnow()
 
         # Ledger entry
+        desc_suffix = f" (Multiplicador de Limpieza: {round(multiplier, 2)}x)" if multiplier != 1.0 else ""
         ledger = TransactionLedger(
             user_id=user.privy_did,
             amount=total_claimable,
             currency=CurrencyType.FRIJOLITO,
             tx_type=TransactionType.STAKING_REWARD,
-            description=f"Recompensa de staking — Axolotito #{axolotito_id} ({axolotito.name})",
+            description=f"Recompensa de staking — Axolotito #{axolotito_id} ({axolotito.name}){desc_suffix}",
         )
 
         # Reset axolotito accumulator
@@ -295,6 +307,7 @@ class StakingService:
             "axolotito_id": axolotito_id,
             "claimed_frj": round(total_claimable, 6),
             "hourly_rate": round(hourly_rate, 6),
+            "multiplier": round(multiplier, 4),
         }
 
     # ------------------------------------------------------------------
@@ -372,6 +385,15 @@ class StakingService:
                     max_cap,
                 )
 
+            # Calculate lock remaining seconds
+            from app.core.config import settings
+            lock_minutes = 2 if settings.BLOCKCHAIN_MODE == "local" else 60
+            lock_remaining = 0
+            if axo.last_staking_claim:
+                elapsed = (datetime.utcnow() - axo.last_staking_claim).total_seconds()
+                if elapsed < (lock_minutes * 60):
+                    lock_remaining = int((lock_minutes * 60) - elapsed)
+
             axo_statuses.append({
                 "id": axo.id,
                 "name": axo.name,
@@ -387,6 +409,7 @@ class StakingService:
                     if axo.last_staking_claim
                     else None
                 ),
+                "lock_remaining_seconds": lock_remaining,
             })
 
         total_accrued = sum(a["accrued_unclaimed"] for a in axo_statuses)

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { getQuickPhrases, type Nature } from "@/data/personality-config";
+import { getQuickPhrases, normalizeNature, type Nature } from "@/data/personality-config";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -19,7 +19,7 @@ const QUICK_EMOJIS = ["👍", "🔥", "😱"];
 
 export default function QuickReactionWheel({
   send,
-  nature = "curious",
+  nature,
   vipTier,
   disabled = false,
 }: QuickReactionWheelProps) {

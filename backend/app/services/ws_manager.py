@@ -48,7 +48,7 @@ class PlayerState:
     joined_at: float = dc_field(default_factory=time.time)
     # Chat integration
     vip_tier: str | None = None         # "coral" | "dorado" | "axolite"
-    nature: str | None = None           # "hyperactive" | "shy" | "showoff" | "curious"
+    nature: str | None = None           # "methodical" | "lucky" | "hyperactive" | "glutton" | "shy" | "wise"
 
 
 @dataclass

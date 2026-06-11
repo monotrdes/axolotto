@@ -60,6 +60,10 @@ export async function sleepAxolotito(axoId: number, token: string | null) {
   await axios.post(`${API}/game/axolotitos/${axoId}/sleep`, {}, { headers: headers(token) });
 }
 
+export async function wakeAxolotito(axoId: number, token: string | null) {
+  await axios.post(`${API}/game/axolotitos/${axoId}/wake`, {}, { headers: headers(token) });
+}
+
 // ── Legacy ──
 export async function fetchLegacyStatus(userId: string, token: string | null) {
   const res = await axios.get(`${API}/legacy/status?user_id=${userId}`, { headers: headers(token) });

@@ -3,7 +3,7 @@ import gsap from "gsap";
 import type { WorldEngine } from "../../engine/WorldEngine";
 import type { AxolotitoData } from "../../entities/AxolotitoSprite";
 import { AxolotitoPuppet } from "../../puppet/AxolotitoPuppet";
-import { DESIGN_SPACE } from "../zoneConfig";
+import { DESIGN_SPACE, lunarSurfaceTint } from "../zoneConfig";
 
 /**
  * Diorama de la Pirámide (plan task-84 §2, macrozona 3): escena ancha con
@@ -82,7 +82,8 @@ export class PiramideScene extends Container {
 
   private buildBackdrop(): void {
     const bg = new Graphics();
-    bg.rect(0, 0, W, H * 0.3).fill(0x1b7a8c);
+    const lunar = this.engine.lunarPhase || 1;
+    bg.rect(0, 0, W, H * 0.3).fill(lunarSurfaceTint(lunar));
     bg.rect(0, H * 0.3, W, H * 0.4).fill(0x134e6f);
     bg.rect(0, H * 0.7, W, H * 0.3).fill(0x0a2540);
     // Suelo de piedra continuo.

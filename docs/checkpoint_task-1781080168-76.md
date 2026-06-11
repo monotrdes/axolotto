@@ -215,6 +215,7 @@
 | 2026-06-11 | 18ea371 | Backend reiniciado (router OK, 401 vs 404) + sync dev→rama + eclosión animada nido→camita en SantuarioScene |
 | 2026-06-11 | 63ab8c3 | Decoraciones validadas por usuario ✓. Re-skin HTML por tokens (Fase 2): `.papel-*` en globals.css + `lib/paperWorld.ts`; Store/Inventory panel cartón+guirnalda/códice, VipModal marco metálico, SettlingScreen recibo de amate. ⏳ Falta: validación visual con flag |
 | 2026-06-11 | (este) | Merge fast-forward a `dev`; worktree tumbado por orden del usuario — trabajo directo en `dev` desde ahora. Changelog del wiki actualizado |
+| 2026-06-11 | - | Corrección de bug en SantuarioScene (rebuildNests): se elimina el fallback `?? eggs[slot]` que sobreescribía erróneamente los dormitorios de axolotitos con huevos de índices superiores, y corrección de tipos en PersonalityReactions.tsx |
 
 ## Notas para el verificador humano
 

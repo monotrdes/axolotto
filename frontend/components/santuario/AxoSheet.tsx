@@ -4,7 +4,7 @@ import { X, Zap, Crown, Star, Package } from 'lucide-react';
 import BottomSheet from '@/components/ui/BottomSheet';
 import { useToast } from '@/context/ToastContext';
 import { traitNames, statNames, statColors } from '@/constants/santuario';
-import { setMainAxolotito, feedAxolotito, sleepAxolotito, claimAxolotitoStaking, stakeAxolotito, unstakeAxolotito } from '@/services/santuarioService';
+import { setMainAxolotito, feedAxolotito, sleepAxolotito, wakeAxolotito, claimAxolotitoStaking, stakeAxolotito, unstakeAxolotito } from '@/services/santuarioService';
 import { API_BASE } from '@/lib/api';
 import type { StakingAxolotitoInfo } from '@/types/economy';
 
@@ -30,13 +30,23 @@ export default function AxoSheet({ axo, onClose, token, onSetMain, onOpenCave, s
   const [unstaking, setUnstaking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [remainingLock, setRemainingLock] = useState<number>(stakingInfo?.lock_remaining_seconds || 0);
+
+  React.useEffect(() => {
+    if (remainingLock <= 0) return;
+    const interval = setInterval(() => {
+      setRemainingLock((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [remainingLock]);
+
   const handleStake = async (status: 'studying' | 'resting') => {
     if (!token || staking) return;
     setStaking(true);
     setError(null);
     try {
       await stakeAxolotito(axo.id, status, token);
-      toast.ok(`📈 Axolotito puesto en staking (${status === 'studying' ? 'Estudiando' : 'Descansando'})`);
+      toast.ok(`📈 Axolotito puesto en staking (${status === 'studying' ? 'Trabajar en el Tianguis' : 'Limpiar el Cenote'})`);
       if (onStakingClaimed) onStakingClaimed();
       onClose();
     } catch (e: any) {
@@ -193,18 +203,18 @@ export default function AxoSheet({ axo, onClose, token, onSetMain, onOpenCave, s
                   <div className="flex items-center gap-1.5">
                     <span className="text-sm">🪙</span>
                     <span className="text-[10px] font-black text-amber-400 uppercase tracking-wider">
-                      Staking FRJ ({axo.status === 'studying' ? 'Estudiando' : 'Descansando'})
+                      Staking FRJ ({axo.status === 'studying' ? 'Trabajando en Tianguis' : 'Limpiando Cenote'})
                     </span>
                   </div>
                   <span className="text-[9px] font-bold text-amber-300">
-                    +{stakingInfo.hourly_rate.toFixed(2)} FRJ/h
+                    {axo.status === 'studying' ? `+${stakingInfo.hourly_rate.toFixed(2)} FRJ/h` : `~${stakingInfo.hourly_rate.toFixed(2)} FRJ/h (Variable)`}
                   </span>
                 </div>
 
                 {/* Progress bar toward 12h cap */}
                 <div className="mb-1.5">
                   <div className="flex justify-between text-[8px] font-bold text-slate-500 mb-0.5">
-                    <span>Acumulado</span>
+                    <span>Acumulado estimado</span>
                     <span>
                       {stakingInfo.accrued_unclaimed.toFixed(2)} FRJ
                       {stakingInfo.cap_reached && (
@@ -241,8 +251,9 @@ export default function AxoSheet({ axo, onClose, token, onSetMain, onOpenCave, s
                     if (!token || claimingStaking) return;
                     setClaimingStaking(true);
                     try {
-                      await claimAxolotitoStaking(axo.id, token);
-                      toast.ok(`🪙 Reclamaste ${stakingInfo.accrued_unclaimed.toFixed(2)} FRJ de staking`);
+                      const res = await claimAxolotitoStaking(axo.id, token);
+                      const multText = res.multiplier && res.multiplier !== 1.0 ? ` (¡Encontraste un bono de ${res.multiplier}x!)` : '';
+                      toast.ok(`🪙 Reclamaste ${res.claimed_frj.toFixed(2)} FRJ de staking${multText}`);
                       if (onStakingClaimed) onStakingClaimed();
                       onClose();
                     } catch (e: any) {
@@ -260,10 +271,14 @@ export default function AxoSheet({ axo, onClose, token, onSetMain, onOpenCave, s
                 {/* Unstake button */}
                 <button
                   onClick={handleUnstake}
-                  disabled={unstaking}
+                  disabled={unstaking || remainingLock > 0}
                   className="w-full mt-2 py-2 rounded-xl font-black text-[9px] uppercase tracking-wider bg-slate-800/80 border border-slate-700/60 text-slate-300 hover:text-white hover:bg-slate-700/80 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1"
                 >
-                  {unstaking ? 'Retirando…' : 'Desestakear (Sacar de Cueva)'}
+                  {unstaking
+                    ? 'Retirando…'
+                    : remainingLock > 0
+                      ? `⏳ Ocupado (${Math.floor(remainingLock / 60)}:${String(remainingLock % 60).padStart(2, '0')})`
+                      : 'Hacer que vuelva a la Cueva'}
                 </button>
               </div>
             )}
@@ -274,11 +289,11 @@ export default function AxoSheet({ axo, onClose, token, onSetMain, onOpenCave, s
                 <div className="flex items-center gap-1.5 mb-2.5">
                   <span className="text-sm">📈</span>
                   <span className="text-[10px] font-black text-slate-300 uppercase tracking-wider">
-                    Staking pasivo de Frijolitos
+                    Actividades Pasivas (FRJ)
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-500 mb-3 font-medium leading-relaxed">
-                  Pon a este Axolotito a trabajar en el Cenote para producir Frijolitos pasivamente. Tasa: <span className="text-amber-400 font-bold">+{stakingInfo.hourly_rate.toFixed(2)} FRJ/h</span>.
+                  Envía a tu Axolotito a una actividad en el Cenote. Tasa base: <span className="text-amber-400 font-bold">+{stakingInfo.hourly_rate.toFixed(2)} FRJ/h</span>.
                 </p>
                 <div className="flex gap-2">
                   <button
@@ -286,14 +301,14 @@ export default function AxoSheet({ axo, onClose, token, onSetMain, onOpenCave, s
                     disabled={staking}
                     className="flex-1 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-wider bg-purple-950/40 border border-purple-500/30 text-purple-300 hover:bg-purple-900/30 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1"
                   >
-                    📚 Estudiar
+                    🏪 Tianguis
                   </button>
                   <button
                     onClick={() => handleStake('resting')}
                     disabled={staking}
                     className="flex-1 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-wider bg-teal-950/40 border border-teal-500/30 text-teal-300 hover:bg-teal-900/30 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-1"
                   >
-                    💤 Descansar
+                    🧹 Limpiar Cenote
                   </button>
                 </div>
               </div>
@@ -331,28 +346,48 @@ export default function AxoSheet({ axo, onClose, token, onSetMain, onOpenCave, s
                   try {
                     await feedAxolotito(axo.id, 'pellet', token);
                     toast.ok('🍥 +15 energía (Alga Pellet)');
+                    onSetMain?.();
                     onClose();
                   } catch (e: any) { toast.error(e.response?.data?.detail || 'Error al alimentar'); }
                 }}
-                disabled={axo.status === 'playing'}
+                disabled={axo.status === 'playing' || axo.status === 'sleeping'}
                 className="py-2.5 rounded-xl font-black text-[9px] uppercase tracking-wider bg-emerald-900/40 hover:bg-emerald-800/40 border border-emerald-500/30 text-emerald-300 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1"
               >
                 🍥 Alimentar
               </button>
-              <button
-                onClick={async () => {
-                  if (axo.status === 'playing') return;
-                  try {
-                    await sleepAxolotito(axo.id, token);
-                    toast.ok('💤 Axolotito durmiendo');
-                    onClose();
-                  } catch (e: any) { toast.error(e.response?.data?.detail || 'Error al dormir'); }
-                }}
-                disabled={axo.status === 'playing'}
-                className="py-2.5 rounded-xl font-black text-[9px] uppercase tracking-wider bg-indigo-900/40 hover:bg-indigo-800/40 border border-indigo-500/30 text-indigo-300 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1"
-              >
-                💤 Dormir
-              </button>
+              {axo.status === 'sleeping' ? (
+                <button
+                  onClick={async () => {
+                    if (axo.status === 'playing') return;
+                    try {
+                      await wakeAxolotito(axo.id, token);
+                      toast.ok('☀️ Axolotito despierto con energía completa!');
+                      onSetMain?.();
+                      onClose();
+                    } catch (e: any) { toast.error(e.response?.data?.detail || 'Error al despertar'); }
+                  }}
+                  disabled={axo.status === 'playing'}
+                  className="py-2.5 rounded-xl font-black text-[9px] uppercase tracking-wider bg-amber-900/40 hover:bg-amber-800/40 border border-amber-500/30 text-amber-300 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1 animate-pulse"
+                >
+                  ☀️ Despertar
+                </button>
+              ) : (
+                <button
+                  onClick={async () => {
+                    if (axo.status === 'playing') return;
+                    try {
+                      await sleepAxolotito(axo.id, token);
+                      toast.ok('💤 Axolotito durmiendo');
+                      onSetMain?.();
+                      onClose();
+                    } catch (e: any) { toast.error(e.response?.data?.detail || 'Error al dormir'); }
+                  }}
+                  disabled={axo.status === 'playing'}
+                  className="py-2.5 rounded-xl font-black text-[9px] uppercase tracking-wider bg-indigo-900/40 hover:bg-indigo-800/40 border border-indigo-500/30 text-indigo-300 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                >
+                  💤 Dormir
+                </button>
+              )}
             </div>
 
             {/* Enter cave CTA */}

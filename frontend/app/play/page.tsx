@@ -207,12 +207,18 @@ export default function Home() {
 
   // Punto rojo en dock Cápsulas cuando hay recompensa lunar disponible.
   // Se refresca al cambiar de tab (cubre reclamar dentro de Gashapon → salir del tab).
+  // También sincroniza la fase lunar al canvas del mundo papel picado (plan task-84 §4).
   useEffect(() => {
     if (!accessToken || !authenticated) { setDailyClaimAvailable(false); return; }
     axios.get(`${API_BASE}/rewards/lunar/status`, {
       headers: { Authorization: `Bearer ${accessToken}` }
     })
-      .then(res => setDailyClaimAvailable(res.data?.can_claim === true))
+      .then(res => {
+        setDailyClaimAvailable(res.data?.can_claim === true);
+        if (PAPER_WORLD && res.data?.lunar_week) {
+          gameCanvasRef.current?.setLunarPhase?.(res.data.lunar_week);
+        }
+      })
       .catch(() => {});
   }, [accessToken, authenticated, tabActiva]);
 
@@ -913,6 +919,10 @@ export default function Home() {
             onClose={() => setSettingsModalOpen(false)}
             onLogout={logout}
             onResetTutorial={handleDevReset}
+            onQualityChange={() => {
+              // La calidad se detecta al montar el motor; recargar para aplicar.
+              window.location.reload();
+            }}
           />
 
           {/* Ticker de Actividad Global */}

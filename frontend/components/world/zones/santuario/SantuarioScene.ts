@@ -4,7 +4,7 @@ import type { WorldEngine } from "../../engine/WorldEngine";
 import type { AxolotitoData } from "../../entities/AxolotitoSprite";
 import type { AmigoData } from "../../mapBackendAxolotito";
 import { AxolotitoPuppet, type PuppetState } from "../../puppet/AxolotitoPuppet";
-import { DESIGN_SPACE, PAINTED_BOUNDS } from "../zoneConfig";
+import { DESIGN_SPACE, PAINTED_BOUNDS, lunarSurfaceTint } from "../zoneConfig";
 
 /**
  * Diorama del Santuario (plan task-84 §2, rediseño cueva submarina):
@@ -236,7 +236,7 @@ export class SantuarioScene extends Container {
     this.lastAxolotitos = data;
     this.rebuildNests();
 
-    const axos = data.filter((a) => !a.isEgg);
+    const axos = data.filter((a) => !a.isEgg && a.state !== "sleeping");
 
     // Nivel central: títeres vivos.
     const seen = new Set<string>();
@@ -294,14 +294,14 @@ export class SantuarioScene extends Container {
         this.nestLayer.addChild(node);
         continue;
       }
-      const egg = eggs.find((e) => e.caveIndex === slot) ?? eggs[slot];
+      const egg = eggs.find((e) => e.caveIndex === slot);
       const owner = axos.find((a) => a.caveIndex === slot);
       const kind: NestKind = egg ? "egg" : owner ? "camita" : "empty";
       kinds.set(slot, kind);
       const node = egg
         ? buildNestWithEgg(x, y, egg)
         : owner
-          ? buildCamita(x, y, owner.name)
+          ? buildCamita(x, y, owner.name, owner.state === "sleeping")
           : buildEmptyNest(x, y);
       if (egg) this.hotspot(node, "nido-huevo", egg.id);
       else if (owner) this.hotspot(node, "nido-axo", owner.id);
@@ -544,8 +544,11 @@ export class SantuarioScene extends Container {
 
   private buildBackdrop(): void {
     const bg = new Graphics();
-    // Agua en 3 bandas (atardecer en el cenote) — pintada con overscan lateral.
-    bg.rect(PX, 0, PW, H * 0.3).fill(0x1b7a8c);
+    // Agua en 3 bandas (atardecer en el cenote).
+    // La banda superficial se tiñe según la fase lunar (plan task-84 §4).
+    const lunar = this.engine.lunarPhase || 1;
+    const surfaceColor = lunarSurfaceTint(lunar);
+    bg.rect(PX, 0, PW, H * 0.3).fill(surfaceColor);
     bg.rect(PX, H * 0.3, PW, H * 0.4).fill(0x134e6f);
     bg.rect(PX, H * 0.7, PW, H * 0.3).fill(0x0a2540);
     // Plataformas de chinampa (2 filas de nidos + sala + embarcadero).
@@ -789,7 +792,7 @@ function buildLockedNest(x: number, y: number, levelNeeded: number): Container {
 }
 
 /** Camita del axolotito nacido en este nido (plan §2: nido→camita). */
-function buildCamita(x: number, y: number, name?: string): Container {
+function buildCamita(x: number, y: number, name?: string, isSleeping?: boolean): Container {
   const c = new Container();
   c.position.set(x, y);
   const bed = new Graphics()
@@ -799,6 +802,15 @@ function buildCamita(x: number, y: number, name?: string): Container {
     .roundRect(-58, -14, 34, 26, 8)
     .fill(0xfff7ec);
   c.addChild(bed);
+  if (isSleeping) {
+    const zzz = new Text({
+      text: "💤 🦎",
+      style: { fontSize: 24, fill: 0xfff7ec },
+    });
+    zzz.anchor.set(0.5);
+    zzz.position.set(0, -18);
+    c.addChild(zzz);
+  }
   if (name) {
     const tag = new Text({
       text: name,

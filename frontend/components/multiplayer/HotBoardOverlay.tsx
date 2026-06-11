@@ -58,10 +58,10 @@ export default function HotBoardOverlay({
 
   const glowColor =
     effectiveLevel === "emerald"
-      ? "rgba(52,211,153,0.25)"
+      ? "rgba(45,212,191,0.22)"
       : effectiveLevel === "indigo"
-        ? "rgba(99,102,241,0.3)"
-        : "rgba(251,191,36,0.35)";
+        ? "rgba(228,0,124,0.25)"
+        : "rgba(245,158,11,0.35)";
 
   // ── Shared inner content (aura + droplets + sparkles + children) ──────────
 

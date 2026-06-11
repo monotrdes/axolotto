@@ -181,6 +181,11 @@ def test_endpoints_stake_and_unstake(session: Session):
     assert status_res["slots_total"] == 2
     assert status_res["slots_used"] == 2
 
+    # Simulate time passing by shifting last_staking_claim back by 3 minutes
+    axo1.last_staking_claim = datetime.utcnow() - timedelta(minutes=3)
+    session.add(axo1)
+    session.commit()
+
     # Unstake axo1
     res_unstake = unstake_axolotito(req, axo1.id, session, user.privy_did)
     assert "sacado de staking" in res_unstake["message"]

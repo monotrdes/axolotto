@@ -73,11 +73,11 @@ export default function PersonalityReactions({
         style={{
           fontSize: size * 0.5,
           filter:
-            safeNature === "curious"
+            safeNature === "wise"
               ? "drop-shadow(0 0 4px rgba(0,206,209,0.5))"
               : safeNature === "hyperactive"
                 ? "drop-shadow(0 0 4px rgba(255,215,0,0.6))"
-                : safeNature === "showoff"
+                : safeNature === "lucky"
                   ? "drop-shadow(0 0 6px rgba(255,215,0,0.7))"
                   : "none",
         }}

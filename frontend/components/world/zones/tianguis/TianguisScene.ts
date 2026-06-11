@@ -1,7 +1,7 @@
 import { Container, Graphics, Text, Ticker } from "pixi.js";
 import gsap from "gsap";
 import type { WorldEngine } from "../../engine/WorldEngine";
-import { DESIGN_SPACE, PAINTED_BOUNDS } from "../zoneConfig";
+import { DESIGN_SPACE, PAINTED_BOUNDS, lunarSurfaceTint } from "../zoneConfig";
 
 /**
  * Diorama del Tianguis (plan task-84 §2, Fase 2): mercado flotante con 5
@@ -60,7 +60,8 @@ export class TianguisScene extends Container {
 
   private buildBackdrop(): void {
     const bg = new Graphics();
-    bg.rect(PX, 0, PW, H * 0.3).fill(0x1b7a8c);
+    const lunar = this.engine.lunarPhase || 1;
+    bg.rect(PX, 0, PW, H * 0.3).fill(lunarSurfaceTint(lunar));
     bg.rect(PX, H * 0.3, PW, H * 0.4).fill(0x134e6f);
     bg.rect(PX, H * 0.7, PW, H * 0.3).fill(0x0a2540);
     // Muelle de madera que recorre el mercado.

@@ -14,12 +14,14 @@ interface TableSeatProps {
   tableRadius: number;
   /** Axolotito name */
   axoName: string;
-  /** Personality nature for animation style */
-  nature?: "hyperactive" | "shy" | "showoff" | "curious" | null;
+  /** Personality nature for animation style (6 naturalezas reales del backend) */
+  nature?: import("@/data/personality-config").Nature | null;
   /** Current reaction state */
   reaction?: string;
   /** Is this the current player's seat? */
   isPlayer?: boolean;
+  /** Is this an NPC/bot? (Robo-Axolote, plan task-84 §6.5) */
+  isNPC?: boolean;
   /** Does this seat have a hot board (14+ marks)? */
   isHot?: boolean;
   /** Mini board or avatar content */
@@ -40,10 +42,12 @@ interface TableSeatProps {
 // ── Nature animation classes ──────────────────────────────────────────────────
 
 const NATURE_CLASS: Record<string, string> = {
-  hyperactive: "animate-axo-bob",
-  shy:         "animate-nest-idle",
-  showoff:     "animate-axo-wander",
-  curious:     "animate-axo-bob",
+  methodical:   "animate-nest-idle",
+  lucky:        "animate-axo-wander",
+  hyperactive:  "animate-axo-bob",
+  glutton:      "animate-axo-bob",
+  shy:          "animate-nest-idle",
+  wise:         "animate-nest-idle",
 };
 
 // ── Seat-to-axo distance (how far from table center the pedestal sits) ────────
@@ -60,6 +64,7 @@ export default function TableSeat({
   nature,
   reaction,
   isPlayer = false,
+  isNPC = false,
   isHot = false,
   children,
   speechBubble,
@@ -119,52 +124,57 @@ export default function TableSeat({
         </div>
       )}
 
-      {/* Stone pedestal */}
+      {/* ── Cartón pedestal (papel picado, plan task-84 §5) ──────────── */}
       <div
         className={`
-          relative flex items-center justify-center rounded-xl
-          bg-gradient-to-b from-slate-700 to-slate-800 border
+          relative flex items-center justify-center rounded-xl border-2
           transition-all duration-300
           ${natureAnimClass}
-          ${isPlayer ? "border-indigo-500/50 shadow-[0_0_12px_rgba(99,102,241,0.3)]" : "border-slate-600/50"}
+          ${isPlayer ? "border-[var(--papel-bugambilia)]/50 shadow-[0_0_12px_rgba(228,0,124,0.25)]" : "border-[var(--papel-amate-sombra)]/40"}
           ${isHot ? "animate-seat-glow" : ""}
         `}
         style={{
           width: pedestalW,
           height: pedestalH,
+          background: "linear-gradient(180deg, #C49A6C 0%, #A9743F 40%, #8B5E34 100%)",
           boxShadow: isHot
-            ? "0 0 16px rgba(239,68,68,0.4), inset 0 0 8px rgba(239,68,68,0.08)"
+            ? "0 0 18px rgba(245,158,11,0.5), inset 0 1px 0 rgba(255,247,236,0.15), 0 3px 0 rgba(0,0,0,0.2)"
             : isPlayer
-              ? "0 4px 12px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.04)"
-              : "0 4px 8px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.03)",
+              ? "0 4px 0 rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,247,236,0.1)"
+              : "0 3px 0 rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,247,236,0.06)",
           animationDuration: isHot ? "1.2s" : "2.4s",
         }}
       >
-        {/* Inner content (avatar / mini board) */}
-        <div className="flex items-center justify-center w-full h-full px-1">
+        {/* Inner content (avatar / mini board / Robo-Axolote NPC) */}
+        <div className="flex items-center justify-center w-full h-full px-1 gap-0.5">
           {children ?? (
-            <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider select-none">
-              ?
-            </span>
+            isNPC ? (
+              <span className="text-base leading-none select-none" title="Robo-Axolote (CPU)">🤖</span>
+            ) : (
+              <span className="text-[9px] font-black text-[var(--papel-amate)]/50 uppercase tracking-wider select-none">
+                ?
+              </span>
+            )
           )}
         </div>
 
-        {/* Player highlight ring */}
+        {/* Player highlight ring — papel bugambilia */}
         {isPlayer && (
           <div
-            className="absolute inset-0 rounded-xl border-2 border-indigo-400/30 pointer-events-none"
+            className="absolute inset-0 rounded-xl border-2 border-[var(--papel-bugambilia)]/30 pointer-events-none"
             style={{
-              boxShadow: "0 0 10px rgba(99,102,241,0.15)",
+              boxShadow: "0 0 8px rgba(228,0,124,0.12)",
             }}
           />
         )}
 
-        {/* Hot indicator glow */}
+        {/* Hot indicator — papel dorado pulsante */}
         {isHot && (
           <div
-            className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 animate-pulse"
+            className="absolute -top-1 -right-1 w-3 h-3 rounded-full animate-pulse"
             style={{
-              boxShadow: "0 0 8px rgba(239,68,68,0.6)",
+              background: "#F59E0B",
+              boxShadow: "0 0 8px rgba(245,158,11,0.6)",
             }}
           />
         )}

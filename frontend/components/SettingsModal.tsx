@@ -2,17 +2,30 @@
 
 import { useState, useEffect } from 'react';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
-import { X, Volume2, VolumeX, Download, Share, PlusSquare, HelpCircle, LogOut } from 'lucide-react';
+import { X, Volume2, VolumeX, Download, Share, PlusSquare, HelpCircle, LogOut, Monitor } from 'lucide-react';
 import { playPurchaseSound } from '@/lib/audioUtils';
+import { PAPER_WORLD } from '@/lib/paperWorld';
+import type { QualityTier } from '@/components/world/engine/qualityTier';
+
+const QUALITY_STORAGE_KEY = 'axolotto_world_quality';
+
+function storedQuality(): QualityTier | 'auto' {
+  if (typeof window === 'undefined') return 'auto';
+  const v = localStorage.getItem(QUALITY_STORAGE_KEY);
+  if (v === 'alta' || v === 'media' || v === 'ligera') return v;
+  return 'auto';
+}
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onLogout?: () => void;
   onResetTutorial?: () => void;
+  /** Callback cuando el usuario cambia la calidad manualmente (plan task-84 §7). */
+  onQualityChange?: (tier: QualityTier | 'auto') => void;
 }
 
-export default function SettingsModal({ isOpen, onClose, onLogout, onResetTutorial }: SettingsModalProps) {
+export default function SettingsModal({ isOpen, onClose, onLogout, onResetTutorial, onQualityChange }: SettingsModalProps) {
   const {
     isInstallable,
     isStandalone,
@@ -21,6 +34,7 @@ export default function SettingsModal({ isOpen, onClose, onLogout, onResetTutori
   } = usePWAInstall();
 
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [quality, setQuality] = useState<QualityTier | 'auto'>(storedQuality());
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -28,6 +42,7 @@ export default function SettingsModal({ isOpen, onClose, onLogout, onResetTutori
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('sound_effects_enabled');
       setSoundEnabled(stored !== 'false');
+      setQuality(storedQuality());
     }
   }, []);
 
@@ -37,7 +52,7 @@ export default function SettingsModal({ isOpen, onClose, onLogout, onResetTutori
     const newVal = !soundEnabled;
     setSoundEnabled(newVal);
     localStorage.setItem('sound_effects_enabled', newVal ? 'true' : 'false');
-    
+
     // Play a test sound if enabling
     if (newVal) {
       // Small timeout to allow AudioContext to register state if needed
@@ -49,6 +64,12 @@ export default function SettingsModal({ isOpen, onClose, onLogout, onResetTutori
         }
       }, 50);
     }
+  };
+
+  const handleQualityChange = (next: QualityTier | 'auto') => {
+    setQuality(next);
+    localStorage.setItem(QUALITY_STORAGE_KEY, next);
+    onQualityChange?.(next);
   };
 
   return (
@@ -108,6 +129,44 @@ export default function SettingsModal({ isOpen, onClose, onLogout, onResetTutori
               />
             </button>
           </div>
+
+          {/* ── Calidad gráfica (solo mundo papel picado, plan task-84 §7) ──── */}
+          {PAPER_WORLD && (
+            <div className="p-4 bg-[#1C1C35]/40 rounded-2xl border border-white/5 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400">
+                  <Monitor size={20} />
+                </div>
+                <div>
+                  <p className="font-bold text-sm">Calidad Gráfica</p>
+                  <p className="text-xs text-slate-400">
+                    {quality === 'auto'
+                      ? 'Auto — se ajusta a tu dispositivo'
+                      : quality === 'alta'
+                        ? 'Alta — 60 FPS, agua animada, partículas'
+                        : quality === 'media'
+                          ? 'Media — 60 FPS, sin agua animada'
+                          : 'Ligera — 30 FPS, pocas capas'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                {(['auto', 'alta', 'media', 'ligera'] as const).map((tier) => (
+                  <button
+                    key={tier}
+                    onClick={() => handleQualityChange(tier)}
+                    className={`flex-1 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 border ${
+                      quality === tier
+                        ? 'bg-purple-600/40 border-purple-400/40 text-purple-200 shadow-[0_0_10px_rgba(168,85,247,0.25)]'
+                        : 'bg-white/5 border-white/10 text-slate-400 hover:bg-white/10'
+                    }`}
+                  >
+                    {tier === 'auto' ? 'Auto' : tier === 'alta' ? 'Alta' : tier === 'media' ? 'Media' : 'Ligera'}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* PWA / Installation Settings */}
           <div className="p-4 bg-[#1C1C35]/40 rounded-2xl border border-white/5 space-y-4">

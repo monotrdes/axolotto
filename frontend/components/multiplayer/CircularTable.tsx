@@ -1,3 +1,8 @@
+/**
+ * CircularTable — Mesa de lotería en estética de cartón y papel picado
+ * (plan task-84 §5, reemplaza la mesa de piedra neón).
+ */
+
 "use client";
 
 import React from "react";
@@ -12,23 +17,22 @@ interface CircularTableProps {
   children?: React.ReactNode;
 }
 
-// ── Glow intensity map ────────────────────────────────────────────────────────
+// ── Tension → papel edge glow ─────────────────────────────────────────────────
 
 const TENSION_GLOW: Record<TensionLevel, { color: string; spread: number }> = {
-  low:      { color: "rgba(30,120,200,0.15)", spread: 20 },
-  medium:   { color: "rgba(30,120,200,0.3)",  spread: 35 },
-  high:     { color: "rgba(200,80,80,0.35)",  spread: 45 },
-  critical: { color: "rgba(239,68,68,0.5)",   spread: 60 },
+  low:      { color: "rgba(255,247,236,0.12)", spread: 12 },
+  medium:   { color: "rgba(228,0,124,0.15)",   spread: 22 },
+  high:     { color: "rgba(245,158,11,0.25)",  spread: 35 },
+  critical: { color: "rgba(228,0,124,0.4)",    spread: 50 },
 };
 
-// ── Rune positions (12 runes around the edge) ─────────────────────────────────
+// ── Papel picado marks around the edge (12 cut-out dots) ──────────────────────
 
-const RUNE_POSITIONS = Array.from({ length: 12 }, (_, i) => {
+const PAPEL_MARKS = Array.from({ length: 12 }, (_, i) => {
   const angle = (i / 12) * Math.PI * 2 - Math.PI / 2;
-  // Positioned on a ring ~46% from center (just inside the edge)
   const r = 46;
   return {
-    angle: angle,
+    angle,
     x: 50 + r * Math.cos(angle),
     y: 50 + r * Math.sin(angle),
   };
@@ -52,41 +56,27 @@ export default function CircularTable({
         height: tableSize,
       }}
     >
-      {/* Main stone table */}
+      {/* ── Main cartón table ────────────────────────────────────────────── */}
       <div
-        className="absolute rounded-full animate-stone-pulse"
+        className="absolute rounded-full"
         style={{
           width: "92%",
           height: "92%",
           background: `
-            conic-gradient(
-              from 0deg,
-              rgba(60,65,75,1) 0deg,
-              rgba(80,85,95,1) 30deg,
-              rgba(55,60,70,1) 60deg,
-              rgba(70,75,85,1) 90deg,
-              rgba(50,55,65,1) 120deg,
-              rgba(75,80,90,1) 150deg,
-              rgba(55,60,70,1) 180deg,
-              rgba(65,70,80,1) 210deg,
-              rgba(50,55,65,1) 240deg,
-              rgba(80,85,95,1) 270deg,
-              rgba(60,65,75,1) 300deg,
-              rgba(70,75,85,1) 330deg,
-              rgba(60,65,75,1) 360deg
-            )
+            radial-gradient(ellipse at 40% 35%, rgba(162,115,64,1) 0%, rgba(139,94,52,1) 40%, rgba(107,68,34,1) 100%)
           `,
           borderRadius: "50%",
           boxShadow: `
-            0 8px 32px rgba(0,0,0,0.5),
-            inset 0 2px 4px rgba(255,255,255,0.05),
-            inset 0 -4px 8px rgba(0,0,0,0.3),
+            0 6px 24px rgba(0,0,0,0.45),
+            inset 0 2px 0 rgba(255,247,236,0.1),
+            inset 0 -3px 0 rgba(0,0,0,0.25),
             0 0 ${glow.spread}px ${glow.color}
           `,
-          transition: "box-shadow 0.6s ease",
+          border: "3px solid rgba(255,247,236,0.25)",
+          transition: "box-shadow 0.6s ease, border-color 0.6s ease",
         }}
       >
-        {/* Inner carved ring (concentric) */}
+        {/* Inner ring — papel picado filigrana */}
         <div
           className="absolute rounded-full"
           style={{
@@ -94,14 +84,13 @@ export default function CircularTable({
             left: "8%",
             width: "84%",
             height: "84%",
-            border: "1px solid rgba(255,255,255,0.04)",
-            background: "radial-gradient(ellipse at 50% 50%, rgba(40,45,55,0.3) 0%, transparent 70%)",
+            border: "2px dashed rgba(255,247,236,0.12)",
             borderRadius: "50%",
             pointerEvents: "none",
           }}
         />
 
-        {/* Center depression */}
+        {/* Center depression — mancha de tinta */}
         <div
           className="absolute rounded-full"
           style={{
@@ -109,52 +98,35 @@ export default function CircularTable({
             left: "38%",
             width: "24%",
             height: "24%",
-            background: "radial-gradient(ellipse at 50% 50%, rgba(30,35,45,0.6) 0%, rgba(40,45,55,0.3) 60%, transparent 100%)",
+            background: "radial-gradient(ellipse at 50% 50%, rgba(59,42,24,0.5) 0%, rgba(107,68,34,0.2) 60%, transparent 100%)",
             borderRadius: "50%",
-            boxShadow: "inset 0 2px 8px rgba(0,0,0,0.4)",
+            boxShadow: "inset 0 2px 6px rgba(0,0,0,0.3)",
             pointerEvents: "none",
           }}
         />
       </div>
 
-      {/* Rune marks around the edge */}
-      {RUNE_POSITIONS.map((rune, i) => (
+      {/* ── Papel picado cutout marks around the edge ─────────────────────── */}
+      {PAPEL_MARKS.map((mark, i) => (
         <div
-          key={`rune-${i}`}
+          key={`papel-mark-${i}`}
           className="absolute rounded-full"
           style={{
-            width: "8px",
-            height: "8px",
-            left: `${rune.x}%`,
-            top: `${rune.y}%`,
+            width: i % 3 === 0 ? "7px" : "5px",
+            height: i % 3 === 0 ? "7px" : "5px",
+            left: `${mark.x}%`,
+            top: `${mark.y}%`,
             transform: "translate(-50%, -50%)",
             background:
               i % 3 === 0
-                ? "rgba(100,180,220,0.25)"
+                ? "rgba(228,0,124,0.3)"
                 : i % 3 === 1
-                  ? "rgba(80,160,200,0.18)"
-                  : "rgba(60,140,180,0.12)",
+                  ? "rgba(245,158,11,0.22)"
+                  : "rgba(45,212,191,0.18)",
             boxShadow:
               i % 3 === 0
-                ? "0 0 6px rgba(100,180,220,0.2)"
+                ? "0 0 4px rgba(228,0,124,0.15)"
                 : "none",
-            pointerEvents: "none",
-          }}
-        />
-      ))}
-
-      {/* Second ring of smaller marks */}
-      {RUNE_POSITIONS.filter((_, i) => i % 2 === 0).map((rune, i) => (
-        <div
-          key={`rune-small-${i}`}
-          className="absolute rounded-full"
-          style={{
-            width: "4px",
-            height: "4px",
-            left: `${50 + 40 * Math.cos(rune.angle + 0.2)}%`,
-            top: `${50 + 40 * Math.sin(rune.angle + 0.2)}%`,
-            transform: "translate(-50%, -50%)",
-            background: "rgba(60,140,200,0.10)",
             pointerEvents: "none",
           }}
         />

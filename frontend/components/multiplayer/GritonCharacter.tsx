@@ -174,13 +174,14 @@ export default function GritonCharacter({
         </div>
       </div>
 
-      {/* ── Podium ────────────────────────────────────────────────────────────
-           Raised stone platform the Griton sits on */}
+      {/* ── Podium de cartón (papel picado, plan task-84 §5) ──────────────── */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20">
         <div
-          className="w-full h-4 rounded-t-lg bg-gradient-to-b from-stone-600 to-stone-800 border-t border-stone-500/30"
+          className="w-full h-4 rounded-t-lg border-t-2"
           style={{
-            boxShadow: "0 -2px 8px rgba(120, 100, 80, 0.25), inset 0 1px 0 rgba(255,255,255,0.05)",
+            background: "linear-gradient(180deg, #C49A6C 0%, #8B5E34 100%)",
+            borderColor: "rgba(255,247,236,0.3)",
+            boxShadow: "0 -2px 6px rgba(139,94,52,0.3), inset 0 1px 0 rgba(255,247,236,0.08)",
           }}
         />
       </div>

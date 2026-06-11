@@ -101,9 +101,9 @@ export default function CenoteBackground({
         style={{
           transform: `translate(${deepOffsetX}px, ${deepOffsetY}px)`,
           background: `
-            radial-gradient(ellipse at 50% 30%, rgba(10,40,60,0.6) 0%, rgba(5,15,30,0.9) 50%, rgba(2,6,12,1) 100%),
-            radial-gradient(ellipse at 20% 70%, rgba(15,50,70,0.3) 0%, transparent 60%),
-            radial-gradient(ellipse at 80% 40%, rgba(8,30,50,0.4) 0%, transparent 50%)
+            radial-gradient(ellipse at 50% 30%, rgba(27,122,140,0.4) 0%, rgba(10,37,64,0.85) 50%, rgba(6,18,40,1) 100%),
+            radial-gradient(ellipse at 20% 70%, rgba(19,78,111,0.25) 0%, transparent 60%),
+            radial-gradient(ellipse at 80% 40%, rgba(27,122,140,0.2) 0%, transparent 50%)
           `,
         }}
       >

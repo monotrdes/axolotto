@@ -5,6 +5,8 @@ import CenoteBackground from "./CenoteBackground";
 import CircularTable from "./CircularTable";
 import TableSeat from "./TableSeat";
 import QuickReactionWheel from "../chat/QuickReactionWheel";
+import CasiCanto from "./CasiCanto";
+import { PAPER_WORLD } from "@/lib/paperWorld";
 import type { TensionLevel } from "../ui/TensionEffects";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -21,9 +23,10 @@ export interface ChatBubbleData {
 interface SeatInfo {
   index: number;
   axoName: string;
-  nature?: "hyperactive" | "shy" | "showoff" | "curious" | null;
+  nature?: import("@/data/personality-config").Nature | null;
   reaction?: string;
   isPlayer?: boolean;
+  isNPC?: boolean;
   isHot?: boolean;
   /** Rendered content node */
   content?: React.ReactNode;
@@ -53,7 +56,7 @@ interface CenoteRoomProps {
   /** Player VIP tier */
   playerVipTier?: string | null;
   /** Player nature */
-  playerNature?: "hyperactive" | "shy" | "showoff" | "curious" | null;
+  playerNature?: import("@/data/personality-config").Nature | null;
 }
 
 // ── Tension → water depth CSS custom property mapping ─────────────────────────
@@ -154,6 +157,7 @@ export default function CenoteRoom({
               nature={seat.nature}
               reaction={seat.reaction}
               isPlayer={seat.isPlayer}
+              isNPC={seat.isNPC}
               isHot={seat.isHot}
               speechBubble={bubble ? {
                 text: bubble.text,
@@ -171,7 +175,7 @@ export default function CenoteRoom({
                 <div className="absolute -right-2 -top-2 z-50">
                   <QuickReactionWheel
                     send={chatSend}
-                    nature={seat.nature ?? playerNature ?? "curious"}
+                    nature={seat.nature ?? playerNature ?? "hyperactive"}
                     vipTier={playerVipTier}
                     disabled={chatDisabled}
                   />
@@ -220,6 +224,23 @@ export default function CenoteRoom({
           }}
         />
       )}
+
+      {/* ── CasiCanto overlay (plan task-84 §5): anticipación cuando alguien está
+           a 1-2 cartas de ganar ────────────────────────────────────────────── */}
+      <CasiCanto
+        active={
+          PAPER_WORLD &&
+          seats != null &&
+          seats.some((s) => s.isHot) &&
+          (tensionLevel === "high" || tensionLevel === "critical")
+        }
+        nearWinPlayerName={seats?.find((s) => s.isHot)?.axoName}
+        intensity={
+          tensionLevel === "critical" ? "high"
+          : tensionLevel === "high" ? "medium"
+          : "low"
+        }
+      />
     </div>
   );
 }
