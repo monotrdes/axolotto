@@ -1,4 +1,4 @@
-﻿from sqlmodel import Session, select, func
+from sqlmodel import Session, select, func
 from fastapi import HTTPException
 
 from app.models.user import User
@@ -11,6 +11,7 @@ from app.api.v1.endpoints.board import (
     ListSaleRequest, ListRentRequest,
 )
 from app.services.bank_service import BankService
+from app.core.config import frj_to_internal
 
 from sim_types import _rng
 
@@ -150,7 +151,7 @@ def phase_boards(engine, config, **state) -> dict:
                     verified_user_id=user_id,
                 )
                 stats["boards_listed_sale"] = stats.get("boards_listed_sale", 0) + 1
-                progress(f"  🏪 {user_id}: tablero #{board_to_sell.id} listado en venta a {price:.0f} GAL")
+                progress(f"  🏪 {user_id}: tablero #{board_to_sell.id} listado en venta a {price:.0f} FRJ")
             except HTTPException as e:
                 errors.append(f"board_sale_list {user_id}: {e.detail}")
 
@@ -181,7 +182,7 @@ def phase_boards(engine, config, **state) -> dict:
                     verified_user_id=user_id,
                 )
                 stats["boards_listed_rent"] = stats.get("boards_listed_rent", 0) + 1
-                progress(f"  🏠 {user_id}: tablero #{board.id} listado en renta a {fee:.0f} GAL/día")
+                progress(f"  🏠 {user_id}: tablero #{board.id} listado en renta a {fee:.0f} FRJ/día")
             except HTTPException as e:
                 errors.append(f"board_rent_list {user_id}: {e.detail}")
 
@@ -200,8 +201,8 @@ def phase_boards(engine, config, **state) -> dict:
             continue
 
         wallet = BankService.get_or_create_wallet(session, user_id)
-        if wallet.frijolitos < 500:
-            wallet.frijolitos += 1000
+        if wallet.frijolitos < frj_to_internal(500):
+            wallet.frijolitos += frj_to_internal(1000)
             session.add(wallet)
             session.commit()
 

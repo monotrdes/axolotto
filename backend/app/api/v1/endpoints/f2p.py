@@ -1,4 +1,4 @@
-﻿"""
+"""
 f2p.py — Endpoints de economía F2P: huevo durmiente y micro-recompensas.
 
 Routes:
@@ -21,6 +21,7 @@ from app.models.economy import (
 )
 from app.models.user import User
 from app.services.bank_service import BankService
+from app.core.config import frj_to_internal, frj_to_display
 from app.services.f2p_service import F2PService
 
 router = APIRouter()
@@ -66,12 +67,12 @@ def watch_reward(
     verified_user_id: str = Depends(get_verified_user_id),
 ):
     """
-    Acredita GAL y Fragmentos Astrales al jugador F2P por ver una partida.
+    Acredita FRJ y Fragmentos Astrales al jugador F2P por ver una partida.
 
     Query param:
       won (bool, default False) — True si el jugador ganó la tabla espejo.
 
-    Aplica el tope diario de GAL (10 GAL/día). Los fragmentos siempre se acumulan.
+    Aplica el tope diario de FRJ (10 FRJ/día). Los fragmentos siempre se acumulan.
     Resetea el contador diario cada 24 h a partir del último reset.
     """
     # --- Cargar usuario con lock pesimista para evitar race en contadores diarios ---
@@ -83,7 +84,7 @@ def watch_reward(
 
     # --- Verificar / resetear cap diario ---
     reset_at: datetime | None = getattr(user, "f2p_daily_gal_reset_at", None)
-    earned_today: float = getattr(user, "f2p_daily_gal_earned", 0.0) or 0.0
+    earned_today: float = frj_to_display(getattr(user, "f2p_daily_gal_earned", 0) or 0)
     frags_earned_today: int = getattr(user, "f2p_daily_frags_earned", 0) or 0
 
     now = datetime.utcnow()
@@ -93,45 +94,45 @@ def watch_reward(
         frags_earned_today = 0
         try:
             user.f2p_daily_gal_reset_at = now + timedelta(hours=24)
-            user.f2p_daily_gal_earned = 0.0
+            user.f2p_daily_gal_earned = 0
             user.f2p_daily_frags_earned = 0
         except AttributeError:
             pass
 
     # --- Calcular recompensas base ---
     reward = _f2p.watch_game_reward(won)
-    raw_gal: float = reward["gal"]
+    raw_frj: float = reward["frj"]
     frags: int = reward["fragments"]
 
     # --- Aplicar tope diario ---
     capped = False
-    gal_to_credit: float = raw_gal
+    frj_to_credit: float = raw_frj
 
     if not _f2p.under_daily_cap(earned_today):
-        # Ya superó el límite — fragmentos sí se acreditan, GAL no
-        gal_to_credit = 0.0
+        # Ya superó el límite — fragmentos sí se acreditan, FRJ no
+        frj_to_credit = 0.0
         capped = True
     else:
         # Puede quedar poco espacio
-        remaining = _f2p.DAILY_CAP_GAL - earned_today
-        if gal_to_credit > remaining:
-            gal_to_credit = remaining
+        remaining = _f2p.DAILY_CAP_FRJ - earned_today
+        if frj_to_credit > remaining:
+            frj_to_credit = remaining
             capped = True
 
-    # --- Acreditar GAL en wallet ---
-    if gal_to_credit > 0:
+    # --- Acreditar FRJ en wallet ---
+    if frj_to_credit > 0:
         wallet: Wallet = BankService.get_or_create_wallet(
             session, verified_user_id, for_update=True
         )
-        wallet.frijolitos += gal_to_credit
+        wallet.frijolitos += frj_to_internal(frj_to_credit)
         wallet.last_updated = now
         session.add(wallet)
 
         # Ledger
         ledger_entry = TransactionLedger(
             user_id=verified_user_id,
-            amount=gal_to_credit,
-            currency=CurrencyType.GEMA_ALGA,
+            amount=frj_to_internal(frj_to_credit),
+            currency=CurrencyType.FRIJOLITO,
             tx_type=TransactionType.F2P_REWARD,
             description=f"Recompensa F2P por ver partida ({'ganó' if won else 'observó'})",
         )
@@ -139,7 +140,7 @@ def watch_reward(
 
         # Actualizar contador diario
         try:
-            user.f2p_daily_gal_earned = earned_today + gal_to_credit
+            user.f2p_daily_gal_earned = frj_to_internal(earned_today + frj_to_credit)
         except AttributeError:
             pass
 
@@ -166,7 +167,8 @@ def watch_reward(
     response: dict = {
         "capped": capped,
         "frags_capped": frags_cap_reached,
-        "gal_earned": round(gal_to_credit, 4),
+        "gal_earned": round(frj_to_credit, 4),
+        "frj_earned": round(frj_to_credit, 4),
         "fragments_added": frags_to_credit,
         "total_fragments": total_fragments,
         "egg_reaction_stage": stage,
@@ -175,7 +177,7 @@ def watch_reward(
 
     if capped:
         response["message"] = (
-            "Tu pozo de alga diario se ha agotado. "
+            "Tu pozo de Frijolitos diario se ha agotado. "
             "¡Adopta tu Webito para ganancias ilimitadas!"
         )
     if frags_cap_reached and not capped:

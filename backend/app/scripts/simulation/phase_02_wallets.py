@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 
 from sqlmodel import Session, select
 from fastapi import HTTPException
@@ -8,7 +8,7 @@ from app.models.economy import Wallet, CurrencyType, AxgPurchaseRecord
 from app.models.items import ItemCatalog, ItemType
 from app.services.bank_service import BankService
 from app.services.shop_service import ShopService
-from app.core.config import VIP_CONFIG, frj_to_internal, FRJ_DECIMALS_BACKEND
+from app.core.config import VIP_CONFIG, frj_to_internal, FRJ_DECIMALS_BACKEND, axf_to_internal
 
 from sim_types import _rng
 
@@ -132,10 +132,10 @@ def phase_fund_wallets(engine, config, **state) -> dict:
 
         # Actualizar saldo del wallet — usar valores custom si se especificaron
         if config.initial_axf > 0:
-            wallet.axofichas = config.initial_axf
+            wallet.axofichas = axf_to_internal(config.initial_axf)
         else:
-            wallet.axofichas = current_obtained
-        wallet.frijolitos = 0.0
+            wallet.axofichas = axf_to_internal(current_obtained)
+        wallet.frijolitos = 0
         session.add(wallet)
         session.commit()
 

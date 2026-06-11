@@ -37,7 +37,7 @@ interface ModeBProps {
   togglingAutoRenew: boolean;
   expandedUpgradeTier: string | null;
   setExpandedUpgradeTier: (v: string | null) => void;
-  onClaimGal: () => void;
+  onClaimFrj: () => void;
   onPurchase: (tierId: string) => void;
   onToggleAutoRenew: () => void;
 }
@@ -58,7 +58,7 @@ export default function ModeB({
   togglingAutoRenew,
   expandedUpgradeTier,
   setExpandedUpgradeTier,
-  onClaimGal,
+  onClaimFrj,
   onPurchase,
   onToggleAutoRenew,
 }: ModeBProps) {
@@ -112,7 +112,7 @@ export default function ModeB({
               </p>
             </div>
             <button
-              onClick={onClaimGal}
+              onClick={onClaimFrj}
               disabled={claiming}
               className="px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-slate-950 font-black text-sm transition-all active:scale-95 min-h-[44px]"
               style={{

@@ -403,7 +403,7 @@ def main():
   🏆 Victorias:               {stats.get('wins', 0)}  ({win_rate:.1f}%)
   💔 Derrotas:                {stats.get('losses', 0)}
   🤖 Autojuego:               {stats.get('autogames', 0)} partidas
-  💰 GAL obtenidas:           {stats.get('total_prize_gal', 0.0):.2f}
+  💰 FRJ obtenidas:           {stats.get('total_prize_gal', 0.0):.2f}
   🍽️  Alimentaciones:          {stats.get('feedings', 0)}
   😴 Ciclos sueño:            {stats.get('sleeps', 0)}
   🔧 Cave items equipados:    {stats.get('cave_equips', 0)}
@@ -423,7 +423,7 @@ def main():
         report += f"""
   📊 Partidas jugadas:         {len(match_logs)}
   🏆 Victorias:               {multi_victories}  ({multi_victories/len(match_logs)*100:.0f}%)
-  💸 GAL neto total:          {multi_net:+.1f}
+  💸 FRJ neto total:          {multi_net:+.1f}
   Detalle:
 """
         for log in match_logs:
@@ -431,7 +431,7 @@ def main():
             axo_name = log["axo_name"][:20]
             room_name = log["room_name"][:24]
             report += (f"    {icon} {axo_name:<20} │ {room_name:<24} │ "
-                       f"Neto: {log['net_gal']:+7.1f} GAL │ XP: +{log['xp_gained']}\n")
+                       f"Neto: {log['net_gal']:+7.1f} FRJ │ XP: +{log['xp_gained']}\n")
 
     report += f"""
 {'-'*70}

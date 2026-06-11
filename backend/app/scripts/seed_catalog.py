@@ -47,7 +47,7 @@ def run_seed():
 
         # Aseguramos borrar paquetes de algas viejos obsoletos si existen
         all_current_currency = session.exec(select(ItemCatalog).where(ItemCatalog.item_type == ItemType.CURRENCY_PACK)).all()
-        allowed_currency_names = {"Paquete Alga Común", "Paquete Alga Abundante", "Paquete Alga Imperial", "Súper Carga de Alga"}
+        allowed_currency_names = {"Paquete Frijolitos Común", "Paquete Frijolitos Abundante", "Paquete Frijolitos Imperial", "Súper Carga de Frijolitos"}
         has_outdated_currency = any(c.name not in allowed_currency_names for c in all_current_currency)
         
         if has_outdated_currency:
@@ -393,10 +393,10 @@ def run_seed():
                 item_metadata={"is_upgrade": True}
             ),
 
-            # --- PAQUETES DE DIVISAS (AXG a GAL) ---
+            # --- PAQUETES DE DIVISAS (AXF a FRJ) ---
             ItemCatalog(
-                name="Paquete Alga Común",
-                description="Contiene 100 Gemas de Alga para cambiar o comprar.",
+                name="Paquete Frijolitos Común",
+                description="Contiene 100 Frijolitos para cambiar o comprar.",
                 item_type=ItemType.CURRENCY_PACK,
                 rarity=Rarity.COMMON,
                 price_axg=10.0,
@@ -404,8 +404,8 @@ def run_seed():
                 item_metadata={"gal_amount": 100.0}
             ),
             ItemCatalog(
-                name="Paquete Alga Abundante",
-                description="Contiene 550 Gemas de Alga. ¡Bono de +10% GAL extra!",
+                name="Paquete Frijolitos Abundante",
+                description="Contiene 550 Frijolitos. ¡Bono de +10% FRJ extra!",
                 item_type=ItemType.CURRENCY_PACK,
                 rarity=Rarity.RARE,
                 price_axg=50.0,
@@ -413,8 +413,8 @@ def run_seed():
                 item_metadata={"gal_amount": 550.0}
             ),
             ItemCatalog(
-                name="Paquete Alga Imperial",
-                description="Contiene 1,200 Gemas de Alga. ¡Bono de +20% GAL extra!",
+                name="Paquete Frijolitos Imperial",
+                description="Contiene 1,200 Frijolitos. ¡Bono de +20% FRJ extra!",
                 item_type=ItemType.CURRENCY_PACK,
                 rarity=Rarity.EPIC,
                 price_axg=100.0,
@@ -422,8 +422,8 @@ def run_seed():
                 item_metadata={"gal_amount": 1200.0}
             ),
             ItemCatalog(
-                name="Súper Carga de Alga",
-                description="Contiene 6,500 Gemas de Alga. ¡Bono de +30% GAL extra!",
+                name="Súper Carga de Frijolitos",
+                description="Contiene 6,500 Frijolitos. ¡Bono de +30% FRJ extra!",
                 item_type=ItemType.CURRENCY_PACK,
                 rarity=Rarity.LEGENDARY,
                 price_axg=500.0,

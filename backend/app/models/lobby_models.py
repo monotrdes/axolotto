@@ -61,6 +61,7 @@ class RoomRegistration(SQLModel, table=True):
     room_id: int = Field(foreign_key="gameroom.id", index=True)
     axolotito_id: int = Field(foreign_key="axolotito.id", index=True)
     boards_json: str # JSON list of board IDs registered e.g. "[1, 2]"
+    play_mode: str = Field(default="auto")  # "auto" (AFK) o "manual" (tiempo real)
     registered_at: datetime = Field(default_factory=datetime.utcnow)
 
 

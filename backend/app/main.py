@@ -314,6 +314,14 @@ async def on_startup():
             conn.execute(text("ALTER TABLE \"user\" ADD COLUMN first_crypto_purchase_at TIMESTAMP NULL;"))
         conn.commit()
 
+    # --- MIGRACIÓN DINÁMICA: PLAY_MODE EN ROOMREGISTRATION ---
+    with engine.connect() as conn:
+        result = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'roomregistration';"))
+        existing_reg_cols = {row[0] for row in result.fetchall()}
+        if "play_mode" not in existing_reg_cols:
+            conn.execute(text("ALTER TABLE roomregistration ADD COLUMN play_mode VARCHAR NOT NULL DEFAULT 'auto';"))
+        conn.commit()
+
     # --- SEED DE JACKPOT Y TESORERÍA ---
     from sqlmodel import Session, select
     from app.models.user import User

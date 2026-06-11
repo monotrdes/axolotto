@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timedelta
+from datetime import datetime, timedelta
 
 from sqlmodel import Session, select
 from fastapi import HTTPException
@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from app.models.axolotito import Axolotito
 from app.models.board import PlayerBoard
 from app.services.bank_service import BankService
+from app.core.config import frj_to_internal
 from app.api.v1.endpoints.game import PlayRequest, CaveEquipRequest, FeedRequest
 from app.services.game_service import GameService
 from app.services.cave_service import equip_cave_item
@@ -177,10 +178,10 @@ def phase_individual_play(engine, config, **state) -> dict:
                     stats["games_played"] = stats.get("games_played", 0) + 1
                     if result.get("resultado") == "victoria":
                         stats["wins"] = stats.get("wins", 0) + 1
-                        outcome = f"🏆 +{result.get('prize_gal', 0):.1f} GAL"
+                        outcome = f"🏆 +{result.get('prize_gal', 0):.1f} FRJ"
                     else:
                         stats["losses"] = stats.get("losses", 0) + 1
-                        outcome = f"💔 +{result.get('prize_gal', 0):.1f} GAL"
+                        outcome = f"💔 +{result.get('prize_gal', 0):.1f} FRJ"
                     stats["total_prize_gal"] = stats.get("total_prize_gal", 0.0) + result.get("prize_gal", 0.0)
                     print(f"    #{game_i+1} [{room}] {outcome} | {result.get('turns')} turnos")
                 except HTTPException as e:
@@ -192,8 +193,8 @@ def phase_individual_play(engine, config, **state) -> dict:
             if axo_idx == 0 and personality.get("auto_budget", 300.0) > 0:
                 budget = personality.get("auto_budget", 300.0)
                 wallet = BankService.get_or_create_wallet(session, user_id)
-                if wallet.frijolitos < budget:
-                    wallet.frijolitos = budget + 200
+                if wallet.frijolitos < frj_to_internal(budget):
+                    wallet.frijolitos = frj_to_internal(budget + 200)
                     session.add(wallet)
                     session.commit()
 
@@ -203,7 +204,7 @@ def phase_individual_play(engine, config, **state) -> dict:
                     session.add(axo)
                     session.commit()
 
-                print(f"  🤖 {axo.name}: autojuego con {budget} GAL de presupuesto...")
+                print(f"  🤖 {axo.name}: autojuego con {budget} FRJ de presupuesto...")
                 auto_wins = 0
                 for auto_i in range(3):
                     session.refresh(axo)

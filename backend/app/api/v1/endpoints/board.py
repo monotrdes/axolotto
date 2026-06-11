@@ -68,7 +68,7 @@ def create_random_board(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id)
 ):
-    """Crea un tablero de Lotería al azar cobrando 25 GAL de comisión."""
+    """Crea un tablero de Lotería al azar cobrando 25 FRJ de comisión."""
     return create_random_board_operation(verified_user_id, payload.name, session)
 
 
@@ -78,7 +78,7 @@ def create_manual_board(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id)
 ):
-    """Crea un tablero de Lotería manualmente validando las cartas y cobrando 50 GAL."""
+    """Crea un tablero de Lotería manualmente validando las cartas y cobrando 50 FRJ."""
     card_first_editions = payload.card_first_editions
     if not card_first_editions:
         card_first_editions = [False] * 16
@@ -181,7 +181,7 @@ def rent_board(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id)
 ):
-    """Alquila una tabla del mercado de rentas por 24 horas pagando la fee de GAL por adelantado."""
+    """Alquila una tabla del mercado de rentas por 24 horas pagando la fee de FRJ por adelantado."""
     return rent_board_operation(board_id, verified_user_id, session)
 
 
@@ -199,7 +199,7 @@ def unlock_board_slot(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id)
 ):
-    """Desbloquea el siguiente slot de tabla cobrando los GAL correspondientes y validando requisitos."""
+    """Desbloquea el siguiente slot de tabla cobrando los FRJ correspondientes y validando requisitos."""
     return unlock_slot_operation(verified_user_id, session)
 
 
@@ -244,5 +244,5 @@ def buy_board(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id)
 ):
-    """Compra un tablero en venta definitiva, realizando la transferencia de GAL y el NFT on-chain."""
+    """Compra un tablero en venta definitiva, realizando la transferencia de FRJ y el NFT on-chain."""
     return buy_board_operation(board_id, verified_user_id, session)

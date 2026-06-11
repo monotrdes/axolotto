@@ -107,7 +107,7 @@ export default function VipModal({
               togglingAutoRenew={vip.togglingAutoRenew}
               expandedUpgradeTier={vip.expandedUpgradeTier}
               setExpandedUpgradeTier={vip.setExpandedUpgradeTier}
-              onClaimGal={vip.handleClaimGal}
+              onClaimFrj={vip.handleClaimFrj}
               onPurchase={vip.handlePurchase}
               onToggleAutoRenew={vip.handleToggleAutoRenew}
             />

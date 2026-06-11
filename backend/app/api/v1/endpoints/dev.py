@@ -93,7 +93,7 @@ def reset_tutorial(
         user.vip_expires_at = None
         user.vip_streak_months = 0
         user.vip_streak_last_renewed = None
-        user.vip_pending_gal = 0.0
+        user.vip_pending_gal = 0
         user.vip_pending_gal_expires_at = None
         user.vip_last_daily_gal_at = None
         user.vip_tiers_activated = "[]"

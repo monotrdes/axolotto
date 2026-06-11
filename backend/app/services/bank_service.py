@@ -63,7 +63,7 @@ class BankService:
         tx_hash = None
 
         # 2. MAGIA WEB3: Si es Axoficha, mandamos los tokens por la red Plasma
-        if currency == CurrencyType.AXOGEMA:
+        if currency in (CurrencyType.AXOGEMA, CurrencyType.AXOFICHA):
             if not user.wallet_address:
                 raise HTTPException(status_code=400, detail="El usuario no tiene una wallet Web3 vinculada.")
 
@@ -77,7 +77,7 @@ class BankService:
 
             wallet.axofichas += amount
 
-        elif currency == CurrencyType.GEMA_ALGA:
+        elif currency in (CurrencyType.GEMA_ALGA, CurrencyType.FRIJOLITO):
             wallet.frijolitos += amount
         else:
             # Fragmentos ya son enteros
@@ -88,7 +88,7 @@ class BankService:
             user_id=user_id,
             amount=amount,
             currency=currency,
-            tx_type=TransactionType.DEPOSIT if currency in [CurrencyType.AXOGEMA, CurrencyType.GEMA_ALGA] else TransactionType.REWARD,
+            tx_type=TransactionType.DEPOSIT if currency in [CurrencyType.AXOGEMA, CurrencyType.AXOFICHA, CurrencyType.GEMA_ALGA, CurrencyType.FRIJOLITO] else TransactionType.REWARD,
             description=description
         )
 
@@ -99,7 +99,7 @@ class BankService:
         # 4. Preparamos la respuesta VIP
         respuesta = {
             "mensaje": f"Depósito exitoso de {amount} {currency.value}",
-            "nuevo_saldo": getattr(wallet, "axofichas" if currency == CurrencyType.AXOGEMA else ("frijolitos" if currency == CurrencyType.GEMA_ALGA else f"{currency.value}s"))
+            "nuevo_saldo": getattr(wallet, "axofichas" if currency in (CurrencyType.AXOGEMA, CurrencyType.AXOFICHA) else ("frijolitos" if currency in (CurrencyType.GEMA_ALGA, CurrencyType.FRIJOLITO) else f"{currency.value}s"))
         }
 
         # Si hubo transacción blockchain, devolvemos el link del explorador
@@ -124,7 +124,9 @@ class BankService:
         # Mapeo explícito: CurrencyType → nombre real del campo en Wallet
         _CURRENCY_FIELD = {
             CurrencyType.AXOGEMA:   "axofichas",
+            CurrencyType.AXOFICHA:  "axofichas",
             CurrencyType.GEMA_ALGA: "frijolitos",
+            CurrencyType.FRIJOLITO: "frijolitos",
         }
 
         # Validar que la moneda sea transferible ANTES de acceder al saldo
@@ -143,10 +145,10 @@ class BankService:
 
         try:
             # 3. Restar al que envía
-            if currency == CurrencyType.AXOGEMA:
+            if currency in (CurrencyType.AXOGEMA, CurrencyType.AXOFICHA):
                 sender_wallet.axofichas -= amount
                 receiver_wallet.axofichas += amount_after_fee
-            elif currency == CurrencyType.GEMA_ALGA:
+            elif currency in (CurrencyType.GEMA_ALGA, CurrencyType.FRIJOLITO):
                 sender_wallet.frijolitos -= amount
                 receiver_wallet.frijolitos += amount_after_fee
             else:

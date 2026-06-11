@@ -1,4 +1,4 @@
-﻿"""Business logic for user endpoints.
+"""Business logic for user endpoints.
 
 All database mutations, reads, and validations live here.
 Endpoint handlers in user.py call these functions and return their results.
@@ -16,7 +16,7 @@ from app.models.lobby_models import TreasuryVault
 from app.models.axolotito import Axolotito
 from app.models.board import PlayerBoard
 from app.models.promo import PendingReward, PromoCode
-from app.core.config import VIP_CONFIG, settings
+from app.core.config import VIP_CONFIG, settings, frj_to_internal, frj_to_display, axf_to_display
 from app.services.bank_service import BankService
 from app.services.web3_service import Web3Service
 from app.services.rarity_service import get_card_dynamic_rarities
@@ -170,16 +170,16 @@ def sync_user(
     return {
         "mensaje": mensaje,
         "wallet": {
-            "axofichas": wallet.axofichas,
-            "frijolitos": wallet.frijolitos,
-            "axogemas": wallet.axofichas,
-            "gemas_alga": wallet.frijolitos,
+            "axofichas": axf_to_display(wallet.axofichas),
+            "frijolitos": frj_to_display(wallet.frijolitos),
+            "axogemas": axf_to_display(wallet.axofichas),
+            "gemas_alga": frj_to_display(wallet.frijolitos),
             "vip_tier": db_user.vip_tier if db_user.is_vip else None,
             "vip_expires_at": db_user.vip_expires_at.isoformat()
             if db_user.vip_expires_at
             else None,
             "vip_days_remaining": days_remaining,
-            "vip_pending_gal": db_user.vip_pending_gal if db_user.is_vip else 0.0,
+            "vip_pending_gal": frj_to_display(db_user.vip_pending_gal) if db_user.is_vip else 0.0,
         },
         "player_luck": round(player_luck_value, 1),
         "is_new_user": mensaje.startswith("¡Bienvenido!"),
@@ -444,7 +444,7 @@ def list_axolotito_for_sale(
         )
 
     axo.is_listed_for_sale = True
-    axo.sale_price_gal = sale_price_gal
+    axo.sale_price_gal = frj_to_internal(sale_price_gal)
     session.add(axo)
     session.commit()
     return {
@@ -526,7 +526,7 @@ def list_axolotito_for_rent(
         )
 
     axo.is_listed_for_rent = True
-    axo.rent_fee_gal = rent_fee_gal
+    axo.rent_fee_gal = frj_to_internal(rent_fee_gal)
     axo.rent_share_owner_pct = rent_share_owner_pct
     session.add(axo)
     session.commit()
@@ -605,7 +605,7 @@ def get_vip_status(
         if user.vip_streak_last_renewed
         else None,
         "vip_tiers_activated": tiers_activated,
-        "vip_pending_gal": user.vip_pending_gal,
+        "vip_pending_gal": frj_to_display(user.vip_pending_gal),
         "vip_pending_gal_expires_at": user.vip_pending_gal_expires_at.isoformat()
         if user.vip_pending_gal_expires_at
         else None,
@@ -625,10 +625,10 @@ def get_vip_status(
     }
 
 
-def claim_vip_gal(
+def claim_vip_frj(
     session: Session, verified_user_id: str
 ) -> dict:
-    """Claim accumulated VIP GAL into the user's wallet."""
+    """Claim accumulated VIP FRJ into the user's wallet."""
     user = session.exec(
         select(User).where(User.privy_did == verified_user_id)
     ).first()
@@ -654,12 +654,12 @@ def claim_vip_gal(
     ledger = TransactionLedger(
         user_id=verified_user_id,
         amount=amount,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.REWARD,
         description=f"Bono VIP reclamado ({user.vip_tier})",
     )
 
-    user.vip_pending_gal = 0.0
+    user.vip_pending_gal = 0
     user.vip_pending_gal_expires_at = None
 
     session.add(user)
@@ -668,9 +668,9 @@ def claim_vip_gal(
     session.commit()
 
     return {
-        "gal_claimed": amount,
-        "mensaje": f"¡Reclamaste {amount:.0f} GAL de tu bono VIP {user.vip_tier.capitalize()}!",
-        "wallet_gal_total": wallet.frijolitos,
+        "gal_claimed": frj_to_display(amount),
+        "mensaje": f"¡Reclamaste {frj_to_display(amount):.1f} FRJ de tu bono VIP {user.vip_tier.capitalize()}!",
+        "wallet_gal_total": frj_to_display(wallet.frijolitos),
     }
 
 
@@ -761,13 +761,13 @@ def rent_axolotito(
         commission_rate = VIP_CONFIG.get(renter_user.vip_tier, {}).get(
             "p2p_commission", 0.05
         )
-    commission = round(fee * commission_rate, 2)
+    commission = int(round(fee * commission_rate))
     owner_share = fee - commission
 
     if renter_wallet.frijolitos < fee:
         raise HTTPException(
             status_code=400,
-            detail=f"Saldo GAL insuficiente (requieres {fee} GAL).",
+            detail=f"Saldo FRJ insuficiente (requieres {frj_to_display(fee)} FRJ, tienes {frj_to_display(renter_wallet.frijolitos):.1f} FRJ).",
         )
 
     renter_wallet.frijolitos -= fee
@@ -782,21 +782,21 @@ def rent_axolotito(
     ledger_renter = TransactionLedger(
         user_id=verified_user_id,
         amount=fee,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.MARKET_BUY,
         description=f"Renta de Axolotito #{axo.id}",
     )
     ledger_owner = TransactionLedger(
         user_id=axo.user_id,
         amount=owner_share,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.REWARD,
         description=f"Ingreso por renta de Axolotito #{axo.id} (comisión {commission_rate*100:.1f}%)",
     )
     ledger_treasury = TransactionLedger(
         user_id="treasury",
         amount=commission,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.BURN,
         description=f"Comisión P2P {commission_rate*100:.1f}% renta Axolotito #{axo.id}",
     )
@@ -865,7 +865,7 @@ def buy_axolotito(
     if buyer_wallet.frijolitos < price:
         raise HTTPException(
             status_code=400,
-            detail=f"Saldo GAL insuficiente (requieres {price} GAL).",
+            detail=f"Saldo FRJ insuficiente (requieres {frj_to_display(price)} FRJ, tienes {frj_to_display(buyer_wallet.frijolitos):.1f} FRJ).",
         )
 
     buyer_user = session.exec(
@@ -876,7 +876,7 @@ def buy_axolotito(
         commission_rate = VIP_CONFIG.get(buyer_user.vip_tier, {}).get(
             "p2p_commission", 0.05
         )
-    commission = round(price * commission_rate, 2)
+    commission = int(round(price * commission_rate))
     seller_share = price - commission
 
     buyer_wallet.frijolitos -= price
@@ -884,28 +884,28 @@ def buy_axolotito(
 
     vault = session.exec(select(TreasuryVault)).first()
     if not vault:
-        vault = TreasuryVault(balance=0.0)
+        vault = TreasuryVault(balance=0)
         session.add(vault)
     vault.balance += commission
 
     ledger_buyer = TransactionLedger(
         user_id=verified_user_id,
         amount=price,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.MARKET_BUY,
         description=f"Compra de Axolotito #{axo.id}",
     )
     ledger_seller = TransactionLedger(
         user_id=axo.user_id,
         amount=seller_share,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.REWARD,
         description=f"Venta de Axolotito #{axo.id} (comisión {commission_rate*100:.1f}%)",
     )
     ledger_commission = TransactionLedger(
         user_id="treasury",
         amount=commission,
-        currency=CurrencyType.GEMA_ALGA,
+        currency=CurrencyType.FRIJOLITO,
         tx_type=TransactionType.BURN,
         description=f"Comisión P2P {commission_rate*100:.1f}% Axolotito #{axo.id}",
     )

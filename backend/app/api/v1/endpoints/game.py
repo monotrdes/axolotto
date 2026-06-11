@@ -44,8 +44,8 @@ def play_match(
         multiplier=req.multiplier,
         bot_enabled=req.bot_enabled,
         bot_budget_gal=frj_to_internal(req.bot_budget_gal),
-        bot_loss_limit_pct=frj_to_internal(req.bot_loss_limit_pct),
-        bot_profit_limit_pct=frj_to_internal(req.bot_profit_limit_pct),
+        bot_loss_limit_pct=int(req.bot_loss_limit_pct),   # porcentaje, NO monetario
+        bot_profit_limit_pct=int(req.bot_profit_limit_pct),  # porcentaje, NO monetario
         session=session,
         verified_user_id=verified_user_id,
     )
@@ -58,7 +58,7 @@ def feed_axolotito(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id)
 ):
-    """Feeds an Axolotito, deducting GAL from wallet and restoring energy."""
+    """Feeds an Axolotito, deducting FRJ from wallet and restoring energy."""
     return GameService.feed_axolotito(
         axo_id=axo_id,
         food_type=req.food_type,

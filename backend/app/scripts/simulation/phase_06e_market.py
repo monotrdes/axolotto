@@ -1,9 +1,10 @@
-﻿from sqlmodel import Session, select
+from sqlmodel import Session, select
 from fastapi import HTTPException
 
 from app.models.items import ItemCatalog, ItemType, PlayerInventory
 from app.models.axolotito import Axolotito
 from app.services.bank_service import BankService
+from app.core.config import frj_to_internal
 from app.api.v1.endpoints.market import (
     list_inventory_item, buy_inventory_listing, get_inventory_listings,
     ListInventoryItemRequest,
@@ -53,7 +54,7 @@ def phase_p2p_market(engine, config, **state) -> dict:
                     verified_user_id=user_id
                 )
                 stats["p2p_listings"] = stats.get("p2p_listings", 0) + 1
-                print(f"  🤝 {user_id}: listó sobre '{item.name if item else 'Booster'}' en P2P a {price} GAL")
+                print(f"  🤝 {user_id}: listó sobre '{item.name if item else 'Booster'}' en P2P a {price} FRJ")
             except HTTPException as e:
                 errors.append(f"p2p_list {user_id}: {e.detail}")
 
@@ -81,15 +82,15 @@ def phase_p2p_market(engine, config, **state) -> dict:
                 continue
 
             wallet = BankService.get_or_create_wallet(session, user_id)
-            if wallet.frijolitos < price:
-                wallet.frijolitos += price + 100.0
+            if wallet.frijolitos < frj_to_internal(price):
+                wallet.frijolitos += frj_to_internal(price + 100.0)
                 session.add(wallet)
                 session.commit()
 
             try:
                 res = buy_inventory_listing(listing_id=listing_id, session=session, verified_user_id=user_id)
                 stats["p2p_purchases"] = stats.get("p2p_purchases", 0) + 1
-                print(f"  🤝 {user_id}: compró sobre en P2P por {price} GAL del vendedor {seller_id}")
+                print(f"  🤝 {user_id}: compró sobre en P2P por {price} FRJ del vendedor {seller_id}")
                 bought_count += 1
             except HTTPException as e:
                 errors.append(f"p2p_buy {user_id}: {e.detail}")
@@ -121,7 +122,7 @@ def phase_p2p_market(engine, config, **state) -> dict:
                     verified_user_id=user_id,
                 )
                 stats["axos_listed_sale"] = stats.get("axos_listed_sale", 0) + 1
-                progress(f"  🦎 {user_id}: '{axo_to_sell.name}' listado en venta a {price:.0f} GAL")
+                progress(f"  🦎 {user_id}: '{axo_to_sell.name}' listado en venta a {price:.0f} FRJ")
             except HTTPException as e:
                 errors.append(f"axo_sale_list {user_id}: {e.detail}")
 

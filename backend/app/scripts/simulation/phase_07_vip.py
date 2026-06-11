@@ -1,4 +1,4 @@
-﻿from sqlmodel import Session, select
+from sqlmodel import Session, select
 from fastapi import HTTPException
 
 from app.models.user import User
@@ -60,9 +60,9 @@ def phase_vip(engine, config, **state) -> dict:
                 )
                 session.refresh(user)
                 stats["vip_activations"] = stats.get("vip_activations", 0) + 1
-                welcome_gal = res.get("welcome_gal_bonus", 0) if isinstance(res, dict) else 0
+                welcome_frj = res.get("welcome_frj_bonus", 0) if isinstance(res, dict) else 0
                 print(f"  👑 {user_id}: VIP {tier.upper()} activado"
-                      + (f" (+{welcome_gal} GAL bienvenida)" if welcome_gal else ""))
+                      + (f" (+{welcome_frj} FRJ bienvenida)" if welcome_frj else ""))
             except HTTPException as e:
                 errors.append(f"vip_buy {user_id} {tier}: {e.detail}")
                 continue
@@ -99,20 +99,18 @@ def phase_vip(engine, config, **state) -> dict:
             except HTTPException as e:
                 errors.append(f"vip_discount_check {user_id}: {e.detail}")
 
-        # 2. Reclamar GAL diario VIP
+        # 2. Reclamar FRJ diario VIP
         try:
-            from app.api.v1.endpoints.user import claim_daily_vip_gal
-            claim_res = claim_daily_vip_gal(session=session, verified_user_id=user_id)
+            from app.api.v1.endpoints.user import claim_vip_frj
+            claim_res = claim_vip_frj(session=session, verified_user_id=user_id)
             session.refresh(wallet)
-            print(f"  🌿 {user_id}: GAL VIP reclamado → {claim_res.get('claimed_gal', 0):.0f} GAL")
+            print(f"  🌿 {user_id}: FRJ VIP reclamado → {claim_res.get('gal_claimed', 0):.0f} FRJ")
             stats["vip_gal_claimed"] = stats.get("vip_gal_claimed", 0) + 1
         except HTTPException as e:
             if e.status_code == 400:
-                print(f"  ℹ️  {user_id}: GAL VIP ya reclamado hoy ({e.detail})")
+                print(f"  ℹ️  {user_id}: FRJ VIP ya reclamado hoy ({e.detail})")
             else:
                 errors.append(f"vip_claim {user_id}: {e.detail}")
-        except ImportError:
-            pass
 
         # 3. Verificar que is_vip = True en User
         session.refresh(user)

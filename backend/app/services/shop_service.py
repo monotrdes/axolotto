@@ -5,7 +5,7 @@ from collections import Counter
 from datetime import datetime, timedelta
 from sqlmodel import Session, select, func
 from fastapi import HTTPException
-from app.core.config import settings, VIP_CONFIG
+from app.core.config import settings, VIP_CONFIG, axf_to_display, frj_to_display, axf_to_internal, frj_to_internal
 from app.models.items import ItemCatalog, PlayerInventory, ItemType
 from app.models.economy import Wallet, CurrencyType, TransactionType, TransactionLedger
 from app.services.bank_service import BankService
@@ -197,18 +197,18 @@ class ShopService:
             )
 
         wallet = BankService.get_or_create_wallet(session, user_id)
-        price = item.price_axg if payment_currency == CurrencyType.AXOGEMA else item.price_gal
+        price = item.price_axg if payment_currency in (CurrencyType.AXOGEMA, CurrencyType.AXOFICHA) else item.price_gal
 
         if not price:
             raise HTTPException(status_code=400, detail="Este item no se puede comprar con esa moneda.")
 
         # Descuento VIP (solo en AXF, excluye Webitos) — VULN-06: aritmética entera
-        if payment_currency == CurrencyType.AXOGEMA and user.is_vip and user.vip_tier and item.item_type not in [ItemType.EGG]:
+        if payment_currency in (CurrencyType.AXOGEMA, CurrencyType.AXOFICHA) and user.is_vip and user.vip_tier and item.item_type not in [ItemType.EGG]:
             discount_bps = VIP_CONFIG.get(user.vip_tier, {}).get("discount_bps", 0)
             if discount_bps:
                 price = price * (10000 - discount_bps) // 10000
 
-        current_balance = wallet.axofichas if payment_currency == CurrencyType.AXOGEMA else wallet.frijolitos
+        current_balance = wallet.axofichas if payment_currency in (CurrencyType.AXOGEMA, CurrencyType.AXOFICHA) else wallet.frijolitos
         
         if current_balance < price:
             raise HTTPException(status_code=400, detail=f"Saldo insuficiente de {payment_currency.value}.")
@@ -221,12 +221,12 @@ class ShopService:
             wallet = session.exec(
                 select(Wallet).where(Wallet.user_id == user_id).with_for_update()
             ).first()
-            current_balance = wallet.axofichas if payment_currency == CurrencyType.AXOGEMA else wallet.frijolitos
+            current_balance = wallet.axofichas if payment_currency in (CurrencyType.AXOGEMA, CurrencyType.AXOFICHA) else wallet.frijolitos
             if current_balance < price:
                 raise HTTPException(status_code=402, detail=f"Saldo insuficiente de {payment_currency.value}.")
 
             # Descontar dinero
-            if payment_currency == CurrencyType.AXOGEMA:
+            if payment_currency in (CurrencyType.AXOGEMA, CurrencyType.AXOFICHA):
                 wallet.axofichas -= price
                 if user.wallet_address and settings.AXOGEMA_ADDRESS:
                     try:
@@ -465,8 +465,8 @@ class ShopService:
         if wallet.axofichas < final_price:
             raise HTTPException(
                 status_code=400,
-                detail=f"Saldo insuficiente. Necesitas {final_price} AXF"
-                       + (f" (con crédito de {credit_axg} AXF por días restantes)" if credit_axg else "") + "."
+                detail=f"Saldo insuficiente. Necesitas {axf_to_display(final_price):.1f} AXF"
+                       + (f" (con crédito de {axf_to_display(credit_axg):.1f} AXF por días restantes)" if credit_axg else "") + "."
             )
 
         wallet.axofichas -= final_price
@@ -559,9 +559,9 @@ class ShopService:
         # Ledger
         desc = f"Activación Pase VIP {tier.capitalize()} (30 días)"
         if credit_axg > 0:
-            desc += f" — crédito upgrade: {credit_axg} AXG"
+            desc += f" — crédito upgrade: {axf_to_display(credit_axg):.1f} AXF"
         ledger = TransactionLedger(
-            user_id=user.privy_did, amount=final_price, currency=CurrencyType.AXOGEMA,
+            user_id=user.privy_did, amount=final_price, currency=CurrencyType.AXOFICHA,
             tx_type=TransactionType.MARKET_BUY, description=desc,
             item_id=item.id
         )
@@ -575,11 +575,11 @@ class ShopService:
             "mensaje": f"¡Bienvenido al VIP {tier.capitalize()}! Tu suscripción vence el {user.vip_expires_at.strftime('%d/%m/%Y')}.",
             "vip_tier": tier,
             "vip_expires_at": user.vip_expires_at.isoformat(),
-            "credit_applied_axg": credit_axg,
+            "credit_applied_axg": axf_to_display(credit_axg),
             "tipo": "vip_activation",
         }
         if is_first_activation and welcome_frj > 0:
-            response["welcome_frj_bonus"] = welcome_frj
+            response["welcome_frj_bonus"] = frj_to_display(welcome_frj)
         return response
 
     @staticmethod
@@ -598,12 +598,12 @@ class ShopService:
             cfg = VIP_CONFIG.get(tier_id)
             if cfg is None:
                 continue
-            frj_daily = cfg["gal_daily"]
+            frj_daily = frj_to_display(cfg["gal_daily"])
             result.append({
                 "id": tier_id,
-                "price_axf": cfg["price_axg"],
+                "price_axf": axf_to_display(cfg["price_axg"]),
                 "frj_daily": frj_daily,
-                "frj_monthly": frj_daily * 30,
+                "frj_monthly": frj_daily * 30.0,
                 "discount": cfg["discount"],
                 "capsulas_mensuales": cfg["capsulas_mensuales"],
                 "p2p_commission": cfg["p2p_commission"],
@@ -611,7 +611,7 @@ class ShopService:
                 "axolotito_bonus_slots": cfg["axolotito_bonus_slots"],
                 "jackpot_bonus": cfg["jackpot_bonus"],
                 "multiplayer_discount": cfg["multiplayer_discount"],
-                "welcome_frj": cfg["welcome_gal"],
+                "welcome_frj": frj_to_display(cfg["welcome_gal"]),
                 "welcome_boosters": cfg["welcome_boosters"],
                 "popular": cfg.get("popular", False),
             })
@@ -640,10 +640,10 @@ class ShopService:
             "current_tier": user.vip_tier,
             "current_expires_at": user.vip_expires_at.isoformat() if user.vip_expires_at else None,
             "days_remaining": days_left,
-            "credit_axg": credit_axg,
+            "credit_axg": axf_to_display(credit_axg),
             "target_tier": target_tier,
-            "base_price_axg": base_price,
-            "final_price_axg": base_price - credit_axg,
+            "base_price_axg": axf_to_display(base_price),
+            "final_price_axg": axf_to_display(base_price - credit_axg),
             "new_expires_at": new_expires.isoformat(),
         }
 

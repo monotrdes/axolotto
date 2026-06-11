@@ -35,6 +35,10 @@ from app.models.lobby_models import (  # noqa: F401
     GameRoom, RoomRegistration, TreasuryVault,
     JackpotVault, JackpotWin, MultiplayerGameLog,
 )
+from app.models.social import (  # noqa: F401
+    FriendRelation, FriendStatus, SocialActionLog, SocialActionType,
+    ReferralCode, ReferralTracking, ReferralStatus,
+)
 from app.models.economy import CurrencyType
 from app.models.items import ItemType, Rarity
 

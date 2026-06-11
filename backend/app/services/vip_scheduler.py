@@ -60,14 +60,14 @@ def _run_vip_jobs():
             # --- 2. Expirar lote de GAL si ha pasado la fecha de expiración (final del día UTC) ---
             if user.vip_pending_gal > 0 and user.vip_pending_gal_expires_at and now >= user.vip_pending_gal_expires_at:
                 expired_amount = user.vip_pending_gal
-                user.vip_pending_gal = 0.0
+                user.vip_pending_gal = 0
                 user.vip_pending_gal_expires_at = None
                 ledger_exp = TransactionLedger(
                     user_id=user.privy_did,
                     amount=expired_amount,
-                    currency=CurrencyType.GEMA_ALGA,
+                    currency=CurrencyType.FRIJOLITO,
                     tx_type=TransactionType.VIP_GAL_EXPIRED,
-                    description=f"GAL VIP expirado sin reclamar ({user.vip_tier})"
+                    description=f"FRJ VIP expirado sin reclamar ({user.vip_tier})"
                 )
                 session.add(ledger_exp)
                 changed = True
@@ -86,14 +86,14 @@ def _run_vip_jobs():
                 # expirarlo antes de generar el nuevo día.
                 if user.vip_pending_gal > 0:
                     expired_amount = user.vip_pending_gal
-                    user.vip_pending_gal = 0.0
+                    user.vip_pending_gal = 0
                     user.vip_pending_gal_expires_at = None
                     ledger_exp = TransactionLedger(
                         user_id=user.privy_did,
                         amount=expired_amount,
-                        currency=CurrencyType.GEMA_ALGA,
+                        currency=CurrencyType.FRIJOLITO,
                         tx_type=TransactionType.VIP_GAL_EXPIRED,
-                        description=f"GAL VIP expirado sin reclamar ({user.vip_tier})"
+                        description=f"FRJ VIP expirado sin reclamar ({user.vip_tier})"
                     )
                     session.add(ledger_exp)
 

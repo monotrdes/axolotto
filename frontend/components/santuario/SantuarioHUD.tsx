@@ -1,5 +1,5 @@
 // Caller must pass values already in display units (not internal DB integers).
-// For caveWallet: axf = axogemas / 1_000_000, frj = frijolitos / 10_000
+// For caveWallet: axf = axofichas / 1_000_000, frj = frijolitos / 10_000
 interface SantuarioHUDProps {
   axf: number;
   frj: number;

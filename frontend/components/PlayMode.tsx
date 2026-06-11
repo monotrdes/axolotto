@@ -89,6 +89,7 @@ export default function PlayMode({
   const [singleBoardId,    setSingleBoardId]    = useState<number | null>(null);
   const [multiBoards,      setMultiBoards]      = useState<number[]>([]);
   const [selectedRoom,     setSelectedRoom]     = useState<'rookie' | 'champion'>('rookie');
+  const [playMode,         setPlayMode]         = useState<'auto' | 'manual'>('auto');
   const [multiplier,       setMultiplier]       = useState<number>(1);
   const [budget,           setBudget]           = useState(100);
   const [lossLimitPct,     setLossLimitPct]     = useState(30);
@@ -317,6 +318,7 @@ export default function PlayMode({
           budget_gal: budget,
           loss_limit_pct: lossLimitPct,
           profit_limit_pct: profitLimitPct,
+          play_mode: playMode,
         },
         { headers }
       );
@@ -575,6 +577,8 @@ export default function PlayMode({
             token={token}
             selectedRoom={selectedRoom}
             onRoomSelect={setSelectedRoom}
+            playMode={playMode}
+            onPlayModeChange={setPlayMode}
             onPlay={handleRegisterMultiplayer}
             registering={saving}
             error={errorMsg}

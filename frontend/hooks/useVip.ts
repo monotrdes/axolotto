@@ -9,7 +9,7 @@ import {
   fetchMainAxolotitoAPI,
   toggleAutoRenewAPI,
   purchaseVIPAPI,
-  claimDailyGalAPI,
+  claimDailyFrjAPI,
 } from "@/services/vipService";
 
 // ═══════════════════════════════════════════════════════
@@ -55,7 +55,7 @@ export interface UseVipReturn {
   fetchVipStatus: () => Promise<void>;
   handleToggleAutoRenew: () => Promise<void>;
   handlePurchase: (tierId: string) => Promise<void>;
-  handleClaimGal: () => Promise<void>;
+  handleClaimFrj: () => Promise<void>;
 }
 
 export function useVip({
@@ -199,11 +199,11 @@ export function useVip({
     [token, userId, recargarSaldos, fetchVipStatus, onVipSuccess]
   );
 
-  const handleClaimGal = useCallback(async () => {
+  const handleClaimFrj = useCallback(async () => {
     setClaiming(true);
     setError(null);
     try {
-      const result = await claimDailyGalAPI(token);
+      const result = await claimDailyFrjAPI(token);
       if (!result.success) {
         setError(result.error ?? "Error al reclamar.");
         return;
@@ -251,6 +251,6 @@ export function useVip({
     fetchVipStatus,
     handleToggleAutoRenew,
     handlePurchase,
-    handleClaimGal,
+    handleClaimFrj,
   };
 }

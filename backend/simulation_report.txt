@@ -3,84 +3,75 @@
 📊  REPORTE FINAL — SIMULADOR AXOLOTTO v3
 ======================================================================
 👥  Usuarios creados:          0
-🎟️  Corcholatas canjeadas:     8
-🎁  Corcholatas reclamadas:    5
-💸  AXF comprados (Sim.):      63500 AXF (Pesos: $7946.00 MXN)
-💎  Paquetes FRJ comprados:    34
-🃏  Boosters normales:         80
+🎟️  Corcholatas canjeadas:     3
+🎁  Corcholatas reclamadas:    3
+💸  AXF comprados (Sim.):      54575 AXF (Pesos: $6739.00 MXN)
+💎  Paquetes FRJ comprados:    16
+🃏  Boosters normales:         58
 ✨  Boosters foil:             0
 🎯  Boosters extra (abiertos): 0
-🎴  Cartas abiertas total:     392
-🥚  Webitos adoptados:         0
-🐣  Axolotitos eclosionados:   8
-🎓  Tutoriales completados:    8 (Tabla Tutorial creada)
-🧬  Naturalezas obtenidas:     hyperactive: 1, glutton: 1, methodical: 1, shy: 3, wise: 2
-😇  Karma Lucky:               7
-🧂  Karma Salty:               1
-💧  Gotas Anti-Escarcha:       0
-🌤️  Clima incubación:          energizing_dew
+🎴  Cartas abiertas total:     357
+🥚  Webitos adoptados:         5
+🐣  Axolotitos eclosionados:   3
+🎓  Tutoriales completados:    3 (Tabla Tutorial creada)
+🧬  Naturalezas obtenidas:     glutton: 1, wise: 1, shy: 1
+😇  Karma Lucky:               3
+🧂  Karma Salty:               0
+💧  Recompensas Salty (FRJ):   0
+🌤️  Clima incubación:          cold_fog
 🎉  Evento de prueba creado:   No
 ----------------------------------------------------------------------
-🎰  Gashapon rolls:            26
+🎰  Gashapon rolls:            12
 💊  Cápsulas reclamadas:       0
-🌟  Triple Suerte:             3
-📋  Tableros creados:          16  (0 manuales)
+🌟  Triple Suerte:             0
+📋  Tableros creados:          10  (0 manuales)
 🏪  Tableros en venta P2P:     1
 🏠  Tableros en renta:         0
-📈  Slots desbloqueados:       3
+📈  Slots desbloqueados:       0
 🦎  Axos en venta P2P:         0
 ----------------------------------------------------------------------
-👑  VIP activados:             0
-🔄  VIP Auto-Renovación:       0
+👑  VIP activados:             3
+🔄  VIP Auto-Renovación:       1
 🌿  FRJ VIP reclamados:        0
-💸  Ahorro jugadores (VIP):    0.00 AXF  ← ingresos perdidos por la casa
+💸  Ahorro jugadores (VIP):    215.26 AXF  ← ingresos perdidos por la casa
 ----------------------------------------------------------------------
-🎮  Partidas individuales:     98
-  🏆 Victorias:               29  (29.6%)
-  💔 Derrotas:                69
-  🤖 Autojuego:               18 partidas
-  💰 GAL obtenidas:           2828.00
-  🍽️  Alimentaciones:          5
-  😴 Ciclos sueño:            1
+🎮  Partidas individuales:     12
+  🏆 Victorias:               2  (16.7%)
+  💔 Derrotas:                10
+  🤖 Autojuego:               6 partidas
+  💰 FRJ obtenidas:           132.35
+  🍽️  Alimentaciones:          1
+  😴 Ciclos sueño:            0
   🔧 Cave items equipados:    0
-  💍 Accesorios equipados:    18
+  💍 Accesorios equipados:    8
 ----------------------------------------------------------------------
-⚔️  Salas multijugador:        6
+⚔️  Salas multijugador:        4
   📞 Recall pasó:             1
-  💵 Axos liquidados:         8
+  💵 Axos liquidados:         3
   💰 Jackpots ganados:        0
 ----------------------------------------------------------------------
-  📊 Partidas jugadas:         15
-  🏆 Victorias:               6  (40%)
-  💸 GAL neto total:          -2275000.0
+  📊 Partidas jugadas:         6
+  🏆 Victorias:               2  (33%)
+  💸 FRJ neto total:          -199.0
   Detalle:
-    🏆 Huitzilopochtli Dura │ Charco de Novatos        │ Neto: +45000.0 GAL │ XP: +25
-    💔 Centeotl Perdurable  │ Charco de Novatos        │ Neto: -100000.0 GAL │ XP: +5
-    💔 Cenote Inagotable    │ Charco de Novatos        │ Neto: -200000.0 GAL │ XP: +10
-    🏆 Requinto Perpetuo    │ Charco de Novatos        │ Neto: +285000.0 GAL │ XP: +50
-    💔 Arpa Inextinguible   │ Fosa del Campeón         │ Neto: -500000.0 GAL │ XP: +5
-    🏆 Tepetate Estratégico │ Fosa del Campeón         │ Neto: +25000.0 GAL │ XP: +20
-    💔 Quetzal Inmortal     │ Charco de Novatos        │ Neto: -100000.0 GAL │ XP: +5
-    💔 Cotorra Floreciente  │ Fosa del Campeón         │ Neto: -500000.0 GAL │ XP: +5
-    🏆 Huitzilopochtli Dura │ Charco de Novatos        │ Neto: +160000.0 GAL │ XP: +75
-    💔 Cenote Inagotable    │ Charco de Novatos        │ Neto: -200000.0 GAL │ XP: +10
-    🏆 Tepetate Estratégico │ Fosa del Campeón         │ Neto: -150000.0 GAL │ XP: +20
-    💔 Cotorra Floreciente  │ Fosa del Campeón         │ Neto: -500000.0 GAL │ XP: +5
-    💔 Huitzilopochtli Dura │ Charco de Novatos        │ Neto: -200000.0 GAL │ XP: +10
-    🏆 Cenote Inagotable    │ Charco de Novatos        │ Neto: +160000.0 GAL │ XP: +75
-    💔 Tepetate Estratégico │ Fosa del Campeón         │ Neto: -500000.0 GAL │ XP: +5
+    🏆 Cempasúchil Duradero │ Charco de Novatos        │ Neto:    -9.5 FRJ │ XP: +25
+    💔 Xochiquetzal Eterna  │ Fosa del Campeón         │ Neto:  -150.0 FRJ │ XP: +15
+    💔 Arpa Perdurable      │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Cempasúchil Duradero │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    🏆 Arpa Perdurable      │ Charco de Novatos        │ Neto:    +0.5 FRJ │ XP: +20
+    💔 Arpa Perdurable      │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
 
 ----------------------------------------------------------------------
 🌙  Ciclo Lunar (Daily):
-  💰 FRJ acumulados:          3310 FRJ
-  💊 Cápsulas ganadas:        4
+  💰 FRJ acumulados:          1125 FRJ
+  💊 Cápsulas ganadas:        1
   🌕 Máx Luna alcanzada:      2
   📅 Máx racha diaria:        6
 ----------------------------------------------------------------------
 ⛏️  Expansión del Cenote:
-  🏗️  Expansiones totales:     32
-  💸 AXF gastados (aceler.):  1840
-  🏆 Máx nivel alcanzado:     8
+  🏗️  Expansiones totales:     11
+  💸 AXF gastados (aceler.):  216
+  🏆 Máx nivel alcanzado:     5
 ----------------------------------------------------------------------
 🖼️  Decoración del Cenote:
   🎨 Items equipados:         0
@@ -92,45 +83,21 @@
   ❌ Fallaron:                1
 ======================================================================
 
-⚠️  ERRORES (41):
+⚠️  ERRORES (29):
+  x11  booster_buy did:privy:sim_player_1: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x2  egg_buy_after_expand did:privy:cmnn1tv0o02au0ckzho9ugkb2: Límite de 3 unidades por wallet alcanzado para este ítem.
+  x2  egg_buy_after_expand did:privy:sim_player_1: Límite de 3 unidades por wallet alcanzado para este ítem.
   x2  acc_equip did:privy:sim_player_2/body: No posees este accesorio en tu inventario.
-  x1  vip_buy_early did:privy:cmnn1tv0o02au0ckzho9ugkb2 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_1 coral: Saldo insuficiente. Necesitas 50000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_3 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_4 axolite: Saldo insuficiente. Necesitas 300000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_5 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
-  x1  vip_buy_early did:privy:sim_player_6 coral: Saldo insuficiente. Necesitas 50000000 AXF.
-  x1  vip_buy_early did:privy:cmpl1jf3t01cc0ck4gqt004l5 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
-  x1  vip_buy did:privy:cmnn1tv0o02au0ckzho9ugkb2 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
-  x1  vip_buy did:privy:sim_player_1 coral: Saldo insuficiente. Necesitas 50000000 AXF.
-  x1  vip_buy did:privy:sim_player_3 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
-  x1  vip_buy did:privy:sim_player_4 axolite: Saldo insuficiente. Necesitas 300000000 AXF.
-  x1  vip_buy did:privy:sim_player_5 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
-  x1  vip_buy did:privy:sim_player_6 coral: Saldo insuficiente. Necesitas 50000000 AXF.
-  x1  vip_buy did:privy:cmpl1jf3t01cc0ck4gqt004l5 dorado: Saldo insuficiente. Necesitas 120000000 AXF.
   x1  block_test did:privy:cmnn1tv0o02au0ckzho9ugkb2: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
   x1  block_test did:privy:sim_player_1: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
   x1  block_test did:privy:sim_player_2: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  block_test did:privy:sim_player_3: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  block_test did:privy:sim_player_4: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_5: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_5: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:sim_player_6: 429: 5 per 1 minute
-  x1  block_test did:privy:sim_player_6: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  claim_corcholata_unexpected did:privy:cmpl1jf3t01cc0ck4gqt004l5: 429: 5 per 1 minute
-  x1  block_test did:privy:cmpl1jf3t01cc0ck4gqt004l5: Error - Se permitió la compra de un huevo extra en nivel 1 teniendo ya un axolotito.
-  x1  board_sale_list did:privy:sim_player_5: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:cmpl1jf3t01cc0ck4gqt004l5: La Tabla Tutorial no se puede vender.
-  x1  board_rent_list did:privy:sim_player_1: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_5: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_6: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:cmpl1jf3t01cc0ck4gqt004l5: La Tabla Tutorial no se puede rentar.
+  x1  triple_suerte did:privy:sim_player_1: FRJ insuficientes para Triple Suerte. Necesitas 22500.0 FRJ, tienes 3050.0 FRJ.
+  x1  board_random did:privy:sim_player_2: No tienes suficientes cartas libres en tu mochila. Requieres 16 únicas libres, tienes 14.
+  x1  board_rent_list did:privy:sim_player_2: La Tabla Tutorial no se puede rentar.
+  x1  acc_equip did:privy:cmnn1tv0o02au0ckzho9ugkb2/eyes: No posees este accesorio en tu inventario.
   x1  acc_equip did:privy:cmnn1tv0o02au0ckzho9ugkb2/body: No posees este accesorio en tu inventario.
   x1  acc_equip did:privy:sim_player_1/eyes: No posees este accesorio en tu inventario.
   x1  acc_equip did:privy:sim_player_1/body: No posees este accesorio en tu inventario.
-  x1  watch_reward did:privy:sim_player_2: 'gal'
   x1  acc_equip did:privy:sim_player_2/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_5/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_6/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_6/body: No posees este accesorio en tu inventario.
+  x1  cave_expand did:privy:sim_player_1 → 6: Frijolitos insuficientes. Iniciar excavación de 'El Abismo' cuesta 7500 FRJ (descuento VIP 50% aplicado). Tienes 2175.0 FRJ.
 ======================================================================

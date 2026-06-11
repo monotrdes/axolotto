@@ -33,8 +33,6 @@ class WalletResponse(BaseModel):
     user_id: str
     axofichas: float  # serializado desde int por el endpoint
     frijolitos: float
-    axogemas: float   # backward compat
-    gemas_alga: float  # backward compat
     fragmentos: dict
 
 # --- ENDPOINTS (Las Ventanillas) ---
@@ -53,9 +51,6 @@ def get_my_wallet(
         "user_id": wallet.user_id,
         "axofichas": axf_to_display(wallet.axofichas),
         "frijolitos": frj_to_display(wallet.frijolitos),
-        # backward compat — frontend legacy
-        "axogemas": axf_to_display(wallet.axofichas),
-        "gemas_alga": frj_to_display(wallet.frijolitos),
         "fragmentos": {
             "comunes": wallet.frag_comun,
             "raros": wallet.frag_raro,
