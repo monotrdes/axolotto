@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import SpeechBubble, { type SpeechBubbleProps } from "../chat/SpeechBubble";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -23,6 +24,17 @@ interface TableSeatProps {
   isHot?: boolean;
   /** Mini board or avatar content */
   children?: React.ReactNode;
+  /** Speech bubble data — shown above the pedestal */
+  speechBubble?: {
+    text: string;
+    vipTier?: string | null;
+    nature?: string | null;
+    stickerId?: string | null;
+    megaphone?: boolean;
+    visible: boolean;
+  } | null;
+  /** Called when speech bubble auto-hides */
+  onSpeechBubbleHide?: () => void;
 }
 
 // ── Nature animation classes ──────────────────────────────────────────────────
@@ -50,6 +62,8 @@ export default function TableSeat({
   isPlayer = false,
   isHot = false,
   children,
+  speechBubble,
+  onSpeechBubbleHide,
 }: TableSeatProps) {
   // Radial position: start from top, go clockwise
   const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
@@ -90,6 +104,21 @@ export default function TableSeat({
         transition: "transform 0.3s ease, opacity 0.3s ease, box-shadow 0.3s ease",
       }}
     >
+      {/* Speech bubble above the seat */}
+      {speechBubble && (
+        <div className="relative w-full flex justify-center">
+          <SpeechBubble
+            text={speechBubble.text}
+            vipTier={speechBubble.vipTier}
+            nature={speechBubble.nature}
+            stickerId={speechBubble.stickerId}
+            megaphone={speechBubble.megaphone}
+            visible={speechBubble.visible}
+            onHide={onSpeechBubbleHide}
+          />
+        </div>
+      )}
+
       {/* Stone pedestal */}
       <div
         className={`

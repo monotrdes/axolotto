@@ -11,6 +11,13 @@ La Lotería es un juego de ritmo rápido: se canta una carta cada 3-5 segundos. 
 - El jugador se distrae escribiendo → pierde el marcado de una carta → su Axolotito se duerme o se distrae.
 - El chat se convierte en una fuente de frustración en lugar de diversión.
 
+### 1.1. Lecciones de Diseño: Análisis de Bloxy Bingo (Roblox) y Bingo Blitz
+Estudiando por qué los sistemas de chat en juegos de lotería/bingo en línea son exitosos y mantienen la retención:
+- **La Sinergia del "Auto-Play / AFK":** En *Bloxy Bingo* (Roblox) y *Bingo Blitz*, muchos jugadores activan el marcado automático (*auto-daub*). Esto transforma el juego de una tarea de alta concentración manual a un **hangout o club social**. Los jugadores se quedan en la sala no solo para jugar, sino para conversar, socializar y celebrar juntos.
+- **Diferenciación de Ritmos (Downtime vs. Uptime):** La interacción de texto libre ocurre casi en su totalidad durante los "tiempos muertos" (esperando en el lobby y revisando la tabla de puntuaciones al final). Durante la partida, la velocidad (una carta cada 3-5 segundos) imposibilita escribir de forma manual. Por ello, el chat de texto libre durante la partida *solo* es funcional si el jugador está en modo automático o es un espectador.
+- **Identidad Cosmética y Status:** En Roblox, los jugadores muestran sus markers y bailes. En *Axolotto*, esto se traduce en los globos de texto con bordes bioluminiscentes para los VIPs y frases rápidas personalizadas según la personalidad (Nature) de su Axolotito.
+- **Seguridad en Entornos Web3:** A diferencia de plataformas cerradas, en un entorno Web3 la prioridad absoluta es evitar **scams de phishing de wallets, spam de direcciones de contratos y bots maliciosos**. Por lo tanto, moderar activamente es crítico en las áreas públicas.
+
 ### La Solución: Comunicación en Tres Niveles de Tensión
 Diseñamos un sistema híbrido adaptativo según el estado de la partida y el tipo de sala:
 
@@ -36,14 +43,23 @@ Diseñamos un sistema híbrido adaptativo según el estado de la partida y el ti
 
 ---
 
-## 2. Definición del Entorno: Salas Públicas vs. Privadas
+## 2. Definición del Entorno: Chat Global de Tianguis vs. Chat de Salas
 
-Para proteger la economía Web3 y evitar el abuso, la toxicidad y los enlaces fraudulentos (phishing de wallets), aplicamos reglas de seguridad diferenciadas por el tipo de sala:
+Para equilibrar la interacción social del metaverso 2.5D con la seguridad económica de Web3, dividimos la comunicación en dos ámbitos de red distintos:
+
+### A. Lobby Global: El Tianguis Submarino (Hub 2.5D)
+Cuando el jugador navega por el Tianguis interactuando con NPCs y otros avatares, tiene acceso a un **World Chat / Chat de Tianguis**:
+- **Objetivo:** Fomentar el comercio, la organización de gremios/salas y la socialización en el metaverso.
+- **Acceso:** Texto libre en tiempo real para todos los jugadores en la zona.
+- **Moderación:** Estricta. Bloqueo automático mediante regex de URLs externas, palabras ofensivas y direcciones hexadecimales (`0x...`) para prevenir estafas y phishing. Límite de mensajes (cooldown de 3s) para mitigar spam de bots.
+
+### B. Salas de Juego (Zona de Juego)
+Una vez dentro de una sala (ya sea pública o privada), el chat se limita al ámbito de la mesa. Las reglas son:
 
 | Característica | Salas Públicas (Multijugador Estándar) | Salas Privadas (Con Amigos) |
 | :--- | :--- | :--- |
-| **Acceso a Chat de Texto** | **Limitado/Moderado:** Solo frases predefinidas + texto libre filtrado por regex contra URLs, insultos y spam. | **Abierto:** Texto libre sin restricciones severas (filtro opcional para insultos graves). |
-| **Moderación Automática** | Activa (Auto-mute de 5 mins en caso de spam o palabras ofensivas repetidas). | Ninguna (los usuarios controlan su propia sala). |
+| **Acceso a Chat de Texto** | **Acotado por Fase:** Libre en Lobby y Scoreboard. Desactivado para jugadores manuales durante el juego (solo Rueda de Reacciones). Libre en juego solo para Auto/Espectadores. | **Abierto y Permanente:** Chat de texto libre habilitado en todas las fases (incluso para manuales en juego, si deciden asumir el riesgo de distraerse). |
+| **Moderación Automática** | Activa (Auto-mute de 5 mins en caso de spam o palabras ofensivas repetidas). Filtro de hashes `0x...` y URLs. | Ninguna (los usuarios controlan su propia sala). Filtro de abuso extremo opcional. |
 | **Stickers & Emojis** | Permitidos todos los desbloqueados. | Permitidos todos los desbloqueados. |
 | **Integración Web3** | Bloqueo estricto de direcciones hexadecimales (`0x...`) para evitar scams de firmas de transacciones. | Advertencia visual sutil al escribir hashes, pero permitido. |
 
@@ -184,13 +200,14 @@ Dividimos el desarrollo en 4 fases incrementales para asegurar estabilidad y evi
   3. Modificar `CenoteRoom.tsx` y `TableSeat.tsx` para suscribirse a los eventos de chat entrantes y renderizar los globos dinámicos.
   4. Configurar las animaciones CSS en `frontend/app/globals.css` para el rebote y desvanecimiento de burbujas.
 
-### 📋 FASE 3: Chat Feed Colapsable & Lobby de Sala
-* **Objetivo:** Permitir conversación de texto libre en momentos de bajo estrés.
+### 📋 FASE 3: Chat Feed Colapsable, Lobby de Sala & Chat Global de Tianguis
+* **Objetivo:** Permitir conversación de texto libre en momentos de bajo estrés y en el hub social.
 * **Tareas:**
   1. Implementar el componente `ChatFeed.tsx` (lista con scroll y modo colapsado/expandido).
   2. Habilitar la caja de texto libre en el Waiting Room (antes de iniciar partida) y en el Scoreboard final.
   3. Validar la restricción del teclado durante la partida activa para jugadores manuales.
   4. Añadir el filtro de spam y rate limit visual en el cliente.
+  5. Integrar el Chat Global en el Tianguis 2.5D (suscribiendo al cliente a un canal global en el WebSocket al entrar al Tianguis, y montando el `ChatFeed` en un panel lateral/esquina del HUD de la escena).
 
 ### 📋 FASE 4: Personalizaciones de Nature & Tienda de Stickers
 * **Objetivo:** Añadir el "juice" y monetización al sistema de comunicación.

@@ -23,6 +23,7 @@ from app.models.axolotito import Axolotito
 from app.models.board import PlayerBoard
 from app.models.lobby_models import GameRoom, RoomRegistration
 from app.models.items import ItemCatalog, ItemType
+from app.models.user import User
 from app.services.ws_manager import ws_manager
 
 logger = logging.getLogger("ws.game")
@@ -141,7 +142,12 @@ async def manual_game_ws(
         if board:
             board_card_ids[bid] = board.card_ids[:16] if board.card_ids else []
 
-    # 4. Registrar conexion
+    # 4. Look up user VIP tier for chat enrichment
+    user_obj = session.exec(
+        select(User).where(User.privy_did == user_id)
+    ).first()
+
+    # 5. Registrar conexion
     await ws_manager.connect(
         room_id=room_id,
         user_id=user_id,
@@ -150,9 +156,12 @@ async def manual_game_ws(
         axo_name=axo.name,
         board_ids=board_ids,
         board_card_ids=board_card_ids,
+        play_mode=reg.play_mode,
+        vip_tier=user_obj.vip_tier if user_obj else None,
+        nature=axo.nature,
     )
 
-    # 5. Si la sala esta en lobby y hay suficientes jugadores, iniciar
+    # 6. Si la sala esta en lobby y hay suficientes jugadores, iniciar
     room = session.get(GameRoom, room_id)
     session_obj = ws_manager.get_session(room_id)
 
@@ -185,6 +194,17 @@ async def manual_game_ws(
 
             elif msg_type == "use_hint":
                 await ws_manager.handle_use_hint(room_id, user_id)
+
+            elif msg_type == "chat_message":
+                data_payload = data.get("data", {})
+                await ws_manager.handle_chat_message(
+                    room_id=room_id,
+                    user_id=user_id,
+                    text=data_payload.get("text", ""),
+                    is_reaction=data_payload.get("is_reaction", False),
+                    sticker_id=data_payload.get("sticker_id"),
+                    megaphone=data_payload.get("megaphone", False),
+                )
 
             else:
                 await websocket.send_json({

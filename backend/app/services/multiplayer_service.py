@@ -356,6 +356,24 @@ class MultiplayerService:
             # Leer patrones de victoria configurados en la sala
             room_cfg = json.loads(room.room_config or "{}")
             active_win_patterns = room_cfg.get("win_patterns", ["line", "cuadrito"])
+
+            # Ajuste dinámico y balanceado del Jackpot (Punto 1.A)
+            PATTERN_SIZES = {
+                "line": 4,
+                "cuadrito": 4,
+                "pocito": 4,
+                "esquinas": 4,
+                "cruz": 7,
+                "l_shape": 7,
+                "cruz_diagonal": 8,
+                "z_shape": 10,
+                "full_board": 16
+            }
+            min_pattern_size = min([PATTERN_SIZES.get(p, 4) for p in active_win_patterns]) if active_win_patterns else 4
+            jackpot_min_turn = min_pattern_size
+            # Ventana de 5 turnos equilibrada (ej. 4 a 8 para patrones de 4 celdas)
+            jackpot_max_turn = min_pattern_size + 4
+
             # Premio 2 siempre es tabla llena (independiente de patrones de Premio 1)
             p2_patterns = ["full_board"]
 
@@ -443,8 +461,8 @@ class MultiplayerService:
                         premio_1_winners = round_winners_p1
                         premio_1_awarded = True
                         
-                        # Comprobar si se cumple condición de Jackpot (turnos 4, 5 o 6 y jugadores reales)
-                        if 4 <= turns <= 6 and jackpot_eligible:
+                        # Comprobar si se cumple condición de Jackpot (rango dinámico y equilibrado)
+                        if jackpot_min_turn <= turns <= jackpot_max_turn and jackpot_eligible:
                             human_winners = [w for w in round_winners_p1 if not w["is_bot"]]
                             if human_winners:
                                 jackpot_winners = human_winners

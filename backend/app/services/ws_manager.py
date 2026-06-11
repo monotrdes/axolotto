@@ -41,6 +41,9 @@ class PlayerState:
     ws: WebSocket | None = None
     connected: bool = True
     joined_at: float = dc_field(default_factory=time.time)
+    # Chat integration
+    vip_tier: str | None = None         # "coral" | "dorado" | "axolite"
+    nature: str | None = None           # "hyperactive" | "shy" | "showoff" | "curious"
 
 
 @dataclass
@@ -97,6 +100,9 @@ class GameWSManager:
         axo_name: str,
         board_ids: list[int],
         board_card_ids: dict[int, list[int]],
+        play_mode: str = "manual",
+        vip_tier: str | None = None,
+        nature: str | None = None,
     ) -> None:
         """Acepta la conexión WebSocket y registra al jugador en la sesión."""
         await ws.accept()
@@ -112,7 +118,10 @@ class GameWSManager:
                 axo_name=axo_name,
                 board_ids=board_ids,
                 board_card_ids=board_card_ids,
+                play_mode=play_mode,
                 ws=ws,
+                vip_tier=vip_tier,
+                nature=nature,
             )
             session.players[user_id] = player
 
@@ -410,6 +419,91 @@ class GameWSManager:
                 "cell_indices": hint_cells,
                 "hints_remaining": player.hints_remaining,
             })
+
+    # ------------------------------------------------------------------
+    # Chat messaging
+    # ------------------------------------------------------------------
+
+    async def handle_chat_message(
+        self,
+        room_id: int,
+        user_id: str,
+        text: str = "",
+        is_reaction: bool = False,
+        sticker_id: str | None = None,
+        megaphone: bool = False,
+    ) -> None:
+        """
+        Process a chat message: sanitize, rate-limit, enrich, and broadcast.
+
+        Called from the WebSocket endpoint when action='chat_message' is received.
+        """
+        from app.services.chat_moderator import chat_moderator
+
+        session = self.sessions.get(room_id)
+        if not session:
+            return
+        player = session.players.get(user_id)
+        if not player or not player.connected:
+            return
+
+        # 1. Rate limit check
+        rate_result = chat_moderator.check_rate_limit(user_id, is_reaction=is_reaction)
+        if not rate_result.allowed:
+            await self._send_error(player, rate_result.reason)
+            return
+
+        # 2. Sanitize (public room = strict filters; private rooms skip some filters)
+        is_public = True  # default; could be read from room config in Fase 3
+        if sticker_id:
+            result = chat_moderator.sanitize_sticker(sticker_id)
+        else:
+            result = chat_moderator.sanitize(text, is_public_room=is_public)
+
+        if not result.allowed:
+            await self._send_error(player, result.reason)
+            return
+
+        # 3. Megaphone: validate FRJ balance (deferred — handled on broadcast)
+        if megaphone:
+            try:
+                from app.database import engine
+                from sqlmodel import Session as DBSession
+                from app.services.bank_service import BankService
+                from app.core.config import FRJ_DECIMALS_BACKEND
+
+                with DBSession(engine) as db_session:
+                    wallet = BankService.get_or_create_wallet(db_session, user_id, for_update=True)
+                    megaphone_check = chat_moderator.validate_megaphone(
+                        wallet.frijolitos, frj_decimals=FRJ_DECIMALS_BACKEND
+                    )
+                    if not megaphone_check.allowed:
+                        await self._send_error(player, megaphone_check.reason)
+                        megaphone = False  # send without megaphone highlight
+                    else:
+                        # Charge FRJ for megaphone
+                        wallet.frijolitos -= megaphone_check.megaphone_cost_frj * (10 ** FRJ_DECIMALS_BACKEND)
+                        db_session.add(wallet)
+                        db_session.commit()
+            except Exception as meg_err:
+                logger.warning(f"Megaphone charge failed for user {user_id}: {meg_err}")
+                megaphone = False  # graceful degradation: send without megaphone
+
+        # 4. Enrich and broadcast
+        broadcast_msg = chat_moderator.enrich_for_broadcast(
+            user_id=user_id,
+            username=player.axo_name,
+            text=result.sanitized_text,
+            vip_tier=player.vip_tier,
+            nature=player.nature,
+            sticker_id=result.sticker_id,
+            megaphone=megaphone,
+        )
+
+        await self.broadcast(room_id, {
+            "type": "chat_broadcast",
+            "data": broadcast_msg,
+        })
 
     # ------------------------------------------------------------------
     # Game end
