@@ -79,6 +79,10 @@
 - [x] Santuario HTML viejo oculto con flag (tab santuario muestra el diorama;
       main con pointer-events-none para tocar el mundo)
 - [x] Dev proxy same-origin `/api/v1`→:8001 en next.config (pruebas en :3001/LAN sin CORS)
+- [x] **Fix web/desktop**: PAINTED_BOUNDS (overscan lateral) + CameraRig prioriza alto
+      completo con clamp horizontal — en 16:9 se revelan laterales en vez de recortar
+      el alto (plan §3.4). Escenas pintan el overscan; vegetación decorativa lateral
+- [x] Hotspot mesa-amigos → tab `amigos` (provisional; TODO HostingSetupModal)
 - [ ] Embarcadero social: trajineritas + burbujas like/visitar/invitar; canasta → AmigosPage
 - [ ] page.tsx: manejar `onStallClick("mesa-amigos")` → HostingSetupModal
 - [ ] Decoraciones reales (⚠️ endpoint backend = sub-tarea; mientras localStorage)
@@ -106,7 +110,8 @@
 | 2026-06-11 | 06466f7 | Fase 0 completa: motor Pixi v8, cámara, zonas, cortina, dock macro, flag |
 | 2026-06-11 | 0f961a4 | Fase 1 núcleo: rig puppet cut-out + SantuarioScene (nidos/camitas, deambular, mesa hotspot) |
 | 2026-06-11 | 94a0174 | Dev proxy same-origin para probar en :3001/LAN sin CORS |
-| 2026-06-11 | (este) | Axolotitos reales en el diorama (fetch /auth/axolotitos + mapper) y Santuario HTML oculto con flag |
+| 2026-06-11 | 22b8967 | Axolotitos reales en el diorama (fetch /auth/axolotitos + mapper) y Santuario HTML oculto con flag |
+| 2026-06-11 | (este) | Fix cámara desktop (overscan + alto completo); mesa-amigos → tab amigos. PAUSA DE PRUEBA con usuario (móvil OK, validar web) |
 
 ## Notas para el verificador humano
 

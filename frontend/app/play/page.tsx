@@ -505,7 +505,11 @@ export default function Home() {
             }}
             onStallClick={(stallType) => {
               // Map stall type to tab/action
-              if (stallType === "fountain") {
+              if (stallType === "mesa-amigos") {
+                // Mesa del Santuario: jugar con amigos (provisional: hub social;
+                // TODO Fase 1: HostingSetupModal para crear sala privada)
+                setTabActiva("amigos");
+              } else if (stallType === "fountain") {
                 // Open bank/currency conversion (navigate to store with bank flag)
                 setTabActiva("tienda");
                 setOpenBancoCount((c) => c + 1);

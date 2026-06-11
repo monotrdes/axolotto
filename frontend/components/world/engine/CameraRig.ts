@@ -10,15 +10,18 @@ import type { Framing } from "../zones/zoneConfig";
 export class CameraRig {
   private scene: Container | null = null;
   private framing: Framing | null = null;
+  /** Área pintada por la escena activa (overscan lateral para pantallas anchas). */
+  private painted: { x0: number; w: number } | null = null;
   private viewW = 1;
   private viewH = 1;
   private tween: gsap.core.Tween | null = null;
   /** prefers-reduced-motion → paneos instantáneos. */
   reducedMotion = false;
 
-  attach(scene: Container): void {
+  attach(scene: Container, painted?: { x0: number; w: number }): void {
     this.kill();
     this.scene = scene;
+    this.painted = painted ?? null;
     if (this.framing) this.apply(this.framing);
   }
 
@@ -71,14 +74,23 @@ export class CameraRig {
   }
 
   private transformFor(framing: Framing): { x: number; y: number; scale: number } {
-    const scale = Math.max(this.viewW / framing.w, this.viewH / framing.h);
+    // Prioridad: mostrar el ALTO completo del encuadre. El ancho se cubre con
+    // el overscan pintado de la escena; solo se hace zoom si ni el overscan
+    // alcanza para llenar la pantalla (plan §3.4).
+    const paintedW = this.painted?.w ?? framing.w;
+    const scale = Math.max(this.viewH / framing.h, this.viewW / paintedW);
     const cx = framing.x + framing.w / 2;
     const cy = framing.y + framing.h / 2;
-    return {
-      scale,
-      x: this.viewW / 2 - cx * scale,
-      y: this.viewH / 2 - cy * scale,
-    };
+    let x = this.viewW / 2 - cx * scale;
+    const y = this.viewH / 2 - cy * scale;
+
+    // Clamp horizontal: no mostrar más allá del área pintada.
+    if (this.painted) {
+      const minX = this.viewW - (this.painted.x0 + this.painted.w) * scale;
+      const maxX = -this.painted.x0 * scale;
+      x = Math.min(maxX, Math.max(minX, x));
+    }
+    return { scale, x, y };
   }
 
   private apply(framing: Framing): void {

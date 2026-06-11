@@ -3,6 +3,7 @@ import type { WorldEngine } from "../engine/WorldEngine";
 import {
   framingFor,
   resolveZoneTarget,
+  PAINTED_BOUNDS,
   type MacroZoneId,
   type ZoneTarget,
 } from "./zoneConfig";
@@ -91,7 +92,7 @@ export class ZoneManager {
   private async mount(target: ZoneTarget): Promise<void> {
     const scene = await this.builders[target.macro](this.engine);
     this.engine.stage.addChild(scene);
-    this.engine.camera.attach(scene);
+    this.engine.camera.attach(scene, PAINTED_BOUNDS[target.macro]);
     this.engine.camera.snapTo(framingFor(target));
     this.current = { target, scene };
     this.engine.bridge.emit("zoneSettled", { macro: target.macro, sub: target.sub });

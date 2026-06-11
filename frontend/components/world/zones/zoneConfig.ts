@@ -26,6 +26,18 @@ export const DESIGN_SPACE: Record<MacroZoneId, { w: number; h: number }> = {
   piramide: { w: 3240, h: 1920 },
 };
 
+/**
+ * Área PINTADA por la escena (incluye overscan lateral decorativo).
+ * En móvil 9:16 la cámara encuadra el centro jugable; en desktop 16:9
+ * muestra el alto completo y revela los laterales (plan §3.4) en lugar
+ * de hacer zoom y recortar el alto.
+ */
+export const PAINTED_BOUNDS: Record<MacroZoneId, { x0: number; w: number }> = {
+  santuario: { x0: -660, w: 2400 },
+  tianguis: { x0: -660, w: 2400 },
+  piramide: { x0: 0, w: 3240 },
+};
+
 /** Encuadre por defecto de cada macrozona (composición 9:16 centrada). */
 export const MACRO_FRAMINGS: Record<MacroZoneId, Framing> = {
   santuario: { x: 0, y: 0, w: 1080, h: 1920 },

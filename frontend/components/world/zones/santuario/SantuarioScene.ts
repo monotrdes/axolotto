@@ -2,7 +2,7 @@ import { Container, Graphics, Text, Ticker } from "pixi.js";
 import type { WorldEngine } from "../../engine/WorldEngine";
 import type { AxolotitoData } from "../../entities/AxolotitoSprite";
 import { AxolotitoPuppet, type PuppetState } from "../../puppet/AxolotitoPuppet";
-import { DESIGN_SPACE } from "../zoneConfig";
+import { DESIGN_SPACE, PAINTED_BOUNDS } from "../zoneConfig";
 
 /**
  * Diorama del Santuario (plan task-84 §2, Fase 1): chinampa vertical de
@@ -12,6 +12,8 @@ import { DESIGN_SPACE } from "../zoneConfig";
  */
 
 const { w: W, h: H } = DESIGN_SPACE.santuario;
+// Overscan lateral pintado (visible en pantallas anchas, plan §3.4).
+const { x0: PX, w: PW } = PAINTED_BOUNDS.santuario;
 
 // Bandas verticales de los 3 niveles (espacio de diseño 1080×1920).
 const NIVEL_NIDOS_Y = 430;
@@ -129,13 +131,20 @@ export class SantuarioScene extends Container {
 
   private buildBackdrop(): void {
     const bg = new Graphics();
-    // Agua en 3 bandas (atardecer en el cenote).
-    bg.rect(0, 0, W, H * 0.3).fill(0x1b7a8c);
-    bg.rect(0, H * 0.3, W, H * 0.4).fill(0x134e6f);
-    bg.rect(0, H * 0.7, W, H * 0.3).fill(0x0a2540);
-    // Plataformas de chinampa de los 3 niveles.
+    // Agua en 3 bandas (atardecer en el cenote) — pintada con overscan lateral.
+    bg.rect(PX, 0, PW, H * 0.3).fill(0x1b7a8c);
+    bg.rect(PX, H * 0.3, PW, H * 0.4).fill(0x134e6f);
+    bg.rect(PX, H * 0.7, PW, H * 0.3).fill(0x0a2540);
+    // Plataformas de chinampa de los 3 niveles (se extienden al overscan).
     for (const y of [NIVEL_NIDOS_Y + 90, NIVEL_SALA.bottom + 70, NIVEL_EMBARCADERO_Y + 90]) {
-      bg.roundRect(40, y, W - 80, 46, 22).fill(0x8b5e34).stroke({ color: 0xfff7ec, width: 4 });
+      bg.roundRect(PX + 40, y, PW - 80, 46, 22).fill(0x8b5e34).stroke({ color: 0xfff7ec, width: 4 });
+    }
+    // Vegetación decorativa en los laterales (solo visible en pantallas anchas).
+    for (const side of [PX + 150, PX + PW - 150]) {
+      for (let i = 0; i < 3; i++) {
+        bg.ellipse(side + (i - 1) * 90, H * 0.72 - i * 60, 46, 90)
+          .fill({ color: 0x4ade80, alpha: 0.5 });
+      }
     }
     this.addChild(bg);
 

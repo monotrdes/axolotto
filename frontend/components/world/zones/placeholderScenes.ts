@@ -1,5 +1,5 @@
 import { Container, Graphics, Text } from "pixi.js";
-import { DESIGN_SPACE, type MacroZoneId } from "./zoneConfig";
+import { DESIGN_SPACE, PAINTED_BOUNDS, type MacroZoneId } from "./zoneConfig";
 import type { WorldEngine } from "../engine/WorldEngine";
 
 /**
@@ -33,30 +33,32 @@ const ZONE_LABEL: Record<MacroZoneId, string> = {
 
 export function buildPlaceholderScene(zone: MacroZoneId, _engine: WorldEngine): Container {
   const { w, h } = DESIGN_SPACE[zone];
+  // El fondo se pinta con overscan lateral (pantallas anchas, plan §3.4).
+  const { x0: px, w: pw } = PAINTED_BOUNDS[zone];
   const scene = new Container();
 
   // Capa fondo: agua profunda con degradado simulado en 3 bandas.
   const bg = new Graphics();
-  bg.rect(0, 0, w, h * 0.35).fill(PALETTE.aguaSuperficie);
-  bg.rect(0, h * 0.35, w, h * 0.35).fill(PALETTE.aguaMedia);
-  bg.rect(0, h * 0.7, w, h * 0.3).fill(PALETTE.aguaProfunda);
+  bg.rect(px, 0, pw, h * 0.35).fill(PALETTE.aguaSuperficie);
+  bg.rect(px, h * 0.35, pw, h * 0.35).fill(PALETTE.aguaMedia);
+  bg.rect(px, h * 0.7, pw, h * 0.3).fill(PALETTE.aguaProfunda);
   scene.addChild(bg);
 
   // Capa media: "colinas" de papel recortado (siluetas superpuestas).
   const hills = new Graphics();
   const accent = ZONE_ACCENT[zone];
-  for (let i = 0; i < Math.ceil(w / 540); i++) {
+  for (let i = 0; i < Math.ceil(pw / 540); i++) {
     hills
-      .circle(270 + i * 540, h * 0.78, 320)
+      .circle(px + 270 + i * 540, h * 0.78, 320)
       .fill({ color: accent, alpha: 0.25 });
   }
   scene.addChild(hills);
 
   // Capa primer plano: "faroles" cálidos.
   const lanterns = new Graphics();
-  for (let i = 0; i < Math.ceil(w / 360); i++) {
+  for (let i = 0; i < Math.ceil(pw / 360); i++) {
     lanterns
-      .circle(180 + i * 360, h * 0.45 + (i % 2) * 120, 28)
+      .circle(px + 180 + i * 360, h * 0.45 + (i % 2) * 120, 28)
       .fill({ color: PALETTE.velaCalida, alpha: 0.9 });
   }
   scene.addChild(lanterns);
