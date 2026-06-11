@@ -14,6 +14,25 @@
   /* System */
   --background:    #060610;
   --foreground:    #f1f5f9;
+
+  /* ===== Papel Picado — paleta "atardecer en el cenote" (plan task-84 §1) ===== */
+  /* Papel */
+  --papel-bugambilia:  #E4007C; /* alias de brand-hot: rosa mexicano */
+  --papel-cempasuchil: #F59E0B;
+  --papel-terracota:   #C2410C;
+  --papel-turquesa:    #2DD4BF;
+  --papel-hoja:        #4ADE80;
+  --papel-amate:       #E8D5B0; /* papel amate claro para pergaminos */
+  --papel-amate-sombra:#B89968;
+  --papel-carton:      #8B5E34;
+  /* Agua */
+  --agua-profunda:     #0A2540; /* fondo abisal cálido, reemplaza al void en el mundo */
+  --agua-media:        #134E6F;
+  --agua-superficie:   #1B7A8C;
+  --agua-luz:          rgba(255, 214, 140, 0.18); /* god rays cálidos */
+  /* Luz cálida (velas/faroles) */
+  --vela-calida:       #FFD68C;
+  --vela-glow:         rgba(255, 214, 140, 0.35);
 }
 
 @theme inline {
@@ -27,6 +46,41 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ========== PAPER CURTAIN (transición entre macrozonas, plan task-84 §3.2) ========== */
+
+.paper-curtain {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  pointer-events: none;
+}
+
+.paper-curtain-strip {
+  flex: 1;
+  transform: translateY(-103%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.6, 1);
+  /* borde inferior de papel picado (zigzag) */
+  clip-path: polygon(
+    0 0, 100% 0, 100% 96%,
+    87% 100%, 75% 96%, 62% 100%, 50% 96%, 37% 100%, 25% 96%, 12% 100%, 0 96%
+  );
+}
+
+.paper-curtain.covered .paper-curtain-strip {
+  transform: translateY(0);
+}
+
+.paper-curtain-strip:nth-child(5n + 1) { background: var(--papel-bugambilia); }
+.paper-curtain-strip:nth-child(5n + 2) { background: var(--papel-cempasuchil); }
+.paper-curtain-strip:nth-child(5n + 3) { background: var(--papel-turquesa); }
+.paper-curtain-strip:nth-child(5n + 4) { background: var(--papel-terracota); }
+.paper-curtain-strip:nth-child(5n + 5) { background: var(--papel-hoja); }
+
+@media (prefers-reduced-motion: reduce) {
+  .paper-curtain-strip { transition-duration: 0.01s; transition-delay: 0s !important; }
 }
 
 /* ========== WORLD BACKGROUND ========== */

@@ -22,6 +22,14 @@ last_modified: "2026-06-11"
 
 ---
 
+## 2026-06-11 | frontend mundo papel picado + decoración del Cenote | Merge de task-1781159264-84 a dev
+- **Campo**: Mundo 2.5D papel picado (PixiJS v8 + GSAP) detrás de `NEXT_PUBLIC_PAPER_WORLD`; sistema de decoración del Cenote (slots tipados AMBIENTE/LUZ/MESA/MANTEL/SILLAS/FONDO/ESPECIAL).
+- **Anterior**: El mundo vivía solo en la rama `task/task-1781159264-84-rediseno-visual-papel-picado`; en dev quedaba un cableado viejo (decoración v1 con mocks/localStorage) y el router `cave_decor` sin montar (GET /cave/decorations → 404).
+- **Nuevo**: Fases 0-2 mergeadas: motor Pixi, Santuario (nidos dinámicos, sala con slots de decoración comprables con FRJ, embarcadero social), Tianguis, Pirámide. Router `cave_decor` registrado en main.py; `DecorSlotPanel` + Bazar del Cenote; locking de partida (isGameLocked) integrado a los hotspots del mundo. Sin flag, el juego se comporta igual que antes.
+- **Motivo**: Merge temprano a dev para evitar divergencia mayor con el trabajo activo en dev (conflictos crecientes en page.tsx).
+- **Autor**: Claude
+- **Fuente en código**: frontend/components/world/, backend/app/api/v1/endpoints/cave_decor.py, backend/app/main.py (merge de `248c178`)
+
 ## 2026-06-11 | backend/app/services/ws_manager.py | Concurrencia Multi-Ventana y Desplazamiento de WebSocket (task-89)
 - **Campo**: `GameWSManager.connect`, `GameWSManager.reconnect`, `GameWSManager.disconnect` y `manual_game_ws`
 - **Anterior**: Conexiones WebSocket concurrentes para el mismo usuario y sala pisaban la propiedad del WS en el estado, y cualquier desconexión (incluso de pestañas antiguas) cerraba la sesión activa del usuario forzando AFK kick erróneo.

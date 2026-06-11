@@ -9,9 +9,19 @@ interface AmigosPageProps {
   userId: string;
   token: string | null;
   onNavigate?: (tab: string) => void;
+  /** Visita directa: burbuja 👁 de una trajinerita del embarcadero (mundo papel). */
+  visitFriendId?: string | null;
+  /** Avisar que la visita directa ya se atendió (para limpiar el estado arriba). */
+  onVisitHandled?: () => void;
 }
 
-export default function AmigosPage({ userId, token, onNavigate }: AmigosPageProps) {
+export default function AmigosPage({
+  userId,
+  token,
+  onNavigate,
+  visitFriendId,
+  onVisitHandled,
+}: AmigosPageProps) {
   const {
     friends,
     pendingRequests,
@@ -123,6 +133,23 @@ export default function AmigosPage({ userId, token, onNavigate }: AmigosPageProp
       setVisitingFriend(friend);
     }
   };
+
+  // Visita directa desde el embarcadero del mundo (burbuja 👁 de la trajinerita).
+  useEffect(() => {
+    if (!visitFriendId || !token) return;
+    let cancelled = false;
+    (async () => {
+      const list = friends.length > 0 ? friends : await fetchFriends();
+      const amigo = list.find((f) => f.friend_id === visitFriendId);
+      if (cancelled) return;
+      if (amigo) await handleVisit(amigo);
+      if (!cancelled) onVisitHandled?.();
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visitFriendId, token]);
 
   const handleRemoveFriend = async (relationId: number, name: string) => {
     if (!window.confirm(`¿Eliminar a ${name || "este amigo"} de tu lista?`)) return;

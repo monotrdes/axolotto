@@ -1,5 +1,5 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import { X, ChevronRight } from 'lucide-react';
 import HoldButton from '@/components/ui/HoldButton';
 import BottomSheet from '@/components/ui/BottomSheet';
@@ -48,6 +48,10 @@ export default function OfficialTab({
   totalAxolotitosHatched,
   nextCaveLevel,
 }: OfficialTabProps) {
+  // Bazar del Cenote: decoraciones de cueva comprables con FRJ
+  const [decorDrawerAbierto, setDecorDrawerAbierto] = useState(false);
+  const decoraciones = items.filter((i) => i.item_type?.toUpperCase() === 'CAVE_ITEM');
+
   const ocupadosTotal = (totalEggsInInventory ?? 0) + (totalAxolotitosHatched ?? 0);
   const sinNidosGlobal =
     maxNidos !== undefined &&
@@ -190,6 +194,34 @@ export default function OfficialTab({
           </div>
         </button>
 
+        {/* ROW 2.5: BAZAR DEL CENOTE (decoración de cueva, FRJ) */}
+        {decoraciones.length > 0 && (
+          <button
+            onClick={() => setDecorDrawerAbierto(true)}
+            className="w-full text-left bg-gradient-to-r from-slate-950 via-teal-950/20 to-slate-950 hover:via-teal-950/40 border border-teal-500/20 hover:border-teal-500/50 rounded-3xl p-4 flex items-center justify-between transition-all duration-300 group shadow-[0_0_20px_rgba(0,0,0,0.4)] active:scale-[0.98] cursor-pointer"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg shadow-teal-500/20 group-hover:scale-105 transition-transform duration-300 shrink-0">
+                🏺
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h4 className="text-lg sm:text-xl font-black italic uppercase text-white tracking-tight leading-none mb-1">
+                    Bazar del Cenote
+                  </h4>
+                  <span className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white font-black text-[8px] tracking-wider px-2 py-0.5 rounded-full shadow-md uppercase">
+                    FRJ
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">Decoración para tu cueva del Santuario</p>
+              </div>
+            </div>
+            <div className="w-8 h-8 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400 group-hover:bg-teal-500 group-hover:text-white transition-all">
+              <ChevronRight size={16} />
+            </div>
+          </button>
+        )}
+
         {/* ROW 3: EL CENOTE MÍSTICO */}
         <button
           onClick={() => setStoreTab('melter')}
@@ -244,6 +276,75 @@ export default function OfficialTab({
           </div>
         </button>
       </div>
+
+      {/* === BOTTOM SHEET: BAZAR DEL CENOTE (decoraciones) === */}
+      <BottomSheet open={decorDrawerAbierto} onClose={() => setDecorDrawerAbierto(false)} accent="#14b8a6">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-xl sm:text-2xl font-black text-teal-400 tracking-tight uppercase flex items-center gap-2">
+              <span>🏺</span> Bazar del Cenote
+            </h3>
+            <button
+              onClick={() => setDecorDrawerAbierto(false)}
+              className="text-slate-400 hover:text-white p-2 rounded-full hover:bg-slate-800 cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <p className="text-xs text-slate-500 mb-5">
+            Decoración para la sala de tu cueva — se equipa desde el Santuario.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {decoraciones.map((deco) => {
+              const rareza = (deco.rarity || 'common').toLowerCase();
+              const rarezaLabel: Record<string, string> = {
+                common: 'Común', rare: 'Raro', epic: 'Épico', legendary: 'Legendario',
+              };
+              const rarezaBadge: Record<string, string> = {
+                common: 'bg-gray-600/60 text-gray-200',
+                rare: 'bg-blue-600/60 text-blue-100',
+                epic: 'bg-purple-600/60 text-purple-100',
+                legendary: 'bg-amber-500/70 text-amber-950',
+              };
+              const precioFrj = Math.round((deco.price_gal ?? 0) / 10_000);
+              const agotado =
+                deco.max_per_user != null && (deco.user_owned ?? 0) >= deco.max_per_user;
+              return (
+                <div
+                  key={deco.id}
+                  className="bg-slate-950/80 border border-teal-500/20 hover:border-teal-500/40 p-3 rounded-2xl flex items-center gap-3 transition-all"
+                >
+                  <span className="text-3xl shrink-0">
+                    {deco.item_metadata?.emoji || '🏺'}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-bold text-white truncate">{deco.name}</span>
+                      <span className={`px-1.5 rounded-full text-[8px] font-black uppercase shrink-0 ${rarezaBadge[rareza] ?? rarezaBadge.common}`}>
+                        {rarezaLabel[rareza] ?? rareza}
+                      </span>
+                    </div>
+                    {deco.description && (
+                      <p className="text-[10px] text-slate-500 truncate">{deco.description}</p>
+                    )}
+                  </div>
+                  <HoldButton
+                    variant="amber"
+                    label={agotado ? 'Agotado' : `🪙 ${precioFrj} FRJ`}
+                    sublabel={agotado ? 'Máximo alcanzado' : 'Mantén para comprar'}
+                    disabled={agotado}
+                    className="shrink-0"
+                    onConfirm={() => {
+                      void comprarItem(deco.id, 'frijolito');
+                    }}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </BottomSheet>
 
       {/* === BOTTOM SHEET: SOBRES === */}
       <BottomSheet open={sobresDrawerAbierto} onClose={() => setSobresDrawerAbierto(false)} accent="#818CF8">

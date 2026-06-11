@@ -15,10 +15,12 @@ export interface StoreItem {
   price_axg?: number;
   price_gal?: number;
   item_type: string;
+  rarity?: string;
   item_metadata?: Record<string, any>;
   is_active?: boolean;
   total_sold?: number;
   max_supply?: number;
+  max_per_user?: number | null;
   user_owned?: number;
   // Nido availability — populated by backend for egg items
   sin_nidos?: boolean;
@@ -65,6 +67,10 @@ export interface StoreProps {
   token: string | null;
   cambiarTab: (tab: any) => void;
   recargarSaldos: () => void;
+  /** Mundo papel picado: sección a abrir al tocar un puesto del Tianguis. */
+  initialSection?: StoreTab;
+  /** Nonce para re-disparar initialSection aunque sea la misma sección. */
+  sectionNonce?: number;
   [key: string]: any;
 }
 

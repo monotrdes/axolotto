@@ -16,8 +16,17 @@ export default function AxolottoStore({
   token,
   cambiarTab,
   recargarSaldos,
+  initialSection,
+  sectionNonce,
 }: StoreProps) {
   const store = useStore({ userId, token, recargarSaldos, cambiarTab });
+
+  // Mundo papel picado: el puesto tocado en el diorama abre su sección
+  // (forja→melter, trajineras→market, puestos→official).
+  React.useEffect(() => {
+    if (initialSection) store.setStoreTab(initialSection);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSection, sectionNonce]);
 
   if (store.cargando) {
     return (
