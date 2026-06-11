@@ -11,6 +11,7 @@ All agents use Session(engine) isolation and respect the stop_event.
 """
 import time
 import threading
+from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor, wait
 from datetime import datetime, timezone
 from sqlmodel import Session, select
@@ -18,6 +19,7 @@ from sqlmodel import Session, select
 from app.database import engine
 from app.models.user import User
 from app.models.axolotito import Axolotito
+from app.models.board import PlayerBoard
 from app.models.items import ItemCatalog, ItemType, PlayerInventory
 from app.services.shop_service import ShopService
 from app.services.game_service import GameService
@@ -38,6 +40,7 @@ from runtime_state import (
 # Helpers
 # ═══════════════════════════════════════════════════════════════════════════════
 
+@contextmanager
 def _agent_session():
     """Context manager: acquire DB semaphore, open session, return it.
     Usage:
@@ -369,37 +372,60 @@ def chaos_double_booking(
     counters = {"launched": 0, "blocked": 0, "succeeded": 0}
 
     while not stop_event.is_set():
-        time.sleep(_rng.uniform(1.0, 3.0))
+        time.sleep(_rng.uniform(0.5, 2.0))
         if not user_ids or not axolotito_ids:
             continue
 
-        target_user = _rng.choice(user_ids)
-        # Find user's axolotitos
         try:
             with _agent_session() as session:
-                user_axos = session.exec(
-                    select(Axolotito.id).where(
-                        Axolotito.user_id == target_user,
-                        Axolotito.status == "idle",
-                    ).limit(5)
-                ).all()
+                # Select a random axolotito ID from the provided list
+                random_axo_id = _rng.choice(axolotito_ids)
+                candidate = session.get(Axolotito, random_axo_id)
+                if not candidate:
+                    continue
+                
+                target_user = candidate.user_id
+                axo_id = candidate.id
+
+                # Pre-condition: force axolotito to be idle and have energy
+                candidate.status = "idle"
+                candidate.energy_current = max(candidate.energy_current, 50)
+                session.add(candidate)
+
+                # Pre-condition: force owner to have tutorial completed
+                user = session.exec(
+                    select(User).where(User.privy_did == target_user)
+                ).first()
+                if user:
+                    user.tutorial_completed = True
+                    session.add(user)
+
+                # Pre-condition: force user's wallet to have enough frijolitos (min 200 FRJ)
+                from app.core.config import frj_to_internal
+                wallet = BankService.get_or_create_wallet(session, target_user, for_update=True)
+                min_frj_needed = frj_to_internal(200.0)
+                if wallet.frijolitos < min_frj_needed:
+                    wallet.frijolitos = min_frj_needed
+                    session.add(wallet)
+
+                # Find the owner's boards
                 user_boards = session.exec(
-                    select(PlayerInventory.id).where(
-                        PlayerInventory.user_id == target_user,
-                        PlayerInventory.quantity > 0,
+                    select(PlayerBoard.id).where(
+                        PlayerBoard.user_id == target_user,
+                        PlayerBoard.is_dead == False,
                     ).limit(3)
                 ).all()
+
+                session.commit()
         except Exception:
             continue
 
-        if not user_axos or not user_boards:
+        if not user_boards:
             continue
 
         counters["launched"] += 1
         increment_counter("booking_launched")
         report_activity("booking_agent", "booking", "Double Booking", "attack")
-
-        axo_id = _rng.choice(user_axos)
         from app.api.v1.endpoints.multiplayer import RegisterRequest, register_axolotito
 
         succeeded_count = [0]

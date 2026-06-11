@@ -502,14 +502,14 @@ def action_melt_random_card(user_id: str) -> dict:
 def action_list_board_for_sale(user_id: str) -> dict:
     """List a random board for sale on the P2P market."""
     def _fn(session: Session) -> Any:
-        from app.api.v1.endpoints.market import list_board_for_sale, ListBoardRequest
+        from app.api.v1.endpoints.board import list_board_for_sale, ListSaleRequest
         boards = _get_player_boards(session, user_id)
         if not boards:
             raise HTTPException(status_code=400, detail="No boards to sell")
         board_id = _rng.choice(boards)
         price = _rng.randint(50, 500)
-        req = ListBoardRequest(board_id=board_id, price_gal=price)
-        return list_board_for_sale(req=req, session=session, verified_user_id=user_id)
+        req = ListSaleRequest(sale_price_gal=float(price))
+        return list_board_for_sale(board_id=board_id, payload=req, session=session, verified_user_id=user_id)
 
     result = _action(_fn, "list_board")
     increment_stat("bot_actions")
