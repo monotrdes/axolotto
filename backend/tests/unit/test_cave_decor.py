@@ -215,6 +215,59 @@ def test_slot_ausente_del_body_se_remueve_y_devuelve(session):
     assert _inv_qty(session, user.privy_did, fondo.id) == 1
 
 
+def test_compra_cave_item_con_frj_sin_wallet_web3(session):
+    # Las decoraciones no son NFT: se compran con FRJ aunque el usuario no
+    # tenga wallet Web3 vinculada, y terminan en PlayerInventory.
+    from app.core.prices import CAVE_DECOR_PRICES
+    from app.models.economy import CurrencyType
+    from app.services.shop_service import ShopService
+    from tests.conftest import make_wallet
+
+    precio = CAVE_DECOR_PRICES["common"]
+    user = make_user(session, privy_did="did:privy:decor9", wallet_address=None)
+    make_wallet(session, user.privy_did, gemas_alga=precio * 2)
+    item = make_item(
+        session,
+        name="Antorcha de Prueba",
+        item_type=ItemType.CAVE_ITEM,
+        price_gal=precio,
+        item_metadata={"cave_subcategory": "LUZ", "emoji": "🕯️"},
+    )
+
+    ShopService.buy_item(
+        session=session,
+        user_id=user.privy_did,
+        item_id=item.id,
+        payment_currency=CurrencyType.GEMA_ALGA,
+    )
+
+    from app.models.economy import Wallet
+    from sqlmodel import select
+    wallet = session.exec(
+        select(Wallet).where(Wallet.user_id == user.privy_did)
+    ).first()
+    assert wallet.frijolitos == precio  # descontó exactamente el precio
+    assert _inv_qty(session, user.privy_did, item.id) == 1
+
+
+def test_catalogo_seed_consistente():
+    # Cada item del seed tiene subcategoría válida, precio FRJ > 0 y emoji.
+    from app.scripts.seed_cave_decor import build_catalog
+
+    catalog = build_catalog()
+    assert len(catalog) >= 20
+    subcats_presentes = set()
+    for item in catalog:
+        meta = item.item_metadata
+        assert item.item_type == ItemType.CAVE_ITEM
+        assert item.price_gal and item.price_gal > 0
+        assert meta["cave_subcategory"] in SUBCATEGORY_ORDER
+        assert meta.get("emoji")
+        subcats_presentes.add(meta["cave_subcategory"])
+    # Las 7 categorías tienen al menos un item comprable
+    assert subcats_presentes == set(SUBCATEGORY_ORDER)
+
+
 def test_prefijos_viejos_se_descartan_en_lectura(session):
     # Migración: decoraciones con la taxonomía vieja (FLOOR/WALL...) no rompen
     # el GET — se filtran del estado.

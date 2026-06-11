@@ -63,8 +63,9 @@ class ShopService:
             wallet = BankService.get_or_create_wallet(session, user_id, for_update=True)
             return ShopService._handle_vip_purchase(session, user, wallet, item)
 
-        # Para el resto de items sí se requiere wallet Web3 (NFTs)
-        if not user.wallet_address:
+        # Para el resto de items sí se requiere wallet Web3 (NFTs).
+        # Las decoraciones de cueva no son NFT: viven solo en PlayerInventory.
+        if not user.wallet_address and item.item_type != ItemType.CAVE_ITEM:
             raise HTTPException(status_code=400, detail="Necesitas vincular una wallet Web3 para comprar NFTs.")
 
         # 3. Verificar Stock Global (Max Supply)

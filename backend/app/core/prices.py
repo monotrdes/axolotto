@@ -85,6 +85,15 @@ BOARD_PRICES = {
     "cosmica": {"axg": 200 * _AXF, "gal": 0},
 }
 
+# --- DECORACIONES DE CUEVA (FRJ) — sink de frijolitos (plan task-84) ---
+# Colección completa ≈ 35-45k FRJ, comparable al camino de expansión de cueva.
+CAVE_DECOR_PRICES = {
+    "common": 300 * _FRJ,
+    "rare": 900 * _FRJ,
+    "epic": 2500 * _FRJ,
+    "legendary": 7500 * _FRJ,
+}
+
 # --- BOARD SLOTS DESBLOQUEOS (FRJ) ---
 BOARD_SLOT_COSTS = {
     4: 500 * _FRJ,
