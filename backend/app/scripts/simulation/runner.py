@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 runner.py — Modular entrypoint for the Axolotto Universe Simulator v3.
 
@@ -68,6 +68,7 @@ from phase_07e_cave_expansion import phase_cave_expansion
 from phase_07f_cave_decor import phase_cave_decor
 from phase_08_solo import phase_individual_play
 from phase_09_multi import phase_multiplayer
+from phase_09e_social import phase_social_simulation
 from phase_10_errors import phase_error_tests
 
 
@@ -325,6 +326,9 @@ def main():
         progress("⏳ [9d/10] Decoración del Cenote (CAVE_ITEMs)...")
         state.update(phase_cave_decor(engine, config, **state) or {})
 
+        progress("⏳ [9e/10] Capa Social — Amigos y Referidos...")
+        state.update(phase_social_simulation(engine, config, **state) or {})
+
         progress("⏳ [10/10] Tests de errores...")
         state.update(phase_error_tests(engine, config, **state) or {})
 
@@ -450,6 +454,27 @@ def main():
   🎨 Items equipados:         {stats.get('cave_items_equipped', 0)}
   🔒 Tests seguridad slot:    {stats.get('cave_decor_slot_mismatch_checked', 0)}
   🧬 Tests límite mentoría:   {stats.get('padrino_mentorship_errors_checked', 0)}
+{'-'*70}
+👥  Capa Social — Amigos:
+  📨 Solicitudes enviadas:     {stats.get('social_friend_requests_sent', 0)}
+  ✅ Solicitudes aceptadas:    {stats.get('social_friend_requests_accepted', 0)}
+  ❌ Solicitudes rechazadas:   {stats.get('social_friend_requests_rejected', 0)}
+  🤝 Amistades activas total:  {stats.get('social_total_active_friendships', 0)}
+  ❤️  Likes dados:             {stats.get('social_likes_given', 0)} (total BD: {stats.get('social_total_likes_logged', 0)})
+  🏠 Cuevas visitadas:         {stats.get('social_cave_visits', 0)} (total BD: {stats.get('social_total_visits_logged', 0)})
+  🚫 Bloqueos:                 {stats.get('social_blocks_created', 0)}
+  💔 Amistades eliminadas:     {stats.get('social_friends_removed', 0)}
+  🔍 Sugerencias encontradas:  {stats.get('social_suggestions_checked', 0)}
+{'-'*70}
+🔗  Capa Social — Referidos:
+  🏷️  Códigos generados:       {stats.get('social_codes_generated', 0)} (total BD: {stats.get('social_total_codes', 0)})
+  📥 Códigos canjeados:        {stats.get('social_codes_claimed', 0)}
+  🎯 Milestones procesados:    {stats.get('social_milestones_processed', 0)}
+  👶 Referidos totales:        {stats.get('social_total_referrals', 0)}
+{'-'*70}
+🛡️  Capa Social — Anti-Abuso:
+  🔒 Anti-fraud bloqueos:      {stats.get('social_anti_fraud_blocks', 0)}
+  ⏱️  Rate-limit hits:         {stats.get('social_rate_limit_hits', 0)}
 {'-'*70}
 🚫  Tests de errores:
   ✅ Pasaron:                 {stats.get('error_tests_passed', 0)}

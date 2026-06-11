@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from typing import Any, Optional
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.database import get_session
 from app.core.auth import get_verified_user_id
@@ -199,7 +199,7 @@ def get_friend_cave(
     if not SocialService.are_friends(session, verified_user_id, friend_id):
         raise HTTPException(status_code=403, detail="Solo puedes ver la cueva de tus amigos.")
 
-    friend = session.get(User, friend_id)
+    friend = session.exec(select(User).where(User.privy_did == friend_id)).first()
     if not friend:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
 
