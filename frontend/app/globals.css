@@ -655,3 +655,37 @@ body {
 .papel-recibo-linea {
   border-bottom: 2px dashed var(--papel-amate-sombra);
 }
+
+/* ── Mesa de competencia (Fase 3) ────────────────────────────────────────
+   Banner del Gritón como puesto de cartón con luz de vela. */
+.papel-griton {
+  background: linear-gradient(180deg, rgba(10, 37, 64, 0.92), rgba(6, 20, 35, 0.94));
+  border: 2px solid var(--papel-carton);
+  box-shadow:
+    0 0 0 1px rgba(232, 213, 176, 0.14),
+    0 0 24px var(--vela-glow);
+}
+
+/* Tablilla de oponente: escala/opacidad las pone tablillaTension() inline. */
+.papel-tablilla {
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease;
+  transform-origin: bottom center;
+}
+
+/* Match point (1-2 cartas faltantes): borde de papel dorado pulsante. */
+.papel-tablilla-oro {
+  border-radius: 10px;
+  border: 2px solid var(--papel-metalico, #d4af37);
+  animation: tablilla-oro-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes tablilla-oro-pulse {
+  0%, 100% {
+    box-shadow: 0 0 6px var(--papel-metalico-glow, rgba(212, 175, 55, 0.35));
+  }
+  50% {
+    box-shadow:
+      0 0 18px var(--papel-metalico-glow, rgba(212, 175, 55, 0.55)),
+      0 0 32px rgba(251, 191, 36, 0.25);
+  }
+}
