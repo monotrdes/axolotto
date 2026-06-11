@@ -4,6 +4,8 @@ import type { MochilaTab } from "@/types/inventory";
 
 interface MochilaFloatingProps {
   onOpenSection: (section: MochilaTab) => void;
+  isInventoryOpen: boolean;
+  onCloseInventory: () => void;
 }
 
 const SECTIONS: { id: MochilaTab; emoji: string; label: string; glow: string }[] = [
@@ -11,7 +13,7 @@ const SECTIONS: { id: MochilaTab; emoji: string; label: string; glow: string }[]
   { id: 'tablas', emoji: '📋', label: 'Tablas', glow: 'hover:shadow-[0_0_12px_rgba(16,185,129,0.6)]' },
 ];
 
-const MochilaFloating: React.FC<MochilaFloatingProps> = ({ onOpenSection }) => {
+const MochilaFloating: React.FC<MochilaFloatingProps> = ({ onOpenSection, isInventoryOpen, onCloseInventory }) => {
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -66,7 +68,14 @@ const MochilaFloating: React.FC<MochilaFloatingProps> = ({ onOpenSection }) => {
 
       {/* Main 2.5D backpack toggle */}
       <button
-        onClick={() => setOpen((prev) => !prev)}
+        onClick={() => {
+          if (isInventoryOpen && !open) {
+            // Inventory panel is open → close it
+            onCloseInventory();
+          } else {
+            setOpen((prev) => !prev);
+          }
+        }}
         className={[
           "w-13 h-13 rounded-full flex items-center justify-center text-2xl",
           "transition-all duration-200 shadow-lg shadow-black/50",

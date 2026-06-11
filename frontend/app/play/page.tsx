@@ -234,7 +234,9 @@ export default function Home() {
         if (cancelled || !Array.isArray(axos)) return;
         const data = [
           ...axos.map(mapBackendAxolotito),
-          ...(Array.isArray(incubaciones) ? incubaciones.map(mapIncubationToEgg) : []),
+          ...(Array.isArray(incubaciones)
+            ? incubaciones.map((inc, i) => mapIncubationToEgg(inc, axos.length + i))
+            : []),
         ];
         setAxolotitosData(data);
         gameCanvasRef.current?.setAxolotitos(data);
@@ -783,7 +785,7 @@ export default function Home() {
               {/* AXF pill */}
               <div className="relative flex items-center gap-1.5 bg-[#1C1C35]/80 px-2.5 sm:px-3 py-1.5 rounded-full border border-[#E4007C]/20">
                 <span className="text-sm select-none">💎</span>
-                <span className="text-[#E4007C] font-bold text-sm tabular-nums">{datosBanco.axofichas}</span>
+                <span className="text-[#E4007C] font-bold text-sm tabular-nums">{Math.floor(Number(datosBanco.axofichas || 0))}</span>
                 <span className="text-gray-600 text-[10px] font-medium hidden sm:inline">AXF</span>
                 {floatingAxg.map(f => (
                   <span
@@ -1024,14 +1026,21 @@ export default function Home() {
 
           {/* Mochila flotante — abre el dashboard unificado en la sección seleccionada */}
           <MochilaFloating
+            isInventoryOpen={(tabActiva === 'mochila' || tabActiva === 'cartas' || tabActiva === 'tablas') && panelVisible}
+            onCloseInventory={() => setPanelVisible(false)}
             onOpenSection={(section) => {
               if (isGameLocked) {
                 setTabBlocked(true);
                 return;
               }
-              setMochilaInitialTab(section);
-              setTabActiva("mochila");
-              setPanelVisible(true);
+              // Toggle: if inventory panel is already open, close it
+              if ((tabActiva === 'mochila' || tabActiva === 'cartas' || tabActiva === 'tablas') && panelVisible) {
+                setPanelVisible(false);
+              } else {
+                setMochilaInitialTab(section);
+                setTabActiva("mochila");
+                setPanelVisible(true);
+              }
             }}
           />
 
