@@ -137,7 +137,8 @@
 | 2026-06-11 | 4997950 | Paneles overlay ocultos por defecto + TianguisScene con 5 puestos + huevos de incubación reales. Validado ✓ |
 | 2026-06-11 | df12139 | PiramideScene: 3 subzonas con paneo, podio top-3 con puppets reales, gashapones y pozas tocables. Validado ✓ |
 | 2026-06-11 | a9a296f | Embarcadero social (trajineritas + canasta) y partículas Zzz/burbujas por tier |
-| 2026-06-11 | (este) | Fix centrado de subzonas en web: `focusMaxW` (zoom de enfoque con recorrido de paneo) + clamp vertical de cámara |
+| 2026-06-11 | 61cfd5f | Fix centrado de subzonas en web: `focusMaxW` (zoom de enfoque con recorrido de paneo) + clamp vertical de cámara |
+| 2026-06-11 | (este) | Pirámide re-layout 5160px: subzonas separadas por agua abierta (480) + orillas (480) — en web solo se ve una sección a la vez y las extremas centran bien; columnas/algas decoran los tramos de paneo |
 
 ## Notas para el verificador humano
 

@@ -29,7 +29,9 @@ export interface Framing {
 export const DESIGN_SPACE: Record<MacroZoneId, { w: number; h: number }> = {
   santuario: { w: 1080, h: 1920 },
   tianguis: { w: 1080, h: 1920 },
-  piramide: { w: 3240, h: 1920 },
+  // Pirámide: 3 secciones de 1080 separadas por 480 de agua abierta +
+  // orillas de 480 para que las subzonas extremas puedan centrarse en web.
+  piramide: { w: 5160, h: 1920 },
 };
 
 /**
@@ -41,7 +43,7 @@ export const DESIGN_SPACE: Record<MacroZoneId, { w: number; h: number }> = {
 export const PAINTED_BOUNDS: Record<MacroZoneId, { x0: number; w: number }> = {
   santuario: { x0: -660, w: 2400 },
   tianguis: { x0: -660, w: 2400 },
-  piramide: { x0: 0, w: 3240 },
+  piramide: { x0: 0, w: 5160 },
 };
 
 /** Encuadre por defecto de cada macrozona (composición 9:16 centrada). */
@@ -49,7 +51,7 @@ export const MACRO_FRAMINGS: Record<MacroZoneId, Framing> = {
   santuario: { x: 0, y: 0, w: 1080, h: 1920 },
   tianguis: { x: 0, y: 0, w: 1080, h: 1920 },
   // Llegada a la Pirámide: encuadre central (Explanada al frente).
-  piramide: { x: 1080, y: 0, w: 1080, h: 1920 },
+  piramide: { x: 2040, y: 0, w: 1080, h: 1920, focusMaxW: 1900 },
 };
 
 /**
@@ -58,9 +60,9 @@ export const MACRO_FRAMINGS: Record<MacroZoneId, Framing> = {
  * capsulas = desvío lateral (izquierda).
  */
 export const PIRAMIDE_FRAMINGS: Record<PiramideSubZoneId, Framing> = {
-  rankings: { x: 1080, y: 0, w: 1080, h: 1920, focusMaxW: 1900 },
-  capsulas: { x: 0, y: 200, w: 1080, h: 1920, focusMaxW: 1900 },
-  salas: { x: 2160, y: 400, w: 1080, h: 1920, focusMaxW: 1900 },
+  rankings: { x: 2040, y: 0, w: 1080, h: 1920, focusMaxW: 1900 },
+  capsulas: { x: 480, y: 200, w: 1080, h: 1920, focusMaxW: 1900 },
+  salas: { x: 3600, y: 400, w: 1080, h: 1920, focusMaxW: 1900 },
 };
 
 /** Tab HTML que corresponde a cada destino del mundo. */

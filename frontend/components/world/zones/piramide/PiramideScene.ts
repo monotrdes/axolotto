@@ -17,6 +17,11 @@ const { w: W, h: H } = DESIGN_SPACE.piramide;
 
 const PAPER_EDGE = 0xfff7ec;
 
+// Centros de las 3 subzonas (layout 480 orilla | 1080 | 480 gap | 1080 | ...).
+const CX_CAPSULAS = 1020;
+const CX_EXPLANADA = 2580;
+const CX_SALAS = 4140;
+
 export class PiramideScene extends Container {
   private engine: WorldEngine;
   private podioLayer = new Container();
@@ -48,9 +53,9 @@ export class PiramideScene extends Container {
 
     // Posiciones: 🥇 centro (más alto), 🥈 izquierda, 🥉 derecha.
     const spots: Array<{ x: number; y: number; medal: string }> = [
-      { x: 1620, y: 1020, medal: "🥇" },
-      { x: 1430, y: 1090, medal: "🥈" },
-      { x: 1810, y: 1120, medal: "🥉" },
+      { x: CX_EXPLANADA, y: 1020, medal: "🥇" },
+      { x: CX_EXPLANADA - 190, y: 1090, medal: "🥈" },
+      { x: CX_EXPLANADA + 190, y: 1120, medal: "🥉" },
     ];
     data.slice(0, 3).forEach((axo, i) => {
       const spot = spots[i];
@@ -82,12 +87,22 @@ export class PiramideScene extends Container {
     bg.rect(0, H * 0.7, W, H * 0.3).fill(0x0a2540);
     // Suelo de piedra continuo.
     bg.roundRect(40, 1560, W - 80, 50, 24).fill(0x6b7080).stroke({ color: PAPER_EDGE, width: 4 });
+
+    // Decoración en orillas y tramos de agua abierta entre subzonas:
+    // columnas de piedra antiguas con algas (el viaje del paneo no va vacío).
+    for (const gx of [240, 1800, 3360, 4920]) {
+      bg.roundRect(gx - 36, 1180, 72, 380, 10).fill(0x4d5260).stroke({ color: PAPER_EDGE, width: 3 });
+      bg.roundRect(gx - 56, 1140, 112, 50, 8).fill(0x6b7080).stroke({ color: PAPER_EDGE, width: 3 });
+      for (let i = 0; i < 3; i++) {
+        bg.ellipse(gx - 70 + i * 70, 1540 - (i % 2) * 50, 30, 70).fill({ color: 0x4ade80, alpha: 0.45 });
+      }
+    }
     this.addChild(bg);
   }
 
   // ── Subzona central: Explanada de Rankings ────────────────────────────
   private buildExplanada(): void {
-    const cx = 1620;
+    const cx = CX_EXPLANADA;
     const piramide = new Graphics();
     // Cuerpo escalonado (4 niveles de piedra).
     const niveles: Array<[number, number, number]> = [
@@ -109,9 +124,9 @@ export class PiramideScene extends Container {
 
     // Podio de 3 pedestales frente a la escalinata.
     const podio = new Graphics();
-    podio.roundRect(1560, 1080, 120, 90, 8).fill(0xf5c542).stroke({ color: PAPER_EDGE, width: 4 });
-    podio.roundRect(1380, 1130, 110, 60, 8).fill(0xc9ccd6).stroke({ color: PAPER_EDGE, width: 4 });
-    podio.roundRect(1760, 1150, 110, 50, 8).fill(0xc2410c).stroke({ color: PAPER_EDGE, width: 4 });
+    podio.roundRect(cx - 60, 1080, 120, 90, 8).fill(0xf5c542).stroke({ color: PAPER_EDGE, width: 4 });
+    podio.roundRect(cx - 245, 1130, 110, 60, 8).fill(0xc9ccd6).stroke({ color: PAPER_EDGE, width: 4 });
+    podio.roundRect(cx + 135, 1150, 110, 50, 8).fill(0xc2410c).stroke({ color: PAPER_EDGE, width: 4 });
     this.addChild(podio);
     this.makeHotspot(podio, "podio");
 
@@ -121,9 +136,9 @@ export class PiramideScene extends Container {
   // ── Subzona izquierda: Cámara de la Suerte ────────────────────────────
   private buildCamaraSuerte(): void {
     const machines: Array<{ x: number; color: number; label: string }> = [
-      { x: 260, color: 0xc2410c, label: "Bronce" },
-      { x: 540, color: 0xc9ccd6, label: "Plata" },
-      { x: 820, color: 0xf5c542, label: "Oro" },
+      { x: CX_CAPSULAS - 280, color: 0xc2410c, label: "Bronce" },
+      { x: CX_CAPSULAS, color: 0xc9ccd6, label: "Plata" },
+      { x: CX_CAPSULAS + 280, color: 0xf5c542, label: "Oro" },
     ];
     for (const m of machines) {
       const machine = new Container();
@@ -153,7 +168,7 @@ export class PiramideScene extends Container {
       this.addChild(machine);
       this.makeHotspot(machine, "gashapon");
     }
-    this.addTitle(540, 380, "🎰 Cámara de la Suerte");
+    this.addTitle(CX_CAPSULAS, 380, "🎰 Cámara de la Suerte");
   }
 
   // ── Subzona derecha: Cenote de las Salas ──────────────────────────────
@@ -171,7 +186,7 @@ export class PiramideScene extends Container {
     });
     nTag.anchor.set(0.5);
     novatos.addChild(nTag);
-    novatos.position.set(2700, 960);
+    novatos.position.set(CX_SALAS, 960);
     this.addChild(novatos);
     this.makeHotspot(novatos, "salas");
 
@@ -188,11 +203,11 @@ export class PiramideScene extends Container {
     });
     cTag.anchor.set(0.5);
     campeon.addChild(cTag);
-    campeon.position.set(2700, 1380);
+    campeon.position.set(CX_SALAS, 1380);
     this.addChild(campeon);
     this.makeHotspot(campeon, "salas");
 
-    this.addTitle(2700, 560, "🎲 Cenote de las Salas");
+    this.addTitle(CX_SALAS, 560, "🎲 Cenote de las Salas");
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────
