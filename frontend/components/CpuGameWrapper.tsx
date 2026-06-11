@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import GameScreen from "./screens/GameScreen";
 import { useCpuGame, type UseCpuGameOptions } from "@/hooks/useCpuGame";
 import type { OpponentInfo } from "./ui/OpponentStrip";
@@ -23,6 +23,7 @@ interface CpuGameWrapperProps extends UseCpuGameOptions {
   onPlayAgainInPlace: () => void;
   onChangeBoard: () => void;
   onChangeAll: () => void;
+  onGameActiveChange?: (active: boolean) => void;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -32,10 +33,16 @@ export default function CpuGameWrapper(props: CpuGameWrapperProps) {
     onPlayAgainInPlace,
     onChangeBoard,
     onChangeAll,
+    onGameActiveChange,
     ...hookOptions
   } = props;
 
   const game = useCpuGame(hookOptions);
+
+  // Notify parent about game active state changes
+  useEffect(() => {
+    onGameActiveChange?.(game.gameActive);
+  }, [game.gameActive, onGameActiveChange]);
 
   // Map game phase to GameScreen phase
   const phase = game.phase === "loading"

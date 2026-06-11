@@ -56,52 +56,36 @@ export default function Home() {
   const [mochilaInitialTab, setMochilaInitialTab] = useState<MochilaTab>('cartas');
   const [activeGame, setActiveGame] = useState<any>(null);
 
-  const [isMultiTabBlocked, setIsMultiTabBlocked] = useState(false);
-  const tabId = useRef(typeof window !== 'undefined' ? Math.random().toString(36).substring(2) : '').current;
-  const channelRef = useRef<BroadcastChannel | null>(null);
-  const isBlockedRef = useRef(false);
+  // ── Game session locking (from PlayMode — covers CPU games and backend status) ──
+  const [gameSessionActive, setGameSessionActive] = useState(false);
+  const [tabBlocked, setTabBlocked] = useState(false);
 
+  // Combined lock: activeGame (multiplayer from /active-check) OR gameSessionActive (CPU/animation)
+  const isGameLocked = !!(activeGame?.active) || gameSessionActive;
+
+  // Force tab to 'jugar' when game becomes active
   useEffect(() => {
-    isBlockedRef.current = isMultiTabBlocked;
-  }, [isMultiTabBlocked]);
-
-  // Multi-tab concurrency synchronization via BroadcastChannel
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const channel = new BroadcastChannel('axolotto_tab_sync');
-    channelRef.current = channel;
-
-    const handleMessage = (event: MessageEvent) => {
-      const { type, senderId } = event.data || {};
-      if (senderId === tabId) return;
-
-      if (type === 'claim_active') {
-        setIsMultiTabBlocked(true);
-      } else if (type === 'check_active') {
-        if (!isBlockedRef.current) {
-          channel.postMessage({ type: 'active_exists', senderId: tabId });
-        }
-      } else if (type === 'active_exists') {
-        setIsMultiTabBlocked(true);
-      }
-    };
-
-    channel.addEventListener('message', handleMessage);
-    channel.postMessage({ type: 'check_active', senderId: tabId });
-
-    return () => {
-      channel.removeEventListener('message', handleMessage);
-      channel.close();
-    };
-  }, [tabId]);
-
-  const handleClaimActive = () => {
-    setIsMultiTabBlocked(false);
-    if (channelRef.current) {
-      channelRef.current.postMessage({ type: 'claim_active', senderId: tabId });
+    if (isGameLocked && tabActiva !== 'jugar') {
+      setTabActiva('jugar');
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGameLocked]);
+
+  // Clear tab blocked message after 3 seconds
+  useEffect(() => {
+    if (!tabBlocked) return;
+    const t = setTimeout(() => setTabBlocked(false), 3000);
+    return () => clearTimeout(t);
+  }, [tabBlocked]);
+
+  // Guarded tab switcher: blocks non-jugar tabs during active game session
+  const safeSetTab = useCallback((tab: TabId) => {
+    if (isGameLocked && tab !== 'jugar') {
+      setTabBlocked(true);
+      return;
+    }
+    setTabActiva(tab);
+  }, [isGameLocked]);
 
   // Poll active game status to lock navigation and UI controls
   useEffect(() => {
@@ -115,7 +99,7 @@ export default function Home() {
         const res = await axios.get(`${API_BASE}/multiplayer/active-check`, { headers });
         setActiveGame(res.data);
         if (res.data?.active && tabActiva !== 'jugar') {
-          setTabActiva('jugar');
+          setTabActiva('jugar'); // Force to jugar — direct set, not safeSetTab
         }
       } catch (err) {
         console.error("Error checking active game in Home:", err);
@@ -524,8 +508,8 @@ export default function Home() {
               worldSceneRef.current = scene;
             }}
             onZoneClick={(zoneId) => {
-              if (activeGame?.active) {
-                toast.error("¡Estás en una partida activa! No puedes cambiar de zona.");
+              if (isGameLocked) {
+                setTabBlocked(true);
                 return;
               }
               const zoneToTab: Record<string, TabId> = {
@@ -539,8 +523,8 @@ export default function Home() {
               if (tab) setTabActiva(tab);
             }}
             onCaveClick={(caveIndex: number) => {
-              if (activeGame?.active) {
-                toast.error("¡Estás en una partida activa! No puedes entrar a la cueva.");
+              if (isGameLocked) {
+                setTabBlocked(true);
                 return;
               }
               const axo = axolotitosData.find((a) => a.caveIndex === caveIndex);
@@ -557,15 +541,15 @@ export default function Home() {
               setCaveDecorOpen(true);
             }}
             onAxolotitoClick={(axoId: string) => {
-              if (activeGame?.active) {
-                toast.error("¡Estás en una partida activa!");
+              if (isGameLocked) {
+                setTabBlocked(true);
                 return;
               }
               setTabActiva("santuario");
             }}
             onStallClick={(stallType) => {
-              if (activeGame?.active) {
-                toast.error("¡Estás en una partida activa! No puedes cambiar de zona.");
+              if (isGameLocked) {
+                setTabBlocked(true);
                 return;
               }
               // Map stall type to tab/action
@@ -615,8 +599,8 @@ export default function Home() {
               {/* FRJ pill — no decimals */}
               <button
                 onClick={() => {
-                  if (activeGame?.active) {
-                    toast.error("¡Estás en una partida activa! No puedes cambiar de zona.");
+                  if (isGameLocked) {
+                    setTabBlocked(true);
                     return;
                   }
                   setTabActiva('tienda');
@@ -650,8 +634,8 @@ export default function Home() {
                 daysRemaining={datosBanco.vip_days_remaining}
                 pendingGal={datosBanco.vip_pending_gal}
                 onClick={() => {
-                  if (activeGame?.active) {
-                    toast.error("¡Estás en una partida activa! Termina el juego primero.");
+                  if (isGameLocked) {
+                    setTabBlocked(true);
                     return;
                   }
                   setVipModalOpen(true);
@@ -661,8 +645,8 @@ export default function Home() {
               {/* Settings */}
               <button
                 onClick={() => {
-                  if (activeGame?.active) {
-                    toast.error("¡Estás en una partida activa! No puedes abrir ajustes.");
+                  if (isGameLocked) {
+                    setTabBlocked(true);
                     return;
                   }
                   setSettingsModalOpen(true);
@@ -736,6 +720,12 @@ export default function Home() {
 
           {/* CONTENT AREA — padded away from HUD and dock */}
           <main className={`relative z-10 ${tickerFeed.length > 0 ? 'pt-20' : 'pt-14'} pb-20 min-h-screen`}>
+            {/* Tab-lock banner */}
+            {tabBlocked && (
+              <div className="fixed top-14 left-1/2 -translate-x-1/2 z-50 px-5 py-2 bg-amber-950/90 border border-amber-500/40 text-amber-300 text-xs font-bold rounded-full shadow-[0_0_20px_rgba(245,158,11,0.25)] animate-toast-in">
+                🔒 Termina tu partida actual antes de cambiar de zona
+              </div>
+            )}
             <div key={tabActiva} className="max-w-5xl mx-auto px-3 sm:px-6 py-4 animate-tab-fade">
               {tabActiva === 'tienda' && (
                 <AxolottoStore
@@ -757,6 +747,7 @@ export default function Home() {
                   lastGameEvent={lastGameEvent}
                   earningsQueue={earningsQueue}
                   onEarningsSeen={() => setEarningsQueue([])}
+                  onGameSessionChange={setGameSessionActive}
                 />
               )}
               {/* Mochila unificada: tabs cartas/tablas/items en un solo componente */}
@@ -789,8 +780,8 @@ export default function Home() {
           {/* Mochila flotante — abre el dashboard unificado en la sección seleccionada */}
           <MochilaFloating
             onOpenSection={(section) => {
-              if (activeGame?.active) {
-                toast.error("¡Estás en una partida activa! No puedes abrir la mochila.");
+              if (isGameLocked) {
+                setTabBlocked(true);
                 return;
               }
               setMochilaInitialTab(section);
@@ -811,9 +802,10 @@ export default function Home() {
             zoneTabs={ZONE_TABS}
             tabActiva={tabActiva}
             dailyClaimAvailable={dailyClaimAvailable}
+            gameSessionActive={isGameLocked}
             onTabChange={(tab, zone) => {
-              if (activeGame?.active) {
-                toast.error("¡Estás en una partida activa! No puedes cambiar de zona.");
+              if (isGameLocked && tab !== 'jugar') {
+                setTabBlocked(true);
                 return;
               }
               setTabActiva(tab);
@@ -848,28 +840,6 @@ export default function Home() {
       )}
 
       <TutorialResetButton onReset={handleDevReset} inTutorial={isInTutorial} />
-
-      {/* Multi-tab glassmorphic blocker overlay */}
-      {isMultiTabBlocked && (
-        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0a0a0f]/90 backdrop-blur-md px-6 text-center">
-          <div className="bg-[#12121e]/80 border border-white/10 rounded-3xl p-8 max-w-md w-full space-y-6 shadow-2xl relative overflow-hidden animate-tab-fade">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(228,0,124,0.15)_0%,transparent_70%)] pointer-events-none" />
-            <div className="text-6xl animate-pulse">🦎⛓️</div>
-            <h2 className="text-2xl font-black text-white tracking-tight">
-              Multi-pestaña Detectada
-            </h2>
-            <p className="text-gray-300 text-sm leading-relaxed">
-              Tienes otra pestaña de Axolotto activa. Para evitar desincronizaciones en tus Axofichas y Frijolitos, hemos pausado esta pestaña.
-            </p>
-            <button
-              onClick={handleClaimActive}
-              className="w-full py-3 bg-[#E4007C] hover:bg-[#ff1a8c] text-white font-bold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
-            >
-              Usar en esta pestaña
-            </button>
-          </div>
-        </div>
-      )}
 
     </div>
   </RealtimeProvider>

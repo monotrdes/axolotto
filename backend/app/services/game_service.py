@@ -96,6 +96,8 @@ class GameService:
         if user: require_tutorial(user)
 
         # 2. Check Axolotito status and energy
+        if axo.status in ("playing", "waiting_settlement"):
+            raise HTTPException(status_code=400, detail="Este Axolotito ya está en partida. Espera a que termine.")
         if axo.status == "sleeping" and axo.sleep_expires_at and axo.sleep_expires_at > datetime.utcnow():
             raise HTTPException(status_code=400, detail="Este Axolotito está durmiendo. Despiértalo primero.")
         if axo.energy_current < 10:

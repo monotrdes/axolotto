@@ -5,10 +5,12 @@ interface ZoneDockProps {
   zoneTabs: readonly ZoneTab[];
   tabActiva: TabId;
   dailyClaimAvailable: boolean;
+  gameSessionActive?: boolean;
   onTabChange: (tab: TabId, zone: string) => void;
 }
 
-export default function ZoneDock({ zoneTabs, tabActiva, dailyClaimAvailable, onTabChange }: ZoneDockProps) {
+export default function ZoneDock({ zoneTabs, tabActiva, dailyClaimAvailable, gameSessionActive, onTabChange }: ZoneDockProps) {
+  const isLocked = !!gameSessionActive;
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 overflow-visible bg-[#060610]/90 backdrop-blur-xl border-t border-white/5">
       <div className="flex items-end justify-around px-1 pt-1 pb-2.5 max-w-xl mx-auto">
@@ -51,7 +53,10 @@ export default function ZoneDock({ zoneTabs, tabActiva, dailyClaimAvailable, onT
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id, tab.zone)}
-              className="flex flex-col items-center gap-0.5 px-1 py-0.5 rounded-xl transition-all duration-200 min-w-0 flex-1 relative"
+              disabled={isLocked && tab.id !== 'jugar'}
+              className={`flex flex-col items-center gap-0.5 px-1 py-0.5 rounded-xl transition-all duration-200 min-w-0 flex-1 relative ${
+                isLocked && tab.id !== 'jugar' ? 'opacity-40 cursor-not-allowed' : ''
+              }`}
             >
               {isActive && (
                 <span
@@ -61,6 +66,9 @@ export default function ZoneDock({ zoneTabs, tabActiva, dailyClaimAvailable, onT
               )}
               {tab.id === 'gashapon' && dailyClaimAvailable && (
                 <span className="absolute top-0 right-1.5 w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_2px_rgba(239,68,68,0.7)] animate-pulse" />
+              )}
+              {isLocked && tab.id !== 'jugar' && (
+                <span className="absolute -top-1 -right-0.5 text-[10px] leading-none opacity-80 select-none">🔒</span>
               )}
               <span
                 className="text-xl leading-none transition-all duration-200"
