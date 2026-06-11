@@ -4,9 +4,19 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import CenoteBackground from "./CenoteBackground";
 import CircularTable from "./CircularTable";
 import TableSeat from "./TableSeat";
+import QuickReactionWheel from "../chat/QuickReactionWheel";
 import type { TensionLevel } from "../ui/TensionEffects";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
+
+export interface ChatBubbleData {
+  text: string;
+  vipTier?: string | null;
+  nature?: string | null;
+  stickerId?: string | null;
+  megaphone?: boolean;
+  visible: boolean;
+}
 
 interface SeatInfo {
   index: number;
@@ -32,6 +42,18 @@ interface CenoteRoomProps {
   seats?: SeatInfo[];
   /** Table diameter in px */
   tableDiameter?: number;
+  /** Chat messages keyed by seat index */
+  chatBubbles?: Map<number, ChatBubbleData>;
+  /** Called when a chat bubble expires */
+  onBubbleHide?: (seatIndex: number) => void;
+  /** WebSocket send function for the QuickReactionWheel */
+  chatSend?: ((msg: any) => void) | null;
+  /** Chat disabled (during active manual game) */
+  chatDisabled?: boolean;
+  /** Player VIP tier */
+  playerVipTier?: string | null;
+  /** Player nature */
+  playerNature?: "hyperactive" | "shy" | "showoff" | "curious" | null;
 }
 
 // ── Tension → water depth CSS custom property mapping ─────────────────────────
@@ -52,6 +74,12 @@ export default function CenoteRoom({
   mode,
   seats,
   tableDiameter = 440,
+  chatBubbles,
+  onBubbleHide,
+  chatSend,
+  chatDisabled = false,
+  playerVipTier,
+  playerNature,
 }: CenoteRoomProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [mouseX, setMouseX] = useState(0);
@@ -114,21 +142,44 @@ export default function CenoteRoom({
 
       {/* ── Table seats (z-index 2) ──────────────────────────────────────── */}
       <div className="absolute inset-0" style={{ zIndex: 2 }}>
-        {resolvedSeats.map((seat) => (
-          <TableSeat
-            key={`seat-${seat.index}`}
-            index={seat.index}
-            total={seatCount}
-            tableRadius={tableDiameter / 2}
-            axoName={seat.axoName}
-            nature={seat.nature}
-            reaction={seat.reaction}
-            isPlayer={seat.isPlayer}
-            isHot={seat.isHot}
-          >
-            {seat.content}
-          </TableSeat>
-        ))}
+        {resolvedSeats.map((seat) => {
+          const bubble = chatBubbles?.get(seat.index);
+          return (
+            <TableSeat
+              key={`seat-${seat.index}`}
+              index={seat.index}
+              total={seatCount}
+              tableRadius={tableDiameter / 2}
+              axoName={seat.axoName}
+              nature={seat.nature}
+              reaction={seat.reaction}
+              isPlayer={seat.isPlayer}
+              isHot={seat.isHot}
+              speechBubble={bubble ? {
+                text: bubble.text,
+                vipTier: bubble.vipTier,
+                nature: bubble.nature,
+                stickerId: bubble.stickerId,
+                megaphone: bubble.megaphone,
+                visible: bubble.visible,
+              } : null}
+              onSpeechBubbleHide={() => onBubbleHide?.(seat.index)}
+            >
+              {seat.content}
+              {/* Quick Reaction Wheel trigger on player's seat */}
+              {seat.isPlayer && chatSend && (
+                <div className="absolute -right-2 -top-2 z-50">
+                  <QuickReactionWheel
+                    send={chatSend}
+                    nature={seat.nature ?? playerNature ?? "curious"}
+                    vipTier={playerVipTier}
+                    disabled={chatDisabled}
+                  />
+                </div>
+              )}
+            </TableSeat>
+          );
+        })}
       </div>
 
       {/* ── Game content overlay (z-index 3) — boards, banners, action bar */}

@@ -100,6 +100,11 @@ export default function ManualGameWrapper(props: ManualGameWrapperProps) {
         hintsRemaining={game.hintsRemaining}
         showActionBar={game.phase === "playing" && game.playMode === "manual"}
         result={result}
+        // Chat wiring
+        chatMessages={game.chatMessages ?? []}
+        onSendChat={game.sendChatMessage}
+        chatCollapsed={game.chatCollapsed}
+        onToggleChat={game.toggleChat}
       />
     </div>
   );

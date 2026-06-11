@@ -51,26 +51,33 @@ class Wallet(SQLModel, table=True):
     frijolitos: int = Field(default=0)
 
     @property
-    def axogemas(self) -> int:
-        return self.axofichas
+    def axogemas(self) -> float:
+        from app.core.config import axf_to_display
+        return axf_to_display(self.axofichas)
 
     @axogemas.setter
-    def axogemas(self, value: int) -> None:
-        self.axofichas = value
+    def axogemas(self, value: float) -> None:
+        from app.core.config import axf_to_internal
+        self.axofichas = axf_to_internal(value)
 
     @property
-    def gemas_alga(self) -> int:
-        return self.frijolitos
+    def gemas_alga(self) -> float:
+        from app.core.config import frj_to_display
+        return frj_to_display(self.frijolitos)
 
     @gemas_alga.setter
-    def gemas_alga(self, value: int) -> None:
-        self.frijolitos = value
+    def gemas_alga(self, value: float) -> None:
+        from app.core.config import frj_to_internal
+        self.frijolitos = frj_to_internal(value)
 
     def __init__(self, **data):
+        from app.core.config import axf_to_internal, frj_to_internal
         if "axogemas" in data:
-            data["axofichas"] = data.pop("axogemas")
+            val = data.pop("axogemas")
+            data["axofichas"] = val if isinstance(val, int) and not isinstance(val, bool) else axf_to_internal(val)
         if "gemas_alga" in data:
-            data["frijolitos"] = data.pop("gemas_alga")
+            val = data.pop("gemas_alga")
+            data["frijolitos"] = val if isinstance(val, int) and not isinstance(val, bool) else frj_to_internal(val)
         super().__init__(**data)
     
     # Fragmentos (Se guardan como enteros porque no hay "medio fragmento")
@@ -131,6 +138,19 @@ class CryptoPurchaseOrder(SQLModel, table=True):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     expires_at: datetime                  # created_at + 30 min
     completed_at: Optional[datetime] = None
+
+    def __init__(self, **data):
+        if "axf_amount" in data:
+            data["axg_amount"] = data.pop("axf_amount")
+        super().__init__(**data)
+
+    @property
+    def axf_amount(self) -> int:
+        return self.axg_amount
+
+    @axf_amount.setter
+    def axf_amount(self, value: int) -> None:
+        self.axg_amount = value
 
 
 class ProcessedTransaction(SQLModel, table=True):

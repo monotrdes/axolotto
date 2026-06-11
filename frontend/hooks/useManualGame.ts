@@ -15,6 +15,18 @@ export interface ManualPlayer {
   marked_count?: number;
 }
 
+export interface ChatMessage {
+  id: string;
+  playerId: string;
+  username: string;
+  text: string;
+  vipTier?: string | null;
+  nature?: string | null;
+  stickerId?: string | null;
+  megaphone?: boolean;
+  timestamp: number;
+}
+
 export interface ManualGameState {
   phase: ManualGamePhase;
   error: string | null;
@@ -47,6 +59,9 @@ export interface ManualGameState {
   payoutFrj: number;
   /** Timing */
   highlightWindowMs: number;
+  /** Chat */
+  chatMessages: ChatMessage[];
+  chatCollapsed: boolean;
 }
 
 export interface ManualCardEntry {
@@ -82,6 +97,8 @@ export function useManualGame(options: UseManualGameOptions): ManualGameState & 
   sendMarkCell: (cellIndex: number) => void;
   sendShoutLoteria: () => void;
   sendUseHint: () => void;
+  sendChatMessage: (msg: any) => void;
+  toggleChat: () => void;
   connect: () => void;
   disconnect: () => void;
 } {
@@ -109,6 +126,10 @@ export function useManualGame(options: UseManualGameOptions): ManualGameState & 
   const [winnerName, setWinnerName] = useState("");
   const [winType, setWinType] = useState("");
   const [payoutFrj, setPayoutFrj] = useState(0);
+
+  // Chat state
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatCollapsed, setChatCollapsed] = useState(true);
 
   // Track if game ended for cleanup
   const endedRef = useRef(false);
@@ -217,6 +238,24 @@ export function useManualGame(options: UseManualGameOptions): ManualGameState & 
     player_afk: (data) => {
       toast.info(data.message ?? `${data.axo_name} se ha quedado AFK.`);
     },
+
+    chat_broadcast: (data) => {
+      const payload = data.data ?? data;
+      const msg: ChatMessage = {
+        id: `${payload.player_id}-${payload.timestamp}-${Math.random().toString(36).slice(2, 6)}`,
+        playerId: payload.player_id ?? "",
+        username: payload.username ?? "???",
+        text: payload.text ?? "",
+        vipTier: payload.vip_tier,
+        nature: payload.nature,
+        stickerId: payload.sticker_id,
+        megaphone: payload.megaphone ?? false,
+        timestamp: payload.timestamp ?? Math.floor(Date.now() / 1000),
+      };
+      setChatMessages((prev) => [...prev.slice(-99), msg]);
+      // Auto-expand chat on new message if collapsed
+      // (user can re-collapse manually)
+    },
   };
 
   // ── WebSocket ────────────────────────────────────────────────────────────
@@ -252,6 +291,20 @@ export function useManualGame(options: UseManualGameOptions): ManualGameState & 
     send({ type: "use_hint" });
   }, [send, readyState]);
 
+  // Chat actions
+  const sendChatMessage = useCallback(
+    (msg: any) => {
+      if (readyState !== "open") return;
+      // msg is the full WebSocket payload: { action: "chat_message", data: {...} }
+      send(msg);
+    },
+    [send, readyState]
+  );
+
+  const toggleChat = useCallback(() => {
+    setChatCollapsed((prev) => !prev);
+  }, []);
+
   return {
     phase,
     error,
@@ -273,9 +326,13 @@ export function useManualGame(options: UseManualGameOptions): ManualGameState & 
     winnerName,
     winType,
     payoutFrj,
+    chatMessages,
+    chatCollapsed,
     sendMarkCell,
     sendShoutLoteria,
     sendUseHint,
+    sendChatMessage,
+    toggleChat,
     connect,
     disconnect,
   };

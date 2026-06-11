@@ -56,6 +56,53 @@ export default function Home() {
   const [mochilaInitialTab, setMochilaInitialTab] = useState<MochilaTab>('cartas');
   const [activeGame, setActiveGame] = useState<any>(null);
 
+  const [isMultiTabBlocked, setIsMultiTabBlocked] = useState(false);
+  const tabId = useRef(typeof window !== 'undefined' ? Math.random().toString(36).substring(2) : '').current;
+  const channelRef = useRef<BroadcastChannel | null>(null);
+  const isBlockedRef = useRef(false);
+
+  useEffect(() => {
+    isBlockedRef.current = isMultiTabBlocked;
+  }, [isMultiTabBlocked]);
+
+  // Multi-tab concurrency synchronization via BroadcastChannel
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const channel = new BroadcastChannel('axolotto_tab_sync');
+    channelRef.current = channel;
+
+    const handleMessage = (event: MessageEvent) => {
+      const { type, senderId } = event.data || {};
+      if (senderId === tabId) return;
+
+      if (type === 'claim_active') {
+        setIsMultiTabBlocked(true);
+      } else if (type === 'check_active') {
+        if (!isBlockedRef.current) {
+          channel.postMessage({ type: 'active_exists', senderId: tabId });
+        }
+      } else if (type === 'active_exists') {
+        setIsMultiTabBlocked(true);
+      }
+    };
+
+    channel.addEventListener('message', handleMessage);
+    channel.postMessage({ type: 'check_active', senderId: tabId });
+
+    return () => {
+      channel.removeEventListener('message', handleMessage);
+      channel.close();
+    };
+  }, [tabId]);
+
+  const handleClaimActive = () => {
+    setIsMultiTabBlocked(false);
+    if (channelRef.current) {
+      channelRef.current.postMessage({ type: 'claim_active', senderId: tabId });
+    }
+  };
+
   // Poll active game status to lock navigation and UI controls
   useEffect(() => {
     if (!accessToken || !authenticated) {
@@ -801,6 +848,28 @@ export default function Home() {
       )}
 
       <TutorialResetButton onReset={handleDevReset} inTutorial={isInTutorial} />
+
+      {/* Multi-tab glassmorphic blocker overlay */}
+      {isMultiTabBlocked && (
+        <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#0a0a0f]/90 backdrop-blur-md px-6 text-center">
+          <div className="bg-[#12121e]/80 border border-white/10 rounded-3xl p-8 max-w-md w-full space-y-6 shadow-2xl relative overflow-hidden animate-tab-fade">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(228,0,124,0.15)_0%,transparent_70%)] pointer-events-none" />
+            <div className="text-6xl animate-pulse">🦎⛓️</div>
+            <h2 className="text-2xl font-black text-white tracking-tight">
+              Multi-pestaña Detectada
+            </h2>
+            <p className="text-gray-300 text-sm leading-relaxed">
+              Tienes otra pestaña de Axolotto activa. Para evitar desincronizaciones en tus Axofichas y Frijolitos, hemos pausado esta pestaña.
+            </p>
+            <button
+              onClick={handleClaimActive}
+              className="w-full py-3 bg-[#E4007C] hover:bg-[#ff1a8c] text-white font-bold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98]"
+            >
+              Usar en esta pestaña
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   </RealtimeProvider>

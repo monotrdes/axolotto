@@ -56,3 +56,8 @@ toolstaskboardtasks.db
 tasks.json
 .superpowers/
 scratch/
+
+# ─── Local caches & worktrees ───
+.claude/worktrees/
+backend/Microsoft/
+backend/pip/

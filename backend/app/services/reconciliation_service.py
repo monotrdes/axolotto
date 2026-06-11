@@ -54,6 +54,14 @@ class ReconciliationService:
         if not gateway_ref:
             raise HTTPException(status_code=400, detail="Webhook sin ref.")
 
+        # ── Capa 1: check rápido de idempotencia para replays del success event ──
+        already_processed = session.exec(
+            select(ProcessedTransaction).where(ProcessedTransaction.tx_hash == f"webhook:{gateway_ref}")
+        ).first()
+        if already_processed:
+            logger.info("reconcile: replay benigno (Capa 1) ref=%s", gateway_ref)
+            return {"status": "already_processed", "ref": gateway_ref}
+
         # ── 3a. Cargar intent + listing bajo lock (regla crítica #3) ─────
         intent = session.exec(
             select(FiatPaymentIntent)
@@ -64,13 +72,30 @@ class ReconciliationService:
             logger.error("reconcile: webhook para ref desconocido %s", gateway_ref)
             raise HTTPException(status_code=404, detail="Pago desconocido.")
 
+        # Si ya se procesó con éxito en otro thread, retornar temprano
+        if intent.status == FiatIntentStatus.SUCCEEDED:
+            logger.info("reconcile: intent ya completado ref=%s", gateway_ref)
+            return {"status": "already_processed", "ref": gateway_ref}
+
         listing = session.exec(
             select(EscrowListing)
             .where(EscrowListing.id == intent.listing_id)
             .with_for_update()
         ).first()
 
-        # ── 2. Idempotencia (regla crítica #4) ───────────────────────────
+        # Evento de pago fallido: no liberar, regresar a la venta.
+        # No registramos ProcessedTransaction para fallos para permitir reintentos futuros del success event.
+        if payload.get("event") == "payment.failed":
+            intent.status = FiatIntentStatus.FAILED
+            if listing and listing.status == EscrowListingStatus.PENDING_PAYMENT:
+                listing.status = EscrowListingStatus.ESCROWED
+                listing.updated_at = datetime.utcnow()
+                session.add(listing)
+            session.add(intent)
+            session.commit()
+            return {"status": "payment_failed", "ref": gateway_ref}
+
+        # ── 2. Idempotencia para evento de éxito (regla crítica #4) ──────
         session.add(ProcessedTransaction(
             tx_hash=f"webhook:{gateway_ref}",
             user_id=intent.buyer_id,
@@ -82,17 +107,6 @@ class ReconciliationService:
             session.rollback()
             logger.info("reconcile: replay benigno ref=%s", gateway_ref)
             return {"status": "already_processed", "ref": gateway_ref}
-
-        # Evento de pago fallido: no liberar, regresar a la venta
-        if payload.get("event") == "payment.failed":
-            intent.status = FiatIntentStatus.FAILED
-            if listing and listing.status == EscrowListingStatus.PENDING_PAYMENT:
-                listing.status = EscrowListingStatus.ESCROWED
-                listing.updated_at = datetime.utcnow()
-                session.add(listing)
-            session.add(intent)
-            session.commit()
-            return {"status": "payment_failed", "ref": gateway_ref}
 
         # ── 3b. Matching DB: monto, ítem y split exactos ─────────────────
         reject_reason = ReconciliationService._match_db(payload, intent, listing)

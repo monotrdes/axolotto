@@ -275,6 +275,8 @@ async def on_startup():
             ("visibility",              "VARCHAR(20) DEFAULT 'public'"),
             ("password_hash",           "VARCHAR(255) NULL"),
             ("host_reputation_earned",  "INTEGER DEFAULT 0"),
+            ("countdown_started_at",    "TIMESTAMP NULL"),
+            ("last_host_activity_at",   "TIMESTAMP NULL"),
         ]
         for col_name, col_type in gameroom_cols:
             if col_name not in existing_gr:
@@ -320,6 +322,10 @@ async def on_startup():
         existing_reg_cols = {row[0] for row in result.fetchall()}
         if "play_mode" not in existing_reg_cols:
             conn.execute(text("ALTER TABLE roomregistration ADD COLUMN play_mode VARCHAR NOT NULL DEFAULT 'auto';"))
+        if "ready" not in existing_reg_cols:
+            conn.execute(text("ALTER TABLE roomregistration ADD COLUMN ready BOOLEAN NOT NULL DEFAULT FALSE;"))
+        if "ready_at" not in existing_reg_cols:
+            conn.execute(text("ALTER TABLE roomregistration ADD COLUMN ready_at TIMESTAMP NULL;"))
         conn.commit()
 
     # --- SEED DE JACKPOT Y TESORERÍA ---

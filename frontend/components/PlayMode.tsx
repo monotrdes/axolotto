@@ -225,20 +225,45 @@ export default function PlayMode({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasPlayingAxo]);
 
-  // Intercept browser back button inside the Wizard to avoid losing state
+  // Intercept browser back button inside the Wizard or active game to avoid losing state
   useEffect(() => {
-    const wizardViews: GameView[] = ['mode-select', 'board-select', 'budget', 'sala-select', 'game'];
-    if (!wizardViews.includes(gameView)) return;
+    const protectedViews: GameView[] = ['mode-select', 'board-select', 'budget', 'sala-select', 'game', 'playing'];
+    if (!protectedViews.includes(gameView)) return;
 
     window.history.pushState({ playMode: true }, '');
 
     const handlePopState = () => {
-      onBackRef.current();
-      window.history.pushState({ playMode: true }, '');
+      if (gameView === 'playing') {
+        const confirmLeave = window.confirm(
+          "¿Estás seguro de que deseas abandonar la partida en curso? Perderás tu progreso y las fichas de entrada."
+        );
+        if (confirmLeave) {
+          navigate('axo-select');
+        } else {
+          window.history.pushState({ playMode: true }, '');
+        }
+      } else {
+        onBackRef.current();
+        window.history.pushState({ playMode: true }, '');
+      }
     };
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
+  }, [gameView]);
+
+  // beforeunload listener to prevent accidental page refresh/close when playing
+  useEffect(() => {
+    if (gameView !== 'playing') return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '¿Estás seguro de que quieres abandonar la partida en curso? Perderás tu progreso y las fichas de entrada.';
+      return e.returnValue;
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [gameView]);
 
   // Recall cleared when axo stops playing
