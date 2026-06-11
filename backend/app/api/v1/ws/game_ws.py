@@ -200,7 +200,7 @@ async def manual_game_ws(
                 })
 
     except WebSocketDisconnect:
-        await ws_manager.disconnect(room_id, user_id)
+        await ws_manager.disconnect(room_id, user_id, websocket)
     except Exception as e:
         logger.warning(f"WebSocket error en room {room_id}, user {user_id}: {e}")
-        await ws_manager.disconnect(room_id, user_id)
+        await ws_manager.disconnect(room_id, user_id, websocket)

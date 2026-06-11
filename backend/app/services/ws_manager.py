@@ -12,6 +12,7 @@ endpoint WebSocket y el scheduler de salas.
 from __future__ import annotations
 import asyncio
 import json
+import logging
 import random
 import secrets
 import time
@@ -19,6 +20,8 @@ from dataclasses import dataclass, field as dc_field
 from typing import Any
 
 from fastapi import WebSocket
+
+logger = logging.getLogger("ws.manager")
 
 # Generador criptográficamente seguro para barajar el mazo
 _rng = random.SystemRandom()
@@ -102,6 +105,20 @@ class GameWSManager:
         play_mode: str = "manual",
     ) -> None:
         """Acepta la conexión WebSocket y registra al jugador en la sesión."""
+        # 1. Si ya existe una conexión para este usuario en esta sala, desplazarla
+        session_obj = self.sessions.get(room_id)
+        if session_obj:
+            existing_player = session_obj.players.get(user_id)
+            if existing_player and existing_player.ws and existing_player.ws != ws:
+                try:
+                    await existing_player.ws.send_json({
+                        "type": "session_replaced",
+                        "message": "Se ha iniciado sesión en otra pestaña. Esta sesión ha sido desconectada."
+                    })
+                    await existing_player.ws.close(code=4008, reason="session_replaced")
+                except Exception as ws_err:
+                    logger.debug(f"Error cerrando WebSocket desplazado en connect para {user_id}: {ws_err}")
+
         await ws.accept()
 
         async with self._lock:
@@ -128,13 +145,18 @@ class GameWSManager:
             "player_count": len(session.players),
         }, exclude=user_id)
 
-    async def disconnect(self, room_id: int, user_id: str) -> None:
-        """Maneja la desconexión de un jugador. Mantiene el estado 30s para reconnect."""
+    async def disconnect(self, room_id: int, user_id: str, ws: WebSocket) -> None:
+        """Maneja la desconexión de un jugador. Mantiene el estado 15s para reconnect."""
         session = self.sessions.get(room_id)
         if not session:
             return
         player = session.players.get(user_id)
         if player:
+            # Validar que la desconexión proviene del WebSocket activo actualmente
+            if player.ws != ws:
+                logger.info(f"Desconexión obsoleta ignorada para el usuario {user_id} en sala {room_id}")
+                return
+            
             player.connected = False
             player.ws = None
 
@@ -190,10 +212,22 @@ class GameWSManager:
         if not player:
             return False
 
+        # Si ya hay un WebSocket diferente conectado, notificar y desplazar
+        if player.ws and player.ws != ws:
+            try:
+                await player.ws.send_json({
+                    "type": "session_replaced",
+                    "message": "Se ha iniciado sesión en otra pestaña. Esta sesión ha sido desconectada."
+                })
+                await player.ws.close(code=4008, reason="session_replaced")
+            except Exception as ws_err:
+                logger.debug(f"Error cerrando WebSocket desplazado en reconnect para {user_id}: {ws_err}")
+
         await ws.accept()
         player.ws = ws
         player.connected = True
         player.play_mode = play_mode
+        player.missed_turns_count = 0
 
         # Enviar estado actual para que el frontend se sincronice
         await ws.send_json({
