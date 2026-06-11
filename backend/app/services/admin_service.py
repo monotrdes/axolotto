@@ -374,6 +374,7 @@ def get_overview(session: Session) -> dict:
             "total_iva_mxn": round(total_iva_mxn, 2),
             "total_gateway_fees_mxn": round(total_gateway_fees_mxn, 2),
             "total_net_revenue_mxn": round(total_net_revenue_mxn, 2),
+            "simulated_pool_balance_mxn": round(max(0.0, total_net_revenue_mxn - 350.0), 2),
             "devex_70_gross": {
                 "payout_per_axf": 1.40,
                 "required_reserve_mxn": round(required_reserve_mxn_70_gross, 2),
@@ -481,6 +482,18 @@ def get_players(
     stmt = stmt.offset((page - 1) * limit).limit(limit)
 
     rows = session.execute(stmt).all()
+    
+    import os
+    import json
+    banned_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "banned_dids.json")
+    banned_list = []
+    if os.path.exists(banned_path):
+        try:
+            with open(banned_path, "r") as f:
+                banned_list = json.load(f)
+        except Exception:
+            pass
+
     results = []
     for row in rows:
         total_games = int(row.total_games or 0)
@@ -498,6 +511,7 @@ def get_players(
             "total_games": total_games,
             "win_rate": round((total_wins / total_games * 100) if total_games > 0 else 0.0, 1),
             "created_at": row.created_at.isoformat() if row.created_at else None,
+            "is_active": row.privy_did not in banned_list,
         })
     return {"players": results, "page": page, "limit": limit}
 
@@ -505,6 +519,8 @@ def get_players(
 def get_player_detail(session: Session, player_did: str) -> dict:
     """Get full details for a single player."""
     from fastapi import HTTPException
+    import os
+    import json
 
     now = datetime.utcnow()
     user = session.exec(select(User).where(User.privy_did == player_did)).first()
@@ -537,6 +553,15 @@ def get_player_detail(session: Session, player_did: str) -> dict:
         .limit(20)
     ).all()
 
+    banned_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "banned_dids.json")
+    banned_list = []
+    if os.path.exists(banned_path):
+        try:
+            with open(banned_path, "r") as f:
+                banned_list = json.load(f)
+        except Exception:
+            pass
+
     return {
         "user": {
             "privy_did": user.privy_did,
@@ -548,6 +573,7 @@ def get_player_detail(session: Session, player_did: str) -> dict:
             "vip_streak_months": user.vip_streak_months,
             "created_at": user.created_at.isoformat() if user.created_at else None,
             "unlocked_board_slots": user.unlocked_board_slots,
+            "is_active": user.privy_did not in banned_list,
         },
         "wallet": {
             "frj": round(float(wallet.frijolitos), 2),
@@ -574,14 +600,6 @@ def get_player_detail(session: Session, player_did: str) -> dict:
                     "luck": a.stat_luck,
                     "focus": a.stat_focus,
                     "stamina": a.stat_stamina,
-                    "charisma": a.stat_charisma,
-                    "agility": a.stat_agility,
-                    "wisdom": a.stat_wisdom,
-                    "strength": a.stat_strength,
-                    "suerte": a.stat_luck,
-                    "ojo": a.stat_focus,
-                    "pila": a.stat_stamina,
-                    "sal": a.stat_salinity,
                 },
                 "skin_color": a.skin_color,
                 "is_frozen_by_vip": a.is_frozen_by_vip,
@@ -823,7 +841,32 @@ def get_economy_charts(session: Session) -> dict:
             }
         webitos_dict[item_name]["count"] += count
 
+    mint_burn_rows = session.execute(
+        text("""
+            SELECT DATE(created_at) as day,
+                   SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) as mint_volume,
+                   SUM(CASE WHEN amount < 0 THEN ABS(amount) ELSE 0 END) as burn_volume
+            FROM transactionledger
+            WHERE user_id != :npc
+              AND created_at >= :cutoff
+            GROUP BY day
+            ORDER BY day ASC
+        """),
+        {"npc": NPC_DID, "cutoff": thirty_days_ago},
+    ).all()
+    
+    mint_burn_data = [
+        {
+            "day": str(row.day),
+            "mint": round(float(row.mint_volume), 2),
+            "burn": round(float(row.burn_volume), 2),
+            "net": round(float(row.mint_volume - row.burn_volume), 2)
+        }
+        for row in mint_burn_rows
+    ]
+
     return {
+        "mint_burn_data": mint_burn_data,
         "daily_gal_volume": [
             {"day": str(r[0]), "volume": round(float(r[1]), 2)} for r in gal_rows
         ],
@@ -1286,3 +1329,392 @@ def get_card_distribution(session: Session) -> dict:
         "circulation_rarity_distribution": circulation_rarity_counts,
         "cards": cards_list,
     }
+
+
+def adjust_player_balance(session: Session, player_did: str, currency: str, amount: float, reason: str) -> dict:
+    from app.core.config import axf_to_internal, frj_to_internal
+    from app.models.economy import CurrencyType, TransactionType, TransactionLedger
+    from fastapi import HTTPException
+    
+    # 1. Select user and wallet with FOR UPDATE
+    wallet = session.exec(
+        select(Wallet).where(Wallet.user_id == player_did).with_for_update()
+    ).first()
+    if not wallet:
+        raise HTTPException(status_code=404, detail="Billetera del usuario no encontrada.")
+        
+    # 2. Update balance
+    tx_type = TransactionType.DEPOSIT if amount >= 0 else TransactionType.BURN
+    currency_enum = None
+    
+    if currency == "axf":
+        currency_enum = CurrencyType.AXOFICHA
+        internal_amount = axf_to_internal(amount)
+        if wallet.axofichas + internal_amount < 0:
+            raise HTTPException(status_code=400, detail="Saldo de Axofichas insuficiente para realizar el débito.")
+        wallet.axofichas += internal_amount
+    elif currency == "frj":
+        currency_enum = CurrencyType.FRIJOLITO
+        internal_amount = frj_to_internal(amount)
+        if wallet.frijolitos + internal_amount < 0:
+            raise HTTPException(status_code=400, detail="Saldo de Frijolitos insuficiente para realizar el débito.")
+        wallet.frijolitos += internal_amount
+    elif currency in ("frag_comun", "frag_raro", "frag_epico", "frag_legendario"):
+        internal_amount = int(amount)
+        current_val = getattr(wallet, currency)
+        if current_val + internal_amount < 0:
+            raise HTTPException(status_code=400, detail=f"Saldo de fragmento {currency} insuficiente.")
+        setattr(wallet, currency, current_val + internal_amount)
+        if currency == "frag_comun":
+            currency_enum = CurrencyType.FRAGMENTO_COMUN
+        elif currency == "frag_raro":
+            currency_enum = CurrencyType.FRAGMENTO_RARO
+        elif currency == "frag_epico":
+            currency_enum = CurrencyType.FRAGMENTO_EPICO
+        elif currency == "frag_legendario":
+            currency_enum = CurrencyType.FRAGMENTO_LEGENDARIO
+    else:
+        raise HTTPException(status_code=400, detail="Moneda o recurso no válido.")
+
+    wallet.last_updated = datetime.utcnow()
+    session.add(wallet)
+
+    # 3. Create Transaction Ledger entry
+    ledger = TransactionLedger(
+        user_id=player_did,
+        tx_type=tx_type,
+        currency=currency_enum or CurrencyType.FRIJOLITO,
+        amount=amount,
+        description=f"Ajuste manual de admin. Razón: {reason}",
+        created_at=datetime.utcnow()
+    )
+    session.add(ledger)
+    session.commit()
+    
+    return {
+        "ok": True,
+        "message": f"Balance de {currency} ajustado con éxito por {amount}.",
+        "new_balance": {
+            "axf": wallet.axogemas,
+            "frj": wallet.gemas_alga,
+            "frag_comun": wallet.frag_comun,
+            "frag_raro": wallet.frag_raro,
+            "frag_epico": wallet.frag_epico,
+            "frag_legendario": wallet.frag_legendario,
+        }
+    }
+
+
+def grant_player_vip(session: Session, player_did: str, tier: str, duration_days: int) -> dict:
+    from fastapi import HTTPException
+    
+    user = session.exec(
+        select(User).where(User.privy_did == player_did).with_for_update()
+    ).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+        
+    if tier not in ("coral", "dorado", "axolite", "none"):
+        raise HTTPException(status_code=400, detail="Nivel VIP no válido. Debe ser coral, dorado, axolite o none.")
+        
+    if tier == "none":
+        user.vip_tier = None
+        user.vip_expires_at = None
+        user.vip_auto_renew = False
+    else:
+        user.vip_tier = tier
+        now = datetime.utcnow()
+        if user.vip_expires_at and user.vip_expires_at > now:
+            user.vip_expires_at += timedelta(days=duration_days)
+        else:
+            user.vip_expires_at = now + timedelta(days=duration_days)
+            
+    session.add(user)
+    session.commit()
+    
+    return {
+        "ok": True,
+        "message": f"Nivel VIP '{tier}' asignado al usuario con éxito.",
+        "vip_tier": user.vip_tier,
+        "vip_expires_at": user.vip_expires_at.isoformat() if user.vip_expires_at else None
+    }
+
+
+def override_player_tutorial(session: Session, player_did: str, action: str) -> dict:
+    from fastapi import HTTPException
+    from app.models.items import WebitoIncubation, ItemCatalog, ItemType
+    from app.models.promo import PendingReward, PromoCode
+    from app.services.tutorial_service import TutorialService
+    from app.api.v1.endpoints.tutorial import _board_from_user_id
+    import random
+    _rng = random.SystemRandom()
+
+    user = session.exec(select(User).where(User.privy_did == player_did).with_for_update()).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+    actions = []
+
+    if action == "reset":
+        # 1. Reset incubaciones
+        incubations = session.exec(
+            select(WebitoIncubation).where(WebitoIncubation.user_id == player_did)
+        ).all()
+        for inc in incubations:
+            inc.tutorial_phase = 0
+            inc.tutorial_act_index = 0
+            inc.tutorial_karma = None
+            inc.imprinting_complete = False
+            session.add(inc)
+            actions.append(f"incubación #{inc.id} reseteada")
+
+        # 2. Reset tutorial_completed
+        user.tutorial_completed = False
+        session.add(user)
+        actions.append("User.tutorial_completed = False")
+
+        # 3. Reset PendingReward
+        pending = session.exec(
+            select(PendingReward).where(PendingReward.user_id == player_did)
+        ).first()
+        if pending and pending.claimed:
+            pending.claimed = False
+            pending.claimed_at = None
+            session.add(pending)
+            actions.append("PendingReward reseteada")
+
+        # 4. Eliminar Axolotitos creados en tutorial
+        axos = session.exec(
+            select(Axolotito).where(Axolotito.user_id == player_did)
+        ).all()
+        for axo in axos:
+            session.delete(axo)
+            actions.append(f"Axolotito '{axo.name}' eliminado")
+
+        session.commit()
+        return {"ok": True, "message": "Tutorial reseteado.", "actions": actions}
+
+    elif action == "skip":
+        # 1. Obtener o crear incubación de tutorial
+        incubation = session.exec(
+            select(WebitoIncubation)
+            .where(WebitoIncubation.user_id == player_did)
+            .where(WebitoIncubation.tutorial_phase < 5)
+        ).first()
+
+        if not incubation:
+            egg_item = session.exec(
+                select(ItemCatalog).where(ItemCatalog.item_type == ItemType.EGG)
+            ).first()
+            if not egg_item:
+                raise HTTPException(status_code=500, detail="No hay huevos en el catálogo para iniciar tutorial.")
+            incubation = WebitoIncubation(
+                user_id=player_did,
+                item_id=egg_item.id,
+                fecha_eclosion_estimada=datetime.utcnow(),
+                bonus_focus=20.0,
+                bonus_luck=20.0,
+                bonus_agility=20.0,
+                bonus_stamina=100,
+                bonus_salinity_adj=5.0,
+                tutorial_phase=0,
+                tutorial_act_index=0,
+            )
+            session.add(incubation)
+            session.flush()
+
+        if not incubation.tutorial_board_card_ids:
+            incubation.tutorial_board_card_ids = _board_from_user_id(player_did, session)
+
+        incubation.tutorial_phase = 4
+        incubation.tutorial_karma = _rng.choice(["lucky", "salty"])
+        session.add(incubation)
+        session.flush()
+
+        result = TutorialService.complete_tutorial(session, player_did, incubation)
+
+        # Asignar victorias/derrotas
+        board = session.exec(
+            select(PlayerBoard)
+            .where(PlayerBoard.user_id == player_did)
+            .where(PlayerBoard.is_tutorial == True)
+        ).first()
+
+        if board:
+            games_played = _rng.randint(5, 30)
+            games_won = _rng.randint(0, games_played)
+            board.games_played = games_played
+            board.games_won = games_won
+            
+            recent_len = min(5, games_played)
+            recent_results = []
+            for _ in range(recent_len):
+                if games_played > 0 and (_rng.random() < (games_won / games_played)):
+                    recent_results.append(True)
+                else:
+                    recent_results.append(False)
+            board.recent_games_results = recent_results
+            session.add(board)
+        
+        session.commit()
+        return {"ok": True, "message": "Tutorial brincado con éxito.", "actions": ["Tutorial completado automáticamente", "Tablero de tutorial creado"]}
+    else:
+        raise HTTPException(status_code=400, detail="Acción no válida. Debe ser reset o skip.")
+
+
+def toggle_player_status(player_did: str, is_active: bool) -> dict:
+    from fastapi import HTTPException
+    import os
+    import json
+    
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    banned_path = os.path.join(base_dir, "banned_dids.json")
+    
+    banned_list = []
+    if os.path.exists(banned_path):
+        try:
+            with open(banned_path, "r") as f:
+                banned_list = json.load(f)
+        except Exception:
+            banned_list = []
+            
+    if not is_active:
+        if player_did not in banned_list:
+            banned_list.append(player_did)
+    else:
+        if player_did in banned_list:
+            banned_list.remove(player_did)
+            
+    try:
+        with open(banned_path, "w") as f:
+            json.dump(banned_list, f, indent=4)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"No se pudo guardar la lista de suspendidos: {e}")
+        
+    return {
+        "ok": True,
+        "is_active": is_active,
+        "message": f"Usuario {'activado' if is_active else 'suspendido'} con éxito."
+    }
+
+
+def get_promo_batches(session: Session) -> dict:
+    from app.models.promo import PromoCode
+    from sqlmodel import select, func
+    
+    stmt = select(
+        PromoCode.batch,
+        func.count(PromoCode.id).label("total_codes"),
+        func.count(PromoCode.redeemed_by).label("redeemed_codes"),
+        func.min(PromoCode.created_at).label("created_at")
+    ).group_by(PromoCode.batch).order_by(func.min(PromoCode.created_at).desc())
+    
+    rows = session.exec(stmt).all()
+    
+    batches = []
+    for row in rows:
+        batches.append({
+            "name": row[0],
+            "total_codes": row[1],
+            "redeemed_codes": row[2],
+            "created_at": row[3].isoformat() if row[3] else None
+        })
+        
+    return {"batches": batches}
+
+
+class PromoBatchCreate(BaseModel):
+    name: str
+    quantity: int
+    axf_amount: float
+    frj_amount: float
+    reward_item_id: Optional[int] = None
+
+
+def create_promo_batch(session: Session, payload: PromoBatchCreate) -> dict:
+    from app.models.promo import PromoCode
+    from app.models.items import ItemCatalog
+    from fastapi import HTTPException
+    import secrets
+    
+    if payload.reward_item_id is not None:
+        item = session.get(ItemCatalog, payload.reward_item_id)
+        if not item:
+            raise HTTPException(status_code=400, detail="Item de catálogo no encontrado.")
+            
+    existing_batch = session.exec(select(PromoCode).where(PromoCode.batch == payload.name)).first()
+    if existing_batch:
+        raise HTTPException(status_code=400, detail="Ya existe un lote con ese nombre.")
+        
+    ALPHABET = "ABCDEFGHJKLMNPQRTUVWXYZ23467889"
+    
+    existing_codes = {row.code for row in session.exec(select(PromoCode)).all()}
+    
+    codes_created = []
+    attempts = 0
+    while len(codes_created) < payload.quantity:
+        attempts += 1
+        if attempts > payload.quantity * 50:
+            raise HTTPException(status_code=500, detail="No se pudieron generar suficientes códigos únicos. Reintenta.")
+        
+        part1 = "".join(secrets.choice(ALPHABET) for _ in range(4))
+        part2 = "".join(secrets.choice(ALPHABET) for _ in range(4))
+        candidate = f"AXL-{part1}-{part2}"
+        
+        if candidate not in existing_codes and candidate not in codes_created:
+            promo = PromoCode(
+                code=candidate,
+                batch=payload.name,
+                reward_type="custom",
+                reward_item_id=payload.reward_item_id,
+                reward_frijolitos=payload.frj_amount,
+                reward_axofichas=payload.axf_amount,
+                created_at=datetime.utcnow()
+            )
+            session.add(promo)
+            codes_created.append(candidate)
+            
+    session.commit()
+    
+    return {
+        "ok": True,
+        "message": f"Lote '{payload.name}' con {payload.quantity} códigos generado con éxito.",
+        "batch": payload.name,
+        "quantity": payload.quantity
+    }
+
+
+def export_promo_batch_csv(session: Session, batch_name: str):
+    from app.models.promo import PromoCode
+    from fastapi.responses import StreamingResponse
+    from fastapi import HTTPException
+    import io
+    import csv
+    
+    codes = session.exec(select(PromoCode).where(PromoCode.batch == batch_name)).all()
+    if not codes:
+        raise HTTPException(status_code=404, detail="Lote no encontrado o vacío.")
+        
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["code", "batch", "reward_frijolitos", "reward_axofichas", "reward_item_id", "redeemed_by", "redeemed_at", "created_at"])
+    
+    for c in codes:
+        writer.writerow([
+            c.code,
+            c.batch,
+            c.reward_frijolitos,
+            c.reward_axofichas,
+            c.reward_item_id or "",
+            c.redeemed_by or "",
+            c.redeemed_at.isoformat() if c.redeemed_at else "",
+            c.created_at.isoformat() if c.created_at else ""
+        ])
+        
+    output.seek(0)
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=promo_batch_{batch_name}.csv"}
+    )

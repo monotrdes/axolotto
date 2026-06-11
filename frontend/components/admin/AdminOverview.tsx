@@ -29,8 +29,10 @@ export default function AdminOverview({ token }: { token: string | null }) {
     axios.get(`${API}/admin/overview`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => {
         setData(r.data);
-        // Default pool balance input to the 70% gross required reserve
-        if (r.data?.financials?.devex_70_gross?.required_reserve_mxn) {
+        // Default pool balance input to the simulated balance from backend
+        if (r.data?.financials?.simulated_pool_balance_mxn) {
+          setPoolBalance(r.data.financials.simulated_pool_balance_mxn.toString());
+        } else if (r.data?.financials?.devex_70_gross?.required_reserve_mxn) {
           setPoolBalance(r.data.financials.devex_70_gross.required_reserve_mxn.toString());
         }
       })
@@ -144,18 +146,23 @@ export default function AdminOverview({ token }: { token: string | null }) {
             </h3>
             
             {/* Input para el balance real del fondo */}
-            <div className="flex items-center gap-2 bg-[#141428] border border-white/5 px-3 py-1.5 rounded-xl">
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Tu Liquidez Real:</span>
-              <div className="relative flex items-center">
-                <span className="absolute left-1.5 text-xs text-slate-400 font-mono">$</span>
-                <input
-                  type="number"
-                  placeholder="Ej. 50000"
-                  value={poolBalance}
-                  onChange={(e) => setPoolBalance(e.target.value)}
-                  className="w-28 bg-slate-900/60 border border-white/10 rounded-lg py-1 pl-4 pr-1.5 text-xs text-emerald-400 font-bold font-mono focus:outline-none focus:border-pink-500/50"
-                />
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-2 bg-[#141428] border border-white/5 px-3 py-1.5 rounded-xl">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">Tu Liquidez Real:</span>
+                <div className="relative flex items-center">
+                  <span className="absolute left-1.5 text-xs text-slate-400 font-mono">$</span>
+                  <input
+                    type="number"
+                    placeholder="Ej. 50000"
+                    value={poolBalance}
+                    onChange={(e) => setPoolBalance(e.target.value)}
+                    className="w-28 bg-slate-900/60 border border-white/10 rounded-lg py-1 pl-4 pr-1.5 text-xs text-emerald-400 font-bold font-mono focus:outline-none focus:border-pink-500/50"
+                  />
+                </div>
               </div>
+              <span className="text-[9px] text-gray-500 font-semibold italic mr-1">
+                🤖 Resguardo real simulado (Caja menos retiros mock)
+              </span>
             </div>
           </div>
           

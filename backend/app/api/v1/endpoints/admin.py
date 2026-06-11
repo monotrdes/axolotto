@@ -21,7 +21,16 @@ from app.services.admin_service import (
     get_chaos_simulation_status,
     run_chaos_simulation,
     get_card_distribution,
+    adjust_player_balance,
+    grant_player_vip,
+    override_player_tutorial,
+    toggle_player_status,
+    get_promo_batches,
+    PromoBatchCreate,
+    create_promo_batch,
+    export_promo_batch_csv,
 )
+from pydantic import BaseModel
 
 logger = logging.getLogger("admin")
 router = APIRouter()
@@ -115,3 +124,87 @@ def admin_card_distribution(
     session: Session = Depends(get_session),
 ):
     return get_card_distribution(session)
+
+
+class AdjustBalanceRequest(BaseModel):
+    currency: str
+    amount: float
+    reason: str
+
+
+class GrantVipRequest(BaseModel):
+    tier: str
+    duration_days: int
+
+
+class TutorialOverrideRequest(BaseModel):
+    action: str
+
+
+class ToggleStatusRequest(BaseModel):
+    is_active: bool
+
+
+@router.post("/players/{player_did}/adjust-balance")
+def admin_adjust_balance(
+    player_did: str,
+    payload: AdjustBalanceRequest,
+    _: str = Depends(require_admin),
+    session: Session = Depends(get_session),
+):
+    return adjust_player_balance(session, player_did, payload.currency, payload.amount, payload.reason)
+
+
+@router.post("/players/{player_did}/grant-vip")
+def admin_grant_vip(
+    player_did: str,
+    payload: GrantVipRequest,
+    _: str = Depends(require_admin),
+    session: Session = Depends(get_session),
+):
+    return grant_player_vip(session, player_did, payload.tier, payload.duration_days)
+
+
+@router.post("/players/{player_did}/tutorial-override")
+def admin_tutorial_override(
+    player_did: str,
+    payload: TutorialOverrideRequest,
+    _: str = Depends(require_admin),
+    session: Session = Depends(get_session),
+):
+    return override_player_tutorial(session, player_did, payload.action)
+
+
+@router.post("/players/{player_did}/toggle-status")
+def admin_toggle_status(
+    player_did: str,
+    payload: ToggleStatusRequest,
+    _: str = Depends(require_admin),
+):
+    return toggle_player_status(player_did, payload.is_active)
+
+
+@router.get("/promo/batches")
+def admin_get_promo_batches(
+    _: str = Depends(require_admin),
+    session: Session = Depends(get_session),
+):
+    return get_promo_batches(session)
+
+
+@router.post("/promo/batches")
+def admin_create_promo_batch(
+    payload: PromoBatchCreate,
+    _: str = Depends(require_admin),
+    session: Session = Depends(get_session),
+):
+    return create_promo_batch(session, payload)
+
+
+@router.get("/promo/batches/{batch_name}/export")
+def admin_export_promo_batch(
+    batch_name: str,
+    _: str = Depends(require_admin),
+    session: Session = Depends(get_session),
+):
+    return export_promo_batch_csv(session, batch_name)

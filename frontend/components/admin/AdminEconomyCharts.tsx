@@ -108,6 +108,28 @@ export default function AdminEconomyCharts({ token }: { token: string | null }) 
         )}
       </div>
 
+      {charts.mint_burn_data && (
+        <div className={cardClass}>
+          <h3 className="text-sm font-semibold text-gray-300 mb-3">⚖️ Tasa de Emisión vs Quema (Mint vs Burn) (30 días)</h3>
+          {charts.mint_burn_data.length === 0 ? (
+            <p className="text-gray-700 text-sm text-center py-8">Sin datos aún.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={charts.mint_burn_data}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1C1C35" />
+                <XAxis dataKey="day" tick={{ fill: "#4B5563", fontSize: 10 }} />
+                <YAxis tick={{ fill: "#4B5563", fontSize: 10 }} />
+                <Tooltip {...TOOLTIP_STYLE} />
+                <Legend formatter={(val) => <span style={{ color: "#9CA3AF", fontSize: 11 }}>{val}</span>} />
+                <Line type="monotone" dataKey="mint" stroke="#34D399" strokeWidth={2} dot={false} name="Emisión (Mint)" />
+                <Line type="monotone" dataKey="burn" stroke="#EF4444" strokeWidth={2} dot={false} name="Quema (Burn)" />
+                <Line type="monotone" dataKey="net" stroke="#3B82F6" strokeWidth={1.5} strokeDasharray="4 4" dot={false} name="Balance Neto" />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className={cardClass}>
           <h3 className="text-sm font-semibold text-gray-300 mb-3">👑 Distribución VIP Activos</h3>

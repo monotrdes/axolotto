@@ -6,7 +6,7 @@ from app.core.limiter import limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
-from app.api.v1.endpoints import bank, user, shop, incubation, metadata, legacy, board, game, ranking, multiplayer, checkout, market, market_escrow, payments, leonardo, admin, whitelist, codes, f2p, tutorial, cave_expansion, admin_events, events, dev, rewards, staking, social, referrals
+from app.api.v1.endpoints import bank, user, shop, incubation, metadata, legacy, board, game, ranking, multiplayer, checkout, market, market_escrow, payments, leonardo, admin, whitelist, codes, f2p, tutorial, cave_expansion, cave_decor, admin_events, events, dev, rewards, staking, social, referrals
 from app.api.v1.ws import game_ws
 from app.core.config import settings
 
@@ -518,6 +518,7 @@ app.include_router(codes.router, prefix="/api/v1/codes", tags=["Promo Codes"])
 app.include_router(f2p.router, prefix="/api/v1/f2p", tags=["F2P — Huevo Durmiente"])
 app.include_router(tutorial.router, prefix="/api/v1/tutorial", tags=["Tutorial del Axolotito"])
 app.include_router(cave_expansion.router, prefix="/api/v1/cave", tags=["Cenote — Expansión"])
+app.include_router(cave_decor.router, prefix="/api/v1/cave", tags=["Cenote — Decoración"])
 app.include_router(admin_events.router, prefix="/api/v1/admin/events", tags=["admin-events"])
 if settings.BLOCKCHAIN_MODE == "local":
     app.include_router(dev.router, prefix="/api/v1/dev", tags=["Dev Tools"])
