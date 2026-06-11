@@ -2,8 +2,8 @@
 ======================================================================
 🛡️  REPORTE DE AUDITORÍA DE SEGURIDAD — CHAOS & SECURITY SIMULATOR V2
 ======================================================================
-⏰  Generado: 2026-06-11 19:16:01 UTC
-⏱️  Duración total: 24.2s
+⏰  Generado: 2026-06-11 19:43:59 UTC
+⏱️  Duración total: 27.3s
 ======================================================================
 📋  CONFIGURACIÓN DE LA PRUEBA
 ──────────────────────────────────────────────────────────────────────
@@ -11,7 +11,7 @@
      🐋 Whales:          1 (20%)
      📦 Collectors:      1 (30%)
      🆓 Free2Play:       3 (50%)
-  ⏱️  Duración:           20s
+  ⏱️  Duración:           10s
   🔄 Replay Attack:      ✅
   👤 ID Spoofing:        ✅
   ⚡ Race Condition:     ✅
@@ -22,15 +22,17 @@
 📊  RESUMEN EJECUTIVO
 ──────────────────────────────────────────────────────────────────────
   🔴 CRITICAL:  0  — Acción inmediata requerida
-  🟡 WARNING:   0   — Revisar y optimizar
-  🟢 INFO:      0      — Comportamiento correcto
-  📈 Total incidentes: 0
+  🟡 WARNING:   4   — Revisar y optimizar
+  🟢 INFO:      16      — Comportamiento correcto
+  📈 Total incidentes: 20
 ──────────────────────────────────────────────────────────────────────
-  🎯 Tasa de mitigación de ataques: 100.0%
-  🔗 Acciones de bots:              108
-  ⚡ Throughput:                     4.5 acciones/s
+  🎯 Tasa de mitigación de ataques: 97.8%
+  🔗 Acciones de bots:              62
+  ⚡ Throughput:                     2.3 acciones/s
   💥 Errores 500 en bots:           0
-  🎮 Partidas jugadas:              3
+  🎮 Partidas jugadas:              7
+  🎓 Axolotitos en staking:         2
+  🔓 Axolotitos retirados (unstake): 0
 
 ======================================================================
 🔴  CRITICALS (0) — ACCIÓN INMEDIATA REQUERIDA
@@ -38,32 +40,49 @@
   ✅ Ningún ataque logró vulnerar el sistema.
 
 ──────────────────────────────────────────────────────────────────────
-🟡  WARNINGS (0) — REVISAR Y OPTIMIZAR
+🟡  WARNINGS (4) — REVISAR Y OPTIMIZAR
 ──────────────────────────────────────────────────────────────────────
-  ✅ Sin warnings.
+
+  📌 BOUNDARY_INJECTION (3 incidencias)
+    [2026-06-11T19:43:48.356856+00:00] empty_string rejected with non-standard code 403
+    Status: 403 | No eres dueño de este Axolotito.
+
+    [2026-06-11T19:43:53.060489+00:00] HUGE VALUE accepted without overflow protection
+    Status: 200 | 10^18 deposit succeeded
+
+    [2026-06-11T19:43:53.577165+00:00] empty_string rejected with non-standard code 403
+    Status: 403 | No eres dueño de este Axolotito.
+
+
+  📌 BOT_ACTION_UNEXPECTED_CODE (1 incidencias)
+    [2026-06-11T19:43:50.942465+00:00] Bot whale_002 got unexpected code 429
+    Status: 429 | Ya reclamaste hoy tu recompensa del Ciclo Lunar.
+
 
 ──────────────────────────────────────────────────────────────────────
-🟢  INFO (0) — COMPORTAMIENTO CORRECTO
+🟢  INFO (16) — COMPORTAMIENTO CORRECTO
 ──────────────────────────────────────────────────────────────────────
-  Sin registros INFO.
+  ✅ boundary_injection: 2 intentos bloqueados exitosamente
+  ✅ double_booking: 3 intentos bloqueados exitosamente
+  ✅ id_spoofing: 11 intentos bloqueados exitosamente
 
 ──────────────────────────────────────────────────────────────────────
 📊  RESUMEN DE ATAQUES POR TIPO
 ──────────────────────────────────────────────────────────────────────
   Tipo                   Lanzados  Bloqueados  Exitosos    Tasa
   ────────────────────── ────────  ──────────  ────────  ──────
-  Replay Attack                17          17         0  100.0%
-  ID Spoofing                  10          10         0  100.0%
-  Race Condition                5          50         0  1000.0%
-  Double Booking                0           0         0    0.0%
-  Boundary Injection           19          19         0  100.0%
-  Cooldown Bypass              18          18         0  100.0%
+  Replay Attack                 9           9         0  100.0%
+  ID Spoofing                  11          11         0  100.0%
+  Race Condition                4          40         0  1000.0%
+  Double Booking                7          32         0  457.1%
+  Boundary Injection            7           6         1   85.7%
+  Cooldown Bypass               7           7         0  100.0%
 
 ──────────────────────────────────────────────────────────────────────
-  TOTAL:                  69 lanzados
-  BLOQUEADOS:            114
-  EXITOSOS:                0
-  MITIGACIÓN:         100.0%
+  TOTAL:                  45 lanzados
+  BLOQUEADOS:            105
+  EXITOSOS:                1
+  MITIGACIÓN:          97.8%
 ======================================================================
 🏁  SIMULACIÓN CAÓTICA COMPLETADA
 ======================================================================
