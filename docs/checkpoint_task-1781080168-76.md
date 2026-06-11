@@ -30,13 +30,10 @@
 
 ## Estado actual
 
-- **Fase activa**: Fase 1 — restos finales (embarcadero, burbujas y hosting desde la mesa HECHOS)
-- **Último commit de avance**: el commit que contiene esta edición (feat(world): hosting desde la mesa)
-- **SIGUIENTE PASO**: Fase 1 restante, en orden:
-  1. **Decoraciones**: persistencia localStorage (backend endpoint = sub-tarea aparte)
-     y render en el diorama (`setCaveDecorations` hoy es no-op en GameCanvas;
-     CuevaDecorPanel ya abre con `onCaveClick` y usa `getMockDecorations()`).
-  2. **Transformación animada nido→camita** al eclosionar (hoy es swap estático).
+- **Fase activa**: Fase 1 — solo falta la transformación animada nido→camita
+- **Último commit de avance**: el commit que contiene esta edición (feat(world): decoraciones de cueva)
+- **SIGUIENTE PASO**: Fase 1 restante:
+  1. **Transformación animada nido→camita** al eclosionar (hoy es swap estático).
   Después → Fase 2 restante: re-skin HTML por tokens (Store boletos, SettlingScreen
   recibo, Inventory códice, VipModal) y luego Fase 3 (re-skin de la mesa de
   competencia + tablillas con `winPatterns.ts`).
@@ -105,7 +102,12 @@
       los fetch de axolotitos/amigos/podio — antes corrían con el token pero sin
       canvas montado (onboarding/datosBanco) y los `set*` caían al vacío (amigos
       nunca aparecían en el embarcadero)
-- [ ] Decoraciones reales (⚠️ endpoint backend = sub-tarea; mientras localStorage)
+- [x] Decoraciones de cueva: tap en nido/camita (hotspot `cueva:<slot>`) →
+      CuevaDecorPanel interactivo (toggle, máx 6); persistencia en
+      `lib/world/decorStorage.ts` (localStorage por userId) y render de emojis
+      alrededor del nido en SantuarioScene (DECOR_OFFSETS). Catálogo sigue
+      siendo `getMockDecorations()` — ⚠️ endpoint backend + inventario real
+      de decoraciones = sub-tarea aparte
 - [ ] Transformación animada nido→camita (hoy es swap estático)
 - [x] Mundo activo validado por usuario en móvil y web ✓
 
@@ -164,7 +166,8 @@
 | 2026-06-11 | 6fcfa82 | Store abre sección por puesto (forja→melter, p2p→market) + winPatterns.ts (cartasFaltantes/tablillaTension) base de Fase 3 |
 | 2026-06-11 | 2d51702 | Burbujas de acción ❤️/👁/🎲 en trajineritas (like en sitio, visita directa a FriendCaveView, invitar provisional). Rama renombrada a task/task-1781159264-84-rediseno-visual-papel-picado |
 | 2026-06-11 | b4b649c | Mesa de amigos y burbuja 🎲 → HostingSetupModal sobre el mundo (visibilidad friends, invitado preseleccionado, validación de mesa en la cueva) |
-| 2026-06-11 | (este) | Fix QA usuario: canvasReady gatea fetches del mundo (amigos no salían), crear sala se queda en el mundo con toast (PlayMode no lista hosteadas). Gap Fase 3 documentado: salas hosteadas sin UI de listado/join |
+| 2026-06-11 | f584a43 | Fix QA usuario: canvasReady gatea fetches del mundo (amigos no salían), crear sala se queda en el mundo con toast (PlayMode no lista hosteadas). Gap Fase 3 documentado: salas hosteadas sin UI de listado/join |
+| 2026-06-11 | (este) | Decoraciones de cueva: tap en nido → panel toggle (máx 6), localStorage por usuario (`decorStorage.ts`), emojis renderizados alrededor del nido, re-aplicadas al reconstruir escena y al cargar el mundo |
 
 ## Notas para el verificador humano
 

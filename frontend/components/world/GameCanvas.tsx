@@ -53,7 +53,7 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
     visible = false,
     onReady,
     onZoneClick,
-    onCaveClick: _onCaveClick,
+    onCaveClick,
     onAxolotitoClick: _onAxolotitoClick,
     onStallClick,
     initialZone = "nido",
@@ -69,9 +69,12 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
   const axolotitosRef = useRef<AxolotitoData[]>([]);
   const podioRef = useRef<AxolotitoData[]>([]);
   const amigosRef = useRef<AmigoData[]>([]);
-  // Ref para evitar closures viejos dentro del listener del bridge.
+  const decorRef = useRef<Map<number, DecorationItem[]>>(new Map());
+  // Refs para evitar closures viejos dentro del listener del bridge.
   const onStallClickRef = useRef(onStallClick);
   onStallClickRef.current = onStallClick;
+  const onCaveClickRef = useRef(onCaveClick);
+  onCaveClickRef.current = onCaveClick;
 
   useImperativeHandle(ref, () => ({
     setAxolotitos(data: AxolotitoData[]) {
@@ -80,8 +83,11 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
         santuarioRef.current.setAxolotitos(data);
       }
     },
-    setCaveDecorations(_caveIndex: number, _decorations: DecorationItem[]) {
-      // TODO(Fase 1): decoraciones reales en el diorama del Santuario.
+    setCaveDecorations(caveIndex: number, decorations: DecorationItem[]) {
+      decorRef.current.set(caveIndex, decorations);
+      if (santuarioRef.current && !santuarioRef.current.destroyed) {
+        santuarioRef.current.setCaveDecorations(caveIndex, decorations);
+      }
     },
     focusZone(zoneId: string) {
       zonesRef.current?.navigate(zoneId, null);
@@ -151,6 +157,7 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
         santuarioRef.current = scene;
         scene.setAxolotitos(axolotitosRef.current);
         scene.setAmigos(amigosRef.current);
+        decorRef.current.forEach((items, idx) => scene.setCaveDecorations(idx, items));
         return scene;
       });
       zones.registerBuilder("tianguis", (e) => new TianguisScene(e));
@@ -161,6 +168,11 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
         return scene;
       });
       engine.bridge.on("hotspot", ({ kind, id }) => {
+        if (kind === "cueva") {
+          // Nido/camita del Santuario → panel de decoración de la cueva.
+          onCaveClickRef.current?.(Number(id));
+          return;
+        }
         onStallClickRef.current?.(id ? `${kind}:${id}` : kind);
       });
       engineRef.current = engine;

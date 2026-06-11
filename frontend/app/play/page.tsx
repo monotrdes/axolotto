@@ -26,6 +26,7 @@ import type { WorldScene } from "@/components/world/WorldScene";
 import type { AxolotitoData } from "@/components/world/entities/AxolotitoSprite";
 import type { DecorationItem } from "@/components/world/zones/NidoZone";
 import { CuevaDecorPanel } from "@/components/world/hud/CuevaDecorPanel";
+import { loadCaveDecor, saveCaveDecor } from "@/lib/world/decorStorage";
 import { MochilaFloating } from "@/components/world/hud/MochilaFloating";
 import WebitoIntroAnimation from "@/components/onboarding/WebitoIntroAnimation";
 import PostTutorialBranch from "@/components/onboarding/PostTutorialBranch";
@@ -210,6 +211,16 @@ export default function Home() {
       cancelled = true;
     };
   }, [accessToken, canvasReady]);
+
+  // Mundo papel picado: decoraciones guardadas → diorama (localStorage hasta
+  // que exista el endpoint backend de persistencia).
+  useEffect(() => {
+    if (!PAPER_WORLD || !canvasReady || !user?.id) return;
+    const all = loadCaveDecor(user.id);
+    Object.entries(all).forEach(([idx, items]) => {
+      gameCanvasRef.current?.setCaveDecorations(Number(idx), items);
+    });
+  }, [canvasReady, user?.id]);
 
   // Mundo papel picado: top-3 del ranking para el podio de la Pirámide (endpoint público).
   useEffect(() => {
@@ -595,13 +606,9 @@ export default function Home() {
               const axo = axolotitosData.find((a) => a.caveIndex === caveIndex);
               setCaveDecorIndex(caveIndex);
               setCaveDecorAxoName(axo?.name ?? "");
-              // Load existing decorations for this cave
-              setPlacedDecorations(
-                axolotitosData
-                  .filter((a) => a.caveIndex === caveIndex)
-                  .flatMap(() => []), // TODO: load from backend
-              );
-              // Mock available decorations for now
+              // Decoraciones guardadas en localStorage (endpoint backend = sub-tarea).
+              setPlacedDecorations(user?.id ? (loadCaveDecor(user.id)[caveIndex] ?? []) : []);
+              // Catálogo mock hasta que el inventario tenga decoraciones reales.
               setAvailableDecorations(getMockDecorations());
               setCaveDecorOpen(true);
             }}
@@ -756,9 +763,10 @@ export default function Home() {
             placedDecorations={placedDecorations}
             availableDecorations={availableDecorations}
             onSave={(caveIdx, decorations) => {
+              if (user?.id) saveCaveDecor(user.id, caveIdx, decorations);
               gameCanvasRef.current?.setCaveDecorations(caveIdx, decorations);
               setPlacedDecorations(decorations);
-              // TODO: persist to backend
+              setCaveDecorOpen(false);
             }}
           />
 

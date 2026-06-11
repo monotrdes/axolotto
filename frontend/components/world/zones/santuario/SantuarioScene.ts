@@ -3,6 +3,7 @@ import gsap from "gsap";
 import type { WorldEngine } from "../../engine/WorldEngine";
 import type { AxolotitoData } from "../../entities/AxolotitoSprite";
 import type { AmigoData } from "../../mapBackendAxolotito";
+import type { DecorationItem } from "../NidoZone";
 import { AxolotitoPuppet, type PuppetState } from "../../puppet/AxolotitoPuppet";
 import { DESIGN_SPACE, PAINTED_BOUNDS } from "../zoneConfig";
 
@@ -24,6 +25,17 @@ const NIVEL_EMBARCADERO_Y = 1500;
 
 const NEST_SLOTS_X = [180, 420, 660, 900];
 const WANDER_SPEED = 55; // px/s en espacio de diseño
+
+// Posiciones de decoración alrededor del nido (máx 6 por cueva), esquivando
+// el anillo de incubación y la etiqueta con el nombre.
+const DECOR_OFFSETS: ReadonlyArray<readonly [number, number]> = [
+  [-86, 34],
+  [86, 34],
+  [-86, -36],
+  [86, -36],
+  [-48, -82],
+  [48, -82],
+];
 
 interface PuppetEntry {
   puppet: AxolotitoPuppet;
@@ -50,9 +62,11 @@ export class SantuarioScene extends Container {
   private engine: WorldEngine;
   private puppetLayer = new Container();
   private nestLayer = new Container();
+  private decorLayer = new Container();
   private amigosLayer = new Container();
   private particleLayer = new Container();
   private puppets = new Map<string, PuppetEntry>();
+  private decorations = new Map<number, DecorationItem[]>();
   private particles: Particle[] = [];
   private boats: BoatEntry[] = [];
   private actionBubbles: Container | null = null;
@@ -65,7 +79,7 @@ export class SantuarioScene extends Container {
     super();
     this.engine = engine;
     this.buildBackdrop();
-    this.addChild(this.nestLayer, this.amigosLayer, this.puppetLayer, this.particleLayer);
+    this.addChild(this.nestLayer, this.decorLayer, this.amigosLayer, this.puppetLayer, this.particleLayer);
     engine.app.ticker.add(this.tick);
   }
 
@@ -136,12 +150,15 @@ export class SantuarioScene extends Container {
     const axos = data.filter((a) => !a.isEgg);
 
     // Nivel superior: un nido por slot — huevo si incuba, camita si su axolotito nació.
+    // Tap en la cueva → panel de decoración (CuevaDecorPanel vía onCaveClick).
     NEST_SLOTS_X.forEach((x, slot) => {
       const egg = eggs.find((e) => e.caveIndex === slot) ?? eggs[slot];
       const owner = axos.find((a) => a.caveIndex === slot);
-      this.nestLayer.addChild(
-        egg ? buildNestWithEgg(x, NIVEL_NIDOS_Y, egg) : buildCamita(x, NIVEL_NIDOS_Y, owner?.name),
-      );
+      const node = egg
+        ? buildNestWithEgg(x, NIVEL_NIDOS_Y, egg)
+        : buildCamita(x, NIVEL_NIDOS_Y, owner?.name);
+      this.hotspot(node, "cueva", String(slot));
+      this.nestLayer.addChild(node);
     });
 
     // Nivel central: títeres vivos.
@@ -174,6 +191,30 @@ export class SantuarioScene extends Container {
         entry.puppet.destroy({ children: true });
         this.puppets.delete(id);
       }
+    }
+  }
+
+  /** Decoraciones de la cueva (persistidas en localStorage hasta el endpoint backend). */
+  setCaveDecorations(caveIndex: number, items: DecorationItem[]): void {
+    if (this.destroyed) return;
+    if (items.length > 0) this.decorations.set(caveIndex, items);
+    else this.decorations.delete(caveIndex);
+    this.redrawDecorations();
+  }
+
+  private redrawDecorations(): void {
+    this.decorLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
+    for (const [slot, items] of this.decorations) {
+      const x = NEST_SLOTS_X[slot];
+      if (x === undefined) continue;
+      items.slice(0, DECOR_OFFSETS.length).forEach((item, i) => {
+        const [dx, dy] = DECOR_OFFSETS[i];
+        const t = new Text({ text: item.emoji, style: { fontSize: 34 } });
+        t.anchor.set(0.5);
+        t.position.set(x + dx, NIVEL_NIDOS_Y + dy);
+        t.rotation = -0.12 + (i % 3) * 0.12; // ligero desorden, como papel pegado a mano
+        this.decorLayer.addChild(t);
+      });
     }
   }
 
