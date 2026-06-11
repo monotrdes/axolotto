@@ -68,8 +68,6 @@ GASHAPON_TIER_COSTS = {
 #   Las que contienen "vip_" o "lampara" o "upgrade" → AXF (multiplicar por _AXF)
 #   Las demás → FRJ (multiplicar por _FRJ)
 CONSUMABLE_PRICES = {
-    "gotas": 200 * _FRJ,                # Gotas Anti-Escarcha (FRJ)
-    "lampara": 200 * _AXF,              # Lámpara Infrarroja Pro (AXF)
     "vip_coral": 50 * _AXF,             # Pase Coral VIP 30 días ($100 MXN)
     "vip_dorado": 120 * _AXF,           # Pase Dorado VIP 30 días ($240 MXN)
     "vip_axolite": 300 * _AXF,          # Pase Axolite VIP 30 días ($600 MXN)

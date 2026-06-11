@@ -270,28 +270,6 @@ def run_seed():
 
             # --- ECOSISTEMA DE PROTECCIÓN Y SERVICIOS (CONSUMIBLES) ---
             ItemCatalog(
-                name="Gotas Anti-Escarcha",
-                description="Protege tu incubadora contra la Escarcha Gélida por 12 horas.",
-                item_type=ItemType.CONSUMABLE,
-                rarity=Rarity.COMMON,
-                price_axg=0.0,
-                price_gal=CONSUMABLE_PRICES["gotas"],
-                max_supply=999999,
-                is_active=False,
-                item_metadata={"duration_hours": 12, "target": "single"}
-            ),
-            ItemCatalog(
-                name="Lámpara Infrarroja Pro",
-                description="Calor constante y seguro. Protege un nido de escarcha por 24 horas.",
-                item_type=ItemType.CONSUMABLE,
-                rarity=Rarity.RARE,
-                price_axg=CONSUMABLE_PRICES["lampara"],
-                price_gal=0.0,
-                max_supply=999999,
-                is_active=False,
-                item_metadata={"duration_hours": 24, "target": "single"}
-            ),
-            ItemCatalog(
                 name="Pase Coral VIP (30 días)",
                 description="VIP Club Casual: +20 FRJ/día, 5% descuento en tienda, cápsulas mensuales y marco Coral exclusivo.",
                 item_type=ItemType.CONSUMABLE,

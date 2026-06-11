@@ -15,7 +15,7 @@ from fastapi import HTTPException
 from app.models.items import ItemCatalog, ItemType, WebitoIncubation, Rarity, PlayerInventory
 from app.models.axolotito import Axolotito
 from app.models.user import User
-from app.models.economy import CurrencyType
+from app.models.economy import CurrencyType, TransactionLedger
 from app.services.shop_service import ShopService
 from app.services.tutorial_service import TutorialService
 from app.services.imprinting_service import (
@@ -351,18 +351,17 @@ def phase_incubation(engine, config, **state) -> dict:
                     else:
                         errors.append(f"tutorial_no_board {user_id}: axo sin tabla tutorial asignada")
 
-                    # Verify consumable reward for salty karma
+                    # Verify transaction reward for salty karma
                     if karma == "salty":
-                        gotas_inv = session.exec(
-                            select(PlayerInventory).join(ItemCatalog).where(
-                                PlayerInventory.user_id == user_id,
-                                ItemCatalog.name == "gotas_antiescarcha",
-                                PlayerInventory.quantity > 0,
+                        salty_tx = session.exec(
+                            select(TransactionLedger).where(
+                                TransactionLedger.user_id == user_id,
+                                TransactionLedger.description.like("%Bonus karma salty%"),
                             )
                         ).first()
-                        if gotas_inv:
-                            stats["gotas_received"] = stats.get("gotas_received", 0) + 1
-                            progress(f"  💧 {user_id}: gotas_antiescarcha recibida (karma salty)")
+                        if salty_tx:
+                            stats["salty_rewards_received"] = stats.get("salty_rewards_received", 0) + 1
+                            progress(f"  💧 {user_id}: +15.0 FRJ de compensación (karma salty)")
             except Exception as e:
                 errors.append(f"tutorial {user_id}: {e}")
                 session.rollback()

@@ -7,10 +7,6 @@ interface ItemGridProps {
 }
 
 const CONSUMABLE_META: Record<string, { emoji: string; color: string; border: string; targetTab: string; targetLabel: string }> = {
-  'gota de agua': { emoji: '💧', color: 'from-cyan-600/30 to-blue-500/20', border: 'border-cyan-500/30', targetTab: 'santuario', targetLabel: 'Ir al Santuario' },
-  'gota de agua de cenote': { emoji: '💧', color: 'from-cyan-600/30 to-blue-500/20', border: 'border-cyan-500/30', targetTab: 'santuario', targetLabel: 'Ir al Santuario' },
-  'lámpara de calor': { emoji: '🔆', color: 'from-amber-600/30 to-orange-500/20', border: 'border-amber-500/30', targetTab: 'santuario', targetLabel: 'Ir al Criadero' },
-  'lampara de calor': { emoji: '🔆', color: 'from-amber-600/30 to-orange-500/20', border: 'border-amber-500/30', targetTab: 'santuario', targetLabel: 'Ir al Criadero' },
   'escudo del santuario': { emoji: '🛡️', color: 'from-purple-600/30 to-violet-500/20', border: 'border-purple-500/30', targetTab: 'santuario', targetLabel: 'Ir al Santuario' },
 };
 
@@ -36,7 +32,7 @@ export default function ItemGrid({ ownedItems, cambiarTab }: ItemGridProps) {
         <span className="text-6xl mb-4">🎒</span>
         <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">Sin objetos</h3>
         <p className="text-slate-400 text-sm max-w-sm mb-4 leading-relaxed">
-          Consigue consumibles en la tienda o como recompensas: Gotas de Agua, Lámparas de Calor, Escudos del Santuario y más.
+          Consigue consumibles en la tienda o como recompensas: Escudos del Santuario y más.
         </p>
         {cambiarTab && (
           <button

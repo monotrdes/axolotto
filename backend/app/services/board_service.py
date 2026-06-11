@@ -1,4 +1,4 @@
-﻿import random
+import random
 import logging
 from typing import List, Optional
 from datetime import datetime, timedelta
@@ -7,6 +7,7 @@ from sqlmodel import Session, select, func
 
 logger = logging.getLogger("board_service")
 
+from app.core.config import FRJ_DECIMALS_BACKEND
 from app.core.prices import BOARD_SLOT_COSTS, CONSUMABLE_PRICES
 from app.models.board import PlayerBoard, PlayerBoardSlot
 from app.models.items import ItemCatalog, PlayerInventory, ItemType, Rarity
@@ -387,12 +388,13 @@ def create_random_board_operation(
             detail=f"Límite de tableros alcanzado. Tienes {current_boards_count}/{max_slots} tableros creados. Desbloquea un nuevo espacio para poder crear más.",
         )
 
-    # 1. Validar que el usuario posea al menos 25 GAL
+    # 1. Validar que el usuario posea al menos 25 GAL (VULN-06 conversion)
+    _cost_random = 25 * (10 ** FRJ_DECIMALS_BACKEND)
     wallet = BankService.get_or_create_wallet(session, user_id, for_update=True)
-    if wallet.frijolitos < 25.0:
+    if wallet.frijolitos < _cost_random:
         raise HTTPException(
             status_code=400,
-            detail="Saldo insuficiente. Crear un tablero aleatorio cuesta 25 GAL.",
+            detail=f"Saldo insuficiente. Crear un tablero aleatorio cuesta 25 GAL (tienes {wallet.frijolitos / (10 ** FRJ_DECIMALS_BACKEND):.1f} GAL).",
         )
 
     # 2. Buscar todas las cartas del usuario que no estén en stake total
@@ -439,11 +441,11 @@ def create_random_board_operation(
             chosen_first_editions.append(False)
             inventory_map[(cid, False)] -= 1
 
-    # Cobrar
-    wallet.frijolitos -= 25.0
+    # Cobrar (VULN-06: convertir FRJ human-readable → unidad mínima entera)
+    wallet.frijolitos -= _cost_random
     ledger = TransactionLedger(
         user_id=user_id,
-        amount=25.0,
+        amount=_cost_random,
         currency=CurrencyType.GEMA_ALGA,
         tx_type=TransactionType.MARKET_BUY,
         description=f"Creación aleatoria de tabla: {name}",
@@ -546,12 +548,13 @@ def create_manual_board_operation(
             detail=f"Límite de tableros alcanzado. Tienes {current_boards_count}/{max_slots} tableros creados. Desbloquea un nuevo espacio para poder crear más.",
         )
 
-    # 1. Validar que el usuario posea al menos 50 GAL
+    # 1. Validar que el usuario posea al menos 50 GAL (VULN-06 conversion)
+    _cost_manual = 50 * (10 ** FRJ_DECIMALS_BACKEND)
     wallet = BankService.get_or_create_wallet(session, user_id, for_update=True)
-    if wallet.frijolitos < 50.0:
+    if wallet.frijolitos < _cost_manual:
         raise HTTPException(
             status_code=400,
-            detail="Saldo insuficiente. Crear un tablero manual cuesta 50 GAL.",
+            detail=f"Saldo insuficiente. Crear un tablero manual cuesta 50 GAL (tienes {wallet.frijolitos / (10 ** FRJ_DECIMALS_BACKEND):.1f} GAL).",
         )
 
     # 2. Validar propiedad y disponibilidad de cartas
@@ -559,11 +562,11 @@ def create_manual_board_operation(
 
     validate_card_availability(user_id, card_ids, fe_flags, None, session)
 
-    # 3. Cobrar y guardar
-    wallet.frijolitos -= 50.0
+    # 3. Cobrar y guardar (VULN-06: convertir FRJ human-readable → unidad mínima entera)
+    wallet.frijolitos -= _cost_manual
     ledger = TransactionLedger(
         user_id=user_id,
-        amount=50.0,
+        amount=_cost_manual,
         currency=CurrencyType.GEMA_ALGA,
         tx_type=TransactionType.MARKET_BUY,
         description=f"Creación manual de tabla: {name}",

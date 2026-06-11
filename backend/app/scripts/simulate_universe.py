@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 simulate_universe.py v3 — Simulador Integral del Universo Axolotto
 
@@ -113,7 +113,7 @@ from app.api.v1.endpoints.shop import (
     roll_gashapon, claim_daily_capsule, roll_capsule, roll_triple_suerte,
     open_booster, get_store_items,
     GashaponRollRequest, CapsuleRollRequest, OpenBoosterRequest,
-    melt_card, forge_card, MeltCardRequest, ForgeCardRequest, TripleSuerteRequest,
+    melt_card_endpoint as melt_card, forge_card_endpoint as forge_card, MeltCardRequest, ForgeCardRequest, TripleSuerteRequest,
 )
 from app.api.v1.endpoints.market import (
     list_inventory_item, buy_inventory_listing, get_inventory_listings,

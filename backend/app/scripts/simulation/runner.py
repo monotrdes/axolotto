@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 runner.py — Modular entrypoint for the Axolotto Universe Simulator v3.
 
@@ -381,7 +381,7 @@ def main():
 🧬  Naturalezas obtenidas:     {", ".join(f"{k}: {v}" for k, v in stats.get('natures', {}).items()) if stats.get('natures') else "Ninguna"}
 😇  Karma Lucky:               {stats.get('karma_lucky', 0)}
 🧂  Karma Salty:               {stats.get('karma_salty', 0)}
-💧  Gotas Anti-Escarcha:       {stats.get('gotas_received', 0)}
+💧  Recompensas Salty (FRJ):   {stats.get('salty_rewards_received', 0)}
 🌤️  Clima incubación:          {stats.get('weather_logged', '?')}
 🎉  Evento de prueba creado:   {"Sí" if stats.get('test_event_created') else "No"}
 {'-'*70}

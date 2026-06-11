@@ -393,7 +393,8 @@ class Web3Service:
     def update_axolotito_stats_onchain(token_id: int, stats: tuple) -> str:
         """Actualiza los stats on-chain de un Axolotito."""
         if not settings.AXOLOTITOS_ADDRESS:
-            return "0x_mock_update_stats"
+            import secrets
+            return f"0x_mock_update_stats_{secrets.token_hex(16)}"
         w3 = Web3Service._get_w3()
         s = tuple(min(255, max(0, int(x))) for x in stats)
         abi = _load_abi("Axolotitos") or _AXOLOTITOS_ABI_MINIMAL
@@ -428,7 +429,8 @@ class Web3Service:
     def transfer_card_onchain(from_address: str, to_address: str, card_id: int, amount: int = 1) -> str:
         """Transfiere cartas de un jugador a otro on-chain (convierte ID catálogo a ID contrato)."""
         if settings.IS_MOCK_WEB3 or not settings.CARDS_ADDRESS:
-            return "0x_mock_transfer_card"
+            import secrets
+            return f"0x_mock_transfer_card_{secrets.token_hex(16)}"
         w3 = Web3Service._get_w3()
         from_addr = Web3.to_checksum_address(from_address)
         to_addr = Web3.to_checksum_address(to_address)
@@ -461,7 +463,8 @@ class Web3Service:
     def transferir_sobrecito_onchain(from_address: str, to_address: str, sobrecito_id: int, amount: int = 1) -> str:
         """Transfiere sobrecitos de un jugador a otro on-chain."""
         if settings.IS_MOCK_WEB3 or not settings.BOOSTERS_ADDRESS:
-            return "0x_mock_transfer_sobrecito"
+            import secrets
+            return f"0x_mock_transfer_sobrecito_{secrets.token_hex(16)}"
         w3 = Web3Service._get_w3()
         from_addr = Web3.to_checksum_address(from_address)
         to_addr = Web3.to_checksum_address(to_address)
@@ -501,7 +504,8 @@ class Web3Service:
         Disuelve una tabla on-chain, devolviendo 15 cartas y destruyendo la del índice especificado.
         """
         if not settings.TABLAS_ADDRESS:
-            return "0x_mock_dissolve_board"
+            import secrets
+            return f"0x_mock_dissolve_board_{secrets.token_hex(16)}"
         w3 = Web3Service._get_w3()
         abi = _load_abi("TablasLoteria") or _TABLAS_ABI_MINIMAL
         contract = w3.eth.contract(address=Web3.to_checksum_address(settings.TABLAS_ADDRESS), abi=abi)
@@ -515,7 +519,8 @@ class Web3Service:
         Disuelve una tabla on-chain de manera segura, devolviendo las 16 cartas al dueño.
         """
         if not settings.TABLAS_ADDRESS:
-            return "0x_mock_dissolve_board_safe"
+            import secrets
+            return f"0x_mock_dissolve_board_safe_{secrets.token_hex(16)}"
         w3 = Web3Service._get_w3()
         abi = _load_abi("TablasLoteria") or _TABLAS_ABI_MINIMAL
         contract = w3.eth.contract(address=Web3.to_checksum_address(settings.TABLAS_ADDRESS), abi=abi)
@@ -529,7 +534,8 @@ class Web3Service:
         Actualiza los stats de una tabla on-chain.
         """
         if not settings.TABLAS_ADDRESS:
-            return "0x_mock_update_table_stats"
+            import secrets
+            return f"0x_mock_update_table_stats_{secrets.token_hex(16)}"
         w3 = Web3Service._get_w3()
         abi = _load_abi("TablasLoteria") or _TABLAS_ABI_MINIMAL
         contract = w3.eth.contract(address=Web3.to_checksum_address(settings.TABLAS_ADDRESS), abi=abi)
@@ -638,7 +644,8 @@ class Web3Service:
     def transfer_board_onchain(from_address: str, to_address: str, board_token_id: int) -> str:
         """Transfiere un NFT de Tabla on-chain usando el GameController."""
         if not settings.GAME_CONTROLLER_ADDRESS or not settings.TABLAS_ADDRESS:
-            return "0x_mock_transfer_board"
+            import secrets
+            return f"0x_mock_transfer_board_{secrets.token_hex(16)}"
         w3 = Web3Service._get_w3()
         from_addr = Web3.to_checksum_address(from_address)
         to_addr = Web3.to_checksum_address(to_address)
@@ -650,7 +657,8 @@ class Web3Service:
     def transfer_axolotito_onchain(from_address: str, to_address: str, axolotito_token_id: int) -> str:
         """Transfiere un NFT de Axolotito on-chain usando el GameController."""
         if not settings.GAME_CONTROLLER_ADDRESS or not settings.AXOLOTITOS_ADDRESS:
-            return "0x_mock_transfer_axolotito"
+            import secrets
+            return f"0x_mock_transfer_axolotito_{secrets.token_hex(16)}"
         w3 = Web3Service._get_w3()
         from_addr = Web3.to_checksum_address(from_address)
         to_addr = Web3.to_checksum_address(to_address)
@@ -779,7 +787,8 @@ class Web3Service:
                                 nft_contract: str, token_id: int, price_axf: int) -> str:
         """Deposita el NFT del vendedor en el MarketEscrow y abre el listing."""
         if settings.IS_MOCK_WEB3 or not settings.MARKET_ESCROW_ADDRESS:
-            return "0x_mock_escrow_deposit"
+            import secrets
+            return f"0x_mock_escrow_deposit_{secrets.token_hex(16)}"
         w3 = Web3Service._get_w3()
         contract = Web3Service._get_escrow_contract(w3)
         return Web3Service._send_tx(contract.functions.depositAndList(
@@ -794,7 +803,8 @@ class Web3Service:
     def escrow_release(listing_id: str, buyer_address: str, payment_ref: str) -> str:
         """Libera el NFT al comprador registrando el paymentRef fiat (auditoría)."""
         if settings.IS_MOCK_WEB3 or not settings.MARKET_ESCROW_ADDRESS:
-            return "0x_mock_escrow_release"
+            import secrets
+            return f"0x_mock_escrow_release_{secrets.token_hex(16)}"
         w3 = Web3Service._get_w3()
         contract = Web3Service._get_escrow_contract(w3)
         return Web3Service._send_tx(contract.functions.release(
@@ -807,7 +817,8 @@ class Web3Service:
     def escrow_refund(listing_id: str) -> str:
         """Devuelve el NFT en custodia al vendedor original."""
         if settings.IS_MOCK_WEB3 or not settings.MARKET_ESCROW_ADDRESS:
-            return "0x_mock_escrow_refund"
+            import secrets
+            return f"0x_mock_escrow_refund_{secrets.token_hex(16)}"
         w3 = Web3Service._get_w3()
         contract = Web3Service._get_escrow_contract(w3)
         return Web3Service._send_tx(contract.functions.refund(

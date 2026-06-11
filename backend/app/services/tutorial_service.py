@@ -11,7 +11,7 @@ Fases del tutorial (guardadas en WebitoIncubation.tutorial_phase):
 
 Karma:
   "lucky"  → bonus_luck > 60 O ganó la mayoría de mini-simulaciones  → +50 GAL
-  "salty"  → default                                                   → +1 consumible "gotas_antiescarcha"
+  "salty"  → default                                                   → +15.0 FRJ
 """
 
 import random
@@ -21,6 +21,7 @@ from typing import Optional
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
+from app.core.config import FRJ_DECIMALS_BACKEND, frj_to_display
 from app.models.economy import (
     CurrencyType,
     TransactionLedger,
@@ -41,8 +42,10 @@ PHASE_ROUNDS = 5
 
 
 
-# GAL que se otorgan como bonus karma lucky
-LUCKY_GAL_BONUS = 50.0
+# GAL que se otorgan como bonus karma lucky (VULN-06: unidad mínima entera)
+LUCKY_GAL_BONUS = 50 * (10 ** FRJ_DECIMALS_BACKEND)
+# Display para frontend
+LUCKY_GAL_BONUS_DISPLAY = frj_to_display(LUCKY_GAL_BONUS)
 
 
 # ---------------------------------------------------------------------------
@@ -473,8 +476,8 @@ class TutorialService:
     ) -> dict:
         """
         Aplica el bonus de karma al usuario.
-        lucky  → +50 GAL
-        salty  → +1 gotas_antiescarcha en inventario
+        lucky  → +50 FRJ
+        salty  → +15.0 FRJ
         En ambos casos escribe en TransactionLedger.
         """
         if karma == "lucky":
@@ -490,14 +493,15 @@ class TutorialService:
             session.add(wallet)
             session.add(ledger)
             session.commit()
-            return {"type": "frj", "amount": LUCKY_GAL_BONUS, "currency": "FRJ"}
+            return {"type": "frj", "amount": LUCKY_GAL_BONUS_DISPLAY, "currency": "FRJ"}
 
         else:  # salty
+            _salty_bonus = 15 * (10 ** FRJ_DECIMALS_BACKEND)  # VULN-06: unidad mínima entera
             wallet = BankService.get_or_create_wallet(session, user_id, for_update=True)
-            wallet.frijolitos += 15.0
+            wallet.frijolitos += _salty_bonus
             ledger = TransactionLedger(
                 user_id=user_id,
-                amount=15.0,
+                amount=_salty_bonus,
                 currency=CurrencyType.FRIJOLITO,
                 tx_type=TransactionType.TUTORIAL_BONUS,
                 description=f"Bonus karma salty — tutorial huevo #{incubation.id}",
@@ -505,4 +509,4 @@ class TutorialService:
             session.add(wallet)
             session.add(ledger)
             session.commit()
-            return {"type": "frj", "amount": 15.0, "currency": "FRJ"}
+            return {"type": "frj", "amount": frj_to_display(_salty_bonus), "currency": "FRJ"}
