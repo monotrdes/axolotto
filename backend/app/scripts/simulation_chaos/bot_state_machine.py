@@ -45,6 +45,8 @@ from bot_actions import (
     action_list_board_for_sale,
     action_buy_random_market_board,
     refresh_bot_state,
+    action_stake_axolotito,
+    action_unstake_axolotito,
 )
 
 
@@ -71,6 +73,9 @@ class PlayerBot:
 
         # Player state (refreshed periodically)
         self.axolotito_ids: list[int] = []
+        self.idle_axo_ids: list[int] = []
+        self.staked_axo_ids: list[int] = []
+        self.sleeping_axo_ids: list[int] = []
         self.board_ids: list[int] = []
         self.booster_inv_ids: list[int] = []
         self.tutorial_completed: bool = False
@@ -160,7 +165,12 @@ class PlayerBot:
         """Refresh the bot's knowledge of its owned assets."""
         state = refresh_bot_state(self.user_id)
         if isinstance(state, dict):
-            self.axolotito_ids = state.get("axolotito_ids", [])
+            axos_info = state.get("axolotitos", [])
+            self.axolotito_ids = [axo["id"] for axo in axos_info]
+            self.idle_axo_ids = [axo["id"] for axo in axos_info if axo["status"] == "idle"]
+            self.staked_axo_ids = [axo["id"] for axo in axos_info if axo["status"] in ("studying", "resting")]
+            self.sleeping_axo_ids = [axo["id"] for axo in axos_info if axo["status"] == "sleeping"]
+            
             self.board_ids = state.get("board_ids", [])
             self.booster_inv_ids = state.get("booster_inv_ids", [])
             self.tutorial_completed = state.get("tutorial_completed", False)
@@ -244,18 +254,29 @@ class PlayerBot:
         Bots without axolotitos are stuck — they can't play. We mark them as blocked.
         """
         uid = self.user_id
-        axo_ids = self.axolotito_ids
-
-        if not axo_ids:
-            # Sin axolotito = no puede jugar.  Intentar acciones que no requieran axo.
+        
+        # Prefer using idle axolotitos for playing matches
+        idle_axos = self.idle_axo_ids
+        if not idle_axos:
+            # If all are staked or sleeping, maybe unstake one or wake one up?
+            if self.staked_axo_ids and _rng.random() < 0.5:
+                axo_id = _rng.choice(self.staked_axo_ids)
+                dur = _rng.uniform(0.5, 1.5)
+                return ("staking", "Unstakeando axo para jugar", lambda: action_unstake_axolotito(axo_id, uid), dur)
+            elif self.sleeping_axo_ids and _rng.random() < 0.5:
+                axo_id = _rng.choice(self.sleeping_axo_ids)
+                dur = _rng.uniform(0.3, 1.0)
+                return ("care", "Despertando axo para jugar", lambda: action_wake_axolotito(axo_id, uid), dur)
+                
+            # Fallback if no idle axolotitos can be readied
             dur = _rng.uniform(0.5, 1.5)
             choice = _rng.random()
             if choice < 0.5:
-                return ("gashapon", "Gashapon (sin axo)", lambda: action_roll_gashapon(uid, "common"), dur)
+                return ("gashapon", "Gashapon (sin axo libre)", lambda: action_roll_gashapon(uid, "common"), dur)
             else:
-                return ("shop", "Comprando (sin axo)", lambda: action_buy_random_booster(uid), dur)
+                return ("shop", "Comprando (sin axo libre)", lambda: action_buy_random_booster(uid), dur)
 
-        axo_id = _rng.choice(axo_ids)
+        axo_id = _rng.choice(idle_axos)
         choice = _rng.random()
 
         if choice < 0.55:
@@ -292,25 +313,30 @@ class PlayerBot:
     def _pick_care_action(self) -> Optional[tuple[str, str, Callable[[], dict], float]]:
         """Pick a care action. Returns (zone, description, callable, visible_duration)."""
         uid = self.user_id
-        axo_ids = self.axolotito_ids
-
-        if not axo_ids:
+        
+        # Care actions are only valid for idle or sleeping axolotitos.
+        idle_axos = self.idle_axo_ids
+        sleeping_axos = self.sleeping_axo_ids
+        
+        if not idle_axos and not sleeping_axos:
             dur = _rng.uniform(0.3, 1.0)
-            return ("daily", "Sin axos — daily", lambda: action_claim_daily_reward(uid), dur)
+            return ("daily", "Sin axos libres — daily", lambda: action_claim_daily_reward(uid), dur)
 
-        axo_id = _rng.choice(axo_ids)
+        if sleeping_axos and (not idle_axos or _rng.random() < 0.3):
+            axo_id = _rng.choice(sleeping_axos)
+            dur = _rng.uniform(0.3, 1.0)
+            return ("care", "Despertando axo", lambda: action_wake_axolotito(axo_id, uid), dur)
+            
+        axo_id = _rng.choice(idle_axos)
         choice = _rng.random()
 
-        if choice < 0.50:
+        if choice < 0.60:
             food = _rng.choice(["pellet", "worm", "shrimp"])
             dur = _rng.uniform(0.5, 1.5)
             return ("care", f"Alimentando ({food})", lambda: action_feed_axolotito(axo_id, uid, food), dur)
-        elif choice < 0.75:
+        else:
             dur = _rng.uniform(0.4, 1.2)
             return ("care", "Durmiendo axo", lambda: action_sleep_axolotito(axo_id, uid), dur)
-        else:
-            dur = _rng.uniform(0.3, 1.0)
-            return ("care", "Despertando axo", lambda: action_wake_axolotito(axo_id, uid), dur)
 
     def _pick_decor_action(self) -> Optional[tuple[str, str, Callable[[], dict], float]]:
         """Pick a decor/cave/forge action. Returns (zone, description, callable, visible_duration)."""
@@ -321,6 +347,20 @@ class PlayerBot:
             dur = _rng.uniform(0.3, 0.8)
             return ("daily", "Sin axos — VIP claim", lambda: action_claim_vip_frj(uid), dur)
 
+        # 1. Staking actions check
+        if self.idle_axo_ids and _rng.random() < 0.35:
+            # Put an axolotito to stake (studying or resting)
+            axo_id = _rng.choice(self.idle_axo_ids)
+            status = _rng.choice(["studying", "resting"])
+            dur = _rng.uniform(0.5, 1.5)
+            return ("staking", f"Stakeando axo ({status})", lambda: action_stake_axolotito(axo_id, uid, status), dur)
+
+        if self.staked_axo_ids and _rng.random() < 0.25:
+            # Take out of staking / claim reward
+            axo_id = _rng.choice(self.staked_axo_ids)
+            dur = _rng.uniform(0.5, 1.5)
+            return ("staking", "Unstakeando axo", lambda: action_unstake_axolotito(axo_id, uid), dur)
+
         choice = _rng.random()
 
         if choice < 0.30:
@@ -329,9 +369,9 @@ class PlayerBot:
             return ("cave", "Expandiendo cueva", lambda: action_expand_cave(uid), dur)
         elif choice < 0.55:
             # Equip cave decor item
-            axo_id = _rng.choice(axo_ids)
+            dec_axo = _rng.choice(self.idle_axo_ids) if self.idle_axo_ids else _rng.choice(axo_ids)
             dur = _rng.uniform(0.5, 2.0)
-            return ("cave", "Decorando cueva", lambda: action_equip_cave_item(axo_id, uid), dur)
+            return ("cave", "Decorando cueva", lambda: action_equip_cave_item(dec_axo, uid), dur)
         elif choice < 0.78:
             # Card melter / forge
             dur = _rng.uniform(1.0, 3.0)

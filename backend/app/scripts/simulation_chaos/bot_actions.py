@@ -95,6 +95,14 @@ def _get_player_axolotitos(session: Session, user_id: str) -> list[int]:
     return list(axos)
 
 
+def _get_player_axolotitos_info(session: Session, user_id: str) -> list[dict]:
+    """Get all axolotito IDs and statuses owned by a user."""
+    axos = session.exec(
+        select(Axolotito).where(Axolotito.user_id == user_id)
+    ).all()
+    return [{"id": axo.id, "status": axo.status} for axo in axos]
+
+
 def _get_player_boards(session: Session, user_id: str) -> list[int]:
     """Get all non-dead board IDs owned by a user."""
     boards = session.exec(
@@ -137,8 +145,10 @@ def fetch_player_state(user_id: str) -> dict:
     """
     def _fetch(session: Session) -> dict:
         user = _get_player_user(session, user_id)
+        axos_info = _get_player_axolotitos_info(session, user_id)
         return {
-            "axolotito_ids": _get_player_axolotitos(session, user_id),
+            "axolotito_ids": [axo["id"] for axo in axos_info],
+            "axolotitos": axos_info,
             "board_ids": _get_player_boards(session, user_id),
             "booster_inv_ids": _get_player_sealed_boosters(session, user_id),
             "tutorial_completed": user.tutorial_completed if user else False,
@@ -146,7 +156,7 @@ def fetch_player_state(user_id: str) -> dict:
     result = _action(_fetch, "fetch_state")
     if result.get("ok") and isinstance(result.get("detail"), dict):
         return result["detail"]
-    return {"axolotito_ids": [], "board_ids": [], "booster_inv_ids": [], "tutorial_completed": False}
+    return {"axolotito_ids": [], "axolotitos": [], "board_ids": [], "booster_inv_ids": [], "tutorial_completed": False}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -668,6 +678,90 @@ def action_progress_tutorial(user_id: str) -> dict:
             return {"completed": True, "tutorial_phase": 5}
 
     result = _action(_fn, "progress_tutorial")
+    increment_stat("bot_actions")
+    if not result.get("ok"):
+        increment_stat("bot_errors")
+    return result
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# Staking Actions
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def action_stake_axolotito(axo_id: int, user_id: str, status: str = "studying") -> dict:
+    """Put an axolotito into staking (studying or resting)."""
+    from app.services.staking_service import StakingService
+    from datetime import datetime
+
+    def _fn(session: Session) -> Any:
+        user = _get_player_user(session, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+        axolotito = session.exec(select(Axolotito).where(Axolotito.id == axo_id)).first()
+        if not axolotito:
+            raise HTTPException(status_code=404, detail="Axolotito no encontrado.")
+        if axolotito.user_id != user_id:
+            raise HTTPException(status_code=403, detail="Este Axolotito no te pertenece.")
+        if axolotito.status in ["studying", "resting"]:
+            raise HTTPException(status_code=400, detail=f"Axolotito ya está en staking ({axolotito.status}).")
+        if axolotito.status != "idle":
+            raise HTTPException(status_code=400, detail=f"Axolotito no está ocioso ({axolotito.status}).")
+
+        staked_count = len(session.exec(
+            select(Axolotito)
+            .where(Axolotito.user_id == user_id)
+            .where(Axolotito.status.in_(["studying", "resting"]))
+        ).all())
+
+        max_slots = StakingService.get_staking_slots(user)
+        if staked_count >= max_slots:
+            raise HTTPException(status_code=400, detail="Límite de slots de staking alcanzado.")
+
+        axolotito.status = status
+        axolotito.last_staking_claim = datetime.utcnow()
+        axolotito.accrued_unclaimed = 0
+        session.add(axolotito)
+        session.commit()
+        
+        # Track staking count
+        increment_stat("axolotitos_staked")
+        
+        return {"id": axo_id, "status": status}
+
+    result = _action(_fn, "stake")
+    increment_stat("bot_actions")
+    if not result.get("ok"):
+        increment_stat("bot_errors")
+    return result
+
+
+def action_unstake_axolotito(axo_id: int, user_id: str) -> dict:
+    """Take an axolotito out of staking and claim accrued rewards."""
+    from app.services.staking_service import StakingService
+
+    def _fn(session: Session) -> Any:
+        user = _get_player_user(session, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+        axolotito = session.exec(select(Axolotito).where(Axolotito.id == axo_id)).first()
+        if not axolotito:
+            raise HTTPException(status_code=404, detail="Axolotito no encontrado.")
+        if axolotito.user_id != user_id:
+            raise HTTPException(status_code=403, detail="Este Axolotito no te pertenece.")
+        if axolotito.status not in ["studying", "resting"]:
+            raise HTTPException(status_code=400, detail="Axolotito no está en staking.")
+
+        claim_result = StakingService.claim_staking_reward(session, axo_id, user)
+        axolotito.status = "idle"
+        session.add(axolotito)
+        session.commit()
+        
+        # Track unstaking count
+        increment_stat("axolotitos_unstaked")
+        
+        return {"id": axo_id, "status": "idle", "claimed_frj": claim_result.get("claimed_frj", 0.0)}
+
+    result = _action(_fn, "unstake")
     increment_stat("bot_actions")
     if not result.get("ok"):
         increment_stat("bot_errors")

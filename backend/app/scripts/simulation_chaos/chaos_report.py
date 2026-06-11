@@ -69,6 +69,8 @@ def generate_chaos_report(
   ⚡ Throughput:                     {stats.get('bot_actions', 0) / max(1, runtime_seconds):.1f} acciones/s
   💥 Errores 500 en bots:           {stats.get('bot_500s', 0)}
   🎮 Partidas jugadas:              {stats.get('games_played', 0)}
+  🎓 Axolotitos en staking:         {stats.get('axolotitos_staked', 0)}
+  🔓 Axolotitos retirados (unstake): {stats.get('axolotitos_unstaked', 0)}
 """
 
     # ── CRITICAL section ─────────────────────────────────────────────────────

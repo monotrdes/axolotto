@@ -296,6 +296,7 @@ def run_chaos_simulation(config: ChaosConfig):
             # wallet, VIP, boosters, y fase concurrente.  No basta con solo
             # arreglar tutorial_completed — necesitan ser parte de 'players'.
             from sqlmodel import select as _sel2
+            from app.models.user import User
             admin_dids = getattr(settings, 'admin_dids', [])
             for admin_did in admin_dids:
                 if admin_did in [p["user_id"] for p in players]:

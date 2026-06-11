@@ -21,7 +21,8 @@ const ZONES: ZoneInfo[] = [
   { id: "cave",        name: "Cueva",        emoji: "🏠", row: 3, col: 1 },
   { id: "care",        name: "Cuidado",      emoji: "💤", row: 3, col: 2 },
   { id: "daily",       name: "Daily Rewards",emoji: "🌙", row: 3, col: 3 },
-  { id: "idle",        name: "Idle / Think", emoji: "⏳", row: 4, col: 1 },
+  { id: "staking",     name: "Staking",      emoji: "🎓", row: 4, col: 1 },
+  { id: "idle",        name: "Idle / Think", emoji: "⏳", row: 4, col: 2 },
 ];
 
 const ATTACK_ZONES: ZoneInfo[] = [
@@ -148,6 +149,18 @@ function StatsBar({ counters, stats }: { counters: Record<string, number>; stats
       <div className="flex items-center gap-1.5 rounded-lg bg-[#141428] border border-white/5 px-2.5 py-1">
         <span className="text-gray-500">Acciones:</span>
         <span className="text-white font-semibold">{stats?.bot_actions || 0}</span>
+      </div>
+      <div className="flex items-center gap-1.5 rounded-lg bg-[#141428] border border-white/5 px-2.5 py-1">
+        <span className="text-gray-500">Partidas:</span>
+        <span className="text-indigo-400 font-semibold">{stats?.games_played || 0}</span>
+      </div>
+      <div className="flex items-center gap-1.5 rounded-lg bg-[#141428] border border-white/5 px-2.5 py-1">
+        <span className="text-gray-500">🎓 Stakeados:</span>
+        <span className="text-[#FF8DA1] font-semibold">{stats?.axolotitos_staked || 0}</span>
+      </div>
+      <div className="flex items-center gap-1.5 rounded-lg bg-[#141428] border border-white/5 px-2.5 py-1">
+        <span className="text-gray-500">🔓 Unstaked:</span>
+        <span className="text-green-400 font-semibold">{stats?.axolotitos_unstaked || 0}</span>
       </div>
       <div className="flex items-center gap-1.5 rounded-lg bg-[#141428] border border-white/5 px-2.5 py-1">
         <span className="text-gray-500">Ataques:</span>

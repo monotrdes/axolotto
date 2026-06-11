@@ -116,6 +116,7 @@ ZONES = {
     "cave":        {"name": "Cueva",        "emoji": "🏠", "css_class": "zone-cave"},
     "daily":       {"name": "Daily Rewards","emoji": "🌙", "css_class": "zone-daily"},
     "care":        {"name": "Cuidado",      "emoji": "💤", "css_class": "zone-care"},
+    "staking":     {"name": "Staking",      "emoji": "🎓", "css_class": "zone-staking"},
     "idle":        {"name": "Idle",         "emoji": "⏳", "css_class": "zone-idle"},
     "replay":      {"name": "Replay Atk",   "emoji": "🔄", "css_class": "zone-attack"},
     "spoof":       {"name": "ID Spoof",     "emoji": "👤", "css_class": "zone-attack"},
