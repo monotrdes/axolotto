@@ -103,7 +103,14 @@
 - [ ] Activar mundo en Santuario con flag (validación visual del usuario)
 
 ### Fase 2 — Tianguis, esqueleto Pirámide, transiciones
-- [ ] (ver plan §8 Fase 2)
+- [x] TianguisScene: 5 puestos tocables + guirnalda de banderines (ver Fase 1 arriba)
+- [x] **PiramideScene**: escena ancha 3240px con las 3 subzonas — Cámara de la Suerte
+      (3 gashapones con domo de cápsulas), Explanada (pirámide escalonada + podio con
+      **puppets reales del top-3** vía GET /ranking/axolotitos), Cenote de las Salas
+      (Charco de Novatos + Fosa del Campeón). Hotspots: podio→rankings,
+      gashapon→cápsulas, salas→jugar. `GameCanvasHandle.setPodio` + fetch en page.tsx
+- [ ] Re-skin HTML por tokens (Store boletos, SettlingScreen recibo, Inventory códice, VipModal)
+- [ ] Store: prop initialTab para abrir melter (forja) / market (p2p) según puesto
 
 ### Fase 3 — Cenote de las Salas y mesa de competencia
 - [ ] (ver plan §8 Fase 3)
@@ -124,7 +131,8 @@
 | 2026-06-11 | 94a0174 | Dev proxy same-origin para probar en :3001/LAN sin CORS |
 | 2026-06-11 | 22b8967 | Axolotitos reales en el diorama (fetch /auth/axolotitos + mapper) y Santuario HTML oculto con flag |
 | 2026-06-11 | 9164784 | Fix cámara desktop (overscan + alto completo); mesa-amigos → tab amigos. Validado por usuario en móvil y web ✓ |
-| 2026-06-11 | (este) | Paneles overlay ocultos por defecto + TianguisScene con 5 puestos + huevos de incubación reales. PAUSA DE PRUEBA |
+| 2026-06-11 | 4997950 | Paneles overlay ocultos por defecto + TianguisScene con 5 puestos + huevos de incubación reales. Validado ✓ |
+| 2026-06-11 | (este) | PiramideScene: 3 subzonas con paneo, podio top-3 con puppets reales, gashapones y pozas tocables |
 
 ## Notas para el verificador humano
 

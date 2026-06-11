@@ -7,6 +7,7 @@ import PaperCurtain, { type PaperCurtainHandle } from "@/components/play/PaperCu
 import type { WorldEngine } from "./engine/WorldEngine";
 import type { ZoneManager } from "./zones/ZoneManager";
 import type { SantuarioScene } from "./zones/santuario/SantuarioScene";
+import type { PiramideScene } from "./zones/piramide/PiramideScene";
 
 /**
  * Mundo 2.5D de papel picado (plan task-84). Detrás del flag
@@ -22,6 +23,8 @@ export interface GameCanvasHandle {
   setCaveDecorations(caveIndex: number, decorations: DecorationItem[]): void;
   focusZone(zoneId: string): void;
   navigateToZone(zoneId: string): void;
+  /** Top-3 del ranking para el podio de la Pirámide (mundo papel picado). */
+  setPodio?(data: AxolotitoData[]): void;
 }
 
 interface GameCanvasProps {
@@ -59,7 +62,9 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
   const engineRef = useRef<WorldEngine | null>(null);
   const zonesRef = useRef<ZoneManager | null>(null);
   const santuarioRef = useRef<SantuarioScene | null>(null);
+  const piramideRef = useRef<PiramideScene | null>(null);
   const axolotitosRef = useRef<AxolotitoData[]>([]);
+  const podioRef = useRef<AxolotitoData[]>([]);
   // Ref para evitar closures viejos dentro del listener del bridge.
   const onStallClickRef = useRef(onStallClick);
   onStallClickRef.current = onStallClick;
@@ -79,6 +84,12 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
     },
     navigateToZone(zoneId: string) {
       zonesRef.current?.navigate(zoneId, curtainRef.current);
+    },
+    setPodio(data: AxolotitoData[]) {
+      podioRef.current = data;
+      if (piramideRef.current && !piramideRef.current.destroyed) {
+        piramideRef.current.setPodio(data);
+      }
     },
   }));
 
@@ -103,13 +114,19 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
     let cancelled = false;
 
     (async () => {
-      const [{ WorldEngine }, { ZoneManager }, { SantuarioScene }, { TianguisScene }] =
-        await Promise.all([
-          import("./engine/WorldEngine"),
-          import("./zones/ZoneManager"),
-          import("./zones/santuario/SantuarioScene"),
-          import("./zones/tianguis/TianguisScene"),
-        ]);
+      const [
+        { WorldEngine },
+        { ZoneManager },
+        { SantuarioScene },
+        { TianguisScene },
+        { PiramideScene },
+      ] = await Promise.all([
+        import("./engine/WorldEngine"),
+        import("./zones/ZoneManager"),
+        import("./zones/santuario/SantuarioScene"),
+        import("./zones/tianguis/TianguisScene"),
+        import("./zones/piramide/PiramideScene"),
+      ]);
       if (cancelled || !hostRef.current) return;
 
       const engine = await WorldEngine.create(hostRef.current);
@@ -126,6 +143,12 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
         return scene;
       });
       zones.registerBuilder("tianguis", (e) => new TianguisScene(e));
+      zones.registerBuilder("piramide", (e) => {
+        const scene = new PiramideScene(e);
+        piramideRef.current = scene;
+        scene.setPodio(podioRef.current);
+        return scene;
+      });
       engine.bridge.on("hotspot", ({ kind, id }) => {
         onStallClickRef.current?.(id ? `${kind}:${id}` : kind);
       });

@@ -175,6 +175,22 @@ export default function Home() {
     };
   }, [accessToken, user?.id]);
 
+  // Mundo papel picado: top-3 del ranking para el podio de la Pirámide (endpoint público).
+  useEffect(() => {
+    if (!PAPER_WORLD) return;
+    let cancelled = false;
+    axios
+      .get(`${API_BASE}/ranking/axolotitos?sort_by=level&limit=3`)
+      .then((res) => {
+        if (cancelled || !Array.isArray(res.data)) return;
+        gameCanvasRef.current?.setPodio?.(res.data.map(mapBackendAxolotito));
+      })
+      .catch((e) => console.error("PaperWorld: error cargando podio", e));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Sync axolotito data to the paper world
   useEffect(() => {
     if (!datosBanco?.axolotitos || !gameCanvasRef.current) return;
@@ -539,6 +555,12 @@ export default function Home() {
                 // Mesa del Santuario: jugar con amigos (provisional: hub social;
                 // TODO Fase 1: HostingSetupModal para crear sala privada)
                 setTabActiva("amigos");
+              } else if (stallType === "podio") {
+                setTabActiva("rankings");
+              } else if (stallType === "gashapon") {
+                setTabActiva("gashapon");
+              } else if (stallType === "salas") {
+                setTabActiva("jugar");
               } else if (stallType === "fountain") {
                 // Fuente-banco: conversión FRJ↔AXF
                 setTabActiva("tienda");
