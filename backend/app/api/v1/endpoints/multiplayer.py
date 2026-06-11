@@ -135,7 +135,9 @@ def register_axolotito(
         _room_type = "champion_abyss"
 
     # 1. Validar Axolotito y pertenencia
-    axo = session.get(Axolotito, req.axolotito_id)
+    axo = session.exec(
+        select(Axolotito).where(Axolotito.id == req.axolotito_id).with_for_update()
+    ).first()
     if not axo:
         raise HTTPException(status_code=404, detail="Axolotito no encontrado.")
     if axo.user_id != verified_user_id:
