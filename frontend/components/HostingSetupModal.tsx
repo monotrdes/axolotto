@@ -13,6 +13,11 @@ interface HostingSetupModalProps {
   onClose: () => void;
   onCreated: () => void;
   tableSeats: number;
+  /** Visibilidad inicial (p. ej. 'friends' al hostear desde la mesa del mundo). */
+  initialVisibility?: 'public' | 'friends' | 'private';
+  /** Amigo al que se invita (burbuja 🎲 del embarcadero): preconfigura la sala.
+      Solo se lee al montar — remontar el modal (render condicional) para cambiarlo. */
+  inviteNickname?: string | null;
 }
 
 export default function HostingSetupModal({
@@ -21,11 +26,15 @@ export default function HostingSetupModal({
   onClose,
   onCreated,
   tableSeats,
+  initialVisibility,
+  inviteNickname,
 }: HostingSetupModalProps) {
-  const [name, setName] = useState('Mi Sala');
+  const [name, setName] = useState(
+    inviteNickname ? `Mesa con ${inviteNickname}`.slice(0, 30) : 'Mi Sala'
+  );
   const [buyIn, setBuyIn] = useState(50);
   const [maxPlayers, setMaxPlayers] = useState(Math.min(4, tableSeats));
-  const [visibility, setVisibility] = useState<'public' | 'friends' | 'private'>('public');
+  const [visibility, setVisibility] = useState<'public' | 'friends' | 'private'>(initialVisibility ?? 'public');
   const [speed, setSpeed] = useState<'normal' | 'rápido' | 'turbo'>('normal');
   const [winPatterns, setWinPatterns] = useState<string[]>(['line', 'cuadrito']);
   const [password, setPassword] = useState('');
@@ -105,6 +114,13 @@ export default function HostingSetupModal({
               <X size={16} />
             </button>
           </div>
+
+          {/* Invitación desde el embarcadero */}
+          {inviteNickname && (
+            <div className="mb-4 p-3 rounded-xl bg-teal-900/30 border border-teal-500/30 text-teal-300 text-xs font-bold">
+              👥 Invitando a {inviteNickname} — al abrir la sala será visible para tus amigos
+            </div>
+          )}
 
           {/* Error */}
           {error && (

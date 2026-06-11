@@ -30,16 +30,13 @@
 
 ## Estado actual
 
-- **Fase activa**: Fase 1 — restos finales (núcleo, embarcadero y burbujas de acción HECHOS)
-- **Último commit de avance**: el commit que contiene esta edición (feat(world): burbujas de acción)
+- **Fase activa**: Fase 1 — restos finales (embarcadero, burbujas y hosting desde la mesa HECHOS)
+- **Último commit de avance**: el commit que contiene esta edición (feat(world): hosting desde la mesa)
 - **SIGUIENTE PASO**: Fase 1 restante, en orden:
-  1. **Mesa de amigos**: hoy `app/play/page.tsx` maneja `onStallClick("mesa-amigos")`
-     abriendo el tab amigos (provisional) — cambiarlo a abrir `HostingSetupModal` para
-     crear sala privada. La burbuja 🎲 (`amigo-invita:<friendId>`) debe apuntar al
-     mismo flujo con el amigo preseleccionado (hoy: tab jugar provisional).
-  2. **Decoraciones**: persistencia localStorage (backend endpoint = sub-tarea aparte)
-     y render en el diorama (`setCaveDecorations`).
-  3. **Transformación animada nido→camita** al eclosionar (hoy es swap estático).
+  1. **Decoraciones**: persistencia localStorage (backend endpoint = sub-tarea aparte)
+     y render en el diorama (`setCaveDecorations` hoy es no-op en GameCanvas;
+     CuevaDecorPanel ya abre con `onCaveClick` y usa `getMockDecorations()`).
+  2. **Transformación animada nido→camita** al eclosionar (hoy es swap estático).
   Después → Fase 2 restante: re-skin HTML por tokens (Store boletos, SettlingScreen
   recibo, Inventory códice, VipModal) y luego Fase 3 (re-skin de la mesa de
   competencia + tablillas con `winPatterns.ts`).
@@ -82,7 +79,7 @@
 - [x] **Fix web/desktop**: PAINTED_BOUNDS (overscan lateral) + CameraRig prioriza alto
       completo con clamp horizontal — en 16:9 se revelan laterales en vez de recortar
       el alto (plan §3.4). Escenas pintan el overscan; vegetación decorativa lateral
-- [x] Hotspot mesa-amigos → tab `amigos` (provisional; TODO HostingSetupModal)
+- [x] Hotspot mesa-amigos → HostingSetupModal (antes provisional a tab `amigos`)
 - [x] **Sistema de paneles overlay**: con flag, los paneles HTML viven ocultos
       (`panelVisible` en page.tsx); se abren por hotspot del diorama o botón flotante
       📜 (PANEL_LABELS por tab) y el dock los cierra al navegar. Santuario HTML
@@ -98,9 +95,12 @@
 - [x] Partículas según quality tier (no en ligera): Zzz al dormir, burbujas al nadar
 - [x] Burbujas de acción ❤️/👁/🎲 sobre la trajinerita: ❤️ like en sitio (POST
       /social/like + toast, sin abrir panel), 👁 visita directa (AmigosPage prop
-      `visitFriendId` → FriendCaveView), 🎲 invitar (provisional: tab jugar;
-      TODO HostingSetupModal junto con mesa-amigos)
-- [ ] page.tsx: `mesa-amigos` → HostingSetupModal (hoy: tab amigos)
+      `visitFriendId` → FriendCaveView), 🎲 invitar → HostingSetupModal con el
+      amigo preseleccionado
+- [x] page.tsx: `mesa-amigos` y burbuja 🎲 → HostingSetupModal sobre el mundo
+      (visibilidad inicial "friends"; con invitado prellena nombre + banner).
+      Valida mesa vía fetchCaveStatus (cacheado); sin mesa → toast + panel
+      Santuario. Al crear: toast + abre lobby (tab jugar)
 - [ ] Decoraciones reales (⚠️ endpoint backend = sub-tarea; mientras localStorage)
 - [ ] Transformación animada nido→camita (hoy es swap estático)
 - [x] Mundo activo validado por usuario en móvil y web ✓
@@ -150,7 +150,8 @@
 | 2026-06-11 | 61cfd5f | Fix centrado de subzonas en web: `focusMaxW` (zoom de enfoque con recorrido de paneo) + clamp vertical de cámara |
 | 2026-06-11 | 91af004 | Pirámide re-layout 5160px: subzonas separadas — en web una sección a la vez, extremas centradas. Validado ✓ ("quedó conmadres") |
 | 2026-06-11 | 6fcfa82 | Store abre sección por puesto (forja→melter, p2p→market) + winPatterns.ts (cartasFaltantes/tablillaTension) base de Fase 3 |
-| 2026-06-11 | (este) | Burbujas de acción ❤️/👁/🎲 en trajineritas (like en sitio, visita directa a FriendCaveView, invitar provisional). Rama renombrada a task/task-1781159264-84-rediseno-visual-papel-picado |
+| 2026-06-11 | 2d51702 | Burbujas de acción ❤️/👁/🎲 en trajineritas (like en sitio, visita directa a FriendCaveView, invitar provisional). Rama renombrada a task/task-1781159264-84-rediseno-visual-papel-picado |
+| 2026-06-11 | (este) | Mesa de amigos y burbuja 🎲 → HostingSetupModal sobre el mundo (visibilidad friends, invitado preseleccionado, validación de mesa en la cueva) |
 
 ## Notas para el verificador humano
 

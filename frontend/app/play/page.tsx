@@ -19,6 +19,7 @@ import Gashapon from "@/components/Gashapon";
 import AmigosPage from "@/components/social/AmigosPage";
 import VipModal, { type VipNotification } from "@/components/VipModal";
 import SettingsModal from "@/components/SettingsModal";
+import HostingSetupModal from "@/components/HostingSetupModal";
 import { GameCanvas } from "@/components/world/GameCanvas";
 import type { GameCanvasHandle } from "@/components/world/GameCanvas";
 import type { WorldScene } from "@/components/world/WorldScene";
@@ -34,11 +35,12 @@ import VipChip from "@/components/play/VipChip";
 import WorldOrbs from "@/components/play/WorldOrbs";
 import ZoneDock from "@/components/play/ZoneDock";
 import ZoneDockMacro from "@/components/play/ZoneDockMacro";
-import { fetchAxolotitos, fetchIncubaciones } from "@/services/santuarioService";
+import { fetchAxolotitos, fetchIncubaciones, fetchCaveStatus } from "@/services/santuarioService";
 import {
   mapBackendAxolotito,
   mapIncubationToEgg,
   mapFriendInfo,
+  type AmigoData,
   type BackendAxolotito,
   type BackendIncubation,
   type BackendFriendInfo,
@@ -90,6 +92,12 @@ export default function Home() {
   const [mochilaInitialTab, setMochilaInitialTab] = useState<MochilaTab>('cartas');
   // Burbuja 👁 del embarcadero: amigo cuya cueva se abre al entrar a AmigosPage
   const [visitaAmigoId, setVisitaAmigoId] = useState<string | null>(null);
+  // Hostear sala desde el mundo (mesa de amigos / burbuja 🎲 de la trajinerita)
+  const [amigosData, setAmigosData] = useState<AmigoData[]>([]);
+  const [hostingOpen, setHostingOpen] = useState(false);
+  const [hostingInvite, setHostingInvite] = useState<string | null>(null);
+  const [hostingSeats, setHostingSeats] = useState(0);
+  const caveSeatsRef = useRef<number | null>(null); // cache: asientos de la mesa de la cueva
 
   const [onboardingPhase, setOnboardingPhase] = useState<OnboardingPhase>("loading");
   const [syncData, setSyncData] = useState<SyncData | null>(null);
@@ -190,9 +198,9 @@ export default function Home() {
       .get(`${API_BASE}/social/friends`, { headers: { Authorization: `Bearer ${accessToken}` } })
       .then((res) => {
         if (cancelled || !Array.isArray(res.data)) return;
-        gameCanvasRef.current?.setAmigos?.(
-          (res.data as BackendFriendInfo[]).map(mapFriendInfo),
-        );
+        const amigos = (res.data as BackendFriendInfo[]).map(mapFriendInfo);
+        setAmigosData(amigos);
+        gameCanvasRef.current?.setAmigos?.(amigos);
       })
       .catch((e) => console.error("PaperWorld: error cargando amigos", e));
     return () => {
@@ -280,6 +288,29 @@ export default function Home() {
   }, [datosBanco]);
 
   const { toast } = useToast();
+
+  // Mesa de amigos / burbuja 🎲 del embarcadero: hostear sala desde el mundo.
+  // Requiere mesa de juego en la cueva (cave status, cacheado por sesión).
+  const abrirHostingMundo = async (inviteNickname: string | null) => {
+    if (caveSeatsRef.current === null && user?.id) {
+      try {
+        const d = await fetchCaveStatus(user.id, accessToken);
+        caveSeatsRef.current = d?.current?.has_table ? (d.current.table_seats ?? 0) : 0;
+      } catch (e) {
+        console.error("PaperWorld: error consultando la mesa de la cueva", e);
+      }
+    }
+    const seats = caveSeatsRef.current ?? 0;
+    if (seats < 2) {
+      toast.info("Tu cueva aún no tiene mesa de juego — expándela en el Santuario 🪨");
+      setTabActiva("santuario");
+      setPanelVisible(true);
+      return;
+    }
+    setHostingSeats(seats);
+    setHostingInvite(inviteNickname);
+    setHostingOpen(true);
+  };
 
   const actualizarSaldosSilencioso = async () => {
     if (!user || !accessToken) return;
@@ -577,9 +608,9 @@ export default function Home() {
             onStallClick={(stallType) => {
               // Hotspots del diorama → abrir el panel HTML correspondiente
               if (stallType === "mesa-amigos") {
-                // Mesa del Santuario: jugar con amigos (provisional: hub social;
-                // TODO Fase 1: HostingSetupModal para crear sala privada)
-                setTabActiva("amigos");
+                // Mesa del Santuario: hostear sala para jugar con amigos
+                void abrirHostingMundo(null);
+                return; // modal sobre el mundo, sin abrir panel
               } else if (stallType.startsWith("amigo-")) {
                 // Burbujas de la trajinerita: "amigo-<accion>:<friendId>"
                 const [accion, amigoId] = stallType.split(":");
@@ -597,8 +628,10 @@ export default function Home() {
                   setVisitaAmigoId(amigoId);
                   setTabActiva("amigos");
                 } else {
-                  // amigo-invita → crear sala (TODO paso 2: HostingSetupModal con el amigo)
-                  setTabActiva("jugar");
+                  // amigo-invita → hostear sala con el amigo preseleccionado
+                  const amigo = amigosData.find((a) => a.id === amigoId);
+                  void abrirHostingMundo(amigo?.nickname ?? null);
+                  return; // modal sobre el mundo, sin abrir panel
                 }
               } else if (stallType === "canasta-amigos") {
                 // Canasta de mimbre → pergamino de amigos (4 sub-tabs)
@@ -735,6 +768,25 @@ export default function Home() {
             recargarSaldos={actualizarSaldosSilencioso}
             onVipSuccess={toast.vip}
           />
+
+          {/* Hostear sala desde el mundo (mesa de amigos / burbuja 🎲).
+              Montaje condicional: cada apertura remonta el modal para que
+              tome la visibilidad/invitado preconfigurados. */}
+          {hostingOpen && (
+            <HostingSetupModal
+              token={accessToken}
+              isOpen
+              onClose={() => setHostingOpen(false)}
+              onCreated={() => {
+                toast.ok("🎴 ¡Sala creada! Revisa el lobby.");
+                setTabActiva("jugar");
+                setPanelVisible(true);
+              }}
+              tableSeats={hostingSeats}
+              initialVisibility="friends"
+              inviteNickname={hostingInvite}
+            />
+          )}
 
           {/* Settings Modal */}
           <SettingsModal
