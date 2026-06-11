@@ -33,10 +33,14 @@ import TutorialResetButton from "@/components/dev/TutorialResetButton";
 import VipChip from "@/components/play/VipChip";
 import WorldOrbs from "@/components/play/WorldOrbs";
 import ZoneDock from "@/components/play/ZoneDock";
+import ZoneDockMacro from "@/components/play/ZoneDockMacro";
 import type { TabId, OnboardingPhase, SyncData } from '@/types/play';
 import type { MochilaTab } from '@/types/inventory';
 
 // Legacy tab IDs 'criadero'/'axolotitos' kept for backwards compat — redirect to santuario
+
+// Mundo papel picado (plan task-84): con flag se usa el dock de 3 macrozonas.
+const PAPER_WORLD = process.env.NEXT_PUBLIC_PAPER_WORLD === "1";
 
 // New 5-zone dock matching the paper world
 const ZONE_TABS = [
@@ -696,16 +700,27 @@ export default function Home() {
             }}
           />
 
-          {/* BOTTOM DOCK — 5 zone buttons matching the paper world */}
-          <ZoneDock
-            zoneTabs={ZONE_TABS}
-            tabActiva={tabActiva}
-            dailyClaimAvailable={dailyClaimAvailable}
-            onTabChange={(tab, zone) => {
-              setTabActiva(tab);
-              gameCanvasRef.current?.navigateToZone(zone);
-            }}
-          />
+          {/* BOTTOM DOCK — 3 macrozonas (flag) o 5 zonas legacy */}
+          {PAPER_WORLD ? (
+            <ZoneDockMacro
+              tabActiva={tabActiva}
+              dailyClaimAvailable={dailyClaimAvailable}
+              onNavigate={(tab, zone) => {
+                setTabActiva(tab);
+                gameCanvasRef.current?.navigateToZone(zone);
+              }}
+            />
+          ) : (
+            <ZoneDock
+              zoneTabs={ZONE_TABS}
+              tabActiva={tabActiva}
+              dailyClaimAvailable={dailyClaimAvailable}
+              onTabChange={(tab, zone) => {
+                setTabActiva(tab);
+                gameCanvasRef.current?.navigateToZone(zone);
+              }}
+            />
+          )}
         </>
       ) : authenticated ? (
         /* ── Authenticated but wallet data still loading ────────────────── */

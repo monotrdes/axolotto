@@ -30,29 +30,34 @@
 
 ## Estado actual
 
-- **Fase activa**: Fase 0 — Cimientos
-- **Último commit de avance**: (ninguno aún — primer checkpoint)
-- **SIGUIENTE PASO**: Commit inicial de docs (plan + este checkpoint). Después: instalar
-  `pixi.js@^8` y `gsap` en `frontend/`, crear tokens de paleta en `globals.css`,
-  y carpeta de convención `frontend/public/world/atlas/`.
+- **Fase activa**: Fase 1 — Santuario + Puppet System (Fase 0 COMPLETA)
+- **Último commit de avance**: el commit que contiene esta edición (feat(world): fase 0)
+- **SIGUIENTE PASO**: Fase 1 — crear `components/world/puppet/PuppetFactory.ts`
+  (ensambla el rig cut-out desde los campos visuales de `AxolotitoData`; mientras no
+  exista el atlas real `axolotito-parts`, generar texturas placeholder con Graphics:
+  formas planas con borde blanco de papel) + `puppet/oscillators.ts` (respiración,
+  bob, branquias, blink) + `puppet/PuppetStateMachine.ts` (idle/walk/sleep, cross-fade
+  200ms). Después: diorama del Santuario (reemplazar builder placeholder en
+  `ZoneManager.registerBuilder('santuario', ...)`).
 
 ## Checklist de fases (espejo del plan §8 — marcar aquí, no en el plan)
 
-### Fase 0 — Cimientos
-- [ ] Deps: `pixi.js@^8` + `gsap` instaladas en frontend
-- [ ] Tokens de paleta papel/agua en `globals.css`
-- [ ] Convención de assets `frontend/public/world/atlas/` + README
-- [ ] `WorldBridge.ts` (event emitter React↔mundo)
-- [ ] `engine/qualityTier.ts` (detector Alta/Media/Ligera + override)
-- [ ] `engine/WorldEngine.ts` (init Pixi, ticker, pausa por visibilidad)
-- [ ] `engine/CameraRig.ts` (encuadres por subzona, paneo GSAP, fit 9:16/16:9)
-- [ ] `zones/zoneConfig.ts` (3 macrozonas + subzonas Pirámide, mapeo TabId)
-- [ ] `zones/ZoneManager.ts` (mount/unmount, carga perezosa subzonas)
-- [ ] `GameCanvas.tsx` real detrás de `NEXT_PUBLIC_PAPER_WORLD` (contrato `GameCanvasHandle` intacto)
-- [ ] `PaperCurtain.tsx` (cortina CSS entre macrozonas)
-- [ ] `ZoneDock` v2: 3 botones macro + sub-pills de Pirámide (TabId legacy intacto)
-- [ ] Cableado en `app/play/page.tsx` (ZONE_TABS → 3 macro, zoneToTab actualizado)
-- [ ] Verificación: `npx tsc --noEmit` limpio + lint
+### Fase 0 — Cimientos ✅ COMPLETA
+- [x] Deps: `pixi.js@^8.14` + `gsap@^3` instaladas en frontend
+- [x] Tokens de paleta papel/agua en `globals.css` (`--papel-*`, `--agua-*`, `--vela-*`)
+- [x] Convención de assets `frontend/public/world/atlas/` + README
+- [x] `components/world/WorldBridge.ts` (event emitter React↔mundo)
+- [x] `components/world/engine/qualityTier.ts` (tier alta/media/ligera + override en localStorage `axolotto_world_quality`)
+- [x] `components/world/engine/WorldEngine.ts` (init Pixi v8, DPR cap 2, fpsCap por tier, pausa por visibilidad + setUiPaused)
+- [x] `components/world/engine/CameraRig.ts` (cover-fit de encuadres, snapTo/panTo GSAP, reduced-motion)
+- [x] `components/world/zones/zoneConfig.ts` (3 macrozonas + subzonas Pirámide, resolveZoneTarget acepta ids legacy, framings)
+- [x] `components/world/zones/ZoneManager.ts` (cortina entre macrozonas, paneo intra-Pirámide, registerBuilder para Fases 1-4)
+- [x] `components/world/zones/placeholderScenes.ts` (escenas Fase 0 con Graphics)
+- [x] `GameCanvas.tsx` real detrás de `NEXT_PUBLIC_PAPER_WORLD` (import dinámico de Pixi; contrato `GameCanvasHandle` y stub legacy intactos)
+- [x] `components/play/PaperCurtain.tsx` + CSS `.paper-curtain` en globals (zigzag, stagger, reduced-motion)
+- [x] `components/play/ZoneDockMacro.tsx`: 3 botones macro (Pirámide FAB 🗿) + sub-pills 🎰🎲🏆 + punto rojo lunar
+- [x] Cableado en `app/play/page.tsx`: dock condicional por flag (legacy ZoneDock intacto sin flag)
+- [x] Verificación: `npx tsc --noEmit` limpio; eslint de archivos nuevos 0 errores
 
 ### Fase 1 — Santuario + Puppet System
 - [ ] Atlas/manifest de partes placeholder + `puppet/PuppetFactory.ts` (fromDna)
@@ -81,7 +86,8 @@
 
 | Fecha (UTC) | Commit | Qué se hizo |
 | :--- | :--- | :--- |
-| 2026-06-11 | (este) | Worktree + rama creados; plan v2.1 y checkpoint iniciales |
+| 2026-06-11 | 4601ff3 | Worktree + rama creados; plan v2.1 y checkpoint iniciales |
+| 2026-06-11 | (este) | Fase 0 completa: motor Pixi v8, cámara, zonas, cortina, dock macro, flag |
 
 ## Notas para el verificador humano
 

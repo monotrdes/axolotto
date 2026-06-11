@@ -3,6 +3,18 @@ import React, { forwardRef, useImperativeHandle, useRef, useEffect } from "react
 import type { WorldScene } from "./WorldScene";
 import type { AxolotitoData } from "./entities/AxolotitoSprite";
 import type { DecorationItem } from "./zones/NidoZone";
+import PaperCurtain, { type PaperCurtainHandle } from "@/components/play/PaperCurtain";
+import type { WorldEngine } from "./engine/WorldEngine";
+import type { ZoneManager } from "./zones/ZoneManager";
+
+/**
+ * Mundo 2.5D de papel picado (plan task-84). Detrás del flag
+ * NEXT_PUBLIC_PAPER_WORLD=1: monta PixiJS (import dinámico — sin flag no se
+ * descarga el chunk) con 3 macrozonas y cortina de papel. Sin flag, conserva
+ * el comportamiento stub original intacto.
+ */
+
+const PAPER_WORLD_ENABLED = process.env.NEXT_PUBLIC_PAPER_WORLD === "1";
 
 export interface GameCanvasHandle {
   setAxolotitos(data: AxolotitoData[]): void;
@@ -34,51 +46,101 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
     visible = false,
     onReady,
     onZoneClick,
-    onCaveClick,
-    onAxolotitoClick,
-    onStallClick,
+    onCaveClick: _onCaveClick,
+    onAxolotitoClick: _onAxolotitoClick,
+    onStallClick: _onStallClick,
     initialZone = "nido",
   },
   ref,
 ) {
-  const sceneRef = useRef<WorldScene | null>(null);
-  const canvasRef = useRef<HTMLDivElement>(null);
+  const hostRef = useRef<HTMLDivElement>(null);
+  const curtainRef = useRef<PaperCurtainHandle>(null);
+  const engineRef = useRef<WorldEngine | null>(null);
+  const zonesRef = useRef<ZoneManager | null>(null);
+  // Datos de axolotitos pendientes de rig (Fase 1 — PuppetFactory).
+  const axolotitosRef = useRef<AxolotitoData[]>([]);
 
   useImperativeHandle(ref, () => ({
-    setAxolotitos(_data: AxolotitoData[]) {
-      // TODO: Phase 2 — render axolotitos in the paper world
+    setAxolotitos(data: AxolotitoData[]) {
+      axolotitosRef.current = data;
+      // TODO(Fase 1): PuppetFactory.fromDna → poblar la escena del Santuario.
     },
     setCaveDecorations(_caveIndex: number, _decorations: DecorationItem[]) {
-      // TODO: Phase 2 — update cave decorations
+      // TODO(Fase 1): decoraciones reales en el diorama del Santuario.
     },
-    focusZone(_zoneId: string) {
-      // TODO: Phase 2 — camera/scroll to zone
+    focusZone(zoneId: string) {
+      zonesRef.current?.navigate(zoneId, null);
     },
-    navigateToZone(_zoneId: string) {
-      // TODO: Phase 2 — animate transition to zone
+    navigateToZone(zoneId: string) {
+      zonesRef.current?.navigate(zoneId, curtainRef.current);
     },
   }));
 
+  // Contrato legacy hacia play/page.tsx (worldSceneRef) — sin cambios.
   useEffect(() => {
     if (!onReady) return;
     const scene: WorldScene = {
-      setAxolotitos: () => {},
+      setAxolotitos: (data) => {
+        axolotitosRef.current = data;
+      },
       setCaveDecorations: () => {},
-      focusZone: () => {},
+      focusZone: (zoneId) => {
+        zonesRef.current?.navigate(zoneId, null);
+      },
     };
-    sceneRef.current = scene;
     onReady(null, scene);
   }, [onReady]);
 
+  // Montaje del motor Pixi (solo con flag).
+  useEffect(() => {
+    if (!PAPER_WORLD_ENABLED || !hostRef.current) return;
+    let cancelled = false;
+
+    (async () => {
+      const [{ WorldEngine }, { ZoneManager }] = await Promise.all([
+        import("./engine/WorldEngine"),
+        import("./zones/ZoneManager"),
+      ]);
+      if (cancelled || !hostRef.current) return;
+
+      const engine = await WorldEngine.create(hostRef.current);
+      if (cancelled) {
+        engine.destroy();
+        return;
+      }
+      const zones = new ZoneManager(engine);
+      engineRef.current = engine;
+      zonesRef.current = zones;
+      await zones.enter(initialZone);
+    })().catch((err) => {
+      console.error("PaperWorld: error inicializando el motor", err);
+    });
+
+    return () => {
+      cancelled = true;
+      zonesRef.current?.destroy();
+      zonesRef.current = null;
+      engineRef.current?.destroy();
+      engineRef.current = null;
+    };
+    // initialZone solo aplica al primer mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (PAPER_WORLD_ENABLED) {
+    return (
+      <>
+        <div ref={hostRef} className="fixed inset-0 z-0 pointer-events-none" aria-hidden />
+        <PaperCurtain ref={curtainRef} />
+      </>
+    );
+  }
+
+  // ── Comportamiento stub original (flag apagado) ────────────────────────
   if (!visible) return null;
 
   return (
-    <div
-      ref={canvasRef}
-      className="fixed inset-0 z-0 pointer-events-none"
-      style={{ background: "transparent" }}
-    >
-      {/* Phase 2: 2.5D paper world rendered here */}
+    <div className="fixed inset-0 z-0 pointer-events-none" style={{ background: "transparent" }}>
       <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex gap-3 pointer-events-auto">
         {ZONES.map((z) => (
           <button
