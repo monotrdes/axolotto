@@ -22,6 +22,14 @@ last_modified: "2026-06-10"
 
 ---
 
+## 2026-06-11 | backend/app/core/prices.py | Remoción de consumibles de calor (task-78)
+- **Campo**: `CONSUMABLE_PRICES`
+- **Anterior**: Contenía los precios de "gotas" (200 FRJ) y "lampara" (200 AXF).
+- **Nuevo**: Se eliminaron los consumibles de calentamiento ("gotas" y "lampara") del catálogo y configuración de precios.
+- **Motivo**: Simplificación y remoción del sistema de calor/congelamiento en la crianza.
+- **Autor**: AGY
+- **Fuente en código**: backend/app/core/prices.py, backend/app/scripts/seed_catalog.py
+
 ## 2026-06-10 | backend/ + contracts/ + frontend/ | Integración de task-77 y task-79 en dev
 
 ### backend/app/core/config.py — VIP_CONFIG consolidado
