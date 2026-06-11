@@ -27,7 +27,7 @@ const USDC_ADDRESS = (process.env.NEXT_PUBLIC_USDC_ADDRESS ?? '') as `0x${string
 interface Pack {
   id: string; label: string; emoji: string;
   usd: number; mxn: number;
-  axg_base: number; axg_total: number;
+  axf_base: number; axf_total: number;
   bonus_pct: number; badge: string | null;
   is_flash: boolean;
 }
@@ -111,7 +111,7 @@ function PackCard({ pack, selected, onClick }: { pack: Pack; selected: boolean; 
       )}
       <span className="text-2xl leading-none mt-1">{pack.emoji}</span>
       <span className="text-[10px] font-black text-white uppercase tracking-wide">{pack.label}</span>
-      <span className="text-sm font-black text-purple-300">{pack.axg_total.toLocaleString()} AXF</span>
+      <span className="text-sm font-black text-purple-300">{pack.axf_total.toLocaleString()} AXF</span>
       {pack.bonus_pct > 0 && (
         <span className="text-[8px] text-teal-400 font-bold">+{pack.bonus_pct}% bonus</span>
       )}
@@ -283,7 +283,7 @@ export default function CryptoCheckout({ userId, token, onClose, onSuccess }: Cr
       <div className="text-center">
         <h2 className="text-lg font-black text-white uppercase tracking-tight">Método de pago</h2>
         <p className="text-[10px] text-slate-500 mt-0.5">
-          {selectedPack?.emoji} {selectedPack?.label} · {selectedPack?.axg_total?.toLocaleString()} AXF
+          {selectedPack?.emoji} {selectedPack?.label} · {selectedPack?.axf_total?.toLocaleString()} AXF
         </p>
       </div>
 
@@ -305,7 +305,7 @@ export default function CryptoCheckout({ userId, token, onClose, onSuccess }: Cr
         </div>
         <div className="flex justify-between text-[11px]">
           <span className="text-slate-400">AXF a recibir</span>
-          <span className="font-black text-purple-300">{selectedPack?.axg_total?.toLocaleString()} AXF</span>
+          <span className="font-black text-purple-300">{selectedPack?.axf_total?.toLocaleString()} AXF</span>
         </div>
         {(selectedPack?.bonus_pct ?? 0) > 0 && (
           <div className="flex justify-between text-[11px]">
