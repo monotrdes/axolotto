@@ -8,6 +8,7 @@ import type { WorldEngine } from "./engine/WorldEngine";
 import type { ZoneManager } from "./zones/ZoneManager";
 import type { SantuarioScene } from "./zones/santuario/SantuarioScene";
 import type { PiramideScene } from "./zones/piramide/PiramideScene";
+import type { AmigoData } from "./mapBackendAxolotito";
 
 /**
  * Mundo 2.5D de papel picado (plan task-84). Detrás del flag
@@ -25,6 +26,8 @@ export interface GameCanvasHandle {
   navigateToZone(zoneId: string): void;
   /** Top-3 del ranking para el podio de la Pirámide (mundo papel picado). */
   setPodio?(data: AxolotitoData[]): void;
+  /** Amigos para el embarcadero del Santuario (mundo papel picado). */
+  setAmigos?(amigos: AmigoData[]): void;
 }
 
 interface GameCanvasProps {
@@ -65,6 +68,7 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
   const piramideRef = useRef<PiramideScene | null>(null);
   const axolotitosRef = useRef<AxolotitoData[]>([]);
   const podioRef = useRef<AxolotitoData[]>([]);
+  const amigosRef = useRef<AmigoData[]>([]);
   // Ref para evitar closures viejos dentro del listener del bridge.
   const onStallClickRef = useRef(onStallClick);
   onStallClickRef.current = onStallClick;
@@ -89,6 +93,12 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
       podioRef.current = data;
       if (piramideRef.current && !piramideRef.current.destroyed) {
         piramideRef.current.setPodio(data);
+      }
+    },
+    setAmigos(amigos: AmigoData[]) {
+      amigosRef.current = amigos;
+      if (santuarioRef.current && !santuarioRef.current.destroyed) {
+        santuarioRef.current.setAmigos(amigos);
       }
     },
   }));
@@ -140,6 +150,7 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
         const scene = new SantuarioScene(e);
         santuarioRef.current = scene;
         scene.setAxolotitos(axolotitosRef.current);
+        scene.setAmigos(amigosRef.current);
         return scene;
       });
       zones.registerBuilder("tianguis", (e) => new TianguisScene(e));

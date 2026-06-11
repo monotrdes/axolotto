@@ -24,6 +24,27 @@ function toPuppetVisualState(status: string | undefined, energy: number): Axolot
   return "idle";
 }
 
+/** Amigo en el embarcadero del Santuario (de GET /social/friends). */
+export interface AmigoData {
+  id: string;
+  nickname: string;
+  isOnline: boolean;
+}
+
+export interface BackendFriendInfo {
+  friend_id: string;
+  nickname: string | null;
+  is_online: boolean;
+}
+
+export function mapFriendInfo(f: BackendFriendInfo): AmigoData {
+  return {
+    id: f.friend_id,
+    nickname: f.nickname ?? "Amigo",
+    isOnline: f.is_online === true,
+  };
+}
+
 /** Row del payload de GET /incubation/user/{userId} (incubation.py). */
 export interface BackendIncubation {
   id?: number;

@@ -1,6 +1,8 @@
 import { Container, Graphics, Text, Ticker } from "pixi.js";
+import gsap from "gsap";
 import type { WorldEngine } from "../../engine/WorldEngine";
 import type { AxolotitoData } from "../../entities/AxolotitoSprite";
+import type { AmigoData } from "../../mapBackendAxolotito";
 import { AxolotitoPuppet, type PuppetState } from "../../puppet/AxolotitoPuppet";
 import { DESIGN_SPACE, PAINTED_BOUNDS } from "../zoneConfig";
 
@@ -28,27 +30,96 @@ interface PuppetEntry {
   targetX: number;
   baseY: number;
   paused: number;
+  particleTimer: number;
+}
+
+interface Particle {
+  obj: Container;
+  vy: number;
+  life: number;
+  maxLife: number;
+}
+
+interface BoatEntry {
+  boat: Container;
+  baseY: number;
+  phase: number;
 }
 
 export class SantuarioScene extends Container {
   private engine: WorldEngine;
   private puppetLayer = new Container();
   private nestLayer = new Container();
+  private amigosLayer = new Container();
+  private particleLayer = new Container();
   private puppets = new Map<string, PuppetEntry>();
+  private particles: Particle[] = [];
+  private boats: BoatEntry[] = [];
+  private elapsed = 0;
   private tick = (ticker: Ticker) => this.update(ticker.deltaMS / 1000);
 
   constructor(engine: WorldEngine) {
     super();
     this.engine = engine;
     this.buildBackdrop();
-    this.addChild(this.nestLayer, this.puppetLayer);
+    this.addChild(this.nestLayer, this.amigosLayer, this.puppetLayer, this.particleLayer);
     engine.app.ticker.add(this.tick);
   }
 
   override destroy(options?: Parameters<Container["destroy"]>[0]): void {
     this.engine.app.ticker.remove(this.tick);
     this.puppets.clear();
+    this.particles = [];
+    this.boats = [];
     super.destroy(options);
+  }
+
+  /** Embarcadero social: amigos llegan en trajineritas (plan §2). */
+  setAmigos(amigos: AmigoData[]): void {
+    if (this.destroyed) return;
+    this.amigosLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
+    this.boats = [];
+
+    // Canasta de mimbre: abre el pergamino completo de amigos (AmigosPage).
+    const canasta = new Container();
+    const cg = new Graphics()
+      .ellipse(0, 0, 52, 36)
+      .fill(0xa9743f)
+      .stroke({ color: 0xfff7ec, width: 4 });
+    canasta.addChild(cg);
+    const cEmoji = new Text({ text: "🧺", style: { fontSize: 44 } });
+    cEmoji.anchor.set(0.5);
+    cEmoji.position.set(0, -8);
+    canasta.addChild(cEmoji);
+    const cTag = new Text({
+      text: "Amigos",
+      style: { fontSize: 20, fill: 0xfff7ec, fontWeight: "700" },
+    });
+    cTag.anchor.set(0.5);
+    cTag.position.set(0, 52);
+    canasta.addChild(cTag);
+    canasta.position.set(W - 130, NIVEL_EMBARCADERO_Y + 40);
+    this.hotspot(canasta, "canasta-amigos");
+    this.amigosLayer.addChild(canasta);
+
+    // Hasta 4 trajineritas visibles; el resto queda en la canasta.
+    const visibles = amigos.slice(0, 4);
+    visibles.forEach((amigo, i) => {
+      const baseY = NIVEL_EMBARCADERO_Y + (i % 2) * 26;
+      const boat = this.buildTrajinerita(amigo);
+      boat.position.set(150 + i * 210, baseY);
+      this.amigosLayer.addChild(boat);
+      this.boats.push({ boat, baseY, phase: i * 1.3 });
+    });
+    if (amigos.length > 4) {
+      const more = new Text({
+        text: `+${amigos.length - 4} en la canasta`,
+        style: { fontSize: 20, fill: 0xfff7ec, fontWeight: "700" },
+      });
+      more.anchor.set(0.5);
+      more.position.set(W / 2, NIVEL_EMBARCADERO_Y + 110);
+      this.amigosLayer.addChild(more);
+    }
   }
 
   /** Sincroniza huevos y axolotitos desde los datos del backend. */
@@ -89,6 +160,7 @@ export class SantuarioScene extends Container {
         targetX: puppet.x,
         baseY,
         paused: 1 + Math.random() * 3,
+        particleTimer: 1 + Math.random() * 2,
       });
     }
     // Retirar títeres de axolotitos que ya no están.
@@ -102,9 +174,46 @@ export class SantuarioScene extends Container {
 
   private update(dt: number): void {
     if (this.destroyed) return;
+    this.elapsed += dt;
+
+    // Trajineritas meciéndose en el agua.
+    for (const b of this.boats) {
+      b.boat.position.y = b.baseY + Math.sin(this.elapsed * 1.4 + b.phase) * 7;
+      b.boat.rotation = Math.sin(this.elapsed * 1.1 + b.phase) * 0.04;
+    }
+
+    // Partículas ambientales (Zzz / burbujas) — no en tier ligera.
+    const conParticulas = this.engine.quality !== "ligera";
+    for (let i = this.particles.length - 1; i >= 0; i--) {
+      const p = this.particles[i];
+      p.life += dt;
+      p.obj.position.y -= p.vy * dt;
+      p.obj.alpha = Math.max(0, 1 - p.life / p.maxLife);
+      if (p.life >= p.maxLife) {
+        p.obj.destroy({ children: true });
+        this.particles.splice(i, 1);
+      }
+    }
+
     for (const entry of this.puppets.values()) {
       const { puppet } = entry;
       puppet.update(dt);
+
+      if (conParticulas) {
+        entry.particleTimer -= dt;
+        if (entry.particleTimer <= 0) {
+          if (puppet.state === "sleeping") {
+            this.spawnParticle(zzzParticle(), puppet.x + 30, puppet.y - 60, 28, 2.2);
+            entry.particleTimer = 1.8 + Math.random();
+          } else if (puppet.state === "walking") {
+            this.spawnParticle(bubbleParticle(), puppet.x - 40 * Math.sign(puppet.scale.x || 1), puppet.y - 10, 55, 1.2);
+            entry.particleTimer = 0.5 + Math.random() * 0.5;
+          } else {
+            entry.particleTimer = 1 + Math.random();
+          }
+        }
+      }
+
       if (puppet.state === "sleeping") continue;
 
       // Deambular: elegir destino, nadar hacia él, pausar, repetir.
@@ -169,6 +278,67 @@ export class SantuarioScene extends Container {
     label.position.set(W / 2, 160);
     this.addChild(label);
   }
+
+  /** Trajinerita de amigo: barquita de madera con toldo y punto de presencia. */
+  private buildTrajinerita(amigo: AmigoData): Container {
+    const boat = new Container();
+    const g = new Graphics();
+    // Casco.
+    g.poly([-90, 0, 90, 0, 64, 36, -64, 36]).fill(0x8b5e34).stroke({ color: 0xfff7ec, width: 4 });
+    // Toldo de colores.
+    g.roundRect(-70, -54, 140, 26, 10).fill(0xe4007c).stroke({ color: 0xfff7ec, width: 3 });
+    g.rect(-62, -28, 8, 28).fill(0xfff7ec);
+    g.rect(54, -28, 8, 28).fill(0xfff7ec);
+    boat.addChild(g);
+
+    // Punto de presencia (online/offline).
+    const dot = new Graphics().circle(78, -44, 8).fill(amigo.isOnline ? 0x4ade80 : 0x6b7080);
+    boat.addChild(dot);
+
+    const tag = new Text({
+      text: amigo.nickname,
+      style: { fontSize: 22, fill: 0xfff7ec, fontWeight: "700" },
+    });
+    tag.anchor.set(0.5);
+    tag.position.set(0, -76);
+    boat.addChild(tag);
+
+    this.hotspot(boat, "amigo", amigo.id);
+    return boat;
+  }
+
+  private hotspot(target: Container, kind: string, id?: string): void {
+    target.eventMode = "static";
+    target.cursor = "pointer";
+    target.on("pointertap", () => {
+      gsap.fromTo(
+        target.scale,
+        { x: 1, y: 1 },
+        { x: 1.08, y: 1.08, duration: 0.12, yoyo: true, repeat: 1, ease: "power2.out" },
+      );
+      this.engine.bridge.emit("hotspot", { kind, id });
+    });
+  }
+
+  private spawnParticle(obj: Container, x: number, y: number, vy: number, maxLife: number): void {
+    obj.position.set(x, y);
+    this.particleLayer.addChild(obj);
+    this.particles.push({ obj, vy, life: 0, maxLife });
+  }
+}
+
+function zzzParticle(): Container {
+  const t = new Text({ text: "z", style: { fontSize: 30, fill: 0x9bd9e4, fontWeight: "900" } });
+  t.anchor.set(0.5);
+  t.rotation = -0.3 + Math.random() * 0.6;
+  return t;
+}
+
+function bubbleParticle(): Container {
+  const g = new Graphics()
+    .circle(0, 0, 4 + Math.random() * 5)
+    .stroke({ color: 0x9bd9e4, width: 2 });
+  return g;
 }
 
 function toPuppetState(axo: AxolotitoData): PuppetState {

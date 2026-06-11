@@ -38,8 +38,10 @@ import { fetchAxolotitos, fetchIncubaciones } from "@/services/santuarioService"
 import {
   mapBackendAxolotito,
   mapIncubationToEgg,
+  mapFriendInfo,
   type BackendAxolotito,
   type BackendIncubation,
+  type BackendFriendInfo,
 } from "@/components/world/mapBackendAxolotito";
 import type { TabId, OnboardingPhase, SyncData } from '@/types/play';
 import type { MochilaTab } from '@/types/inventory';
@@ -174,6 +176,24 @@ export default function Home() {
       cancelled = true;
     };
   }, [accessToken, user?.id]);
+
+  // Mundo papel picado: amigos para el embarcadero del Santuario.
+  useEffect(() => {
+    if (!PAPER_WORLD || !accessToken) return;
+    let cancelled = false;
+    axios
+      .get(`${API_BASE}/social/friends`, { headers: { Authorization: `Bearer ${accessToken}` } })
+      .then((res) => {
+        if (cancelled || !Array.isArray(res.data)) return;
+        gameCanvasRef.current?.setAmigos?.(
+          (res.data as BackendFriendInfo[]).map(mapFriendInfo),
+        );
+      })
+      .catch((e) => console.error("PaperWorld: error cargando amigos", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken]);
 
   // Mundo papel picado: top-3 del ranking para el podio de la Pirámide (endpoint público).
   useEffect(() => {
@@ -554,6 +574,10 @@ export default function Home() {
               if (stallType === "mesa-amigos") {
                 // Mesa del Santuario: jugar con amigos (provisional: hub social;
                 // TODO Fase 1: HostingSetupModal para crear sala privada)
+                setTabActiva("amigos");
+              } else if (stallType === "canasta-amigos" || stallType.startsWith("amigo")) {
+                // Trajinerita de amigo o canasta → pergamino de amigos
+                // TODO(Fase 1): burbujas ❤️/👁/🎲 directas sobre la trajinerita
                 setTabActiva("amigos");
               } else if (stallType === "podio") {
                 setTabActiva("rankings");

@@ -95,12 +95,15 @@
 - [x] **TianguisScene** (Fase 2 parcial): 5 puestos tocables (booster/adopción/
       fountain-banco/forja/p2p) con rebote de cartón GSAP + guirnalda de banderines
       ondulando; hotspots → panel tienda (fountain abre banco)
-- [ ] Embarcadero social: trajineritas + burbujas like/visitar/invitar; canasta → AmigosPage
-- [ ] page.tsx: manejar `onStallClick("mesa-amigos")` → HostingSetupModal
+- [x] Embarcadero social: trajineritas con toldo, punto online/offline, nickname,
+      meciéndose en el agua (4 visibles + "+N en la canasta"); canasta 🧺 → AmigosPage.
+      Datos: GET /social/friends → `mapFriendInfo` → `GameCanvasHandle.setAmigos`
+- [x] Partículas según quality tier (no en ligera): Zzz al dormir, burbujas al nadar
+- [ ] Burbujas de acción ❤️/👁/🎲 directas sobre la trajinerita (hoy: tap → AmigosPage)
+- [ ] page.tsx: `mesa-amigos` → HostingSetupModal (hoy: tab amigos)
 - [ ] Decoraciones reales (⚠️ endpoint backend = sub-tarea; mientras localStorage)
-- [ ] Partículas (Zzz al dormir, burbujas al nadar) según quality tier
 - [ ] Transformación animada nido→camita (hoy es swap estático)
-- [ ] Activar mundo en Santuario con flag (validación visual del usuario)
+- [x] Mundo activo validado por usuario en móvil y web ✓
 
 ### Fase 2 — Tianguis, esqueleto Pirámide, transiciones
 - [x] TianguisScene: 5 puestos tocables + guirnalda de banderines (ver Fase 1 arriba)
@@ -132,7 +135,8 @@
 | 2026-06-11 | 22b8967 | Axolotitos reales en el diorama (fetch /auth/axolotitos + mapper) y Santuario HTML oculto con flag |
 | 2026-06-11 | 9164784 | Fix cámara desktop (overscan + alto completo); mesa-amigos → tab amigos. Validado por usuario en móvil y web ✓ |
 | 2026-06-11 | 4997950 | Paneles overlay ocultos por defecto + TianguisScene con 5 puestos + huevos de incubación reales. Validado ✓ |
-| 2026-06-11 | (este) | PiramideScene: 3 subzonas con paneo, podio top-3 con puppets reales, gashapones y pozas tocables |
+| 2026-06-11 | df12139 | PiramideScene: 3 subzonas con paneo, podio top-3 con puppets reales, gashapones y pozas tocables. Validado ✓ |
+| 2026-06-11 | (este) | Embarcadero social (trajineritas + canasta) y partículas Zzz/burbujas por tier |
 
 ## Notas para el verificador humano
 
