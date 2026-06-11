@@ -6,16 +6,19 @@
 
 ## Protocolo de reanudación (leer SIEMPRE antes de tocar código)
 
-1. Trabaja SOLO en el worktree: `D:\Axolotto_2026\.axolotto_worktrees\task-1781080168-76\`
-   Rama: `task/task-1781159264-84-rediseno-visual-papel-picado` (base: `dev`; antes se llamaba `task/task-1781080168-76-...`, renombrada 2026-06-11).
-   **NUNCA** trabajes en `D:\Axolotto_2026\axolotto` (checkout principal) para esta tarea.
-2. Lee el plan completo: `docs/plan_task-1781159264-84_rediseno_visual_papel_picado.md` (v2.1, en esta misma rama).
+> **⚠️ CAMBIO DE FLUJO (2026-06-11, orden del usuario)**: el worktree de la tarea
+> se TUMBÓ. Desde ahora se trabaja DIRECTO en `D:\Axolotto_2026\axolotto`
+> (checkout principal) sobre la rama `dev`. No recrear el worktree.
+
+1. Trabaja en `D:\Axolotto_2026\axolotto`, rama `dev`, commits directos a `dev`.
+2. Lee el plan completo: `docs/plan_task-1781159264-84_rediseno_visual_papel_picado.md` (v2.1).
 3. Lee la sección **Estado actual** de abajo y ejecuta exactamente el "SIGUIENTE PASO".
 4. Después de cada unidad de trabajo coherente: actualiza este archivo (estado + bitácora) y
    haz commit convencional (`feat(world): ...`) **incluyendo este checkpoint en el mismo commit**.
-5. NO mergear a `dev` ni mover la tarea en el taskboard sin aprobación explícita del usuario.
-6. NO arrancar servidores. Verificación: `npx tsc --noEmit` y `npm run lint` en `frontend/`.
-7. Reglas del repo aplican (CLAUDE.md): conventional commits, no hardcodear direcciones, etc.
+5. Cada cierre de fase: entrada en `wiki/CHANGELOG.md` + validación visual del usuario.
+6. NO arrancar servidores sin pedirlo. Verificación: `npx tsc --noEmit` y `npm run lint` en `frontend/`.
+7. Reglas del repo aplican (CLAUDE.md): conventional commits, no hardcodear direcciones,
+   NUNCA pushear a main/master.
 
 ## Decisiones ya tomadas (NO re-litigar)
 
@@ -36,13 +39,11 @@
   FRJ, abajo amigos. Plan detallado: `C:\Users\imzet\.claude\plans\creo-que-no-se-sunny-pony.md`
   (aprobado) — backend taxonomía+catálogo+shop y frontend diorama+panel+bazar.
 - **Último commit de avance**: el commit que contiene esta edición
-- **⚠️ NUEVO FLUJO (2026-06-11)**: la rama se MERGEÓ a `dev` (merge `f82dd79`,
-  con aprobación del usuario) para evitar divergencia con el trabajo activo en
-  dev. A partir de aquí: seguir trabajando en este worktree, pero **mergear
-  `dev` a la rama seguido** (mínimo antes de cada unidad de trabajo) y mergear
-  de vuelta a `dev` (con aprobación) al cerrar cada fase. En el merge se
-  integró el locking de partida de dev (`isGameLocked`) a los hotspots/dock
-  del mundo y se descartó el cableado viejo de decoración v1 que vivía en dev.
+- **⚠️ FLUJO ACTUAL (2026-06-11)**: tras dos merges a `dev` (`f82dd79` fases 0-2
+  núcleo, y fast-forward a `63ab8c3` con eclosión + re-skin), el usuario ordenó
+  retirar el worktree y trabajar DIRECTO en `dev` en el checkout principal.
+  La rama `task/task-1781159264-84-rediseno-visual-papel-picado` quedó
+  totalmente mergeada y puede borrarse.
 - **SIGUIENTE PASO**:
   1. ✅ Backend reiniciado (2026-06-11): GET /cave/decorations responde 401
      (auth requerida) en vez de 404 — router `cave_decor` montado. Seed 23 items ✓.
@@ -212,7 +213,8 @@
 | 2026-06-11 | — | DecorSlotPanel (Equipar/Comprar FRJ/bonos) + Bazar del Cenote en tienda + limpieza del sistema v1 |
 | 2026-06-11 | (anterior) | Fix 404: registrar `cave_decor.router` en main.py (nunca se montó — el diorama no mostraba slots). Seed corrido (23 items) |
 | 2026-06-11 | 18ea371 | Backend reiniciado (router OK, 401 vs 404) + sync dev→rama + eclosión animada nido→camita en SantuarioScene |
-| 2026-06-11 | (este) | Decoraciones validadas por usuario ✓. Re-skin HTML por tokens (Fase 2): `.papel-*` en globals.css + `lib/paperWorld.ts`; Store/Inventory panel cartón+guirnalda/códice, VipModal marco metálico, SettlingScreen recibo de amate. ⏳ Falta: validación visual con flag |
+| 2026-06-11 | 63ab8c3 | Decoraciones validadas por usuario ✓. Re-skin HTML por tokens (Fase 2): `.papel-*` en globals.css + `lib/paperWorld.ts`; Store/Inventory panel cartón+guirnalda/códice, VipModal marco metálico, SettlingScreen recibo de amate. ⏳ Falta: validación visual con flag |
+| 2026-06-11 | (este) | Merge fast-forward a `dev`; worktree tumbado por orden del usuario — trabajo directo en `dev` desde ahora. Changelog del wiki actualizado |
 
 ## Notas para el verificador humano
 

@@ -22,6 +22,14 @@ last_modified: "2026-06-11"
 
 ---
 
+## 2026-06-11 | frontend mundo papel picado | Fase 2 completa: eclosión animada + re-skin HTML por tokens (task-1781159264-84)
+- **Campo**: Transformación animada nido→camita en `SantuarioScene.ts`; re-skin `.papel-*` de Store/Inventory/VipModal/SettlingScreen.
+- **Anterior**: El swap nido→camita era estático; los paneles HTML conservaban el neón oscuro original incluso con el flag.
+- **Nuevo**: Eclosión animada (huevo tiembla → cascaritas → camita con rebote, respeta reduced-motion); clases `.papel-*` + tokens `--papel-tinta*`/`--papel-metalico*` en globals.css; flag build-time centralizado en `frontend/lib/paperWorld.ts`. Sin `NEXT_PUBLIC_PAPER_WORLD=1` el juego queda idéntico. Además: el worktree de la tarea se retiró — el trabajo de papel picado continúa directo en `dev`.
+- **Motivo**: Cierre de Fase 2 del plan task-84; simplificación del flujo de trabajo a petición del usuario.
+- **Autor**: Claude
+- **Fuente en código**: commits `18ea371`, `63ab8c3`
+
 ## 2026-06-11 | frontend mundo papel picado + decoración del Cenote | Merge de task-1781159264-84 a dev
 - **Campo**: Mundo 2.5D papel picado (PixiJS v8 + GSAP) detrás de `NEXT_PUBLIC_PAPER_WORLD`; sistema de decoración del Cenote (slots tipados AMBIENTE/LUZ/MESA/MANTEL/SILLAS/FONDO/ESPECIAL).
 - **Anterior**: El mundo vivía solo en la rama `task/task-1781159264-84-rediseno-visual-papel-picado`; en dev quedaba un cableado viejo (decoración v1 con mocks/localStorage) y el router `cave_decor` sin montar (GET /cave/decorations → 404).
