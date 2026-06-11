@@ -30,15 +30,19 @@
 
 ## Estado actual
 
-- **Fase activa**: Fase 1 — Santuario + Puppet System (Fase 0 COMPLETA)
-- **Último commit de avance**: el commit que contiene esta edición (feat(world): fase 0)
-- **SIGUIENTE PASO**: Fase 1 — crear `components/world/puppet/PuppetFactory.ts`
-  (ensambla el rig cut-out desde los campos visuales de `AxolotitoData`; mientras no
-  exista el atlas real `axolotito-parts`, generar texturas placeholder con Graphics:
-  formas planas con borde blanco de papel) + `puppet/oscillators.ts` (respiración,
-  bob, branquias, blink) + `puppet/PuppetStateMachine.ts` (idle/walk/sleep, cross-fade
-  200ms). Después: diorama del Santuario (reemplazar builder placeholder en
-  `ZoneManager.registerBuilder('santuario', ...)`).
+- **Fase activa**: Fase 1 — Santuario + Puppet System (núcleo puppet + escena base HECHOS)
+- **Último commit de avance**: el commit que contiene esta edición (feat(world): fase 1 puppets)
+- **SIGUIENTE PASO**: Fase 1 restante, en orden:
+  1. **Embarcadero social** en `SantuarioScene` (nivel inferior y=1500): trajineritas
+     de amigos (datos: hook `useSocial` / `AmigosPage`) con burbujas ❤️/👁/🎲; requiere
+     pasar lista de amigos al canvas (nuevo método en `GameCanvasHandle.setAmigos?` o
+     prop via WorldScene) + canasta que abre AmigosPage (tab `amigos`).
+  2. **Mesa de amigos**: el hotspot ya emite `onStallClick("mesa-amigos")` — falta que
+     `app/play/page.tsx` lo maneje (abrir HostingSetupModal o navegar a jugar).
+  3. **Decoraciones**: persistencia localStorage (backend endpoint = sub-tarea aparte)
+     y render en el diorama (`setCaveDecorations`).
+  4. **Burbujas Zzz** al dormir + partículas burbujas al nadar (solo tier alta/media).
+  Después → Fase 2 (Tianguis + esqueleto Pirámide, ver plan §8).
 
 ## Checklist de fases (espejo del plan §8 — marcar aquí, no en el plan)
 
@@ -60,15 +64,22 @@
 - [x] Verificación: `npx tsc --noEmit` limpio; eslint de archivos nuevos 0 errores
 
 ### Fase 1 — Santuario + Puppet System
-- [ ] Atlas/manifest de partes placeholder + `puppet/PuppetFactory.ts` (fromDna)
-- [ ] `puppet/PuppetStateMachine.ts` (idle/walk/sleep/blink, cross-fade 200ms)
-- [ ] Osciladores procedurales (respiración, bob, branquias, blink)
-- [ ] Diorama Santuario: 3 niveles, parallax, nidos con cronómetro, cofre staking
-- [ ] Transformación nido→camita al eclosionar
-- [ ] Mesa de amigos: hotspot → HostingSetupModal / unirse a sala de amigo
-- [ ] Decoraciones reales (⚠️ requiere endpoint backend — sub-tarea; mientras localStorage)
+- [x] `puppet/paperParts.ts`: partes estilo papel (Graphics placeholder; el atlas real
+      las sustituirá sin tocar el rig). Mapa SKIN_COLORS del backend.
+- [x] `puppet/AxolotitoPuppet.ts`: rig cut-out completo (cola/cuerpo/cabeza/branquias×6/
+      ojos/boca/sombra) + osciladores procedurales + máquina de estados
+      idle/walking/sleeping/playing con cross-fade 200ms + blink aleatorio
+- [x] `zones/santuario/SantuarioScene.ts`: diorama 3 niveles, nidos con anillo de
+      progreso de incubación, **nido→camita con nombre** cuando el axolotito nació,
+      deambular con pausas, mesa de amigos como hotspot interactivo
+- [x] GameCanvas: builder del Santuario registrado, `setAxolotitos` en vivo,
+      hotspots → `onStallClick` vía WorldBridge
 - [ ] Embarcadero social: trajineritas + burbujas like/visitar/invitar; canasta → AmigosPage
-- [ ] Activar mundo en Santuario con flag
+- [ ] page.tsx: manejar `onStallClick("mesa-amigos")` → HostingSetupModal
+- [ ] Decoraciones reales (⚠️ endpoint backend = sub-tarea; mientras localStorage)
+- [ ] Partículas (Zzz al dormir, burbujas al nadar) según quality tier
+- [ ] Transformación animada nido→camita (hoy es swap estático)
+- [ ] Activar mundo en Santuario con flag (validación visual del usuario)
 
 ### Fase 2 — Tianguis, esqueleto Pirámide, transiciones
 - [ ] (ver plan §8 Fase 2)
@@ -87,7 +98,8 @@
 | Fecha (UTC) | Commit | Qué se hizo |
 | :--- | :--- | :--- |
 | 2026-06-11 | 4601ff3 | Worktree + rama creados; plan v2.1 y checkpoint iniciales |
-| 2026-06-11 | (este) | Fase 0 completa: motor Pixi v8, cámara, zonas, cortina, dock macro, flag |
+| 2026-06-11 | 06466f7 | Fase 0 completa: motor Pixi v8, cámara, zonas, cortina, dock macro, flag |
+| 2026-06-11 | (este) | Fase 1 núcleo: rig puppet cut-out + SantuarioScene (nidos/camitas, deambular, mesa hotspot) |
 
 ## Notas para el verificador humano
 

@@ -6,6 +6,7 @@ import type { DecorationItem } from "./zones/NidoZone";
 import PaperCurtain, { type PaperCurtainHandle } from "@/components/play/PaperCurtain";
 import type { WorldEngine } from "./engine/WorldEngine";
 import type { ZoneManager } from "./zones/ZoneManager";
+import type { SantuarioScene } from "./zones/santuario/SantuarioScene";
 
 /**
  * Mundo 2.5D de papel picado (plan task-84). Detrás del flag
@@ -48,7 +49,7 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
     onZoneClick,
     onCaveClick: _onCaveClick,
     onAxolotitoClick: _onAxolotitoClick,
-    onStallClick: _onStallClick,
+    onStallClick,
     initialZone = "nido",
   },
   ref,
@@ -57,13 +58,18 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
   const curtainRef = useRef<PaperCurtainHandle>(null);
   const engineRef = useRef<WorldEngine | null>(null);
   const zonesRef = useRef<ZoneManager | null>(null);
-  // Datos de axolotitos pendientes de rig (Fase 1 — PuppetFactory).
+  const santuarioRef = useRef<SantuarioScene | null>(null);
   const axolotitosRef = useRef<AxolotitoData[]>([]);
+  // Ref para evitar closures viejos dentro del listener del bridge.
+  const onStallClickRef = useRef(onStallClick);
+  onStallClickRef.current = onStallClick;
 
   useImperativeHandle(ref, () => ({
     setAxolotitos(data: AxolotitoData[]) {
       axolotitosRef.current = data;
-      // TODO(Fase 1): PuppetFactory.fromDna → poblar la escena del Santuario.
+      if (santuarioRef.current && !santuarioRef.current.destroyed) {
+        santuarioRef.current.setAxolotitos(data);
+      }
     },
     setCaveDecorations(_caveIndex: number, _decorations: DecorationItem[]) {
       // TODO(Fase 1): decoraciones reales en el diorama del Santuario.
@@ -97,9 +103,10 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
     let cancelled = false;
 
     (async () => {
-      const [{ WorldEngine }, { ZoneManager }] = await Promise.all([
+      const [{ WorldEngine }, { ZoneManager }, { SantuarioScene }] = await Promise.all([
         import("./engine/WorldEngine"),
         import("./zones/ZoneManager"),
+        import("./zones/santuario/SantuarioScene"),
       ]);
       if (cancelled || !hostRef.current) return;
 
@@ -109,6 +116,16 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
         return;
       }
       const zones = new ZoneManager(engine);
+      // Fase 1: diorama real del Santuario (las demás zonas siguen placeholder).
+      zones.registerBuilder("santuario", (e) => {
+        const scene = new SantuarioScene(e);
+        santuarioRef.current = scene;
+        scene.setAxolotitos(axolotitosRef.current);
+        return scene;
+      });
+      engine.bridge.on("hotspot", ({ kind, id }) => {
+        onStallClickRef.current?.(id ? `${kind}:${id}` : kind);
+      });
       engineRef.current = engine;
       zonesRef.current = zones;
       await zones.enter(initialZone);
@@ -130,7 +147,7 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
   if (PAPER_WORLD_ENABLED) {
     return (
       <>
-        <div ref={hostRef} className="fixed inset-0 z-0 pointer-events-none" aria-hidden />
+        <div ref={hostRef} className="fixed inset-0 z-0" aria-hidden />
         <PaperCurtain ref={curtainRef} />
       </>
     );

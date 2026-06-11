@@ -1,0 +1,209 @@
+import { Container, Graphics, Text, Ticker } from "pixi.js";
+import type { WorldEngine } from "../../engine/WorldEngine";
+import type { AxolotitoData } from "../../entities/AxolotitoSprite";
+import { AxolotitoPuppet, type PuppetState } from "../../puppet/AxolotitoPuppet";
+import { DESIGN_SPACE } from "../zoneConfig";
+
+/**
+ * Diorama del Santuario (plan task-84 §2, Fase 1): chinampa vertical de
+ * 3 niveles. Arriba: nidos (huevo → camita al eclosionar). Centro: sala de
+ * estar con la Mesa de amigos. Abajo: embarcadero social (trajineras en
+ * checkpoint posterior). Fondo/arte = placeholder Graphics hasta el atlas.
+ */
+
+const { w: W, h: H } = DESIGN_SPACE.santuario;
+
+// Bandas verticales de los 3 niveles (espacio de diseño 1080×1920).
+const NIVEL_NIDOS_Y = 430;
+const NIVEL_SALA = { top: 760, bottom: 1230 };
+const NIVEL_EMBARCADERO_Y = 1500;
+
+const NEST_SLOTS_X = [180, 420, 660, 900];
+const WANDER_SPEED = 55; // px/s en espacio de diseño
+
+interface PuppetEntry {
+  puppet: AxolotitoPuppet;
+  targetX: number;
+  baseY: number;
+  paused: number;
+}
+
+export class SantuarioScene extends Container {
+  private engine: WorldEngine;
+  private puppetLayer = new Container();
+  private nestLayer = new Container();
+  private puppets = new Map<string, PuppetEntry>();
+  private tick = (ticker: Ticker) => this.update(ticker.deltaMS / 1000);
+
+  constructor(engine: WorldEngine) {
+    super();
+    this.engine = engine;
+    this.buildBackdrop();
+    this.addChild(this.nestLayer, this.puppetLayer);
+    engine.app.ticker.add(this.tick);
+  }
+
+  override destroy(options?: Parameters<Container["destroy"]>[0]): void {
+    this.engine.app.ticker.remove(this.tick);
+    this.puppets.clear();
+    super.destroy(options);
+  }
+
+  /** Sincroniza huevos y axolotitos desde los datos del backend. */
+  setAxolotitos(data: AxolotitoData[]): void {
+    if (this.destroyed) return;
+
+    this.nestLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
+    const eggs = data.filter((a) => a.isEgg);
+    const axos = data.filter((a) => !a.isEgg);
+
+    // Nivel superior: un nido por slot — huevo si incuba, camita si su axolotito nació.
+    NEST_SLOTS_X.forEach((x, slot) => {
+      const egg = eggs.find((e) => e.caveIndex === slot) ?? eggs[slot];
+      const owner = axos.find((a) => a.caveIndex === slot);
+      this.nestLayer.addChild(
+        egg ? buildNestWithEgg(x, NIVEL_NIDOS_Y, egg) : buildCamita(x, NIVEL_NIDOS_Y, owner?.name),
+      );
+    });
+
+    // Nivel central: títeres vivos.
+    const seen = new Set<string>();
+    for (const axo of axos) {
+      seen.add(axo.id);
+      const existing = this.puppets.get(axo.id);
+      const state = toPuppetState(axo);
+      if (existing) {
+        existing.puppet.setState(state);
+        continue;
+      }
+      const puppet = new AxolotitoPuppet(axo);
+      const baseY =
+        NIVEL_SALA.top + 80 + Math.random() * (NIVEL_SALA.bottom - NIVEL_SALA.top - 160);
+      puppet.position.set(120 + Math.random() * (W - 240), baseY);
+      puppet.setState(state, true);
+      this.puppetLayer.addChild(puppet);
+      this.puppets.set(axo.id, {
+        puppet,
+        targetX: puppet.x,
+        baseY,
+        paused: 1 + Math.random() * 3,
+      });
+    }
+    // Retirar títeres de axolotitos que ya no están.
+    for (const [id, entry] of this.puppets) {
+      if (!seen.has(id)) {
+        entry.puppet.destroy({ children: true });
+        this.puppets.delete(id);
+      }
+    }
+  }
+
+  private update(dt: number): void {
+    if (this.destroyed) return;
+    for (const entry of this.puppets.values()) {
+      const { puppet } = entry;
+      puppet.update(dt);
+      if (puppet.state === "sleeping") continue;
+
+      // Deambular: elegir destino, nadar hacia él, pausar, repetir.
+      if (entry.paused > 0) {
+        entry.paused -= dt;
+        if (entry.paused <= 0) {
+          entry.targetX = 120 + Math.random() * (W - 240);
+        }
+        continue;
+      }
+      const dx = entry.targetX - puppet.x;
+      if (Math.abs(dx) < 8) {
+        entry.paused = 2 + Math.random() * 4;
+        if (puppet.state === "walking") puppet.setState("idle");
+        continue;
+      }
+      if (puppet.state === "idle") puppet.setState("walking");
+      const dir = Math.sign(dx);
+      puppet.x += dir * WANDER_SPEED * dt;
+      // El rig mira a la izquierda por defecto (cabeza en -x).
+      puppet.scale.x = dir > 0 ? -1 : 1;
+    }
+  }
+
+  private buildBackdrop(): void {
+    const bg = new Graphics();
+    // Agua en 3 bandas (atardecer en el cenote).
+    bg.rect(0, 0, W, H * 0.3).fill(0x1b7a8c);
+    bg.rect(0, H * 0.3, W, H * 0.4).fill(0x134e6f);
+    bg.rect(0, H * 0.7, W, H * 0.3).fill(0x0a2540);
+    // Plataformas de chinampa de los 3 niveles.
+    for (const y of [NIVEL_NIDOS_Y + 90, NIVEL_SALA.bottom + 70, NIVEL_EMBARCADERO_Y + 90]) {
+      bg.roundRect(40, y, W - 80, 46, 22).fill(0x8b5e34).stroke({ color: 0xfff7ec, width: 4 });
+    }
+    this.addChild(bg);
+
+    // Mesa de amigos al centro de la sala (hotspot funcional — plan §2).
+    const mesa = new Graphics()
+      .ellipse(0, 0, 130, 52)
+      .fill(0xa9743f)
+      .stroke({ color: 0xfff7ec, width: 5 });
+    mesa.position.set(W / 2, NIVEL_SALA.bottom - 10);
+    mesa.eventMode = "static";
+    mesa.cursor = "pointer";
+    mesa.on("pointertap", () => {
+      this.engine.bridge.emit("hotspot", { kind: "mesa-amigos" });
+    });
+    this.addChild(mesa);
+
+    const label = new Text({
+      text: "🪺 El Santuario",
+      style: { fontSize: 52, fill: 0xfff7ec, fontWeight: "900" },
+    });
+    label.anchor.set(0.5);
+    label.position.set(W / 2, 160);
+    this.addChild(label);
+  }
+}
+
+function toPuppetState(axo: AxolotitoData): PuppetState {
+  if (axo.state === "sleeping" || axo.energy === 0) return "sleeping";
+  if (axo.state === "playing") return "playing";
+  return "idle";
+}
+
+/** Nido con huevo incubando: anillo de progreso + pulso suave. */
+function buildNestWithEgg(x: number, y: number, egg: AxolotitoData): Container {
+  const c = new Container();
+  c.position.set(x, y);
+  const nest = new Graphics().ellipse(0, 26, 56, 20).fill(0x8b5e34).stroke({ color: 0xfff7ec, width: 4 });
+  const shell = new Graphics().ellipse(0, 0, 32, 40).fill(0xfde7f0).stroke({ color: 0xfff7ec, width: 4 });
+  c.addChild(nest, shell);
+  const progress = Math.max(0, Math.min(100, egg.eggProgress ?? 0));
+  if (progress > 0) {
+    const ring = new Graphics()
+      .arc(0, 0, 50, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * progress) / 100)
+      .stroke({ color: 0xf59e0b, width: 6 });
+    c.addChild(ring);
+  }
+  return c;
+}
+
+/** Camita del axolotito nacido en este nido (plan §2: nido→camita). */
+function buildCamita(x: number, y: number, name?: string): Container {
+  const c = new Container();
+  c.position.set(x, y);
+  const bed = new Graphics()
+    .roundRect(-58, 0, 116, 36, 14)
+    .fill(0xe4007c)
+    .stroke({ color: 0xfff7ec, width: 4 })
+    .roundRect(-58, -14, 34, 26, 8)
+    .fill(0xfff7ec);
+  c.addChild(bed);
+  if (name) {
+    const tag = new Text({
+      text: name,
+      style: { fontSize: 20, fill: 0xfff7ec, fontWeight: "700" },
+    });
+    tag.anchor.set(0.5);
+    tag.position.set(0, 56);
+    c.addChild(tag);
+  }
+  return c;
+}
