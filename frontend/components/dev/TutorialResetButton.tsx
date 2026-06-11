@@ -9,22 +9,23 @@
  *   - Multiplayer: fills a waiting room with mock players for testing.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { API_BASE } from "@/lib/api";
 
 interface Props {
   onReset?: () => void;
+  inTutorial?: boolean;
 }
 
 const DEV_TOOLS = process.env.NEXT_PUBLIC_DEV_TOOLS === "true";
 
-export default function TutorialResetButton({ onReset }: Props) {
-  if (!DEV_TOOLS) return null;
-
+export default function TutorialResetButton({ onReset, inTutorial = false }: Props) {
   const { getAccessToken, authenticated } = usePrivy();
+  const [isAdmin, setIsAdmin] = useState(false);
   const [open, setOpen]           = useState(false);
   const [loading, setLoading]     = useState(false);
+  const [skipLoading, setSkipLoading] = useState(false);
   const [result, setResult]       = useState<string | null>(null);
   const [deleteAxo, setDeleteAxo] = useState(false);
 
@@ -35,6 +36,31 @@ export default function TutorialResetButton({ onReset }: Props) {
   const [mpCount, setMpCount]       = useState(3);
   const [mpAxfAmount, setMpAxfAmount] = useState(0);
   const [mpFrjAmount, setMpFrjAmount] = useState(10000);
+
+  useEffect(() => {
+    if (!DEV_TOOLS || !authenticated) {
+      setIsAdmin(false);
+      return;
+    }
+    const checkAdminStatus = async () => {
+      try {
+        const token = await getAccessToken();
+        if (!token) return;
+        const res = await fetch(`${API_BASE}/admin/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setIsAdmin(!!data.is_admin);
+        }
+      } catch (err) {
+        console.error("Error checking admin status:", err);
+      }
+    };
+    checkAdminStatus();
+  }, [authenticated, getAccessToken]);
+
+  if (!DEV_TOOLS || !isAdmin) return null;
 
   const handleReset = async () => {
     if (!authenticated) {
@@ -70,6 +96,35 @@ export default function TutorialResetButton({ onReset }: Props) {
       setResult("❌ Error de red");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSkipTutorial = async () => {
+    if (!authenticated) {
+      setResult("⚠️ Necesitas iniciar sesión primero");
+      return;
+    }
+    setSkipLoading(true);
+    setResult(null);
+    try {
+      const token = await getAccessToken();
+      const res = await fetch(`${API_BASE}/dev/skip-tutorial`, {
+        method: "POST",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setResult(`✅ ${data.message || "Tutorial brincado"}`);
+        setTimeout(() => {
+          window.location.reload();
+        }, 1200);
+      } else {
+        setResult(`❌ ${data.detail || "Error al brincar tutorial"}`);
+      }
+    } catch {
+      setResult("❌ Error de red");
+    } finally {
+      setSkipLoading(false);
     }
   };
 
@@ -205,6 +260,17 @@ export default function TutorialResetButton({ onReset }: Props) {
             style={btnStyle(loading || !authenticated)}
           >
             {loading ? "Reseteando..." : "🔄 Reset Tutorial"}
+          </button>
+
+          <div style={{ height: "6px" }} />
+
+          <button
+            onClick={handleSkipTutorial}
+            disabled={skipLoading || !authenticated || !inTutorial}
+            style={btnStyle(skipLoading || !authenticated || !inTutorial)}
+            title={!inTutorial ? "Solo disponible durante el tutorial" : "Brincar tutorial asignando victorias/derrotas random"}
+          >
+            {skipLoading ? "Brincando..." : "⏭️ Brincar Tutorial"}
           </button>
 
           {result && (

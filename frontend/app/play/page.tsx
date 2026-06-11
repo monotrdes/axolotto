@@ -5,11 +5,10 @@ import axios from "axios";
 
 import { usePrivy } from "@privy-io/react-auth";
 import { useEffect, useState, useCallback, useRef } from "react";
-import { LogOut, Settings } from "lucide-react";
+import { Settings } from "lucide-react";
 import { useBlockchainEvents } from "@/hooks/useBlockchainEvents";
 import { useToast } from "@/context/ToastContext";
 
-import DailyClaim from "@/components/DailyClaim";
 import AxolottoStore from "@/components/Store";
 import Inventory from "@/components/Inventory";
 import Santuario from "@/components/Santuario";
@@ -26,6 +25,7 @@ import type { AxolotitoData } from "@/components/world/entities/AxolotitoSprite"
 import type { DecorationItem } from "@/components/world/zones/NidoZone";
 import { CuevaDecorPanel } from "@/components/world/hud/CuevaDecorPanel";
 import { MochilaFloating } from "@/components/world/hud/MochilaFloating";
+import LunarFloating from "@/components/world/hud/LunarFloating";
 import WebitoIntroAnimation from "@/components/onboarding/WebitoIntroAnimation";
 import PostTutorialBranch from "@/components/onboarding/PostTutorialBranch";
 import { TutorialFlow } from "@/components/tutorial/TutorialFlow";
@@ -56,6 +56,7 @@ export default function Home() {
   const [mochilaInitialTab, setMochilaInitialTab] = useState<MochilaTab>('cartas');
 
   const [onboardingPhase, setOnboardingPhase] = useState<OnboardingPhase>("loading");
+  const isInTutorial = onboardingPhase === "tutorial" || onboardingPhase === "intro" || onboardingPhase === "branch";
   const [syncData, setSyncData] = useState<SyncData | null>(null);
   const [tutorialKarma, setTutorialKarma] = useState<"lucky" | "salty">("lucky");
   const [tutorialAxoName, setTutorialAxoName] = useState("Axolotito Bebé");
@@ -368,7 +369,7 @@ export default function Home() {
         <p className="relative z-10 text-[#FF8DA1] text-xl font-bold animate-pulse tracking-wide">
           Sincronizando…
         </p>
-        <TutorialResetButton onReset={handleDevReset} />
+        <TutorialResetButton onReset={handleDevReset} inTutorial={isInTutorial} />
       </div>
     );
   }
@@ -377,7 +378,7 @@ export default function Home() {
     return (
       <>
         <WebitoIntroAnimation onComplete={() => setOnboardingPhase("tutorial")} />
-        <TutorialResetButton onReset={handleDevReset} />
+        <TutorialResetButton onReset={handleDevReset} inTutorial={isInTutorial} />
       </>
     );
   }
@@ -409,7 +410,7 @@ export default function Home() {
               actualizarSaldosSilencioso();
             }}
           />
-          <TutorialResetButton onReset={handleDevReset} />
+          <TutorialResetButton onReset={handleDevReset} inTutorial={isInTutorial} />
         </div>
       </div>
     );
@@ -430,7 +431,7 @@ export default function Home() {
             setTabActiva("jugar");
           }}
         />
-        <TutorialResetButton onReset={handleDevReset} />
+        <TutorialResetButton onReset={handleDevReset} inTutorial={isInTutorial} />
       </>
     );
   }
@@ -494,26 +495,18 @@ export default function Home() {
             initialZone="nido"
           />
 
-          {/* HUD TOP BAR */}
+          {/* HUD TOP BAR — brand (desktop only) → tokens → VIP → settings */}
           <header className="fixed top-0 left-0 right-0 z-40 h-14 flex items-center justify-between px-4 sm:px-6 bg-[#060610]/80 backdrop-blur-xl border-b border-white/5">
-            {/* Brand */}
-            <div className="flex items-center gap-2 select-none">
+            {/* Brand — solo visible en desktop */}
+            <div className="hidden sm:flex items-center gap-2 select-none">
               <span className="text-xl">🦎</span>
               <span className="font-extrabold text-base sm:text-lg text-[#FF8DA1] tracking-tight drop-shadow-[0_0_8px_rgba(255,141,161,0.4)]">
                 AXOLOTTO
               </span>
             </div>
 
-            {/* VIP chip + Currencies + logout */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {/* VIP Chip */}
-              <VipChip
-                vipTier={datosBanco.vip_tier}
-                daysRemaining={datosBanco.vip_days_remaining}
-                pendingGal={datosBanco.vip_pending_gal}
-                onClick={() => setVipModalOpen(true)}
-              />
-
+              {/* AXF pill */}
               <div className="relative flex items-center gap-1.5 bg-[#1C1C35]/80 px-2.5 sm:px-3 py-1.5 rounded-full border border-[#E4007C]/20">
                 <span className="text-sm select-none">💎</span>
                 <span className="text-[#E4007C] font-bold text-sm tabular-nums">{datosBanco.axofichas}</span>
@@ -531,6 +524,8 @@ export default function Home() {
                   </span>
                 ))}
               </div>
+
+              {/* FRJ pill — no decimals */}
               <button
                 onClick={() => { setTabActiva('tienda'); setOpenBancoCount(c => c + 1); }}
                 className="relative flex items-center gap-1.5 bg-[#1C1C35]/80 px-2.5 sm:px-3 py-1.5 rounded-full border border-amber-500/20 hover:border-amber-400/50 hover:bg-amber-900/20 transition-all active:scale-95"
@@ -538,7 +533,7 @@ export default function Home() {
               >
                 <span className="text-sm select-none">🪙</span>
                 <span className="text-amber-500 font-bold text-sm tabular-nums">
-                  {Number(datosBanco.frijolitos || 0).toFixed(2)}
+                  {Number(datosBanco.frijolitos || 0).toFixed(0)}
                 </span>
                 <span className="text-gray-600 text-[10px] font-medium hidden sm:inline">FRJ</span>
                 {floatingGal.map(f => (
@@ -554,25 +549,22 @@ export default function Home() {
                   </span>
                 ))}
               </button>
-              {/* Daily FRJ Claim */}
-              <DailyClaim
-                token={accessToken}
-                onSuccess={actualizarSaldosSilencioso}
+
+              {/* VIP Chip */}
+              <VipChip
+                vipTier={datosBanco.vip_tier}
+                daysRemaining={datosBanco.vip_days_remaining}
+                pendingGal={datosBanco.vip_pending_gal}
+                onClick={() => setVipModalOpen(true)}
               />
 
+              {/* Settings */}
               <button
                 onClick={() => setSettingsModalOpen(true)}
                 className="p-2 rounded-full bg-[#1C1C35]/80 border border-white/5 text-gray-500 hover:text-[#FF8DA1] hover:bg-[#FF8DA1]/15 hover:border-[#FF8DA1]/30 transition-all"
                 title="Ajustes"
               >
                 <Settings size={13} />
-              </button>
-              <button
-                onClick={logout}
-                className="p-2 rounded-full bg-[#1C1C35]/80 border border-white/5 text-gray-500 hover:text-red-400 hover:bg-red-900/20 hover:border-red-500/30 transition-all"
-                title="Desconectar"
-              >
-                <LogOut size={13} />
               </button>
             </div>
           </header>
@@ -696,6 +688,12 @@ export default function Home() {
             }}
           />
 
+          {/* Lunar claim floating button — only visible when reward available */}
+          <LunarFloating
+            token={accessToken}
+            onSuccess={actualizarSaldosSilencioso}
+          />
+
           {/* BOTTOM DOCK — 5 zone buttons matching the paper world */}
           <ZoneDock
             zoneTabs={ZONE_TABS}
@@ -733,7 +731,7 @@ export default function Home() {
         </div>
       )}
 
-      <TutorialResetButton onReset={handleDevReset} />
+      <TutorialResetButton onReset={handleDevReset} inTutorial={isInTutorial} />
 
     </div>
   </RealtimeProvider>
