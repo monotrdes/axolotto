@@ -116,6 +116,43 @@ def phase_individual_play(engine, config, **state) -> dict:
             print(f"  ⚠️  {user_id}: sin axolotitos o tablas, saltando play.")
             continue
 
+        def _ensure_energy_via_feeding(user_id: str, axo: Axolotito) -> None:
+            session.refresh(axo)
+            if axo.energy_current < 20:
+                # Despertar si duerme
+                if axo.status == "sleeping":
+                    axo.sleep_expires_at = datetime.utcnow() - timedelta(seconds=5)
+                    session.add(axo)
+                    session.commit()
+                    try:
+                        GameService.wake_axolotito(axo_id=axo.id, session=session, verified_user_id=user_id)
+                        session.refresh(axo)
+                    except Exception:
+                        session.rollback()
+
+                try:
+                    wallet = BankService.get_or_create_wallet(session, user_id)
+                    # El alimento premium cuesta 150 FRJ
+                    if wallet.frijolitos < frj_to_internal(150.0):
+                        wallet.frijolitos = max(wallet.frijolitos or 0, frj_to_internal(300.0))
+                        session.add(wallet)
+                        session.commit()
+                    
+                    GameService.feed_axolotito(
+                        axo_id=axo.id,
+                        food_type="shrimp",
+                        session=session,
+                        verified_user_id=user_id,
+                    )
+                    session.refresh(axo)
+                    stats["feedings"] = stats.get("feedings", 0) + 1
+                    print(f"  🍽️  {user_id}: {axo.name} alimentado con shrimp por baja energía (actual: {axo.energy_current:.0f})")
+                except HTTPException as e:
+                    errors.append(f"feed_error {user_id}/{axo.name}: {e.detail}")
+                except Exception as e:
+                    errors.append(f"feed_error_unexpected {user_id}/{axo.name}: {e}")
+                    session.rollback()
+
         for axo_idx, axo in enumerate(axolotitos):
             session.refresh(axo)
 
@@ -131,10 +168,7 @@ def phase_individual_play(engine, config, **state) -> dict:
                     session.rollback()
 
             # Asegurar energía mínima
-            if axo.energy_current < 20:
-                axo.energy_current = axo.stat_stamina or 100
-                session.add(axo)
-                session.commit()
+            _ensure_energy_via_feeding(user_id, axo)
 
             board = boards[axo_idx % len(boards)]
             axo.assigned_board_id = board.id
@@ -148,9 +182,7 @@ def phase_individual_play(engine, config, **state) -> dict:
             for game_i in range(n_games):
                 session.refresh(axo)
                 if axo.energy_current < 10:
-                    axo.energy_current = axo.stat_stamina or 100
-                    session.add(axo)
-                    session.commit()
+                    _ensure_energy_via_feeding(user_id, axo)
 
                 room = "champion" if play_style == "champion" else (
                     "champion" if _rng.random() < 0.35 else "rookie"
@@ -199,19 +231,14 @@ def phase_individual_play(engine, config, **state) -> dict:
                     session.commit()
 
                 session.refresh(axo)
-                if axo.energy_current < 10:
-                    axo.energy_current = axo.stat_stamina or 100
-                    session.add(axo)
-                    session.commit()
+                _ensure_energy_via_feeding(user_id, axo)
 
                 print(f"  🤖 {axo.name}: autojuego con {budget} FRJ de presupuesto...")
                 auto_wins = 0
                 for auto_i in range(3):
                     session.refresh(axo)
                     if axo.energy_current < 10:
-                        axo.energy_current = axo.stat_stamina or 100
-                        session.add(axo)
-                        session.commit()
+                        _ensure_energy_via_feeding(user_id, axo)
                     try:
                         req = PlayRequest(
                             axolotito_id=axo.id,
@@ -310,12 +337,14 @@ def phase_individual_play(engine, config, **state) -> dict:
                     PlayerInventory.quantity > 0,
                 )
             ).all()
+            available_accs = {inv.item_id: inv.quantity for inv in acc_inv}
+
             for slot_name, attr in [("head", "equipped_head_item_id"), ("eyes", "equipped_eyes_item_id"), ("body", "equipped_body_item_id")]:
                 already_equipped = getattr(axo, attr)
                 if already_equipped:
                     continue
                 for inv in acc_inv:
-                    if inv.item_id == already_equipped:
+                    if inv.item_id == already_equipped or available_accs.get(inv.item_id, 0) <= 0:
                         continue
                     try:
                         from app.api.v1.endpoints.user import equip_accessory, EquipRequest
@@ -325,6 +354,7 @@ def phase_individual_play(engine, config, **state) -> dict:
                             session=session,
                             verified_user_id=user_id,
                         )
+                        available_accs[inv.item_id] -= 1
                         stats["accessory_equips"] = stats.get("accessory_equips", 0) + 1
                         print(f"  💍 {user_id}: accesorio equipado en slot {slot_name} de {axo.name}")
                         break  # Un accesorio por slot

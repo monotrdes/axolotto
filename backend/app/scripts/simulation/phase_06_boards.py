@@ -49,26 +49,7 @@ def phase_boards(engine, config, **state) -> dict:
             session.commit()
             print(f"  🔓 {user_id}: slots ampliados a {user.unlocked_board_slots}")
 
-        # Tableros aleatorios
-        for b_i in range(n_random):
-            try:
-                res = create_random_board(
-                    payload=CreateManualBoardRequest(
-                        name=f"Tabla {personality['name'].title()} #{b_i+1}",
-                        card_ids=[],
-                    ),
-                    session=session,
-                    verified_user_id=user_id,
-                )
-                bid = res.get("board_id")
-                if bid:
-                    ids.append(bid)
-                    stats["boards_created"] = stats.get("boards_created", 0) + 1
-                    print(f"  📋 {user_id}: tabla aleatoria #{bid} ({len(res.get('card_ids',[]))} cartas)")
-            except HTTPException as e:
-                errors.append(f"board_random {user_id}: {e.detail}")
-
-        # Tablero manual (con las cartas del inventario)
+        # Obtener todas las cartas en inventario
         inv_cards = session.exec(
             select(PlayerInventory)
             .join(ItemCatalog, PlayerInventory.item_id == ItemCatalog.id)
@@ -91,6 +72,36 @@ def phase_boards(engine, config, **state) -> dict:
             if b.card_ids:
                 used_card_ids.update(b.card_ids)
 
+        # Tableros aleatorios
+        for b_i in range(n_random):
+            # Calcular cuántas cartas únicas quedan disponibles
+            unique_available_ids = {inv.item_id for inv in inv_cards if inv.item_id not in used_card_ids}
+            if len(unique_available_ids) < 16:
+                print(f"  ℹ️  {user_id}: saltando tabla aleatoria #{b_i+1} por cartas insuficientes ({len(unique_available_ids)} únicas libres)")
+                continue
+
+            try:
+                res = create_random_board(
+                    payload=CreateManualBoardRequest(
+                        name=f"Tabla {personality['name'].title()} #{b_i+1}",
+                        card_ids=[],
+                    ),
+                    session=session,
+                    verified_user_id=user_id,
+                )
+                bid = res.get("board_id")
+                if bid:
+                    ids.append(bid)
+                    stats["boards_created"] = stats.get("boards_created", 0) + 1
+                    # Registrar las cartas elegidas para este tablero aleatorio
+                    new_board = session.get(PlayerBoard, bid)
+                    if new_board and new_board.card_ids:
+                        used_card_ids.update(new_board.card_ids)
+                    print(f"  📋 {user_id}: tabla aleatoria #{bid} ({len(res.get('card_ids',[]))} cartas)")
+            except HTTPException as e:
+                errors.append(f"board_random {user_id}: {e.detail}")
+
+        # Tablero manual (con las cartas del inventario)
         # Deduplicar por item_id y filtrar cartas ya usadas en otros tableros
         unique_available: dict[int, PlayerInventory] = {}
         for inv in inv_cards:

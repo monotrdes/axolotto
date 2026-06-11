@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 runner.py — Modular entrypoint for the Axolotto Universe Simulator v3.
 
@@ -69,6 +69,7 @@ from phase_07f_cave_decor import phase_cave_decor
 from phase_08_solo import phase_individual_play
 from phase_09_multi import phase_multiplayer
 from phase_09e_social import phase_social_simulation
+from phase_07g_staking import phase_staking_start, phase_staking_end
 from phase_10_errors import phase_error_tests
 
 
@@ -265,9 +266,6 @@ def main():
         progress("⏳ [2b/10] Corcholatas — canjeando código promocional...")
         state.update(phase_redeem_corcholata(engine, config, **state) or {})
 
-        progress("⏳ [2c/10] Ciclo Lunar — simulando recompensas diarias...")
-        state.update(phase_daily_rewards(engine, config, **state) or {})
-
         progress("⏳ [3/10] Fondos iniciales + paquetes FRJ...")
         state.update(phase_fund_wallets(engine, config, **state) or {})
 
@@ -276,6 +274,9 @@ def main():
 
         progress(f"⏳ [4/10] 🎓 TUTORIAL + Incubación ({config.incubation}s max)...")
         state.update(phase_incubation(engine, config, **state) or {})
+
+        progress("⏳ [4b/10] Ciclo Lunar — simulando recompensas diarias...")
+        state.update(phase_daily_rewards(engine, config, **state) or {})
 
         progress("⏳ [5/10] 👑 VIP Club — suscripciones (descuento para compras)...")
         state.update(phase_vip(engine, config, **state) or {})
@@ -294,6 +295,7 @@ def main():
         state.update(phase_card_melter(engine, config, **state) or {})
         state.update(phase_board_deconstruction(engine, config, **state) or {})
         state.update(phase_p2p_market(engine, config, **state) or {})
+        state.update(phase_staking_start(engine, config, **state) or {})
 
         progress(f"⏳ [9/10] Partidas individuales ({config.games} × jugador)...")
         for p in players:
@@ -311,6 +313,7 @@ def main():
 
         progress("⏳ [9e/10] Capa Social — Amigos y Referidos...")
         state.update(phase_social_simulation(engine, config, **state) or {})
+        state.update(phase_staking_end(engine, config, **state) or {})
 
         progress("⏳ [10/10] Tests de errores...")
         state.update(phase_error_tests(engine, config, **state) or {})
@@ -369,17 +372,16 @@ def main():
 😇  Karma Lucky:               {stats.get('karma_lucky', 0)}
 🧂  Karma Salty:               {stats.get('karma_salty', 0)}
 💧  Recompensas Salty (FRJ):   {stats.get('salty_rewards_received', 0)}
-🌤️  Clima incubación:          {stats.get('weather_logged', '?')}
 🎉  Evento de prueba creado:   {"Sí" if stats.get('test_event_created') else "No"}
 {'-'*70}
 🎰  Gashapon rolls:            {stats.get('gashapon_rolls', 0)}
 💊  Cápsulas reclamadas:       {stats.get('capsule_claims', 0)}
 🌟  Triple Suerte:             {stats.get('triple_suerte', 0)}
 📋  Tableros creados:          {stats.get('boards_created', 0)}  ({stats.get('manual_boards', 0)} manuales)
-🏪  Tableros en venta P2P:     {stats.get('boards_listed_sale', 0)}
-🏠  Tableros en renta:         {stats.get('boards_listed_rent', 0)}
+🏪  Tableros en venta P2P:     {stats.get('boards_listed_sale', 0)} (Comprados: {stats.get('boards_bought_p2p', 0)})
+🏠  Tableros en renta:         {stats.get('boards_listed_rent', 0)} (Rentados: {stats.get('boards_rented_p2p', 0)})
 📈  Slots desbloqueados:       {stats.get('slot_upgrades', 0)}
-🦎  Axos en venta P2P:         {stats.get('axos_listed_sale', 0)}
+🦎  Axos en venta P2P:         {stats.get('axos_listed_sale', 0)} (Comprados: {stats.get('axos_bought_p2p', 0)})
 {'-'*70}
 👑  VIP activados:             {stats.get('vip_activations', 0)}
 🔄  VIP Auto-Renovación:       {stats.get('vip_auto_renew', 0)}
@@ -437,6 +439,11 @@ def main():
   🎨 Items equipados:         {stats.get('cave_items_equipped', 0)}
   🔒 Tests seguridad slot:    {stats.get('cave_decor_slot_mismatch_checked', 0)}
   🧬 Tests límite mentoría:   {stats.get('padrino_mentorship_errors_checked', 0)}
+{'-'*70}
+👑  Staking de Axolotitos:
+  🥚 Axolotitos en staking:    {stats.get('axolotitos_staked', 0)}
+  🔓 Axolotitos retirados:     {stats.get('axolotitos_unstaked', 0)}
+  💰 FRJ ganado en staking:    {stats.get('staking_rewards_frj', 0.0):.2f} FRJ
 {'-'*70}
 👥  Capa Social — Amigos:
   📨 Solicitudes enviadas:     {stats.get('social_friend_requests_sent', 0)}

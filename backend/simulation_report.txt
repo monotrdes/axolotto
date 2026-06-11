@@ -3,106 +3,103 @@
 📊  REPORTE FINAL — SIMULADOR AXOLOTTO v3
 ======================================================================
 👥  Usuarios creados:          0
-🎟️  Corcholatas canjeadas:     8
-🎁  Corcholatas reclamadas:    5
-💸  AXF comprados (Sim.):      88350 AXF (Pesos: $11681.00 MXN)
-💎  Paquetes FRJ comprados:    38
-🃏  Boosters normales:         150
+🎟️  Corcholatas canjeadas:     3
+🎁  Corcholatas reclamadas:    3
+💸  AXF comprados (Sim.):      42000 AXF (Pesos: $5517.00 MXN)
+💎  Paquetes FRJ comprados:    17
+🃏  Boosters normales:         48
 ✨  Boosters foil:             0
 🎯  Boosters extra (abiertos): 0
-🎴  Cartas abiertas total:     770
-🥚  Webitos adoptados:         0
-🐣  Axolotitos eclosionados:   8
-🎓  Tutoriales completados:    8 (Tabla Tutorial creada)
-🧬  Naturalezas obtenidas:     methodical: 2, lucky: 3, wise: 1, hyperactive: 1, glutton: 1
-😇  Karma Lucky:               8
+🎴  Cartas abiertas total:     252
+🥚  Webitos adoptados:         6
+🐣  Axolotitos eclosionados:   9
+🎓  Tutoriales completados:    3 (Tabla Tutorial creada)
+🧬  Naturalezas obtenidas:     glutton: 1, wise: 4, lucky: 2, hyperactive: 1, methodical: 1
+😇  Karma Lucky:               3
 🧂  Karma Salty:               0
 💧  Recompensas Salty (FRJ):   0
-🌤️  Clima incubación:          energizing_dew
 🎉  Evento de prueba creado:   No
 ----------------------------------------------------------------------
-🎰  Gashapon rolls:            26
+🎰  Gashapon rolls:            10
 💊  Cápsulas reclamadas:       0
-🌟  Triple Suerte:             3
-📋  Tableros creados:          16  (0 manuales)
-🏪  Tableros en venta P2P:     1
-🏠  Tableros en renta:         0
-📈  Slots desbloqueados:       3
-🦎  Axos en venta P2P:         0
+🌟  Triple Suerte:             0
+📋  Tableros creados:          6  (0 manuales)
+🏪  Tableros en venta P2P:     1 (Comprados: 0)
+🏠  Tableros en renta:         0 (Rentados: 0)
+📈  Slots desbloqueados:       0
+🦎  Axos en venta P2P:         1 (Comprados: 1)
 ----------------------------------------------------------------------
-👑  VIP activados:             7
-🔄  VIP Auto-Renovación:       3
+👑  VIP activados:             2
+🔄  VIP Auto-Renovación:       1
 🌿  FRJ VIP reclamados:        0
-💸  Ahorro jugadores (VIP):    341.24 AXF  ← ingresos perdidos por la casa
+💸  Ahorro jugadores (VIP):    150.24 AXF  ← ingresos perdidos por la casa
 ----------------------------------------------------------------------
-🎮  Partidas individuales:     98
-  🏆 Victorias:               32  (32.7%)
-  💔 Derrotas:                66
-  🤖 Autojuego:               18 partidas
-  💰 FRJ obtenidas:           2321.23
-  🍽️  Alimentaciones:          5
-  😴 Ciclos sueño:            1
+🎮  Partidas individuales:     9
+  🏆 Victorias:               7  (77.8%)
+  💔 Derrotas:                2
+  🤖 Autojuego:               6 partidas
+  💰 FRJ obtenidas:           270.92
+  🍽️  Alimentaciones:          0
+  😴 Ciclos sueño:            0
   🔧 Cave items equipados:    0
-  💍 Accesorios equipados:    19
+  💍 Accesorios equipados:    8
 ----------------------------------------------------------------------
-⚔️  Salas multijugador:        6
+⚔️  Salas multijugador:        5
   📞 Recall pasó:             1
-  💵 Axos liquidados:         8
+  💵 Axos liquidados:         3
   💰 Jackpots ganados:        0
 ----------------------------------------------------------------------
-  📊 Partidas jugadas:         15
-  🏆 Victorias:               6  (40%)
-  💸 FRJ neto total:          -250.5
+  📊 Partidas jugadas:         8
+  🏆 Victorias:               4  (50%)
+  💸 FRJ neto total:          -212.0
   Detalle:
-    💔 Maceta Robusta       │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
-    💔 Coatlicue Perdurable │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
-    💔 Pochote Inagotable   │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
-    🏆 Requinto Perpetuo    │ Charco de Novatos        │ Neto:    +8.0 FRJ │ XP: +25
-    🏆 Pelusa Incesante     │ Charco de Novatos        │ Neto:   +24.0 FRJ │ XP: +55
-    💔 Ixchel Meticulosa    │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
-    💔 Quetzal Inmortal     │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
-    💔 Tepache Floreciente  │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
-    💔 Maceta Robusta       │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
-    🏆 Pochote Inagotable   │ Fosa del Campeón         │ Neto:   -32.5 FRJ │ XP: +20
-    🏆 Requinto Perpetuo    │ Charco de Novatos        │ Neto:   +34.0 FRJ │ XP: +75
-    💔 Pelusa Incesante     │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
-    💔 Pochote Inagotable   │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
-    🏆 Requinto Perpetuo    │ Charco de Novatos        │ Neto:    +8.7 FRJ │ XP: +120
-    🏆 Pelusa Incesante     │ Charco de Novatos        │ Neto:   -12.7 FRJ │ XP: +55
+    🏆 Mazorca Incesante    │ Charco de Novatos        │ Neto:    +6.0 FRJ │ XP: +80
+    💔 Basalto Correoso     │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Mitla Correosa       │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    🏆 Mazorca Incesante    │ Charco de Novatos        │ Neto:    +6.0 FRJ │ XP: +80
+    💔 Basalto Correoso     │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Mitla Correosa       │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    🏆 Mazorca Incesante    │ Charco de Novatos        │ Neto:   -16.0 FRJ │ XP: +30
+    🏆 Basalto Correoso     │ Charco de Novatos        │ Neto:   +12.0 FRJ │ XP: +50
 
 ----------------------------------------------------------------------
 🌙  Ciclo Lunar (Daily):
-  💰 FRJ acumulados:          0 FRJ
-  💊 Cápsulas ganadas:        0
-  🌕 Máx Luna alcanzada:      0
-  📅 Máx racha diaria:        0
+  💰 FRJ acumulados:          1460 FRJ
+  💊 Cápsulas ganadas:        2
+  🌕 Máx Luna alcanzada:      2
+  📅 Máx racha diaria:        6
 ----------------------------------------------------------------------
 ⛏️  Expansión del Cenote:
-  🏗️  Expansiones totales:     33
-  💸 AXF gastados (aceler.):  984
-  🏆 Máx nivel alcanzado:     8
+  🏗️  Expansiones totales:     10
+  💸 AXF gastados (aceler.):  240
+  🏆 Máx nivel alcanzado:     5
 ----------------------------------------------------------------------
 🖼️  Decoración del Cenote:
   🎨 Items equipados:         0
-  🔒 Tests seguridad slot:    0
+  🔒 Tests seguridad slot:    2
   🧬 Tests límite mentoría:   0
 ----------------------------------------------------------------------
+👑  Staking de Axolotitos:
+  🥚 Axolotitos en staking:    6
+  🔓 Axolotitos retirados:     6
+  💰 FRJ ganado en staking:    5.16 FRJ
+----------------------------------------------------------------------
 👥  Capa Social — Amigos:
-  📨 Solicitudes enviadas:     14
-  ✅ Solicitudes aceptadas:    10
-  ❌ Solicitudes rechazadas:   4
-  🤝 Amistades activas total:  4
-  ❤️  Likes dados:             17 (total BD: 17)
-  🏠 Cuevas visitadas:         14 (total BD: 14)
-  🚫 Bloqueos:                 12
-  💔 Amistades eliminadas:     8
-  🔍 Sugerencias encontradas:  1
+  📨 Solicitudes enviadas:     3
+  ✅ Solicitudes aceptadas:    2
+  ❌ Solicitudes rechazadas:   1
+  🤝 Amistades activas total:  1
+  ❤️  Likes dados:             2 (total BD: 2)
+  🏠 Cuevas visitadas:         3 (total BD: 3)
+  🚫 Bloqueos:                 0
+  💔 Amistades eliminadas:     2
+  🔍 Sugerencias encontradas:  0
 ----------------------------------------------------------------------
 🔗  Capa Social — Referidos:
-  🏷️  Códigos generados:       8 (total BD: 8)
-  📥 Códigos canjeados:        3
-  🎯 Milestones procesados:    6
-  👶 Referidos totales:        3
+  🏷️  Códigos generados:       3 (total BD: 3)
+  📥 Códigos canjeados:        1
+  🎯 Milestones procesados:    2
+  👶 Referidos totales:        1
 ----------------------------------------------------------------------
 🛡️  Capa Social — Anti-Abuso:
   🔒 Anti-fraud bloqueos:      3
@@ -113,81 +110,13 @@
   ❌ Fallaron:                1
 ======================================================================
 
-⚠️  ERRORES (82):
-  x4  booster_buy did:privy:sim_player_4: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x3  booster_buy did:privy:sim_player_2: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x2  booster_buy did:privy:sim_player_1: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  daily_claim did:privy:cmnn1tv0o02au0ckzho9ugkb2 day 1: 403: TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.
-  x1  daily_claim did:privy:cmnn1tv0o02au0ckzho9ugkb2 day 2: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:cmnn1tv0o02au0ckzho9ugkb2 day 3: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:cmnn1tv0o02au0ckzho9ugkb2 day 4: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:cmnn1tv0o02au0ckzho9ugkb2 day 5: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_1 day 1: 403: TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.
-  x1  daily_claim did:privy:sim_player_1 day 2: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_1 day 3: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_1 day 4: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_1 day 5: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_1 day 6: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_1 day 7: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_2 day 1: 403: TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.
-  x1  daily_claim did:privy:sim_player_2 day 2: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_2 day 3: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_2 day 4: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_2 day 5: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_2 day 6: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_2 day 7: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_3 day 1: 403: TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.
-  x1  daily_claim did:privy:sim_player_3 day 2: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_3 day 3: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_3 day 4: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_3 day 5: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_4 day 1: 403: TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.
-  x1  daily_claim did:privy:sim_player_4 day 2: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_4 day 3: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_4 day 4: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_4 day 5: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_4 day 6: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_4 day 7: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_5 day 1: 403: TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.
-  x1  daily_claim did:privy:sim_player_5 day 2: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_5 day 3: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_6 day 1: 403: TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.
-  x1  daily_claim did:privy:sim_player_6 day 2: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_6 day 3: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_6 day 4: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_6 day 5: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_6 day 6: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:sim_player_6 day 7: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:cmpl1jf3t01cc0ck4gqt004l5 day 1: 403: TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.
-  x1  daily_claim did:privy:cmpl1jf3t01cc0ck4gqt004l5 day 2: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  daily_claim did:privy:cmpl1jf3t01cc0ck4gqt004l5 day 3: unsupported operand type(s) for -: 'NoneType' and 'datetime.timedelta'
-  x1  vip_buy_early did:privy:cmnn1tv0o02au0ckzho9ugkb2 dorado: TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.
-  x1  vip_buy_early did:privy:sim_player_1 dorado: TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.
-  x1  vip_buy_early did:privy:sim_player_2 axolite: TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.
-  x1  vip_buy_early did:privy:sim_player_3 dorado: TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.
-  x1  vip_buy_early did:privy:sim_player_5 coral: TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.
-  x1  vip_buy_early did:privy:sim_player_6 dorado: TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.
-  x1  vip_buy_early did:privy:cmpl1jf3t01cc0ck4gqt004l5 coral: TUTORIAL_REQUIRED: Debes completar el tutorial antes de explorar el mundo de Axolotto.
-  x1  claim_corcholata_unexpected did:privy:sim_player_5: 429: 5 per 1 minute
-  x1  claim_corcholata_unexpected did:privy:sim_player_6: 429: 5 per 1 minute
-  x1  claim_corcholata_unexpected did:privy:cmpl1jf3t01cc0ck4gqt004l5: 429: 5 per 1 minute
-  x1  booster_buy did:privy:sim_player_6: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  board_manual did:privy:cmnn1tv0o02au0ckzho9ugkb2: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
-  x1  board_manual did:privy:sim_player_5: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
-  x1  board_sale_list did:privy:sim_player_1: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_2: La Tabla Tutorial no se puede vender.
-  x1  board_rent_list did:privy:sim_player_1: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_5: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_6: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:cmpl1jf3t01cc0ck4gqt004l5: La Tabla Tutorial no se puede rentar.
-  x1  acc_equip did:privy:cmnn1tv0o02au0ckzho9ugkb2/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_1/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_3/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_3/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_4/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_5/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_5/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:sim_player_6/body: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:cmpl1jf3t01cc0ck4gqt004l5/eyes: No posees este accesorio en tu inventario.
-  x1  acc_equip did:privy:cmpl1jf3t01cc0ck4gqt004l5/body: No posees este accesorio en tu inventario.
+⚠️  ERRORES (9):
+  x2  booster_buy did:privy:cmnn1tv0o02au0ckzho9ugkb2: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  triple_suerte did:privy:sim_player_2: FRJ insuficientes para Triple Suerte. Necesitas 22500.0 FRJ, tienes 9193.2 FRJ.
+  x1  board_rent_list did:privy:sim_player_2: La Tabla Tutorial no se puede rentar.
+  x1  slot_upgrade did:privy:sim_player_2: Requisitos no cumplidos. Requiere 25 partidas jugadas y 0 ganadas.
+  x1  axo_sale_list did:privy:cmnn1tv0o02au0ckzho9ugkb2: El Axolotito del tutorial no se puede vender.
+  x1  cave_item_buy did:privy:cmnn1tv0o02au0ckzho9ugkb2/Rocola del Cenote: Saldo insuficiente de gema_alga.
+  x1  cave_item_buy did:privy:cmnn1tv0o02au0ckzho9ugkb2/Farol de Papel Picado: Saldo insuficiente de gema_alga.
+  x1  cave_item_buy did:privy:sim_player_2/Ambiente Templo Maya: Saldo insuficiente de gema_alga.
 ======================================================================
