@@ -223,15 +223,15 @@ class SocialService:
                 "avatar_url": friend_user.avatar_url or "",
                 "vip_tier": friend_user.vip_tier,
                 "is_online": SocialService._is_online(friend_user),
-                "is_best_friend": SocialService._is_best_friend(rel),
+                "is_best_friend": SocialService._is_best_friend(rel, user_id),
                 "interaction_count": rel.interaction_count,
                 "friends_since": rel.friends_since.isoformat() if rel.friends_since else None,
             })
 
-        # Sort: online first, then best friends, then by interaction count
+        # Sort: best friends (pinned) first, then online, then by interaction count
         result.sort(key=lambda f: (
-            not f["is_online"],
             not f["is_best_friend"],
+            not f["is_online"],
             -f["interaction_count"],
         ))
         return result
@@ -662,9 +662,29 @@ class SocialService:
         return (datetime.utcnow() - user.last_play_date) < timedelta(minutes=5)
 
     @staticmethod
-    def _is_best_friend(relation: FriendRelation) -> bool:
-        """Best friend criteria: 30+ days of active friendship + 10+ interactions."""
-        if not relation.friends_since:
-            return False
-        days_friends = (datetime.utcnow() - relation.friends_since).days
-        return days_friends >= 30 and relation.interaction_count >= 10
+    def _is_best_friend(relation: FriendRelation, user_id: str) -> bool:
+        """Best friend (pinned/compadre) status for user_id."""
+        if relation.user_a == user_id:
+            return relation.pinned_by_a
+        else:
+            return relation.pinned_by_b
+
+    @staticmethod
+    def toggle_pin_friend(
+        session: Session, user_id: str, friend_id: str, pinned: bool
+    ) -> FriendRelation:
+        """Pin or unpin a friend (compadre)."""
+        relation = SocialService._find_relation(session, user_id, friend_id)
+        if not relation or relation.status != FriendStatus.ACTIVE:
+            raise HTTPException(status_code=400, detail="No existe una relación de amistad activa.")
+
+        if relation.user_a == user_id:
+            relation.pinned_by_a = pinned
+        else:
+            relation.pinned_by_b = pinned
+
+        relation.updated_at = datetime.utcnow()
+        session.add(relation)
+        session.commit()
+        session.refresh(relation)
+        return relation

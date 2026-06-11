@@ -251,6 +251,20 @@ export function useSocial(token: string | null) {
     await fetchFriends();
   }, [token, fetchFriends]);
 
+  const togglePinFriend = useCallback(async (friendId: string, pinned: boolean) => {
+    if (!token) throw new Error("No token");
+    const res = await axios.post(
+      `${API_BASE}/social/friends/pin/${friendId}`,
+      null,
+      {
+        headers: headers(),
+        params: { pinned },
+      }
+    );
+    await fetchFriends();
+    return res.data;
+  }, [token, fetchFriends]);
+
   return {
     friends,
     pendingRequests,
@@ -271,5 +285,6 @@ export function useSocial(token: string | null) {
     visitCave,
     getFriendCave,
     blockUser,
+    togglePinFriend,
   };
 }

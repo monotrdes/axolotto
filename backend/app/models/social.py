@@ -35,6 +35,8 @@ class FriendRelation(SQLModel, table=True):
     friends_since: Optional[datetime] = Field(default=None)
     interaction_count: int = Field(default=0)         # total: likes + gifts + visits + games
     last_interaction_at: Optional[datetime] = Field(default=None)
+    pinned_by_a: bool = Field(default=False)
+    pinned_by_b: bool = Field(default=False)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

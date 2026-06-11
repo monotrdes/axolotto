@@ -255,3 +255,25 @@ def get_friend_cave(
         "vip_tier": friend.vip_tier,
         "avatar_url": friend.avatar_url or "",
     }
+
+
+@router.post("/friends/pin/{friend_id}")
+def pin_friend(
+    friend_id: str,
+    pinned: bool = Query(default=True),
+    session: Session = Depends(get_session),
+    verified_user_id: str = Depends(get_verified_user_id),
+) -> dict:
+    """Pin or unpin a friend as best friend/compadre."""
+    from app.models.user import User
+    from app.services.social_service import SocialService
+    from app.core.auth import require_tutorial
+    user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
+    if user: require_tutorial(user)
+
+    SocialService.toggle_pin_friend(session, verified_user_id, friend_id, pinned)
+    return {
+        "message": "Amigo actualizado.",
+        "friend_id": friend_id,
+        "pinned": pinned,
+    }

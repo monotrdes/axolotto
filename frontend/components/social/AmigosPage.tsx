@@ -40,6 +40,7 @@ export default function AmigosPage({
     sendLike,
     visitCave,
     blockUser,
+    togglePinFriend,
   } = useSocial(token);
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -131,6 +132,15 @@ export default function AmigosPage({
     const cave = await visitCave(friend.friend_id);
     if (cave) {
       setVisitingFriend(friend);
+    }
+  };
+
+  const handleTogglePin = async (friendId: string, isPinned: boolean) => {
+    try {
+      await togglePinFriend(friendId, !isPinned);
+      toast(!isPinned ? "⭐ Amigo anclado como Compadre" : "☆ Amigo desanclado");
+    } catch (e: any) {
+      toast(e.response?.data?.detail || "Error al actualizar favorito");
     }
   };
 
@@ -292,6 +302,7 @@ export default function AmigosPage({
                         onLike={() => handleLike(f.friend_id)}
                         onVisit={() => handleVisit(f)}
                         onRemove={() => handleRemoveFriend(f.relation_id, f.nickname || "")}
+                        onTogglePin={() => handleTogglePin(f.friend_id, f.is_best_friend)}
                       />
                     ))}
                   </div>
@@ -659,11 +670,13 @@ function FriendRow({
   onLike,
   onVisit,
   onRemove,
+  onTogglePin,
 }: {
   friend: FriendInfo;
   onLike: () => void;
   onVisit: () => void;
   onRemove: () => void;
+  onTogglePin: () => void;
 }) {
   return (
     <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-slate-800/30 border border-white/5 hover:bg-slate-800/50 transition-colors group">
@@ -704,6 +717,17 @@ function FriendRow({
 
       {/* Action buttons */}
       <div className="flex gap-1 shrink-0">
+        <button
+          onClick={onTogglePin}
+          className={`w-8 h-8 rounded-lg text-xs hover:scale-105 active:scale-95 transition-all flex items-center justify-center ${
+            friend.is_best_friend 
+              ? "bg-amber-950/40 border border-amber-500/40 text-amber-400" 
+              : "bg-slate-900/30 border border-slate-700/20 text-slate-500 hover:text-amber-400 hover:border-amber-500/20"
+          }`}
+          title={friend.is_best_friend ? "Quitar de Compadres" : "Anclar como Compadre"}
+        >
+          {friend.is_best_friend ? "★" : "☆"}
+        </button>
         <button
           onClick={onLike}
           className="w-8 h-8 rounded-lg bg-pink-900/30 border border-pink-500/20 text-pink-400 text-xs hover:bg-pink-800/40 transition-colors flex items-center justify-center"
