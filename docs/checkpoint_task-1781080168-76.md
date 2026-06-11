@@ -30,10 +30,19 @@
 
 ## Estado actual
 
-- **Fase activa**: Fase 1 — solo falta la transformación animada nido→camita
-- **Último commit de avance**: el commit que contiene esta edición (feat(world): decoraciones de cueva)
-- **SIGUIENTE PASO**: Fase 1 restante:
-  1. **Transformación animada nido→camita** al eclosionar (hoy es swap estático).
+- **Fase activa**: rediseño del Santuario COMPLETO en código (concepto corregido
+  por el usuario con imagen de referencia, 2026-06-11): arriba solo crianza
+  (8 nidos por expansión), centro la casa con decoración tipada comprable con
+  FRJ, abajo amigos. Plan detallado: `C:\Users\imzet\.claude\plans\creo-que-no-se-sunny-pony.md`
+  (aprobado) — backend taxonomía+catálogo+shop y frontend diorama+panel+bazar.
+- **Último commit de avance**: el commit que contiene esta edición
+- **SIGUIENTE PASO**:
+  1. ⚠️ **Correr el seed del catálogo** (requiere DATABASE_URL real):
+     `docker exec axolotto_backend python app/scripts/seed_cave_decor.py`
+     (idempotente; sin él, el Bazar y la tab Comprar salen vacíos).
+  2. **Validación visual del usuario** (móvil y web): nidos bloqueados,
+     slots de la sala, comprar+equipar, tinte AMBIENTE, bazar en tienda.
+  3. **Transformación animada nido→camita** al eclosionar (sigue pendiente).
   Después → Fase 2 restante: re-skin HTML por tokens (Store boletos, SettlingScreen
   recibo, Inventory códice, VipModal) y luego Fase 3 (re-skin de la mesa de
   competencia + tablillas con `winPatterns.ts`).
@@ -102,12 +111,23 @@
       los fetch de axolotitos/amigos/podio — antes corrían con el token pero sin
       canvas montado (onboarding/datosBanco) y los `set*` caían al vacío (amigos
       nunca aparecían en el embarcadero)
-- [x] Decoraciones de cueva: tap en nido/camita (hotspot `cueva:<slot>`) →
-      CuevaDecorPanel interactivo (toggle, máx 6); persistencia en
-      `lib/world/decorStorage.ts` (localStorage por userId) y render de emojis
-      alrededor del nido en SantuarioScene (DECOR_OFFSETS). Catálogo sigue
-      siendo `getMockDecorations()` — ⚠️ endpoint backend + inventario real
-      de decoraciones = sub-tarea aparte
+- [x] **Rediseño del Santuario** (5 commits, 2026-06-11; reemplaza el primer
+      intento de decoraciones-en-nidos con localStorage que fue descartado):
+      - Backend: taxonomía AMBIENTE/LUZ/MESA/MANTEL/SILLAS/FONDO/ESPECIAL en
+        `cave_decor.py` (`_slot_layout` cuadra con decor_slots 2→16; MANTEL
+        exige MESA; slots omitidos del body vuelven al inventario; GET incluye
+        `slots` + `items` detalle). 19 tests en `tests/unit/test_cave_decor.py`.
+      - Backend: `seed_cave_decor.py` (23 CAVE_ITEM, precios CAVE_DECOR_PRICES
+        300/900/2500/7500 FRJ) y CAVE_ITEM exento de wallet Web3 en /shop/buy.
+      - Diorama: zona superior solo crianza — 8 slots en 2 filas según `spots`
+        de /cave/status (`setCaveStatus`); bloqueados = roca+🔒+Nv; hotspots
+        `nido-*` abren el panel Santuario.
+      - Diorama: sala con `setDecoraciones` (GET /cave/decorations) — mesa con
+        skin/mantel/sillas (table_seats reales), tinte AMBIENTE, chips de slot
+        (+ punteado / emoji) con hotspot `decor:<slot_id>`.
+      - `DecorSlotPanel` (tabs Equipar/Comprar con FRJ, bonos al pie) + fila
+        "Bazar del Cenote" en OfficialTab. Borrados: decorStorage.ts,
+        CuevaDecorPanel, CaveDecorationPanel legacy huérfano.
 - [ ] Transformación animada nido→camita (hoy es swap estático)
 - [x] Mundo activo validado por usuario en móvil y web ✓
 
@@ -167,7 +187,12 @@
 | 2026-06-11 | 2d51702 | Burbujas de acción ❤️/👁/🎲 en trajineritas (like en sitio, visita directa a FriendCaveView, invitar provisional). Rama renombrada a task/task-1781159264-84-rediseno-visual-papel-picado |
 | 2026-06-11 | b4b649c | Mesa de amigos y burbuja 🎲 → HostingSetupModal sobre el mundo (visibilidad friends, invitado preseleccionado, validación de mesa en la cueva) |
 | 2026-06-11 | f584a43 | Fix QA usuario: canvasReady gatea fetches del mundo (amigos no salían), crear sala se queda en el mundo con toast (PlayMode no lista hosteadas). Gap Fase 3 documentado: salas hosteadas sin UI de listado/join |
-| 2026-06-11 | (este) | Decoraciones de cueva: tap en nido → panel toggle (máx 6), localStorage por usuario (`decorStorage.ts`), emojis renderizados alrededor del nido, re-aplicadas al reconstruir escena y al cargar el mundo |
+| 2026-06-11 | 968c91a | Decoraciones de cueva v1 (localStorage alrededor de nidos) — DESCARTADO: el usuario corrigió el concepto con imagen de referencia |
+| 2026-06-11 | 85510ea | Backend: taxonomía de slots tipados (`_slot_layout`, MANTEL exige MESA, removals devuelven a inventario) + 17 tests |
+| 2026-06-11 | 547566d | Backend: seed de 23 decoraciones FRJ + CAVE_ITEM sin requisito de wallet en /shop/buy |
+| 2026-06-11 | f6b8792 | Diorama: zona de crianza dinámica — 8 nidos en 2 filas, bloqueados con candado/Nv, hotspots nido-* |
+| 2026-06-11 | 1991cc2 | Diorama: sala con slots tipados — mesa skin/mantel/sillas, tinte AMBIENTE, chips decor:<slot_id> |
+| 2026-06-11 | (este) | DecorSlotPanel (Equipar/Comprar FRJ/bonos) + Bazar del Cenote en tienda + limpieza del sistema v1. ⏳ Falta: correr seed en BD y validación visual |
 
 ## Notas para el verificador humano
 
