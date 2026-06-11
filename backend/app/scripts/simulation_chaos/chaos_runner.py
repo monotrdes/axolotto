@@ -157,101 +157,7 @@ def _ensure_admin_users_ok(session, progress) -> None:
         progress(f"  ⚠️  _ensure_admin_users_ok falló: {e}")
 
 
-def _verify_all_players_have_axolotitos(session, players: list, progress) -> None:
-    """Safety net: ensure every player has at least one axolotito.
-
-    If a player's tutorial failed silently during phase_incubation, this
-    function tries a fast-path: grant an egg, create an incubation, set
-    imprinting_complete, and hatch immediately.
-
-    If session is None, a new Session(engine) is created internally.
-    """
-    from sqlmodel import select as _sel, Session as _Session
-    from app.models.axolotito import Axolotito as _Axo
-    from app.models.items import ItemCatalog, ItemType, PlayerInventory, WebitoIncubation
-    from app.models.user import User
-    from datetime import datetime, timedelta
-
-    own_session = session is None
-    if own_session:
-        from app.database import engine as _db_engine
-        session = _Session(_db_engine)
-
-    missing = 0
-    fixed = 0
-
-    try:
-        for p in players:
-            uid = p["user_id"]
-            axo_count = session.exec(
-                _sel(_Axo).where(_Axo.user_id == uid)
-            ).all()
-            if axo_count:
-                continue
-
-            missing += 1
-            progress(f"  ⚠️  {uid[-25:]}: sin axolotito — aplicando fast-path...")
-
-            try:
-                # 1. Asegurar que exista un egg en el inventario
-                egg = session.exec(
-                    _sel(ItemCatalog).where(
-                        ItemCatalog.item_type == ItemType.EGG,
-                        ItemCatalog.is_active == True,
-                    )
-                ).first()
-                if not egg:
-                    progress(f"  ❌ {uid[-25:]}: no hay eggs en catálogo")
-                    continue
-
-                inv = session.exec(
-                    _sel(PlayerInventory).where(
-                        PlayerInventory.user_id == uid,
-                        PlayerInventory.item_id == egg.id,
-                    )
-                ).first()
-                if inv:
-                    inv.quantity = max(inv.quantity, 1)
-                else:
-                    inv = PlayerInventory(user_id=uid, item_id=egg.id, quantity=1)
-                session.add(inv)
-                session.commit()
-
-                # 2. Crear incubación lista para eclosionar
-                inc = WebitoIncubation(
-                    user_id=uid,
-                    item_id=egg.id,
-                    fecha_eclosion_estimada=datetime.utcnow() - timedelta(seconds=10),
-                    tutorial_phase=5,
-                    imprinting_complete=True,
-                    imprinting_games_played=1,
-                )
-                session.add(inc)
-                session.commit()
-                session.refresh(inc)
-
-                # 3. Eclosionar
-                from app.api.v1.endpoints.incubation import _perform_hatch
-                user = session.exec(_sel(User).where(User.privy_did == uid)).first()
-                if user:
-                    if not user.tutorial_completed:
-                        user.tutorial_completed = True
-                        session.add(user)
-                        session.commit()
-                    _perform_hatch(inc, user, session)
-                    fixed += 1
-                    progress(f"  ✅ {uid[-25:]}: axolotito creado vía fast-path")
-            except Exception as e:
-                session.rollback()
-                progress(f"  ❌ {uid[-25:]}: fast-path falló: {e}")
-
-        if missing > 0:
-            progress(f"  🔧 {missing} sin axo, {fixed} reparados, {missing - fixed} no reparables")
-        else:
-            progress(f"  ✅ Todos los {len(players)} jugadores tienen al menos 1 axolotito")
-    finally:
-        if own_session and session:
-            session.close()
+# Removed _verify_all_players_have_axolotitos to allow bots to complete tutorial naturally
 
 
 def run_chaos_simulation(config: ChaosConfig):
@@ -523,52 +429,7 @@ def run_chaos_simulation(config: ChaosConfig):
     all_user_ids = [p["user_id"] for p in players]
     all_axo_ids = [axo for pd in player_data_list for axo in pd["axolotito_ids"]]
 
-    # ── UNCONDITIONAL pre-flight check: every bot MUST have axolotito + tutorial ──
-    # Runs outside setup's try/except with a fresh session, so setup errors
-    # can't prevent this safety net from executing.
-    missing_axo = [pd for pd in player_data_list if not pd["axolotito_ids"]]
-    if missing_axo:
-        progress(f"\n  🔧 PRE-FLIGHT: {len(missing_axo)}/{len(player_data_list)} jugadores sin axolotito.")
-        progress(f"     Aplicando fast-path de emergencia...")
-        _verify_all_players_have_axolotitos(None, [
-            {"user_id": pd["user_id"]} for pd in missing_axo
-        ], progress)
-        # Re-query axolotito IDs after the fix
-        with Session(engine) as fix_session:
-            for pd in player_data_list:
-                if not pd["axolotito_ids"]:
-                    from sqlmodel import select as _sel3
-                    from app.models.axolotito import Axolotito as _Axo2
-                    pd["axolotito_ids"] = list(fix_session.exec(
-                        _sel3(_Axo2.id).where(_Axo2.user_id == pd["user_id"])
-                    ).all())
-                    pd["board_ids"] = list(fix_session.exec(
-                        _sel3(_PB.id).where(_PB.user_id == pd["user_id"], _PB.is_dead == False)
-                    ).all())
-        # Refresh all_axo_ids
-        all_axo_ids = [axo for pd in player_data_list for axo in pd["axolotito_ids"]]
-        still_missing = [pd for pd in player_data_list if not pd["axolotito_ids"]]
-        if still_missing:
-            progress(f"  ⚠️  {len(still_missing)} jugadores siguen sin axolotito tras fast-path")
-        else:
-            progress(f"  ✅ Todos los jugadores tienen axolotito tras pre-flight")
-
-    # ── Also ensure tutorial_completed=True for ALL player users ──
-    with Session(engine) as fix_session:
-        from sqlmodel import select as _sel4
-        from app.models.user import User as _User2
-        fixed_tutorial = 0
-        for pd in player_data_list:
-            user = fix_session.exec(
-                _sel4(_User2).where(_User2.privy_did == pd["user_id"])
-            ).first()
-            if user and not user.tutorial_completed:
-                user.tutorial_completed = True
-                fix_session.add(user)
-                fixed_tutorial += 1
-        if fixed_tutorial:
-            fix_session.commit()
-            progress(f"  🎓 {fixed_tutorial} jugadores con tutorial_completed forzado a True")
+    # Removed forced tutorial bypass pre-flight check to let bots play tutorial live
 
     # Spawn all bot threads and chaos agents
     from bot_state_machine import PlayerBot
@@ -635,6 +496,17 @@ def run_chaos_simulation(config: ChaosConfig):
 
         # Wait for the configured duration
         for elapsed in range(config.duration_seconds):
+            # Dynamically refresh the shared all_axo_ids list from the database
+            try:
+                from sqlmodel import Session as _Sess, select as _sel_ids
+                from app.models.axolotito import Axolotito as _Axo3
+                with _Sess(engine) as session:
+                    new_ids = list(session.exec(_sel_ids(_Axo3.id)).all())
+                    all_axo_ids.clear()
+                    all_axo_ids.extend(new_ids)
+            except Exception:
+                pass
+
             if elapsed % 15 == 0 and elapsed > 0:
                 # Progress update every 15s
                 stats = get_stats()

@@ -130,21 +130,23 @@ def _get_player_user(session: Session, user_id: str) -> Optional[User]:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def fetch_player_state(user_id: str) -> dict:
-    """Fetch a player's current state: axolotitos, boards, sealed boosters.
+    """Fetch a player's current state: axolotitos, boards, sealed boosters, tutorial status.
 
-    Returns a dict with keys: axolotito_ids, board_ids, booster_inv_ids.
-    Returns empty lists if user not found or has no items.
+    Returns a dict with keys: axolotito_ids, board_ids, booster_inv_ids, tutorial_completed.
+    Returns empty/default values if user not found or has no items.
     """
     def _fetch(session: Session) -> dict:
+        user = _get_player_user(session, user_id)
         return {
             "axolotito_ids": _get_player_axolotitos(session, user_id),
             "board_ids": _get_player_boards(session, user_id),
             "booster_inv_ids": _get_player_sealed_boosters(session, user_id),
+            "tutorial_completed": user.tutorial_completed if user else False,
         }
     result = _action(_fetch, "fetch_state")
     if result.get("ok") and isinstance(result.get("detail"), dict):
         return result["detail"]
-    return {"axolotito_ids": [], "board_ids": [], "booster_inv_ids": []}
+    return {"axolotito_ids": [], "board_ids": [], "booster_inv_ids": [], "tutorial_completed": False}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -507,20 +509,20 @@ def action_list_board_for_sale(user_id: str) -> dict:
 
 
 def action_buy_random_market_board(user_id: str) -> dict:
-    """Buy a random board from the P2P market."""
+    """Buy a random listing (booster/card) from the P2P market."""
     def _fn(session: Session) -> Any:
-        from app.api.v1.endpoints.market import buy_listed_board
-        from app.models.market import InventoryMarketListing
+        from app.api.v1.endpoints.market import buy_inventory_listing
+        from app.models.items import InventoryMarketListing
         listings = session.exec(
             select(InventoryMarketListing).where(
                 InventoryMarketListing.seller_id != user_id,
-                InventoryMarketListing.status == "active",
+                InventoryMarketListing.is_active == True,
             )
         ).all()
         if not listings:
             raise HTTPException(status_code=404, detail="No market listings available")
         listing = _rng.choice(listings)
-        return buy_listed_board(
+        return buy_inventory_listing(
             listing_id=listing.id,
             session=session,
             verified_user_id=user_id,
@@ -544,3 +546,129 @@ def refresh_bot_state(user_id: str) -> dict:
     created by previous actions or by other bots (market, breeding, etc.).
     """
     return fetch_player_state(user_id)
+
+
+def action_progress_tutorial(user_id: str) -> dict:
+    """Simulates the step-by-step progress of the tutorial for a bot user.
+
+    Fills the database state deterministically for the onboarding egg,
+    then executes start_tutorial, advances phases (1 to 4) using play_tutorial_game + tutorial_next_step,
+    and completes the tutorial using complete_tutorial (which hatches the axolotito).
+    """
+    from datetime import datetime, timedelta
+    from app.models.items import WebitoIncubation, ItemCatalog, ItemType, PlayerInventory
+    from app.services.tutorial_service import TutorialService
+    from app.api.v1.endpoints.tutorial import (
+        play_tutorial_game,
+        tutorial_next_step,
+        complete_tutorial as complete_tutorial_endpoint,
+        NextStepBody,
+        _board_from_user_id,
+        _stats_from_user_id,
+    )
+
+    def _fn(session: Session) -> Any:
+        # Check if user has already completed the tutorial
+        user = _get_player_user(session, user_id)
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+        if user.tutorial_completed:
+            return {"completed": True, "tutorial_phase": 5}
+
+        # Find tutorial incubation
+        inc = session.exec(
+            select(WebitoIncubation)
+            .where(WebitoIncubation.user_id == user_id)
+            .where(WebitoIncubation.tutorial_phase < 5)
+        ).first()
+
+        if not inc:
+            # 1. No incubation: grant onboarding egg and create tutorial incubation
+            egg = session.exec(
+                select(ItemCatalog).where(
+                    ItemCatalog.item_type == ItemType.EGG,
+                    ItemCatalog.is_active == True,
+                )
+            ).first()
+            if not egg:
+                raise HTTPException(status_code=404, detail="No eggs active in catalog")
+
+            # Check if user has egg in inventory
+            inv = session.exec(
+                select(PlayerInventory)
+                .where(PlayerInventory.user_id == user_id)
+                .where(PlayerInventory.item_id == egg.id)
+            ).first()
+            if not inv:
+                inv = PlayerInventory(user_id=user_id, item_id=egg.id, quantity=1)
+                session.add(inv)
+                session.flush()
+
+            # Create incubation (phase 0)
+            seed_stats = _stats_from_user_id(user_id)
+            inc = WebitoIncubation(
+                user_id=user_id,
+                item_id=egg.id,
+                fecha_eclosion_estimada=datetime.utcnow() - timedelta(seconds=10),
+                bonus_focus=seed_stats["bonus_focus"],
+                bonus_luck=seed_stats["bonus_luck"],
+                bonus_stamina=seed_stats["bonus_stamina"],
+                bonus_agility=seed_stats["bonus_agility"],
+                bonus_salinity_adj=seed_stats["bonus_salinity_adj"],
+                tutorial_phase=0,
+                tutorial_act_index=0,
+            )
+            inc.tutorial_board_card_ids = _board_from_user_id(user_id, session)
+            session.add(inc)
+            session.commit()
+            return {"completed": False, "tutorial_phase": 0}
+
+        # 2. Existing incubation
+        phase = inc.tutorial_phase
+        if phase == 0:
+            # Phase 0 -> 1: Start tutorial
+            TutorialService.start_tutorial(session=session, user_id=user_id, incubation=inc)
+            session.commit()
+            return {"completed": False, "tutorial_phase": 1}
+        elif 1 <= phase <= 3:
+            # Phase 1->2->3->4: Play tutorial game + next step
+            won = None
+            try:
+                game_res = play_tutorial_game(session=session, verified_user_id=user_id)
+                won = (game_res.get("resultado") == "victoria")
+            except HTTPException:
+                won = None
+            
+            tutorial_next_step(
+                incubation_id=inc.id,
+                body=NextStepBody(won=won),
+                session=session,
+                verified_user_id=user_id,
+            )
+            session.commit()
+            return {"completed": False, "tutorial_phase": phase + 1}
+        elif phase == 4:
+            # Phase 4 -> 5: Complete tutorial
+            inc.tutorial_karma = _rng.choice(["lucky", "salty"])
+            session.add(inc)
+            session.flush()
+            complete_tutorial_endpoint(
+                incubation_id=inc.id,
+                session=session,
+                verified_user_id=user_id,
+            )
+            session.commit()
+            return {"completed": True, "tutorial_phase": 5}
+        else:
+            # tutorial_phase >= 5, but user.tutorial_completed was somehow False
+            user.tutorial_completed = True
+            session.add(user)
+            session.commit()
+            return {"completed": True, "tutorial_phase": 5}
+
+    result = _action(_fn, "progress_tutorial")
+    increment_stat("bot_actions")
+    if not result.get("ok"):
+        increment_stat("bot_errors")
+    return result

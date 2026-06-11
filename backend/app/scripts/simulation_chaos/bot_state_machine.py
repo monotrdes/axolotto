@@ -73,6 +73,7 @@ class PlayerBot:
         self.axolotito_ids: list[int] = []
         self.board_ids: list[int] = []
         self.booster_inv_ids: list[int] = []
+        self.tutorial_completed: bool = False
 
         # Counters
         self.actions_taken = 0
@@ -162,10 +163,16 @@ class PlayerBot:
             self.axolotito_ids = state.get("axolotito_ids", [])
             self.board_ids = state.get("board_ids", [])
             self.booster_inv_ids = state.get("booster_inv_ids", [])
+            self.tutorial_completed = state.get("tutorial_completed", False)
         self.last_refresh = time.monotonic()
 
     def _choose_action(self) -> Optional[tuple[str, str, Callable[[], dict], float]]:
         """Weighted random action selection. Returns (zone, description, callable, visible_duration)."""
+        if not self.tutorial_completed:
+            from bot_actions import action_progress_tutorial
+            dur = _rng.uniform(1.2, 2.5)  # Simulate think/play time for tutorial step
+            return ("tutorial", "Haciendo tutorial", lambda: action_progress_tutorial(self.user_id), dur)
+
         weights = {
             "shop": self.personality.get("shop_weight", 0.25),
             "game": self.personality.get("game_weight", 0.25),

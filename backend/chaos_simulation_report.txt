@@ -2,16 +2,16 @@
 ======================================================================
 🛡️  REPORTE DE AUDITORÍA DE SEGURIDAD — CHAOS & SECURITY SIMULATOR V2
 ======================================================================
-⏰  Generado: 2026-06-11 13:59:45 UTC
-⏱️  Duración total: 209.9s
+⏰  Generado: 2026-06-11 19:16:01 UTC
+⏱️  Duración total: 24.2s
 ======================================================================
 📋  CONFIGURACIÓN DE LA PRUEBA
 ──────────────────────────────────────────────────────────────────────
-  👥 Total bots:        50
-     🐋 Whales:          10 (20%)
-     📦 Collectors:      15 (30%)
-     🆓 Free2Play:       25 (50%)
-  ⏱️  Duración:           200s
+  👥 Total bots:        5
+     🐋 Whales:          1 (20%)
+     📦 Collectors:      1 (30%)
+     🆓 Free2Play:       3 (50%)
+  ⏱️  Duración:           20s
   🔄 Replay Attack:      ✅
   👤 ID Spoofing:        ✅
   ⚡ Race Condition:     ✅
@@ -22,15 +22,15 @@
 📊  RESUMEN EJECUTIVO
 ──────────────────────────────────────────────────────────────────────
   🔴 CRITICAL:  0  — Acción inmediata requerida
-  🟡 WARNING:   1061   — Revisar y optimizar
+  🟡 WARNING:   0   — Revisar y optimizar
   🟢 INFO:      0      — Comportamiento correcto
-  📈 Total incidentes: 1061
+  📈 Total incidentes: 0
 ──────────────────────────────────────────────────────────────────────
   🎯 Tasa de mitigación de ataques: 100.0%
-  🔗 Acciones de bots:              10830
-  ⚡ Throughput:                     51.6 acciones/s
-  💥 Errores 500 en bots:           250
-  🎮 Partidas jugadas:              30
+  🔗 Acciones de bots:              108
+  ⚡ Throughput:                     4.5 acciones/s
+  💥 Errores 500 en bots:           0
+  🎮 Partidas jugadas:              3
 
 ======================================================================
 🔴  CRITICALS (0) — ACCIÓN INMEDIATA REQUERIDA
@@ -38,108 +38,9 @@
   ✅ Ningún ataque logró vulnerar el sistema.
 
 ──────────────────────────────────────────────────────────────────────
-🟡  WARNINGS (1061) — REVISAR Y OPTIMIZAR
+🟡  WARNINGS (0) — REVISAR Y OPTIMIZAR
 ──────────────────────────────────────────────────────────────────────
-
-  📌 LIST_BOARD (104 incidencias)
-    [] Unexpected error: ImportError
-    Status: 500 | cannot import name 'list_board_for_sale' from 'app.api.v1.endpoints.market' (/app/app/api/v1/endpoints/market.py)
-
-    [] Unexpected error: ImportError
-    Status: 500 | cannot import name 'list_board_for_sale' from 'app.api.v1.endpoints.market' (/app/app/api/v1/endpoints/market.py)
-
-    [] Unexpected error: ImportError
-    Status: 500 | cannot import name 'list_board_for_sale' from 'app.api.v1.endpoints.market' (/app/app/api/v1/endpoints/market.py)
-
-    [] Unexpected error: ImportError
-    Status: 500 | cannot import name 'list_board_for_sale' from 'app.api.v1.endpoints.market' (/app/app/api/v1/endpoints/market.py)
-
-    [] Unexpected error: ImportError
-    Status: 500 | cannot import name 'list_board_for_sale' from 'app.api.v1.endpoints.market' (/app/app/api/v1/endpoints/market.py)
-
-    ... y 99 más
-
-
-  📌 BUY_MARKET_BOARD (118 incidencias)
-    [] Unexpected error: ImportError
-    Status: 500 | cannot import name 'buy_listed_board' from 'app.api.v1.endpoints.market' (/app/app/api/v1/endpoints/market.py)
-
-    [] Unexpected error: ImportError
-    Status: 500 | cannot import name 'buy_listed_board' from 'app.api.v1.endpoints.market' (/app/app/api/v1/endpoints/market.py)
-
-    [] Unexpected error: ImportError
-    Status: 500 | cannot import name 'buy_listed_board' from 'app.api.v1.endpoints.market' (/app/app/api/v1/endpoints/market.py)
-
-    [] Unexpected error: ImportError
-    Status: 500 | cannot import name 'buy_listed_board' from 'app.api.v1.endpoints.market' (/app/app/api/v1/endpoints/market.py)
-
-    [] Unexpected error: ImportError
-    Status: 500 | cannot import name 'buy_listed_board' from 'app.api.v1.endpoints.market' (/app/app/api/v1/endpoints/market.py)
-
-    ... y 113 más
-
-
-  📌 REGISTER_MULTI (14 incidencias)
-    [] Unexpected error: ProgrammingError
-    Status: 500 | (psycopg2.errors.UndefinedColumn) column roomregistration.ready does not exist
-LINE 1: ...stration.boards_json, roomregi
-
-    [] Unexpected error: ProgrammingError
-    Status: 500 | (psycopg2.errors.UndefinedColumn) column roomregistration.ready does not exist
-LINE 1: ...stration.boards_json, roomregi
-
-    [] Unexpected error: ProgrammingError
-    Status: 500 | (psycopg2.errors.UndefinedColumn) column roomregistration.ready does not exist
-LINE 1: ...stration.boards_json, roomregi
-
-    [] Unexpected error: ProgrammingError
-    Status: 500 | (psycopg2.errors.UndefinedColumn) column roomregistration.ready does not exist
-LINE 1: ...stration.boards_json, roomregi
-
-    [] Unexpected error: ProgrammingError
-    Status: 500 | (psycopg2.errors.UndefinedColumn) column roomregistration.ready does not exist
-LINE 1: ...stration.boards_json, roomregi
-
-    ... y 9 más
-
-
-  📌 BOT_ACTION_500 (236 incidencias)
-    [2026-06-11T13:56:24.865027+00:00] Bot collector_046 got HTTP 500 from action
-    Status: 500 | cannot import name 'list_board_for_sale' from 'app.api.v1.endpoints.market' (/app/app/api/v1/endpoints/market.py)
-
-    [2026-06-11T13:56:26.039849+00:00] Bot free2play_048 got HTTP 500 from action
-    Status: 500 | cannot import name 'list_board_for_sale' from 'app.api.v1.endpoints.market' (/app/app/api/v1/endpoints/market.py)
-
-    [2026-06-11T13:56:26.801964+00:00] Bot collector_013 got HTTP 500 from action
-    Status: 500 | cannot import name 'buy_listed_board' from 'app.api.v1.endpoints.market' (/app/app/api/v1/endpoints/market.py)
-
-    [2026-06-11T13:56:27.378479+00:00] Bot free2play_002 got HTTP 500 from action
-    Status: 500 | cannot import name 'buy_listed_board' from 'app.api.v1.endpoints.market' (/app/app/api/v1/endpoints/market.py)
-
-    [2026-06-11T13:56:28.251585+00:00] Bot collector_046 got HTTP 500 from action
-    Status: 500 | cannot import name 'list_board_for_sale' from 'app.api.v1.endpoints.market' (/app/app/api/v1/endpoints/market.py)
-
-    ... y 231 más
-
-
-  📌 BOT_ACTION_UNEXPECTED_CODE (589 incidencias)
-    [2026-06-11T13:56:26.363251+00:00] Bot collector_013 got unexpected code 429
-    Status: 429 | Ya reclamaste hoy tu recompensa del Ciclo Lunar.
-
-    [2026-06-11T13:56:28.585723+00:00] Bot free2play_016 got unexpected code 429
-    Status: 429 | Ya reclamaste hoy tu recompensa del Ciclo Lunar.
-
-    [2026-06-11T13:56:28.590111+00:00] Bot collector_042 got unexpected code 429
-    Status: 429 | Ya reclamaste hoy tu recompensa del Ciclo Lunar.
-
-    [2026-06-11T13:56:30.512154+00:00] Bot free2play_017 got unexpected code 429
-    Status: 429 | Ya reclamaste hoy tu recompensa del Ciclo Lunar.
-
-    [2026-06-11T13:56:30.522985+00:00] Bot free2play_015 got unexpected code 429
-    Status: 429 | Ya reclamaste hoy tu recompensa del Ciclo Lunar.
-
-    ... y 584 más
-
+  ✅ Sin warnings.
 
 ──────────────────────────────────────────────────────────────────────
 🟢  INFO (0) — COMPORTAMIENTO CORRECTO
@@ -151,16 +52,16 @@ LINE 1: ...stration.boards_json, roomregi
 ──────────────────────────────────────────────────────────────────────
   Tipo                   Lanzados  Bloqueados  Exitosos    Tasa
   ────────────────────── ────────  ──────────  ────────  ──────
-  Replay Attack               166         166         0  100.0%
-  ID Spoofing                 233         233         0  100.0%
-  Race Condition               58         580         0  1000.0%
+  Replay Attack                17          17         0  100.0%
+  ID Spoofing                  10          10         0  100.0%
+  Race Condition                5          50         0  1000.0%
   Double Booking                0           0         0    0.0%
-  Boundary Injection          157         157         0  100.0%
-  Cooldown Bypass             167         167         0  100.0%
+  Boundary Injection           19          19         0  100.0%
+  Cooldown Bypass              18          18         0  100.0%
 
 ──────────────────────────────────────────────────────────────────────
-  TOTAL:                 781 lanzados
-  BLOQUEADOS:           1303
+  TOTAL:                  69 lanzados
+  BLOQUEADOS:            114
   EXITOSOS:                0
   MITIGACIÓN:         100.0%
 ======================================================================
