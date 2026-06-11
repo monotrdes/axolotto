@@ -3,15 +3,16 @@ import gsap from "gsap";
 import type { WorldEngine } from "../../engine/WorldEngine";
 import type { AxolotitoData } from "../../entities/AxolotitoSprite";
 import type { AmigoData } from "../../mapBackendAxolotito";
-import type { DecorationItem } from "../NidoZone";
 import { AxolotitoPuppet, type PuppetState } from "../../puppet/AxolotitoPuppet";
 import { DESIGN_SPACE, PAINTED_BOUNDS } from "../zoneConfig";
 
 /**
- * Diorama del Santuario (plan task-84 §2, Fase 1): chinampa vertical de
- * 3 niveles. Arriba: nidos (huevo → camita al eclosionar). Centro: sala de
- * estar con la Mesa de amigos. Abajo: embarcadero social (trajineras en
- * checkpoint posterior). Fondo/arte = placeholder Graphics hasta el atlas.
+ * Diorama del Santuario (plan task-84 §2, rediseño cueva submarina):
+ * chinampa vertical de 3 niveles. Arriba: SOLO crianza — nidos con huevo o
+ * camita, hasta 8 slots desbloqueados por expansión de cueva (los bloqueados
+ * se ven como roca sin excavar). Centro: la casa con la Mesa de amigos (la
+ * decoración tipada llega en la fase de sala). Abajo: embarcadero social.
+ * Fondo/arte = placeholder Graphics hasta el atlas.
  */
 
 const { w: W, h: H } = DESIGN_SPACE.santuario;
@@ -19,23 +20,31 @@ const { w: W, h: H } = DESIGN_SPACE.santuario;
 const { x0: PX, w: PW } = PAINTED_BOUNDS.santuario;
 
 // Bandas verticales de los 3 niveles (espacio de diseño 1080×1920).
-const NIVEL_NIDOS_Y = 430;
+const NIVEL_NIDOS_ROW1_Y = 310;
+const NIVEL_NIDOS_ROW2_Y = 540;
 const NIVEL_SALA = { top: 760, bottom: 1230 };
 const NIVEL_EMBARCADERO_Y = 1500;
 
 const NEST_SLOTS_X = [180, 420, 660, 900];
+// El backend define 8 niveles de cueva = 8 nidos máximo (spot i abre en nivel i+1).
+const MAX_NEST_SLOTS = 8;
 const WANDER_SPEED = 55; // px/s en espacio de diseño
 
-// Posiciones de decoración alrededor del nido (máx 6 por cueva), esquivando
-// el anillo de incubación y la etiqueta con el nombre.
-const DECOR_OFFSETS: ReadonlyArray<readonly [number, number]> = [
-  [-86, 34],
-  [86, 34],
-  [-86, -36],
-  [86, -36],
-  [-48, -82],
-  [48, -82],
-];
+/** Posición del slot de nido i (2 filas de 4). */
+function nestSlotPos(i: number): { x: number; y: number } {
+  return {
+    x: NEST_SLOTS_X[i % 4],
+    y: i < 4 ? NIVEL_NIDOS_ROW1_Y : NIVEL_NIDOS_ROW2_Y,
+  };
+}
+
+/** Estado de la cueva que el diorama necesita (de GET /cave/status). */
+export interface CaveStatusData {
+  level: number;
+  spots: number;
+  hasTable: boolean;
+  tableSeats: number;
+}
 
 interface PuppetEntry {
   puppet: AxolotitoPuppet;
@@ -62,11 +71,11 @@ export class SantuarioScene extends Container {
   private engine: WorldEngine;
   private puppetLayer = new Container();
   private nestLayer = new Container();
-  private decorLayer = new Container();
   private amigosLayer = new Container();
   private particleLayer = new Container();
   private puppets = new Map<string, PuppetEntry>();
-  private decorations = new Map<number, DecorationItem[]>();
+  private caveStatus: CaveStatusData = { level: 1, spots: 1, hasTable: false, tableSeats: 0 };
+  private lastAxolotitos: AxolotitoData[] = [];
   private particles: Particle[] = [];
   private boats: BoatEntry[] = [];
   private actionBubbles: Container | null = null;
@@ -79,7 +88,8 @@ export class SantuarioScene extends Container {
     super();
     this.engine = engine;
     this.buildBackdrop();
-    this.addChild(this.nestLayer, this.decorLayer, this.amigosLayer, this.puppetLayer, this.particleLayer);
+    this.addChild(this.nestLayer, this.amigosLayer, this.puppetLayer, this.particleLayer);
+    this.rebuildNests();
     engine.app.ticker.add(this.tick);
   }
 
@@ -141,25 +151,20 @@ export class SantuarioScene extends Container {
     }
   }
 
+  /** Estado de la cueva (nivel/spots/mesa) desde GET /cave/status. */
+  setCaveStatus(status: CaveStatusData): void {
+    if (this.destroyed) return;
+    this.caveStatus = status;
+    this.rebuildNests();
+  }
+
   /** Sincroniza huevos y axolotitos desde los datos del backend. */
   setAxolotitos(data: AxolotitoData[]): void {
     if (this.destroyed) return;
+    this.lastAxolotitos = data;
+    this.rebuildNests();
 
-    this.nestLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
-    const eggs = data.filter((a) => a.isEgg);
     const axos = data.filter((a) => !a.isEgg);
-
-    // Nivel superior: un nido por slot — huevo si incuba, camita si su axolotito nació.
-    // Tap en la cueva → panel de decoración (CuevaDecorPanel vía onCaveClick).
-    NEST_SLOTS_X.forEach((x, slot) => {
-      const egg = eggs.find((e) => e.caveIndex === slot) ?? eggs[slot];
-      const owner = axos.find((a) => a.caveIndex === slot);
-      const node = egg
-        ? buildNestWithEgg(x, NIVEL_NIDOS_Y, egg)
-        : buildCamita(x, NIVEL_NIDOS_Y, owner?.name);
-      this.hotspot(node, "cueva", String(slot));
-      this.nestLayer.addChild(node);
-    });
 
     // Nivel central: títeres vivos.
     const seen = new Set<string>();
@@ -194,27 +199,37 @@ export class SantuarioScene extends Container {
     }
   }
 
-  /** Decoraciones de la cueva (persistidas en localStorage hasta el endpoint backend). */
-  setCaveDecorations(caveIndex: number, items: DecorationItem[]): void {
-    if (this.destroyed) return;
-    if (items.length > 0) this.decorations.set(caveIndex, items);
-    else this.decorations.delete(caveIndex);
-    this.redrawDecorations();
-  }
+  /**
+   * Zona superior (solo crianza): un nido por slot — huevo si incuba, camita
+   * si su axolotito nació, roca con candado si el slot aún no se desbloquea.
+   * Tap: huevo/camita → gestión en el panel Santuario; bloqueado → expandir.
+   */
+  private rebuildNests(): void {
+    this.nestLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
+    const eggs = this.lastAxolotitos.filter((a) => a.isEgg);
+    const axos = this.lastAxolotitos.filter((a) => !a.isEgg);
+    const spots = Math.max(1, Math.min(this.caveStatus.spots, MAX_NEST_SLOTS));
 
-  private redrawDecorations(): void {
-    this.decorLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
-    for (const [slot, items] of this.decorations) {
-      const x = NEST_SLOTS_X[slot];
-      if (x === undefined) continue;
-      items.slice(0, DECOR_OFFSETS.length).forEach((item, i) => {
-        const [dx, dy] = DECOR_OFFSETS[i];
-        const t = new Text({ text: item.emoji, style: { fontSize: 34 } });
-        t.anchor.set(0.5);
-        t.position.set(x + dx, NIVEL_NIDOS_Y + dy);
-        t.rotation = -0.12 + (i % 3) * 0.12; // ligero desorden, como papel pegado a mano
-        this.decorLayer.addChild(t);
-      });
+    for (let slot = 0; slot < MAX_NEST_SLOTS; slot++) {
+      const { x, y } = nestSlotPos(slot);
+      if (slot >= spots) {
+        // Slot bloqueado: roca sin excavar — el spot i se abre en nivel i+1.
+        const node = buildLockedNest(x, y, slot + 1);
+        this.hotspot(node, "nido-bloqueado");
+        this.nestLayer.addChild(node);
+        continue;
+      }
+      const egg = eggs.find((e) => e.caveIndex === slot) ?? eggs[slot];
+      const owner = axos.find((a) => a.caveIndex === slot);
+      const node = egg
+        ? buildNestWithEgg(x, y, egg)
+        : owner
+          ? buildCamita(x, y, owner.name)
+          : buildEmptyNest(x, y);
+      if (egg) this.hotspot(node, "nido-huevo", egg.id);
+      else if (owner) this.hotspot(node, "nido-axo", owner.id);
+      else this.hotspot(node, "nido-vacio");
+      this.nestLayer.addChild(node);
     }
   }
 
@@ -290,8 +305,13 @@ export class SantuarioScene extends Container {
     bg.rect(PX, 0, PW, H * 0.3).fill(0x1b7a8c);
     bg.rect(PX, H * 0.3, PW, H * 0.4).fill(0x134e6f);
     bg.rect(PX, H * 0.7, PW, H * 0.3).fill(0x0a2540);
-    // Plataformas de chinampa de los 3 niveles (se extienden al overscan).
-    for (const y of [NIVEL_NIDOS_Y + 90, NIVEL_SALA.bottom + 70, NIVEL_EMBARCADERO_Y + 90]) {
+    // Plataformas de chinampa (2 filas de nidos + sala + embarcadero).
+    for (const y of [
+      NIVEL_NIDOS_ROW1_Y + 90,
+      NIVEL_NIDOS_ROW2_Y + 90,
+      NIVEL_SALA.bottom + 70,
+      NIVEL_EMBARCADERO_Y + 90,
+    ]) {
       bg.roundRect(PX + 40, y, PW - 80, 46, 22).fill(0x8b5e34).stroke({ color: 0xfff7ec, width: 4 });
     }
     // Vegetación decorativa en los laterales (solo visible en pantallas anchas).
@@ -486,6 +506,54 @@ function buildNestWithEgg(x: number, y: number, egg: AxolotitoData): Container {
   });
   tag.anchor.set(0.5);
   tag.position.set(0, 78);
+  c.addChild(tag);
+  return c;
+}
+
+/** Slot desbloqueado sin habitante: nido de paja vacío. */
+function buildEmptyNest(x: number, y: number): Container {
+  const c = new Container();
+  c.position.set(x, y);
+  const nest = new Graphics()
+    .ellipse(0, 26, 56, 20)
+    .fill(0x8b5e34)
+    .stroke({ color: 0xfff7ec, width: 4 })
+    .ellipse(0, 22, 38, 12)
+    .fill(0x6b4423);
+  c.addChild(nest);
+  const tag = new Text({
+    text: "Nido libre",
+    style: { fontSize: 18, fill: 0xcdb8a0, fontWeight: "700" },
+  });
+  tag.anchor.set(0.5);
+  tag.position.set(0, 70);
+  c.addChild(tag);
+  return c;
+}
+
+/** Slot bloqueado: roca sin excavar con candado — invita a expandir la cueva. */
+function buildLockedNest(x: number, y: number, levelNeeded: number): Container {
+  const c = new Container();
+  c.position.set(x, y);
+  const rock = new Graphics()
+    .ellipse(0, 8, 60, 46)
+    .fill(0x3d4451)
+    .stroke({ color: 0x596273, width: 4 })
+    .ellipse(-18, -8, 16, 10)
+    .fill(0x4a5260)
+    .ellipse(20, 16, 12, 8)
+    .fill(0x4a5260);
+  c.addChild(rock);
+  const lock = new Text({ text: "🔒", style: { fontSize: 30 } });
+  lock.anchor.set(0.5);
+  lock.position.set(0, 2);
+  c.addChild(lock);
+  const tag = new Text({
+    text: `Nv. ${levelNeeded}`,
+    style: { fontSize: 18, fill: 0x8a93a6, fontWeight: "700" },
+  });
+  tag.anchor.set(0.5);
+  tag.position.set(0, 70);
   c.addChild(tag);
   return c;
 }

@@ -6,7 +6,7 @@ import type { DecorationItem } from "./zones/NidoZone";
 import PaperCurtain, { type PaperCurtainHandle } from "@/components/play/PaperCurtain";
 import type { WorldEngine } from "./engine/WorldEngine";
 import type { ZoneManager } from "./zones/ZoneManager";
-import type { SantuarioScene } from "./zones/santuario/SantuarioScene";
+import type { SantuarioScene, CaveStatusData } from "./zones/santuario/SantuarioScene";
 import type { PiramideScene } from "./zones/piramide/PiramideScene";
 import type { AmigoData } from "./mapBackendAxolotito";
 
@@ -28,6 +28,8 @@ export interface GameCanvasHandle {
   setPodio?(data: AxolotitoData[]): void;
   /** Amigos para el embarcadero del Santuario (mundo papel picado). */
   setAmigos?(amigos: AmigoData[]): void;
+  /** Nivel/spots/mesa de la cueva (GET /cave/status) para nidos dinámicos. */
+  setCaveStatus?(status: CaveStatusData): void;
 }
 
 interface GameCanvasProps {
@@ -69,7 +71,7 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
   const axolotitosRef = useRef<AxolotitoData[]>([]);
   const podioRef = useRef<AxolotitoData[]>([]);
   const amigosRef = useRef<AmigoData[]>([]);
-  const decorRef = useRef<Map<number, DecorationItem[]>>(new Map());
+  const caveStatusRef = useRef<CaveStatusData | null>(null);
   // Refs para evitar closures viejos dentro del listener del bridge.
   const onStallClickRef = useRef(onStallClick);
   onStallClickRef.current = onStallClick;
@@ -83,10 +85,14 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
         santuarioRef.current.setAxolotitos(data);
       }
     },
-    setCaveDecorations(caveIndex: number, decorations: DecorationItem[]) {
-      decorRef.current.set(caveIndex, decorations);
+    setCaveDecorations(_caveIndex: number, _decorations: DecorationItem[]) {
+      // Obsoleto: la decoración tipada de la sala llega vía setDecoraciones
+      // (Fase 4 del rediseño); se retira del contrato en la limpieza final.
+    },
+    setCaveStatus(status: CaveStatusData) {
+      caveStatusRef.current = status;
       if (santuarioRef.current && !santuarioRef.current.destroyed) {
-        santuarioRef.current.setCaveDecorations(caveIndex, decorations);
+        santuarioRef.current.setCaveStatus(status);
       }
     },
     focusZone(zoneId: string) {
@@ -155,9 +161,9 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
       zones.registerBuilder("santuario", (e) => {
         const scene = new SantuarioScene(e);
         santuarioRef.current = scene;
+        if (caveStatusRef.current) scene.setCaveStatus(caveStatusRef.current);
         scene.setAxolotitos(axolotitosRef.current);
         scene.setAmigos(amigosRef.current);
-        decorRef.current.forEach((items, idx) => scene.setCaveDecorations(idx, items));
         return scene;
       });
       zones.registerBuilder("tianguis", (e) => new TianguisScene(e));

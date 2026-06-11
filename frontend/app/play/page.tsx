@@ -212,15 +212,27 @@ export default function Home() {
     };
   }, [accessToken, canvasReady]);
 
-  // Mundo papel picado: decoraciones guardadas → diorama (localStorage hasta
-  // que exista el endpoint backend de persistencia).
+  // Mundo papel picado: estado de la cueva (nivel/spots/mesa) → nidos
+  // dinámicos del diorama; de paso cachea los asientos para hostear.
   useEffect(() => {
-    if (!PAPER_WORLD || !canvasReady || !user?.id) return;
-    const all = loadCaveDecor(user.id);
-    Object.entries(all).forEach(([idx, items]) => {
-      gameCanvasRef.current?.setCaveDecorations(Number(idx), items);
-    });
-  }, [canvasReady, user?.id]);
+    if (!PAPER_WORLD || !canvasReady || !accessToken || !user?.id) return;
+    let cancelled = false;
+    fetchCaveStatus(user.id, accessToken)
+      .then((d) => {
+        if (cancelled || !d?.current) return;
+        caveSeatsRef.current = d.current.has_table ? (d.current.table_seats ?? 0) : 0;
+        gameCanvasRef.current?.setCaveStatus?.({
+          level: d.current.level ?? 1,
+          spots: d.current.spots ?? 1,
+          hasTable: !!d.current.has_table,
+          tableSeats: d.current.table_seats ?? 0,
+        });
+      })
+      .catch((e) => console.error("PaperWorld: error cargando estado de cueva", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, user?.id, canvasReady]);
 
   // Mundo papel picado: top-3 del ranking para el podio de la Pirámide (endpoint público).
   useEffect(() => {
@@ -618,6 +630,16 @@ export default function Home() {
             }}
             onStallClick={(stallType) => {
               // Hotspots del diorama → abrir el panel HTML correspondiente
+              if (stallType.startsWith("nido-")) {
+                // Zona de crianza: huevo/camita → gestión en el panel
+                // Santuario (EggSheet/AxoSheet); bloqueado → invitar a expandir.
+                if (stallType === "nido-bloqueado") {
+                  toast.info("Este nido sigue enterrado — expande tu cueva para excavarlo 🪨");
+                }
+                setTabActiva("santuario");
+                setPanelVisible(true);
+                return;
+              }
               if (stallType === "mesa-amigos") {
                 // Mesa del Santuario: hostear sala para jugar con amigos
                 void abrirHostingMundo(null);
