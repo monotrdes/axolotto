@@ -234,6 +234,24 @@ export default function Home() {
     };
   }, [accessToken, user?.id, canvasReady]);
 
+  // Mundo papel picado: decoraciones equipadas + layout de slots → sala del diorama.
+  useEffect(() => {
+    if (!PAPER_WORLD || !canvasReady || !accessToken) return;
+    let cancelled = false;
+    axios
+      .get(`${API_BASE}/cave/decorations`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+      .then((res) => {
+        if (cancelled || !Array.isArray(res.data?.slots)) return;
+        gameCanvasRef.current?.setDecoraciones?.(res.data);
+      })
+      .catch((e) => console.error("PaperWorld: error cargando decoraciones", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, canvasReady]);
+
   // Mundo papel picado: top-3 del ranking para el podio de la Pirámide (endpoint público).
   useEffect(() => {
     if (!PAPER_WORLD || !canvasReady) return;
@@ -630,6 +648,12 @@ export default function Home() {
             }}
             onStallClick={(stallType) => {
               // Hotspots del diorama → abrir el panel HTML correspondiente
+              if (stallType.startsWith("decor:")) {
+                // Slot de decoración de la sala → panel de decoración
+                // filtrado a esa categoría (se conecta en la fase del panel).
+                toast.info("🏺 El panel de decoración llega en el siguiente paso");
+                return;
+              }
               if (stallType.startsWith("nido-")) {
                 // Zona de crianza: huevo/camita → gestión en el panel
                 // Santuario (EggSheet/AxoSheet); bloqueado → invitar a expandir.

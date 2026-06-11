@@ -6,7 +6,11 @@ import type { DecorationItem } from "./zones/NidoZone";
 import PaperCurtain, { type PaperCurtainHandle } from "@/components/play/PaperCurtain";
 import type { WorldEngine } from "./engine/WorldEngine";
 import type { ZoneManager } from "./zones/ZoneManager";
-import type { SantuarioScene, CaveStatusData } from "./zones/santuario/SantuarioScene";
+import type {
+  SantuarioScene,
+  CaveStatusData,
+  DecoracionesData,
+} from "./zones/santuario/SantuarioScene";
 import type { PiramideScene } from "./zones/piramide/PiramideScene";
 import type { AmigoData } from "./mapBackendAxolotito";
 
@@ -30,6 +34,8 @@ export interface GameCanvasHandle {
   setAmigos?(amigos: AmigoData[]): void;
   /** Nivel/spots/mesa de la cueva (GET /cave/status) para nidos dinámicos. */
   setCaveStatus?(status: CaveStatusData): void;
+  /** Decoraciones equipadas + layout de slots (GET /cave/decorations). */
+  setDecoraciones?(data: DecoracionesData): void;
 }
 
 interface GameCanvasProps {
@@ -72,6 +78,7 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
   const podioRef = useRef<AxolotitoData[]>([]);
   const amigosRef = useRef<AmigoData[]>([]);
   const caveStatusRef = useRef<CaveStatusData | null>(null);
+  const decoracionesRef = useRef<DecoracionesData | null>(null);
   // Refs para evitar closures viejos dentro del listener del bridge.
   const onStallClickRef = useRef(onStallClick);
   onStallClickRef.current = onStallClick;
@@ -93,6 +100,12 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
       caveStatusRef.current = status;
       if (santuarioRef.current && !santuarioRef.current.destroyed) {
         santuarioRef.current.setCaveStatus(status);
+      }
+    },
+    setDecoraciones(data: DecoracionesData) {
+      decoracionesRef.current = data;
+      if (santuarioRef.current && !santuarioRef.current.destroyed) {
+        santuarioRef.current.setDecoraciones(data);
       }
     },
     focusZone(zoneId: string) {
@@ -162,6 +175,7 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
         const scene = new SantuarioScene(e);
         santuarioRef.current = scene;
         if (caveStatusRef.current) scene.setCaveStatus(caveStatusRef.current);
+        if (decoracionesRef.current) scene.setDecoraciones(decoracionesRef.current);
         scene.setAxolotitos(axolotitosRef.current);
         scene.setAmigos(amigosRef.current);
         return scene;

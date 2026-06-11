@@ -46,6 +46,54 @@ export interface CaveStatusData {
   tableSeats: number;
 }
 
+/** Payload de GET /cave/decorations que consume el diorama. */
+export interface DecorSlotInfo {
+  slot_id: string;
+  subcategory: string;
+}
+export interface DecorItemDetail {
+  name?: string;
+  emoji?: string;
+  color?: string | null;
+}
+export interface DecoracionesData {
+  decorations: Record<string, number | null>;
+  slots: DecorSlotInfo[];
+  items: Record<string, DecorItemDetail>;
+}
+
+// Anclas de los slots de decoración en la sala (espacio de diseño).
+// MESA/MANTEL/SILLAS son badges junto a la mesa (la mesa grande sigue siendo
+// el hotspot de hostear partidas); FONDO usa también el overscan lateral.
+const SALA_ANCHORS: Record<string, ReadonlyArray<readonly [number, number]>> = {
+  AMBIENTE: [[120, 810]],
+  LUZ: [[W / 2, 800]],
+  MESA: [[W / 2 - 200, 1075]],
+  MANTEL: [[W / 2, 1060]],
+  SILLAS: [[W / 2 + 200, 1075]],
+  FONDO: [
+    [110, 1130],
+    [970, 1130],
+    [80, 900],
+    [1000, 900],
+    [-240, 1010],
+    [1320, 1010],
+  ],
+  ESPECIAL: [
+    [300, 990],
+    [780, 990],
+    [180, 870],
+    [900, 870],
+    [W / 2, 900],
+  ],
+};
+
+function parseHexColor(color: string | null | undefined, fallback: number): number {
+  if (!color) return fallback;
+  const n = parseInt(color.replace("#", ""), 16);
+  return Number.isNaN(n) ? fallback : n;
+}
+
 interface PuppetEntry {
   puppet: AxolotitoPuppet;
   targetX: number;
@@ -71,11 +119,14 @@ export class SantuarioScene extends Container {
   private engine: WorldEngine;
   private puppetLayer = new Container();
   private nestLayer = new Container();
+  private salaLayer = new Container();
+  private ambientOverlay = new Graphics();
   private amigosLayer = new Container();
   private particleLayer = new Container();
   private puppets = new Map<string, PuppetEntry>();
   private caveStatus: CaveStatusData = { level: 1, spots: 1, hasTable: false, tableSeats: 0 };
   private lastAxolotitos: AxolotitoData[] = [];
+  private decoraciones: DecoracionesData | null = null;
   private particles: Particle[] = [];
   private boats: BoatEntry[] = [];
   private actionBubbles: Container | null = null;
@@ -88,8 +139,16 @@ export class SantuarioScene extends Container {
     super();
     this.engine = engine;
     this.buildBackdrop();
-    this.addChild(this.nestLayer, this.amigosLayer, this.puppetLayer, this.particleLayer);
+    this.addChild(
+      this.ambientOverlay,
+      this.salaLayer,
+      this.nestLayer,
+      this.amigosLayer,
+      this.puppetLayer,
+      this.particleLayer,
+    );
     this.rebuildNests();
+    this.rebuildSala();
     engine.app.ticker.add(this.tick);
   }
 
@@ -156,6 +215,14 @@ export class SantuarioScene extends Container {
     if (this.destroyed) return;
     this.caveStatus = status;
     this.rebuildNests();
+    this.rebuildSala();
+  }
+
+  /** Decoraciones equipadas + layout de slots desde GET /cave/decorations. */
+  setDecoraciones(data: DecoracionesData): void {
+    if (this.destroyed) return;
+    this.decoraciones = data;
+    this.rebuildSala();
   }
 
   /** Sincroniza huevos y axolotitos desde los datos del backend. */
@@ -230,6 +297,103 @@ export class SantuarioScene extends Container {
       else if (owner) this.hotspot(node, "nido-axo", owner.id);
       else this.hotspot(node, "nido-vacio");
       this.nestLayer.addChild(node);
+    }
+  }
+
+  /**
+   * Sala central (la casa): mesa de juego con skin/mantel/sillas según lo
+   * equipado, tinte de AMBIENTE sobre el agua, y chips de slot tipados —
+   * vacío = "+" punteado discreto, ocupado = el item; tap → panel de
+   * decoración filtrado a esa categoría (hotspot "decor:<slot_id>").
+   */
+  private rebuildSala(): void {
+    this.salaLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
+    this.ambientOverlay.clear();
+
+    const decor = this.decoraciones;
+    const itemAt = (slotId: string): DecorItemDetail | null => {
+      const itemId = decor?.decorations?.[slotId];
+      if (itemId === null || itemId === undefined) return null;
+      return decor?.items?.[String(itemId)] ?? null;
+    };
+
+    // Tinte de AMBIENTE sobre toda el agua (suave, no sustituye al fondo).
+    const ambiente = itemAt("AMBIENTE_0");
+    if (ambiente?.color) {
+      this.ambientOverlay
+        .rect(PX, 0, PW, H)
+        .fill({ color: parseHexColor(ambiente.color, 0x1b7a8c), alpha: 0.22 });
+    }
+
+    // ── Mesa de juego (centro de la sala) ──
+    const mesaItem = itemAt("MESA_0");
+    const mantelItem = itemAt("MANTEL_0");
+    const sillasItem = itemAt("SILLAS_0");
+    const mesa = new Container();
+    const cx = W / 2;
+    const cy = NIVEL_SALA.bottom - 10;
+    const mesaColor = parseHexColor(mesaItem?.color, 0xa9743f);
+    const mesaG = new Graphics()
+      .ellipse(0, 0, 130, 52)
+      .fill(mesaColor)
+      .stroke({ color: 0xfff7ec, width: 5 });
+    mesa.addChild(mesaG);
+    if (mantelItem) {
+      const mantel = new Graphics()
+        .ellipse(0, -4, 100, 36)
+        .fill(parseHexColor(mantelItem.color, 0xe4007c))
+        .stroke({ color: 0xfff7ec, width: 3 });
+      mesa.addChild(mantel);
+    }
+    // Sillas/troncos alrededor según los asientos reales de la cueva.
+    if (this.caveStatus.hasTable && this.caveStatus.tableSeats > 0) {
+      const sillaColor = parseHexColor(sillasItem?.color, 0x8b5e34);
+      const n = Math.min(this.caveStatus.tableSeats, 8);
+      for (let i = 0; i < n; i++) {
+        const ang = (i / n) * Math.PI * 2 - Math.PI / 2;
+        const silla = new Graphics()
+          .roundRect(-18, -11, 36, 22, 7)
+          .fill(sillaColor)
+          .stroke({ color: 0xfff7ec, width: 3 });
+        silla.position.set(Math.cos(ang) * 175, Math.sin(ang) * 75);
+        mesa.addChild(silla);
+      }
+    }
+    mesa.position.set(cx, cy);
+    this.hotspot(mesa, "mesa-amigos");
+    this.salaLayer.addChild(mesa);
+
+    // ── Chips de slot ──
+    if (!decor) return; // sin datos aún: solo la mesa
+    const idxBySubcat = new Map<string, number>();
+    for (const slot of decor.slots) {
+      const anchors = SALA_ANCHORS[slot.subcategory];
+      const idx = idxBySubcat.get(slot.subcategory) ?? 0;
+      idxBySubcat.set(slot.subcategory, idx + 1);
+      const anchor = anchors?.[idx];
+      if (!anchor) continue;
+
+      const equipped = itemAt(slot.slot_id);
+      const chip = new Container();
+      if (equipped) {
+        const icon = new Text({ text: equipped.emoji || "🏺", style: { fontSize: 42 } });
+        icon.anchor.set(0.5);
+        chip.addChild(icon);
+      } else {
+        const ring = new Graphics()
+          .circle(0, 0, 26)
+          .stroke({ color: 0xfff7ec, width: 3, alpha: 0.35 });
+        const plus = new Text({
+          text: "+",
+          style: { fontSize: 30, fill: 0xfff7ec, fontWeight: "700" },
+        });
+        plus.anchor.set(0.5);
+        plus.alpha = 0.4;
+        chip.addChild(ring, plus);
+      }
+      chip.position.set(anchor[0], anchor[1]);
+      this.hotspot(chip, "decor", slot.slot_id);
+      this.salaLayer.addChild(chip);
     }
   }
 
@@ -322,19 +486,6 @@ export class SantuarioScene extends Container {
       }
     }
     this.addChild(bg);
-
-    // Mesa de amigos al centro de la sala (hotspot funcional — plan §2).
-    const mesa = new Graphics()
-      .ellipse(0, 0, 130, 52)
-      .fill(0xa9743f)
-      .stroke({ color: 0xfff7ec, width: 5 });
-    mesa.position.set(W / 2, NIVEL_SALA.bottom - 10);
-    mesa.eventMode = "static";
-    mesa.cursor = "pointer";
-    mesa.on("pointertap", () => {
-      this.engine.bridge.emit("hotspot", { kind: "mesa-amigos" });
-    });
-    this.addChild(mesa);
 
     const label = new Text({
       text: "🪺 El Santuario",
