@@ -55,6 +55,9 @@ export class SantuarioScene extends Container {
   private puppets = new Map<string, PuppetEntry>();
   private particles: Particle[] = [];
   private boats: BoatEntry[] = [];
+  private actionBubbles: Container | null = null;
+  private actionBubblesFor: string | null = null;
+  private actionBubblesTimer: gsap.core.Tween | null = null;
   private elapsed = 0;
   private tick = (ticker: Ticker) => this.update(ticker.deltaMS / 1000);
 
@@ -68,6 +71,7 @@ export class SantuarioScene extends Container {
 
   override destroy(options?: Parameters<Container["destroy"]>[0]): void {
     this.engine.app.ticker.remove(this.tick);
+    this.closeActionBubbles();
     this.puppets.clear();
     this.particles = [];
     this.boats = [];
@@ -77,6 +81,7 @@ export class SantuarioScene extends Container {
   /** Embarcadero social: amigos llegan en trajineritas (plan §2). */
   setAmigos(amigos: AmigoData[]): void {
     if (this.destroyed) return;
+    this.closeActionBubbles();
     this.amigosLayer.removeChildren().forEach((c) => c.destroy({ children: true }));
     this.boats = [];
 
@@ -303,8 +308,77 @@ export class SantuarioScene extends Container {
     tag.position.set(0, -76);
     boat.addChild(tag);
 
-    this.hotspot(boat, "amigo", amigo.id);
+    // Tap → burbujas de acción ❤️/👁/🎲 sobre la trajinerita (no abre panel).
+    boat.eventMode = "static";
+    boat.cursor = "pointer";
+    boat.on("pointertap", () => {
+      gsap.fromTo(
+        boat.scale,
+        { x: 1, y: 1 },
+        { x: 1.08, y: 1.08, duration: 0.12, yoyo: true, repeat: 1, ease: "power2.out" },
+      );
+      this.toggleActionBubbles(boat, amigo);
+    });
     return boat;
+  }
+
+  /**
+   * Burbujas de acción del embarcadero (plan §2 Macrozona 1): ❤️ like,
+   * 👁 visitar la cueva, 🎲 invitar a la mesa. Cuelgan de la trajinerita
+   * (se mecen con ella) y se cierran al elegir acción, al volver a tocar
+   * la barquita o solas tras unos segundos.
+   */
+  private toggleActionBubbles(boat: Container, amigo: AmigoData): void {
+    const abrir = this.actionBubblesFor !== amigo.id;
+    this.closeActionBubbles();
+    if (!abrir) return;
+
+    const acciones = [
+      { emoji: "❤️", kind: "amigo-like", x: -80, y: -132 },
+      { emoji: "👁", kind: "amigo-visita", x: 0, y: -156 },
+      { emoji: "🎲", kind: "amigo-invita", x: 80, y: -132 },
+    ];
+    const group = new Container();
+    acciones.forEach((accion, i) => {
+      const bubble = new Container();
+      bubble.addChild(
+        new Graphics().circle(0, 0, 34).fill(0xfff7ec).stroke({ color: 0xe4007c, width: 4 }),
+      );
+      const icon = new Text({ text: accion.emoji, style: { fontSize: 30 } });
+      icon.anchor.set(0.5);
+      bubble.addChild(icon);
+      bubble.position.set(accion.x, accion.y);
+      bubble.eventMode = "static";
+      bubble.cursor = "pointer";
+      bubble.on("pointertap", (e) => {
+        e.stopPropagation(); // que no rebote al tap de la trajinerita
+        this.engine.bridge.emit("hotspot", { kind: accion.kind, id: amigo.id });
+        this.closeActionBubbles();
+      });
+      group.addChild(bubble);
+      gsap.from(bubble.scale, {
+        x: 0,
+        y: 0,
+        duration: 0.25,
+        delay: i * 0.06,
+        ease: "back.out(2.2)",
+      });
+    });
+    boat.addChild(group);
+    this.actionBubbles = group;
+    this.actionBubblesFor = amigo.id;
+    this.actionBubblesTimer = gsap.delayedCall(5, () => this.closeActionBubbles());
+  }
+
+  private closeActionBubbles(): void {
+    this.actionBubblesTimer?.kill();
+    this.actionBubblesTimer = null;
+    if (this.actionBubbles && !this.actionBubbles.destroyed) {
+      this.actionBubbles.children.forEach((b) => gsap.killTweensOf(b.scale));
+      this.actionBubbles.destroy({ children: true });
+    }
+    this.actionBubbles = null;
+    this.actionBubblesFor = null;
   }
 
   private hotspot(target: Container, kind: string, id?: string): void {

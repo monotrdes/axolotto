@@ -88,6 +88,8 @@ export default function Home() {
   const [storeSection, setStoreSection]   = useState<'official' | 'melter' | 'market' | undefined>(undefined);
   const [storeSectionNonce, setStoreSectionNonce] = useState(0);
   const [mochilaInitialTab, setMochilaInitialTab] = useState<MochilaTab>('cartas');
+  // Burbuja 👁 del embarcadero: amigo cuya cueva se abre al entrar a AmigosPage
+  const [visitaAmigoId, setVisitaAmigoId] = useState<string | null>(null);
 
   const [onboardingPhase, setOnboardingPhase] = useState<OnboardingPhase>("loading");
   const [syncData, setSyncData] = useState<SyncData | null>(null);
@@ -578,9 +580,28 @@ export default function Home() {
                 // Mesa del Santuario: jugar con amigos (provisional: hub social;
                 // TODO Fase 1: HostingSetupModal para crear sala privada)
                 setTabActiva("amigos");
-              } else if (stallType === "canasta-amigos" || stallType.startsWith("amigo")) {
-                // Trajinerita de amigo o canasta → pergamino de amigos
-                // TODO(Fase 1): burbujas ❤️/👁/🎲 directas sobre la trajinerita
+              } else if (stallType.startsWith("amigo-")) {
+                // Burbujas de la trajinerita: "amigo-<accion>:<friendId>"
+                const [accion, amigoId] = stallType.split(":");
+                if (!amigoId) return;
+                if (accion === "amigo-like") {
+                  axios
+                    .post(`${API_BASE}/social/like/${amigoId}`, null, {
+                      headers: { Authorization: `Bearer ${accessToken}` },
+                    })
+                    .then((res) => toast.ok(res.data?.message || "❤️ Like enviado"))
+                    .catch((e) => toast.error(e.response?.data?.detail || "Error al dar like"));
+                  return; // el like se queda en el mundo, sin abrir panel
+                }
+                if (accion === "amigo-visita") {
+                  setVisitaAmigoId(amigoId);
+                  setTabActiva("amigos");
+                } else {
+                  // amigo-invita → crear sala (TODO paso 2: HostingSetupModal con el amigo)
+                  setTabActiva("jugar");
+                }
+              } else if (stallType === "canasta-amigos") {
+                // Canasta de mimbre → pergamino de amigos (4 sub-tabs)
                 setTabActiva("amigos");
               } else if (stallType === "podio") {
                 setTabActiva("rankings");
@@ -798,7 +819,7 @@ export default function Home() {
                 <Santuario userId={user?.id || ""} token={accessToken} cambiarTab={(tab) => setTabActiva(tab as TabId)} vipTier={datosBanco?.vip_tier} />
               )}
               {tabActiva === 'rankings'   && <Rankings  userId={user?.id || ""} token={accessToken} cambiarTab={setTabActiva}                   />}
-{tabActiva === 'amigos'    && <AmigosPage userId={user?.id || ""} token={accessToken} onNavigate={(tab) => setTabActiva(tab as TabId)} />}
+{tabActiva === 'amigos'    && <AmigosPage userId={user?.id || ""} token={accessToken} onNavigate={(tab) => setTabActiva(tab as TabId)} visitFriendId={visitaAmigoId} onVisitHandled={() => setVisitaAmigoId(null)} />}
               {tabActiva === 'gashapon'   && (
                 <Gashapon
                   userId={user?.id || ""}

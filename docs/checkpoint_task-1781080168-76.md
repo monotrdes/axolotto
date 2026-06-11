@@ -7,7 +7,7 @@
 ## Protocolo de reanudación (leer SIEMPRE antes de tocar código)
 
 1. Trabaja SOLO en el worktree: `D:\Axolotto_2026\.axolotto_worktrees\task-1781080168-76\`
-   Rama: `task/task-1781080168-76-santuario-layout-mvil-vertical-nuevas-categor` (base: `dev`).
+   Rama: `task/task-1781159264-84-rediseno-visual-papel-picado` (base: `dev`; antes se llamaba `task/task-1781080168-76-...`, renombrada 2026-06-11).
    **NUNCA** trabajes en `D:\Axolotto_2026\axolotto` (checkout principal) para esta tarea.
 2. Lee el plan completo: `docs/plan_task-1781159264-84_rediseno_visual_papel_picado.md` (v2.1, en esta misma rama).
 3. Lee la sección **Estado actual** de abajo y ejecuta exactamente el "SIGUIENTE PASO".
@@ -30,22 +30,19 @@
 
 ## Estado actual
 
-- **Fase activa**: Fase 1 — Santuario + Puppet System (núcleo puppet + escena base HECHOS)
-- **Último commit de avance**: el commit que contiene esta edición (feat(world): fase 1 puppets)
+- **Fase activa**: Fase 1 — restos finales (núcleo, embarcadero y burbujas de acción HECHOS)
+- **Último commit de avance**: el commit que contiene esta edición (feat(world): burbujas de acción)
 - **SIGUIENTE PASO**: Fase 1 restante, en orden:
-  1. **Embarcadero social** en `SantuarioScene` (nivel inferior y=1500): trajineritas
-     de amigos (datos: hook `useSocial` / `AmigosPage`) con burbujas ❤️/👁/🎲; requiere
-     pasar lista de amigos al canvas (nuevo método en `GameCanvasHandle.setAmigos?` o
-     prop via WorldScene) + canasta que abre AmigosPage (tab `amigos`).
-  2. **Mesa de amigos**: el hotspot ya emite `onStallClick("mesa-amigos")` — falta que
-     `app/play/page.tsx` lo maneje (abrir HostingSetupModal o navegar a jugar).
-  3. **Decoraciones**: persistencia localStorage (backend endpoint = sub-tarea aparte)
+  1. **Mesa de amigos**: hoy `app/play/page.tsx` maneja `onStallClick("mesa-amigos")`
+     abriendo el tab amigos (provisional) — cambiarlo a abrir `HostingSetupModal` para
+     crear sala privada. La burbuja 🎲 (`amigo-invita:<friendId>`) debe apuntar al
+     mismo flujo con el amigo preseleccionado (hoy: tab jugar provisional).
+  2. **Decoraciones**: persistencia localStorage (backend endpoint = sub-tarea aparte)
      y render en el diorama (`setCaveDecorations`).
-  4. **Burbujas Zzz** al dormir + partículas burbujas al nadar (solo tier alta/media).
-  Después → Fase 2 restante: diorama de la PIRÁMIDE (escena ancha 3240px con las 3
-  subzonas: Explanada/podio con puppets del top-3, Cámara de la Suerte con 3
-  gashapones, Cenote de las Salas con 2 pozas) + sub-tab del Store según puesto
-  tocado (forja→melter, p2p→market: requiere prop initialTab en Store).
+  3. **Transformación animada nido→camita** al eclosionar (hoy es swap estático).
+  Después → Fase 2 restante: re-skin HTML por tokens (Store boletos, SettlingScreen
+  recibo, Inventory códice, VipModal) y luego Fase 3 (re-skin de la mesa de
+  competencia + tablillas con `winPatterns.ts`).
 
 ## Checklist de fases (espejo del plan §8 — marcar aquí, no en el plan)
 
@@ -99,7 +96,10 @@
       meciéndose en el agua (4 visibles + "+N en la canasta"); canasta 🧺 → AmigosPage.
       Datos: GET /social/friends → `mapFriendInfo` → `GameCanvasHandle.setAmigos`
 - [x] Partículas según quality tier (no en ligera): Zzz al dormir, burbujas al nadar
-- [ ] Burbujas de acción ❤️/👁/🎲 directas sobre la trajinerita (hoy: tap → AmigosPage)
+- [x] Burbujas de acción ❤️/👁/🎲 sobre la trajinerita: ❤️ like en sitio (POST
+      /social/like + toast, sin abrir panel), 👁 visita directa (AmigosPage prop
+      `visitFriendId` → FriendCaveView), 🎲 invitar (provisional: tab jugar;
+      TODO HostingSetupModal junto con mesa-amigos)
 - [ ] page.tsx: `mesa-amigos` → HostingSetupModal (hoy: tab amigos)
 - [ ] Decoraciones reales (⚠️ endpoint backend = sub-tarea; mientras localStorage)
 - [ ] Transformación animada nido→camita (hoy es swap estático)
@@ -149,7 +149,8 @@
 | 2026-06-11 | a9a296f | Embarcadero social (trajineritas + canasta) y partículas Zzz/burbujas por tier |
 | 2026-06-11 | 61cfd5f | Fix centrado de subzonas en web: `focusMaxW` (zoom de enfoque con recorrido de paneo) + clamp vertical de cámara |
 | 2026-06-11 | 91af004 | Pirámide re-layout 5160px: subzonas separadas — en web una sección a la vez, extremas centradas. Validado ✓ ("quedó conmadres") |
-| 2026-06-11 | (este) | Store abre sección por puesto (forja→melter, p2p→market) + winPatterns.ts (cartasFaltantes/tablillaTension) base de Fase 3 |
+| 2026-06-11 | 6fcfa82 | Store abre sección por puesto (forja→melter, p2p→market) + winPatterns.ts (cartasFaltantes/tablillaTension) base de Fase 3 |
+| 2026-06-11 | (este) | Burbujas de acción ❤️/👁/🎲 en trajineritas (like en sitio, visita directa a FriendCaveView, invitar provisional). Rama renombrada a task/task-1781159264-84-rediseno-visual-papel-picado |
 
 ## Notas para el verificador humano
 
