@@ -241,6 +241,16 @@ export function buildTianguisScene3D(
       card.rotation.y = rand(-0.5, 0.5);
       reciclon.add(card);
     }
+    // Caja contenedora de cartas repetidas para reciclar (estilo concept art)
+    const crate = box(0.65, 0.22, 0.65, PAL.maderaOscura);
+    crate.position.set(-0.8, 0.93, 0.25);
+    reciclon.add(crate);
+    for (let i = 0; i < 4; i++) {
+      const card = box(0.48, 0.02, 0.48, cardCols[(i + 3) % cardCols.length]);
+      card.position.set(-0.8, 1.05 + i * 0.03, 0.25);
+      card.rotation.y = rand(-0.15, 0.15);
+      reciclon.add(card);
+    }
     const s2 = sign("LOTERÍA\nREPETIDA", 0.66, PAL.maderaClara, "#4a2e12");
     s2.position.set(-1.55, 0.65, 0.65);
     s2.rotation.y = 0.25;
@@ -299,11 +309,20 @@ export function buildTianguisScene3D(
       post.position.set(px, 1.3, -0.3);
       sobrecitos.add(post);
     }
-    // toldo de festón alto y casi plano (tendero visible debajo)
-    const awn = box(2.6, 0.1, 1.3, PAL.rosa);
-    awn.position.set(0, 2.62, -0.1);
-    awn.rotation.x = 0.1;
-    sobrecitos.add(awn);
+    // toldo de festón alto y casi plano con rayas rosas y crema (estilo concept art)
+    const awningGroup = new THREE.Group();
+    const segments = 8;
+    const segW = 2.6 / segments;
+    for (let i = 0; i < segments; i++) {
+      const col = i % 2 === 0 ? PAL.rosa : PAL.crema;
+      const stripe = box(segW, 0.1, 1.3, col);
+      stripe.position.set(-1.3 + segW/2 + i * segW, 2.62, -0.1);
+      stripe.rotation.x = 0.1;
+      awningGroup.add(stripe);
+    }
+    sobrecitos.add(awningGroup);
+
+    // Decoración festón del toldo colgando al frente
     for (let i = 0; i < 6; i++) {
       const sc = cyl(0.22, 0.22, 0.08, i % 2 ? PAL.teal : PAL.naranja, 12);
       sc.rotation.z = Math.PI / 2;
@@ -311,6 +330,12 @@ export function buildTianguisScene3D(
       sc.position.set(-1.1 + i * 0.44, 2.52, 0.54);
       sobrecitos.add(sc);
     }
+
+    // Exhibidor/caja para los sobrecitos en el mostrador
+    const displayBox = box(2.1, 0.1, 0.9, PAL.madera);
+    displayBox.position.set(0, 0.88, 0.1);
+    sobrecitos.add(displayBox);
+
     const packCols = [PAL.magenta, PAL.teal, PAL.amarillo, PAL.limon, PAL.rosa, PAL.naranja, PAL.verde];
     for (let row = 0; row < 2; row++) {
       for (let i = 0; i < 7; i++) {
