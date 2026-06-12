@@ -41,7 +41,7 @@ def get_card_dynamic_rarities(session: Session) -> dict:
     limit_legendary = max(1, int(total_cards * 0.05))                 # Escasísimo 5%
     limit_epic = limit_legendary + max(1, int(total_cards * 0.10))      # Siguiente 10%
     limit_rare = limit_epic + max(1, int(total_cards * 0.20))          # Siguiente 20%
-    limit_uncommon = limit_rare + max(1, int(total_cards * 0.25))      # Siguiente 25%
+    limit_uncommon = limit_rare + max(1, int(total_cards * 0.30))      # Siguiente 30%
     
     # Asignar rareza por posición inicial
     rarities = {}
@@ -59,8 +59,8 @@ def get_card_dynamic_rarities(session: Session) -> dict:
         rarities[cid] = {"rarity": rarity, "circulation": qty}
 
     # 6. Agrupar por circulación para resolver empates (Ties Resolution)
-    # Si dos o más cartas tienen la misma circulación, comparten la rareza más exclusiva
-    # asignada a cualquiera de ellas en el ordenamiento inicial.
+    # Si dos o más cartas tienen la misma circulación, comparten la rareza menos exclusiva
+    # asignada a cualquiera de ellas en el ordenamiento inicial (resolución hacia abajo).
     circ_groups = {}
     for cid, qty in card_circulations:
         circ_groups.setdefault(qty, []).append(cid)
@@ -68,14 +68,14 @@ def get_card_dynamic_rarities(session: Session) -> dict:
     rarity_order = ["Legendaria", "Épica", "Rara", "Poco Común", "Común"]
     
     for qty, group_cids in circ_groups.items():
-        best_rarity = "Común"
+        worst_rarity = "Legendaria"
         for cid in group_cids:
             current_r = rarities[cid]["rarity"]
-            if rarity_order.index(current_r) < rarity_order.index(best_rarity):
-                best_rarity = current_r
-        # Asignar a todo el grupo de empate el nivel de rareza más alto
+            if rarity_order.index(current_r) > rarity_order.index(worst_rarity):
+                worst_rarity = current_r
+        # Asignar a todo el grupo de empate el nivel de rareza menos exclusivo
         for cid in group_cids:
-            rarities[cid]["rarity"] = best_rarity
+            rarities[cid]["rarity"] = worst_rarity
 
     # Construir el mapa final
     final_map = {}
