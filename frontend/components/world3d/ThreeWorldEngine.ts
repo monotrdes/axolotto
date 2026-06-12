@@ -261,8 +261,18 @@ export class ThreeWorldEngine {
   }
 
   private viewH(): number {
-    const a = this.host.clientWidth / Math.max(1, this.host.clientHeight);
-    return (a < 0.9 ? 12.8 : 11.2) * this.zoom;
+    const w = this.host.clientWidth;
+    const h = Math.max(1, this.host.clientHeight);
+    const a = w / h;
+    const baseH = a < 0.9 ? 12.8 : 11.2;
+    // Si la pantalla es muy estrecha (retrato móvil extremo), aumentamos vh
+    // para que el ancho de la cámara (vh * a) sea al menos 8.4 unidades lógicas,
+    // garantizando que todos los puestos queden visibles horizontalmente.
+    const minW = 8.4;
+    if (a < 0.9 && baseH * a < minW) {
+      return (minW / a) * this.zoom;
+    }
+    return baseH * this.zoom;
   }
 
   private resize(): void {

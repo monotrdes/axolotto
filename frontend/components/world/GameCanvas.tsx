@@ -336,10 +336,6 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
                 0% { transform: rotate(-3deg); }
                 100% { transform: rotate(3deg); }
               }
-              @keyframes bannerFloat {
-                0% { transform: translate(-50%, 0) translateY(0px); }
-                100% { transform: translate(-50%, 0) translateY(-6px); }
-              }
             `}</style>
 
             {/* Guirnalda de Papel Picado (Top Border) */}
@@ -369,37 +365,6 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
                   </svg>
                 );
               })}
-            </div>
-
-            {/* Listón inferior "CORCHOLATAS Y FRIJOLITOS" (Bottom Border) */}
-            <div
-              className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none select-none"
-              style={{
-                animation: "bannerFloat 2.2s ease-in-out infinite alternate",
-              }}
-            >
-              <svg width="460" height="80" viewBox="0 0 460 80" className="drop-shadow-md">
-                {/* Left tail */}
-                <path d="M 60 20 L 15 20 L 35 38 L 15 56 L 60 56 Z" fill="#e04a7a" stroke="#4a2e12" strokeWidth="2.5" strokeLinejoin="round" />
-                {/* Left fold shadow */}
-                <path d="M 60 56 L 70 54 L 70 64 Z" fill="#b02c54" stroke="#4a2e12" strokeWidth="2.5" strokeLinejoin="round" />
-                
-                {/* Right tail */}
-                <path d="M 400 20 L 445 20 L 425 38 L 445 56 L 400 56 Z" fill="#e04a7a" stroke="#4a2e12" strokeWidth="2.5" strokeLinejoin="round" />
-                {/* Right fold shadow */}
-                <path d="M 400 56 L 390 54 L 390 64 Z" fill="#b02c54" stroke="#4a2e12" strokeWidth="2.5" strokeLinejoin="round" />
-                
-                {/* Main banner body */}
-                <rect x="70" y="12" width="320" height="42" rx="4" fill="#f2e4c8" stroke="#4a2e12" strokeWidth="2.5" strokeLinejoin="round" />
-                
-                {/* Inner border for paper look */}
-                <rect x="75" y="17" width="310" height="32" rx="2" fill="none" stroke="#4a2e12" strokeWidth="1" strokeDasharray="3,3" />
-
-                {/* Text */}
-                <text x="230" y="39" fontFamily="Georgia, serif" fontWeight="900" fontSize="14" fill="#4a2e12" textAnchor="middle" letterSpacing="1.5">
-                  CORCHOLATAS Y FRIJOLITOS
-                </text>
-              </svg>
             </div>
 
           </div>

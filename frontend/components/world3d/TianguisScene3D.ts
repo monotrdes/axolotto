@@ -56,17 +56,17 @@ export function buildTianguisScene3D(
     parent.add(a);
   };
 
-  // ── Base de agua ──────────────────────────────────────────────
+  // ── Base de agua en capas delgadas (estilo papel picado concept art) ──
   const base = new THREE.Group();
   let baseY = 0;
   const baseLayers = [
-    { w: 19.5, c: 0x241e3c, h: 0.4 },
-    { w: 18.8, c: 0x123f55, h: 0.4 },
-    { w: 18.2, c: PAL.aguaProfunda, h: 0.4 },
-    { w: 17.8, c: PAL.agua, h: 0.32 },
+    { w: 19.5, c: 0x241e3c, h: 0.15, b: 0.015 },
+    { w: 18.8, c: 0x123f55, h: 0.15, b: 0.015 },
+    { w: 18.2, c: PAL.aguaProfunda, h: 0.15, b: 0.015 },
+    { w: 17.8, c: PAL.agua, h: 0.12, b: 0.015 },
   ];
   for (const L of baseLayers) {
-    const m = paper(roundedRectShape(L.w, L.w * 1.34, 2.4), L.h, L.c, 0.05);
+    const m = paper(roundedRectShape(L.w, L.w * 1.34, 2.4), L.h, L.c, L.b);
     m.position.y = baseY;
     base.add(m);
     baseY += L.h;
@@ -114,10 +114,10 @@ export function buildTianguisScene3D(
   terraceStack(world, TOP, 6.6, 1.8, 1.5, 3, [PAL.salvia, PAL.pasto], 0.22, 0.2);
 
   // ── Plaza central + camino al embarcadero ─────────────────────
-  // espuma de borde: anillo claro plano bajo cada orilla que toca el agua
+  // espuma de borde: capas delgadas de papel aquaClara bajo cada orilla
   const foamAt = (x: number, z: number, r: number, seed: number) => {
-    const f = flat(blobShape(r, 0.16, 10, seed), PAL.aguaClara, 0.32);
-    f.position.set(x, TOP + 0.004, z);
+    const f = paper(blobShape(r, 0.16, 10, seed), 0.03, PAL.aguaClara, 0.008);
+    f.position.set(x, TOP + 0.002, z);
     world.add(f);
   };
   foamAt(0.3, -2.5, 3.45, 2);
@@ -205,8 +205,8 @@ export function buildTianguisScene3D(
     banco.add(s);
     attendantAnchor(banco, "fountain", 0, 0.3, 0.2);
     banco.scale.setScalar(0.92);
-    banco.position.set(0.25, TOP + 0.3, -4.9);
-    banco.rotation.y = -0.06;
+    banco.position.set(0.0, TOP + 0.3, -4.6);
+    banco.rotation.y = 0.0;
     markStall(banco, "fountain");
     world.add(banco);
   }
@@ -272,8 +272,8 @@ export function buildTianguisScene3D(
     reciclon.add(ticket);
     attendantAnchor(reciclon, "forja", 0, 0, -0.1);
     reciclon.scale.setScalar(0.82);
-    reciclon.position.set(2.6, TOP + 0.05, -3.1);
-    reciclon.rotation.y = -0.4;
+    reciclon.position.set(2.3, TOP + 0.05, -2.9);
+    reciclon.rotation.y = -0.35;
     markStall(reciclon, "forja");
     world.add(reciclon);
 
@@ -352,8 +352,8 @@ export function buildTianguisScene3D(
     sobrecitos.add(s);
     attendantAnchor(sobrecitos, "booster", 0, 0, -0.55);
     sobrecitos.scale.setScalar(0.85);
-    sobrecitos.position.set(-2.6, TOP + 0.05, -2.1);
-    sobrecitos.rotation.y = 0.42;
+    sobrecitos.position.set(-2.3, TOP + 0.05, -2.0);
+    sobrecitos.rotation.y = 0.38;
     markStall(sobrecitos, "booster");
     world.add(sobrecitos);
   }
@@ -414,8 +414,8 @@ export function buildTianguisScene3D(
     webitos.add(s);
     attendantAnchor(webitos, "adopcion", -0.3, 0, -0.95);
     webitos.scale.setScalar(0.9);
-    webitos.position.set(-2.3, TOP + 0.05, 2.8);
-    webitos.rotation.y = 0.35;
+    webitos.position.set(-1.9, TOP + 0.05, 2.4);
+    webitos.rotation.y = 0.32;
     markStall(webitos, "adopcion");
     world.add(webitos);
   }
@@ -450,7 +450,7 @@ export function buildTianguisScene3D(
     dock.add(bills);
     attendantAnchor(dock, "p2p", 0.3, 0.6, 0.3);
     dock.scale.setScalar(0.9);
-    dock.position.set(1.3, TOP, 5.1);
+    dock.position.set(1.1, TOP, 4.4);
     dock.rotation.y = -0.15;
     markStall(dock, "p2p");
     world.add(dock);
@@ -522,9 +522,9 @@ export function buildTianguisScene3D(
     boats.push(g);
     world.add(g);
   }
-  trajinera(PAL.magenta, PAL.verde, 3.3, 4.4, 0.55);
-  trajinera(0xd0386a, PAL.teal, -1.3, 6.1, -0.35);
-  trajinera(PAL.naranja, PAL.limon, 2.4, 6.8, 0.15);
+  trajinera(PAL.magenta, PAL.verde, 2.8, 3.8, 0.55);
+  trajinera(0xd0386a, PAL.teal, -1.1, 5.4, -0.35);
+  trajinera(PAL.naranja, PAL.limon, 2.0, 5.8, 0.15);
   animations.push((t) => {
     for (const b of boats) {
       const phase = b.userData.phase as number;
