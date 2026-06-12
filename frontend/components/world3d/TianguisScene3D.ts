@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { SceneAnimation, World3DScene, StallFocus } from "./ThreeWorldEngine";
+import { AxolotitoBillboard } from "./AxolotitoBillboard";
 import {
   PAL,
   blobShape,
@@ -32,7 +33,14 @@ import {
  * billboard 2D que lo atiende (siguiente fase).
  */
 
-export function buildTianguisScene3D(): World3DScene {
+export interface TianguisVisitor {
+  skinColor?: string;
+  seed?: number;
+}
+
+export function buildTianguisScene3D(
+  opts: { visitantes?: TianguisVisitor[] } = {},
+): World3DScene {
   const world = new THREE.Group();
   const animations: SceneAnimation[] = [];
   const hotspots: THREE.Object3D[] = [];
@@ -566,6 +574,77 @@ export function buildTianguisScene3D(): World3DScene {
     world.add(zrt);
   }
 
+  // ── Tenderos: axolotitos billboard en las anclas attendant:<id> ──
+  const tenderoSkins: Record<string, { skinColor: string; seed: number }> = {
+    fountain: { skinColor: "gray_light", seed: 11 },
+    forja: { skinColor: "gold", seed: 23 },
+    booster: { skinColor: "pink", seed: 37 },
+    adopcion: { skinColor: "astral", seed: 41 },
+    p2p: { skinColor: "gray_dark", seed: 53 },
+  };
+  const billboards: AxolotitoBillboard[] = [];
+  world.updateMatrixWorld(true);
+  const anchorPos = new THREE.Vector3();
+  world.traverse((obj) => {
+    if (!obj.name.startsWith("attendant:")) return;
+    const id = obj.name.slice("attendant:".length);
+    const dna = tenderoSkins[id];
+    if (!dna) return;
+    obj.getWorldPosition(anchorPos);
+    const b = new AxolotitoBillboard(dna, 1.25);
+    b.position.copy(anchorPos);
+    // el tendero hereda el hotspot de su puesto (tocarlo = tocar el puesto)
+    b.userData.stallId = id;
+    hotspots.push(b);
+    billboards.push(b);
+  });
+  for (const b of billboards) world.add(b); // fuera del traverse (no mutar durante)
+
+  // ── Transeúntes: axolotitos del usuario deambulando por la plaza ──
+  const FLOOR = TOP + 0.3;
+  const wanderTarget = () => {
+    const a = rand(0, Math.PI * 2);
+    const rr = Math.sqrt(rand(0, 1));
+    return new THREE.Vector3(0.15 + Math.cos(a) * rr * 1.9, FLOOR, -2.7 + Math.sin(a) * rr * 1.45);
+  };
+  const visitors: Array<{
+    b: AxolotitoBillboard;
+    target: THREE.Vector3;
+    speed: number;
+    pause: number;
+  }> = [];
+  for (const v of (opts.visitantes ?? []).slice(0, 4)) {
+    const b = new AxolotitoBillboard(v, 1.05);
+    b.position.copy(wanderTarget());
+    world.add(b);
+    billboards.push(b);
+    visitors.push({ b, target: wanderTarget(), speed: rand(0.45, 0.7), pause: rand(0, 3) });
+  }
+  animations.push((t, dt) => {
+    for (const b of billboards) b.update(t, dt);
+    for (const v of visitors) {
+      if (v.pause > 0) {
+        v.pause -= dt;
+        v.b.position.y = FLOOR;
+        if (v.pause <= 0) v.target = wanderTarget();
+        continue;
+      }
+      const dx = v.target.x - v.b.position.x;
+      const dz = v.target.z - v.b.position.z;
+      const dist = Math.hypot(dx, dz);
+      if (dist < 0.08) {
+        v.pause = rand(1.2, 3.5);
+        v.b.setWalk(0, 1); // de frente mientras descansa
+        continue;
+      }
+      const step = Math.min(dist, v.speed * dt);
+      v.b.position.x += (dx / dist) * step;
+      v.b.position.z += (dz / dist) * step;
+      v.b.position.y = FLOOR + Math.abs(Math.sin(t * 7 + v.speed * 20)) * 0.045; // pasitos
+      v.b.setWalk(dx, dz);
+    }
+  });
+
   // Encuadres de enfoque por puesto (focusStall del motor).
   const stallFocus: Record<string, StallFocus> = {
     fountain: { x: 0.25, z: -3.6, zoom: 0.62 },
@@ -580,6 +659,7 @@ export function buildTianguisScene3D(): World3DScene {
     hotspots,
     animations,
     stallFocus,
+    billboards,
     playMelt(): void {
       (reciclon.userData.melt as (() => void) | undefined)?.();
     },

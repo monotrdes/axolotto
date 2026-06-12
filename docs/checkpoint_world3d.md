@@ -65,11 +65,11 @@
 
 ## Estado actual
 
-- **Último commit de avance**: el commit que contiene este checkpoint (P1
-  completo). Anterior: `278bd88` (Tianguis 3D + docs).
-- Tianguis 3D con "manita de gato" (P1) detrás de los flags. tsc + eslint
-  limpios. Verificado visualmente con el harness (captura
-  `docs/prototipos/_world3d_shot.png`, untracked).
+- **Último commit de avance**: el commit que contiene este checkpoint (P2
+  base). Anteriores: P1 `6a8cea8`, Tianguis 3D `278bd88`.
+- Tianguis 3D con "manita de gato" (P1) + tenderos y transeúntes billboard
+  (P2) detrás de los flags. tsc + eslint limpios. Verificado visualmente con
+  el harness (captura `docs/prototipos/_world3d_shot.png`, untracked).
 - ⏳ **Pendiente validación visual del usuario en la app real** (ya validó los
   prototipos; falta verlo en su build tras rebuild).
 
@@ -95,19 +95,25 @@
 - [x] Viñeta: overlay radial-gradient dentro del host 3D en GameCanvas
       (pointer-events-none, igual al prototipo aprobado).
 
-### P2 — Axolotitos puppet billboard 2D (siguiente fase grande)
-- [ ] `world3d/AxolotitoBillboard.ts`: plano(s) con el puppet 2D estilo papel.
-      **Requisito: vista frontal Y trasera** (dar la espalda) — decidir entre
-      2 sets de texturas (front/back) con flip según dirección de movimiento
-      vs cámara, o rig de partes en 2 planos. Reusar el sistema de partes por
-      ADN existente (`world/puppet/parts/` — gill/eye/mouth/tail/forehead/limb
-      _type + SKIN_COLORS) rendereado a CanvasTexture/offscreen.
-- [ ] Tenderos estáticos en las anclas `attendant:<id>` de TianguisScene3D
-      (5 puestos), con idle sutil (branquias, parpadeo).
-- [ ] Transeúntes: 2-4 axolotitos del usuario deambulando por la plaza
-      (paths sobre el plano del suelo, depth-sort automático del 3D, espalda
-      cuando caminan hacia arriba/lejos).
-- [ ] Sombra de contacto bajo cada billboard.
+### P2 — Axolotitos puppet billboard 2D — ✅ HECHO (base)
+- [x] `world3d/AxolotitoBillboard.ts`: plano con puppet de papel pintado en
+      **Canvas2D propio** (decisión: 4 CanvasTextures por axolotito — frente
+      pose A/B, frente parpadeo, espalda — y swap de `material.map`; NO se
+      rendereó el rig Pixi offscreen para no acoplar motores; solo se reusan
+      `skinToTint`/`gillAccent` de `world/puppet/paperParts`). `setWalk(dx,dz)`
+      da la espalda al alejarse (dz<0) y espeja por dx. El motor fija el yaw
+      de cámara vía `World3DScene.billboards` (deben colgar del root).
+- [x] Tenderos en las 5 anclas `attendant:<id>` (skins fijas por puesto) con
+      idle (respiración, vaivén de branquias por swap de pose, parpadeo);
+      tocarlos dispara el hotspot de su puesto.
+- [x] Transeúntes: hasta 4 axolotitos del usuario (no huevos, seed
+      determinista por id) deambulan por la plaza con pasitos y pausas;
+      espalda al caminar hacia el fondo. Snapshot al entrar a la zona (si
+      cambian los axolotitos no se refresca hasta re-entrar — aceptado).
+- [x] Sombra de contacto elíptica bajo cada billboard.
+- [ ] (Mejora futura) ADN visual completo en el painter: hoy solo varía
+      skin/seed; gill/eye/mouth/tail/forehead/limb _type quedan para cuando
+      haya atlas de arte o se porte el painter por variantes.
 
 ### P3 — Migrar Santuario al diorama 3D
 - Mismo patrón que Tianguis (escena 3D + swap en zoneSettled). Conservar TODOS
@@ -128,4 +134,5 @@
 | :--- | :--- | :--- |
 | 2026-06-12 | 278bd88 | Tianguis 3D: motor three.js + escena port del prototipo aprobado + swap Pixi↔three en GameCanvas + flags + docs/prototipos |
 | 2026-06-12 | (este) | Checkpoint creado; flag WORLD3D agregado a .env.local del usuario; pendientes P1-P5 definidos |
-| 2026-06-12 | (este) | P1 completo: grano de papel por tier, fondo atardecer, colinas con más contraste, ondas+espuma de agua, troquelado real del picado, letreros serif, piedras orgánicas, hover+rebote de hotspots, viñeta en GameCanvas. Harness de captura de la escena TS real (esbuild+Playwright) |
+| 2026-06-12 | 6a8cea8 | P1 completo: grano de papel por tier, fondo atardecer, colinas con más contraste, ondas+espuma de agua, troquelado real del picado, letreros serif, piedras orgánicas, hover+rebote de hotspots, viñeta en GameCanvas. Harness de captura de la escena TS real (esbuild+Playwright) |
+| 2026-06-12 | (este) | P2 base: AxolotitoBillboard (Canvas2D, frente A/B + parpadeo + espalda), tenderos en los 5 puestos, transeúntes del usuario deambulando con espalda al alejarse, sombras de contacto, yaw de billboards en el motor |

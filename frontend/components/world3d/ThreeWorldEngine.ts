@@ -29,6 +29,11 @@ export interface World3DScene {
   animations: SceneAnimation[];
   /** Encuadres de enfoque por puesto (focusStall). */
   stallFocus: Record<string, StallFocus>;
+  /**
+   * Billboards 2D (axolotitos): el motor les fija el yaw de cámara cada
+   * frame. Deben colgar del root de la escena (sin padres rotados).
+   */
+  billboards?: THREE.Object3D[];
   /** Animación de fundido (equivalente 3D de playMeltAnimation del Tianguis Pixi). */
   playMelt?(): void;
   dispose(): void;
@@ -311,6 +316,11 @@ export class ThreeWorldEngine {
 
     if (this.current && !this.reducedMotion) {
       for (const anim of this.current.animations) anim(t, dt);
+    }
+
+    // Billboards siempre de cara a la cámara (yaw plano, cámara ortográfica).
+    if (this.current?.billboards) {
+      for (const b of this.current.billboards) b.rotation.y = this.az;
     }
 
     // Hover (desktop): raycast cada 3 frames; resalta el puesto bajo el cursor.

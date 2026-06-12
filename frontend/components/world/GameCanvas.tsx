@@ -261,7 +261,16 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
               engine3dRef.current.onHotspot = (stallId) => onStallClickRef.current?.(stallId);
             }
             configurePaperStyle({ grain: engine3dRef.current.quality !== "ligera" });
-            const scene3d = buildTianguisScene3D();
+            // Transeúntes: hasta 4 axolotitos del usuario (no huevos) pasean
+            // por la plaza; el seed determinista mantiene sus chapas entre visitas.
+            const visitantes = axolotitosRef.current
+              .filter((a) => !a.isEgg)
+              .slice(0, 4)
+              .map((a) => ({
+                skinColor: a.skinColor,
+                seed: [...a.id].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 9973, 7),
+              }));
+            const scene3d = buildTianguisScene3D({ visitantes });
             scene3dRef.current = scene3d;
             engine3dRef.current.setScene(scene3d);
             host3d.style.display = "";

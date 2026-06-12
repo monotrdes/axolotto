@@ -22,6 +22,14 @@ last_modified: "2026-06-11"
 
 ---
 
+## 2026-06-12 | frontend mundo 3D | P2: axolotitos billboard 2D en el Tianguis 3D (task-1781252081-99)
+- **Campo**: Nuevo `frontend/components/world3d/AxolotitoBillboard.ts` + tenderos/transeúntes en `TianguisScene3D.ts` + yaw de billboards en `ThreeWorldEngine.ts`.
+- **Anterior**: Los 5 puestos del Tianguis 3D tenían anclas `attendant:<id>` vacías; sin habitantes.
+- **Nuevo**: Axolotitos billboard 2D (puppet de papel pintado en Canvas2D, 4 texturas: frente pose A/B, parpadeo, espalda) siempre de cara a la cámara. Tenderos con idle en los 5 puestos (tocarlos abre su puesto); hasta 4 axolotitos del usuario deambulan por la plaza y dan la espalda al alejarse. Sombra de contacto bajo cada uno.
+- **Motivo**: P2 del checkpoint `docs/checkpoint_world3d.md` — habitar el diorama.
+- **Autor**: Claude
+- **Fuente en código**: `frontend/components/world3d/AxolotitoBillboard.ts`, `frontend/components/world3d/TianguisScene3D.ts`, `frontend/components/world/GameCanvas.tsx`
+
 ## 2026-06-12 | frontend mundo 3D | P1: pulido visual del Tianguis 3D hacia el concept art (task-1781252081-99)
 - **Campo**: `frontend/components/world3d/` (paperPrimitives, ThreeWorldEngine, TianguisScene3D) + viñeta en `GameCanvas.tsx`.
 - **Anterior**: Port literal del prototipo procedural: fondo plano, sin grano de papel, picado solo dentado, letreros system-ui, sin micro-interacciones ni viñeta.
