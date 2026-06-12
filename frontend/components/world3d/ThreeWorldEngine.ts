@@ -332,9 +332,9 @@ export class ThreeWorldEngine {
     const a = w / h;
     const baseH = a < 0.9 ? 12.8 : 11.2;
     // Si la pantalla es muy estrecha (retrato móvil extremo), aumentamos vh
-    // para que el ancho de la cámara (vh * a) sea al menos 8.4 unidades lógicas,
-    // garantizando que todos los puestos queden visibles horizontalmente.
-    const minW = 8.4;
+    // para que el ancho de la cámara (vh * a) sea al menos 6.0 unidades lógicas,
+    // garantizando que todos los puestos queden visibles horizontalmente sin alejar demasiado la cámara.
+    const minW = 6.0;
     if (a < 0.9 && baseH * a < minW) {
       return (minW / a) * this.zoom;
     }
