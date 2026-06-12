@@ -89,6 +89,13 @@ async def on_startup():
                 print(f"⚠️ Could not add FK for imprinting_padrino_id: {e}")
                 conn.rollback()
 
+        # --- times_called migration ---
+        result_item = conn.execute(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'itemcatalog';"))
+        existing_item_cols = {row[0] for row in result_item.fetchall()}
+        if "times_called" not in existing_item_cols:
+            conn.execute(text("ALTER TABLE itemcatalog ADD COLUMN times_called INTEGER DEFAULT 0;"))
+            conn.commit()
+
         # --- MIGRACIÓN DE CONSTRAINTS PARA HATCHERY 3.0 ---
         # 1. Dropear el foreign key viejo que apunta a itemcatalog si existe
         result_fk = conn.execute(text("""

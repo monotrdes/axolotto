@@ -43,6 +43,7 @@ interface CardMetric {
   total_circulation: number;
   shiny_circulation: number;
   first_edition_circulation: number;
+  times_called: number;
 }
 
 interface DistributionData {
@@ -156,6 +157,9 @@ export default function AdminCardDistribution({ token }: { token: string | null 
     ? ((data.total_first_edition_in_circulation / data.total_copies_in_circulation) * 100).toFixed(1)
     : "0";
 
+  const totalCalls = data ? data.cards.reduce((sum, c) => sum + (c.times_called || 0), 0) : 0;
+  const avgCalls = data && data.cards.length > 0 ? totalCalls / data.cards.length : 0;
+
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -164,7 +168,7 @@ export default function AdminCardDistribution({ token }: { token: string | null 
             <span>🃏</span> Distribución de Cartas y Rarezas
           </h2>
           <p className="text-gray-400 text-xs mt-1">
-            Visualiza el suministro global, las rarezas dinámicas asignadas y las copias especiales abiertas en boosters.
+            Visualiza el suministro global, las rarezas dinámicas asignadas, estadísticas de cartas cantadas (suertes/saladas) y las copias especiales.
           </p>
         </div>
       </div>
@@ -345,6 +349,9 @@ export default function AdminCardDistribution({ token }: { token: string | null 
                 <th className="py-3 px-4 w-28 cursor-pointer hover:text-white text-right" onClick={() => toggleSort("total_circulation")}>
                   Suministro {renderSortIcon("total_circulation")}
                 </th>
+                <th className="py-3 px-4 w-28 cursor-pointer hover:text-white text-right" onClick={() => toggleSort("times_called")}>
+                  Cantada {renderSortIcon("times_called")}
+                </th>
                 <th className="py-3 px-4 w-28 cursor-pointer hover:text-white text-right" onClick={() => toggleSort("shiny_circulation")}>
                   Shiny {renderSortIcon("shiny_circulation")}
                 </th>
@@ -356,33 +363,54 @@ export default function AdminCardDistribution({ token }: { token: string | null 
             <tbody className="divide-y divide-white/5 text-xs text-slate-300 font-semibold font-mono">
               {sortedCards.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500 italic bg-slate-950/20">
+                  <td colSpan={7} className="py-8 text-center text-gray-500 italic bg-slate-950/20">
                     No se encontraron cartas que coincidan con la búsqueda.
                   </td>
                 </tr>
               ) : (
-                sortedCards.map((card) => (
-                  <tr key={card.id} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="py-3 px-4 text-slate-500 font-bold">#{card.numero_loteria || "?"}</td>
-                    <td className="py-3 px-4 text-white font-bold">{card.name}</td>
-                    <td className="py-3 px-4">
-                      <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-black uppercase tracking-wider ${
-                        RARITY_BG_CLASSES[card.dynamic_rarity] || "bg-gray-500/10 text-gray-400"
-                      }`}>
-                        {card.dynamic_rarity}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-right font-bold text-white">
-                      {card.total_circulation.toLocaleString()}
-                    </td>
-                    <td className="py-3 px-4 text-right text-amber-400">
-                      {card.shiny_circulation > 0 ? `✨ ${card.shiny_circulation.toLocaleString()}` : "0"}
-                    </td>
-                    <td className="py-3 px-4 text-right text-emerald-400">
-                      {card.first_edition_circulation > 0 ? `⭐ ${card.first_edition_circulation.toLocaleString()}` : "0"}
-                    </td>
-                  </tr>
-                ))
+                sortedCards.map((card) => {
+                  const isLucky = totalCalls > 0 && card.times_called > avgCalls * 1.15;
+                  const isSalty = totalCalls > 0 && card.times_called < avgCalls * 0.85;
+                  return (
+                    <tr key={card.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 px-4 text-slate-500 font-bold">#{card.numero_loteria || "?"}</td>
+                      <td className="py-3 px-4 text-white font-bold">{card.name}</td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-0.5 rounded-[4px] text-[9px] font-black uppercase tracking-wider ${
+                          RARITY_BG_CLASSES[card.dynamic_rarity] || "bg-gray-500/10 text-gray-400"
+                        }`}>
+                          {card.dynamic_rarity}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right font-bold text-white">
+                        {card.total_circulation.toLocaleString()}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex flex-col items-end">
+                          <span className="font-bold text-pink-400">
+                            📢 {card.times_called?.toLocaleString() || "0"}
+                          </span>
+                          {isLucky && (
+                            <span className="text-[9px] text-amber-400 font-extrabold uppercase tracking-tight flex items-center gap-0.5">
+                              🔥 Suertuda
+                            </span>
+                          )}
+                          {isSalty && (
+                            <span className="text-[9px] text-cyan-400 font-extrabold uppercase tracking-tight flex items-center gap-0.5">
+                              🧂 Salada
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right text-amber-400">
+                        {card.shiny_circulation > 0 ? `✨ ${card.shiny_circulation.toLocaleString()}` : "0"}
+                      </td>
+                      <td className="py-3 px-4 text-right text-emerald-400">
+                        {card.first_edition_circulation > 0 ? `⭐ ${card.first_edition_circulation.toLocaleString()}` : "0"}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

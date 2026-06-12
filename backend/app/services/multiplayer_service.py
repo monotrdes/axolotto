@@ -1037,6 +1037,9 @@ class MultiplayerService:
             session.add(game_state)
             for reg in registrations:
                 session.delete(reg)
+            # Increment card called stats
+            from app.models.items import ItemCatalog
+            ItemCatalog.increment_called_counts(session, drawn_cards_history)
             session.commit()
             print(f"✅ [Multiplayer Service] Simulación de la sala {room.name} terminada en {turns} cartas.")
 
@@ -1187,6 +1190,10 @@ class MultiplayerService:
 
             for reg in registrations:
                 session.delete(reg)
+
+            # Increment card called stats
+            from app.models.items import ItemCatalog
+            ItemCatalog.increment_called_counts(session, drawn_cards_history)
 
             session.commit()
             print(f"✅ [Multiplayer Service] Partida manual de la sala {room.name} resuelta exitosamente.")

@@ -37,6 +37,18 @@ class ItemCatalog(SQLModel, table=True):
     max_per_user: Optional[int] = None  # límite de compra por wallet por ítem
     
     item_metadata: Optional[Dict] = Field(default={}, sa_type=JSON)
+    times_called: int = Field(default=0)
+
+    @classmethod
+    def increment_called_counts(cls, session, card_ids: list[int]):
+        if not card_ids:
+            return
+        from sqlalchemy import update
+        session.execute(
+            update(cls)
+            .where(cls.id.in_(card_ids))
+            .values(times_called=cls.times_called + 1)
+        )
 
 class PlayerInventory(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

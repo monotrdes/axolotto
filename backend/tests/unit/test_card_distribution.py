@@ -58,3 +58,5 @@ def test_card_distribution_endpoint(session: Session):
     assert c1_res["shiny_circulation"] == 1
     assert c1_res["first_edition_circulation"] == 3
     assert c1_res["numero_loteria"] == 1
+    assert "times_called" in c1_res
+    assert c1_res["times_called"] == 0

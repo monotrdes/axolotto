@@ -1315,6 +1315,7 @@ def get_card_distribution(session: Session) -> dict:
             "total_circulation": stats["total_qty"],
             "shiny_circulation": stats["shiny_qty"],
             "first_edition_circulation": stats["first_ed_qty"],
+            "times_called": c.times_called or 0,
         })
 
     # Sort cards by lottery number
