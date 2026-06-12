@@ -58,7 +58,8 @@ _CARTAS_ABI_MINIMAL = json.loads('''[
   {"inputs":[{"name":"owner","type":"address"},{"name":"operator","type":"address"}],"name":"isApprovedForAll","outputs":[{"name":"","type":"bool"}],"stateMutability":"view","type":"function"},
   {"inputs":[{"name":"operator","type":"address"},{"name":"approved","type":"bool"}],"name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[{"name":"owner","type":"address"},{"name":"approved","type":"bool"}],"name":"setApprovalForTablas","outputs":[],"stateMutability":"nonpayable","type":"function"},
-  {"inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"id","type":"uint256"},{"name":"amount","type":"uint256"}],"name":"transferCard","outputs":[],"stateMutability":"nonpayable","type":"function"}
+  {"inputs":[{"name":"from","type":"address"},{"name":"to","type":"address"},{"name":"id","type":"uint256"},{"name":"amount","type":"uint256"}],"name":"transferCard","outputs":[],"stateMutability":"nonpayable","type":"function"},
+  {"inputs":[{"name":"from","type":"address"},{"name":"id","type":"uint256"},{"name":"amount","type":"uint256"}],"name":"burnCard","outputs":[],"stateMutability":"nonpayable","type":"function"}
 ]''')
 
 _SOBRECITO_ABI_MINIMAL = json.loads('''[
@@ -438,6 +439,19 @@ class Web3Service:
         abi = _load_abi("CartasLoteria") or _CARTAS_ABI_MINIMAL
         contract = w3.eth.contract(address=Web3.to_checksum_address(settings.CARDS_ADDRESS), abi=abi)
         return Web3Service._send_tx(contract.functions.transferCard(from_addr, to_addr, contract_id, amount), w3)
+
+    @staticmethod
+    def burn_card_onchain(from_address: str, card_id: int, amount: int = 1) -> str:
+        """Quema cartas on-chain (para reciclaje en El Reciclon)."""
+        if settings.IS_MOCK_WEB3 or not settings.CARDS_ADDRESS:
+            import secrets
+            return f"0x_mock_burn_card_{secrets.token_hex(16)}"
+        w3 = Web3Service._get_w3()
+        from_addr = Web3.to_checksum_address(from_address)
+        contract_id = card_id - 11  # catálogo 12-65 → contrato 1-54
+        abi = _load_abi("CartasLoteria") or _CARTAS_ABI_MINIMAL
+        contract = w3.eth.contract(address=Web3.to_checksum_address(settings.CARDS_ADDRESS), abi=abi)
+        return Web3Service._send_tx(contract.functions.burnCard(from_addr, contract_id, amount), w3)
 
     # ── Sobrecitos (ERC-1155) ──────────────────────────────────────────────────
 

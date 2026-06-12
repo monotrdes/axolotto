@@ -39,6 +39,15 @@ export default function StoreHeader({ storeTab, onBack, onHelp }: StoreHeaderPro
               Mercado entre Marchantes
             </p>
           </>
+        ) : storeTab === 'reciclon' ? (
+          <>
+            <h2 className="text-2xl sm:text-4xl font-extrabold italic text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400 tracking-tighter uppercase drop-shadow-[0_0_12px_rgba(45,212,191,0.4)]">
+              EL RECICLÓN
+            </h2>
+            <p className="text-[9px] sm:text-[10px] text-slate-400 tracking-widest mt-0.5 uppercase font-black">
+              Recicla y Obten Cartas
+            </p>
+          </>
         ) : (
           <>
             <h2 className="text-2xl sm:text-4xl font-extrabold italic text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 tracking-tighter uppercase drop-shadow-[0_0_12px_rgba(168,85,247,0.4)]">

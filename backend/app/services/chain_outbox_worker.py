@@ -105,6 +105,20 @@ def _dispatch_onchain(entry: ChainOutbox) -> str:
             payload["booster_fase"],
             payload.get("quantity", 1),
         )
+    elif op == "transfer_card_to_vault":
+        from app.core.config import settings
+        return Web3Service.transfer_card_onchain(
+            payload["from_address"],
+            settings.RECICLON_VAULT_ADDRESS,
+            payload["card_id"],
+            payload.get("quantity", 1),
+        )
+    elif op == "burn_card":
+        return Web3Service.burn_card_onchain(
+            payload["from_address"],
+            payload["card_id"],
+            payload.get("quantity", 1),
+        )
     else:
         raise ValueError(f"Operación desconocida en ChainOutbox: {op}")
 

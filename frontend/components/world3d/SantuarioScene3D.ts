@@ -14,10 +14,10 @@ import {
   rand,
   paperMat,
 } from "./paperPrimitives";
-import { skinToTint } from "../world/puppet/paperParts";
-import type { AxolotitoData } from "../world/entities/AxolotitoSprite";
-import type { AmigoData } from "../world/mapBackendAxolotito";
-import type { CaveStatusData, DecoracionesData, DecorItemDetail } from "../world/zones/santuario/SantuarioScene";
+import { skinToTint } from "./skinColors";
+import type { AxolotitoData } from "@/types/axolotito";
+import type { AmigoData } from "@/services/mapBackendAxolotito";
+import type { CaveStatusData, DecoracionesData, DecorItemDetail } from "../world/zones/santuario/santuarioTypes";
 
 // Posicionamiento de slots de nidos en 3D (4 en fila trasera, 4 en fila delantera)
 const NEST_SLOTS_X = [-2.5, -0.8, 0.8, 2.5];

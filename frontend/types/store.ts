@@ -2,7 +2,7 @@
 // TYPES — Store / Tianguis
 // ═══════════════════════════════════════════════════════
 
-export type StoreTab = 'official' | 'market' | 'melter';
+export type StoreTab = 'official' | 'market' | 'reciclon';
 
 export type UnboxingPhase = 'pack' | 'opening' | 'reveal' | 'summary';
 
@@ -71,7 +71,6 @@ export interface StoreProps {
   initialSection?: StoreTab;
   /** Nonce para re-disparar initialSection aunque sea la misma sección. */
   sectionNonce?: number;
-  onMeltSuccess?: () => void;
   [key: string]: any;
 }
 

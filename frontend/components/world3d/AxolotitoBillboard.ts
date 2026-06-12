@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { gillAccent, skinToTint } from "../world/puppet/paperParts";
+import { gillAccent, skinToTint } from "./skinColors";
 
 /**
  * Axolotito billboard 2D para el mundo-diorama 3D (P2 del checkpoint

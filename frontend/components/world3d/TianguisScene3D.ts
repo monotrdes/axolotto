@@ -17,6 +17,171 @@ import {
   terraceStack,
   textPlane,
 } from "./paperPrimitives";
+import { detectQualityTier } from "./qualityTier";
+
+function createSunRayTexture(): THREE.CanvasTexture {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d")!;
+  ctx.clearRect(0, 0, 64, 256);
+  
+  for (let y = 0; y < 256; y++) {
+    const progress = y / 256;
+    const width = 10 + progress * 24;
+    const alpha = (1 - progress) * 0.42 * Math.sin(Math.PI * (1 - progress * 0.4));
+    
+    const gradH = ctx.createLinearGradient(32 - width, 0, 32 + width, 0);
+    gradH.addColorStop(0, "rgba(255, 255, 220, 0)");
+    gradH.addColorStop(0.5, `rgba(255, 255, 245, ${alpha})`);
+    gradH.addColorStop(1, "rgba(255, 255, 220, 0)");
+    
+    ctx.fillStyle = gradH;
+    ctx.fillRect(32 - width, y, width * 2, 1);
+  }
+  
+  const tex = new THREE.CanvasTexture(canvas);
+  return tex;
+}
+
+function createSunRays(parent: THREE.Object3D, topY: number, animations: SceneAnimation[]): void {
+  const tex = createSunRayTexture();
+  const rayGroup = new THREE.Group();
+  
+  const rayCount = 4;
+  const raysData: Array<{
+    mesh: THREE.Mesh;
+    baseOpacity: number;
+    phase: number;
+    speed: number;
+  }> = [];
+  
+  const placements = [
+    { x: -3.5, z: -3.0, w: 2.2, h: 10.0, opacity: 0.55 },
+    { x: 1.0, z: -1.0, w: 2.8, h: 11.0, opacity: 0.65 },
+    { x: 4.5, z: -4.0, w: 2.0, h: 9.0, opacity: 0.50 },
+    { x: -1.5, z: 2.5, w: 2.4, h: 10.5, opacity: 0.60 }
+  ];
+  
+  for (let i = 0; i < rayCount; i++) {
+    const p = placements[i];
+    const geo = new THREE.PlaneGeometry(p.w, p.h);
+    const mat = new THREE.MeshBasicMaterial({
+      map: tex,
+      transparent: true,
+      opacity: p.opacity,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.rotation.z = -0.3; 
+    mesh.rotation.x = 0.45;
+    mesh.position.set(p.x, topY + p.h * 0.32, p.z);
+    
+    rayGroup.add(mesh);
+    
+    raysData.push({
+      mesh,
+      baseOpacity: p.opacity,
+      phase: i * 1.5,
+      speed: 0.8 + i * 0.2
+    });
+  }
+  
+  parent.add(rayGroup);
+  
+  animations.push((t) => {
+    for (const r of raysData) {
+      const mat = r.mesh.material as THREE.MeshBasicMaterial;
+      mat.opacity = r.baseOpacity * (0.6 + Math.sin(t * r.speed + r.phase) * 0.4);
+    }
+  });
+}
+
+function createLily(parent: THREE.Object3D, topY: number, x: number, z: number, phase: number, lilies: THREE.Group[]): void {
+  const g = new THREE.Group();
+  
+  const padShape = new THREE.Shape();
+  padShape.absarc(0, 0, 0.4, 0, Math.PI * 1.78, false);
+  padShape.lineTo(0, 0);
+  padShape.closePath();
+  
+  const pad = paper(padShape, 0.03, 0x3d7e5d, 0.01);
+  g.add(pad);
+  
+  const petalCols = [0xffffff, 0xffd4e5];
+  for (let i = 0; i < 4; i++) {
+    const petalShape = ellipseShape(0.08, 0.18);
+    const petal = paper(petalShape, 0.015, petalCols[i % 2], 0.005);
+    petal.rotation.x = 0;
+    petal.rotation.y = (i / 4) * Math.PI * 2;
+    petal.rotation.z = 0.25;
+    petal.position.y = 0.03;
+    g.add(petal);
+  }
+  
+  const center = cyl(0.05, 0.05, 0.04, PAL.amarillo);
+  center.position.y = 0.03;
+  g.add(center);
+  
+  g.position.set(x, topY + 0.01, z);
+  g.userData.phase = phase;
+  
+  parent.add(g);
+  lilies.push(g);
+}
+
+function addLantern(
+  parent: THREE.Object3D,
+  x: number,
+  y: number,
+  z: number,
+  color: number,
+  glowIntensity: number,
+  quality: string,
+  glowingMeshes: THREE.Mesh[]
+): void {
+  const g = new THREE.Group();
+  
+  const hanger = box(0.03, 0.35, 0.03, 0x4a2e12);
+  hanger.position.y = 0.175;
+  g.add(hanger);
+  
+  const body = cyl(0.15, 0.17, 0.28, color, 6);
+  body.position.y = -0.14;
+  body.castShadow = true;
+  g.add(body);
+  
+  const coreMat = new THREE.MeshStandardMaterial({
+    color: 0xfff7c2,
+    roughness: 0.9,
+    emissive: new THREE.Color(0xfff7c2).multiplyScalar(glowIntensity)
+  });
+  const core = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.18, 0.11), coreMat);
+  core.position.y = -0.14;
+  g.add(core);
+  
+  core.userData.baseEmissive = coreMat.emissive.clone();
+  glowingMeshes.push(core);
+  
+  const roof = cyl(0.20, 0.04, 0.08, 0x7a4e2c, 6);
+  roof.position.y = 0.02;
+  roof.castShadow = true;
+  g.add(roof);
+  
+  if (quality !== "ligera") {
+    const light = new THREE.PointLight(0xffebb3, 1.8, 4.0);
+    light.position.set(0, -0.14, 0);
+    light.castShadow = quality === "alta";
+    light.shadow.bias = -0.002;
+    g.add(light);
+  }
+  
+  g.position.set(x, y, z);
+  parent.add(g);
+}
 
 /**
  * Tianguis 3D — port del prototipo aprobado (docs/prototipos/tianguis_demo_3d.html,
@@ -44,6 +209,8 @@ export function buildTianguisScene3D(
   const world = new THREE.Group();
   const animations: SceneAnimation[] = [];
   const hotspots: THREE.Object3D[] = [];
+  const quality = detectQualityTier();
+  const glowingMeshes: THREE.Mesh[] = [];
 
   const markStall = (g: THREE.Object3D, stallId: string) => {
     g.userData.stallId = stallId;
@@ -73,11 +240,27 @@ export function buildTianguisScene3D(
   }
   const TOP = baseY;
   // el agua emite un poco de luz propia (cyan vivo de la referencia)
-  (base.children[3] as THREE.Mesh & { material: THREE.MeshStandardMaterial }).material.emissive =
-    new THREE.Color(0x0c6e80);
+  const topWaterMesh = base.children[3] as THREE.Mesh & { material: THREE.MeshStandardMaterial };
+  topWaterMesh.material.emissive = new THREE.Color(0x0a8da3); // Cyan-azul más vivo y limpio, menos verdoso
   world.add(base);
 
-  // Corrientes del río: vetas claras onduladas
+  // Desplazamiento relativo de las capas de agua (parallax de papel) + pulso de color del agua
+  const baseEmissiveColor = new THREE.Color(0x0a8da3);
+  animations.push((t) => {
+    base.children[1].position.x = Math.sin(t * 0.4) * 0.08;
+    base.children[1].position.z = Math.cos(t * 0.3) * 0.06;
+    
+    base.children[2].position.x = Math.sin(t * 0.5 + 1.0) * 0.12;
+    base.children[2].position.z = Math.cos(t * 0.45 + 0.5) * 0.08;
+    
+    base.children[3].position.x = Math.sin(t * 0.6 + 2.0) * 0.15;
+    base.children[3].position.z = Math.cos(t * 0.55 + 1.2) * 0.10;
+
+    const waterGlow = 0.85 + Math.sin(t * 0.9) * 0.15;
+    topWaterMesh.material.emissive.copy(baseEmissiveColor).multiplyScalar(waterGlow);
+  });
+
+  // Corrientes del río: vetas claras onduladas con flujo continuo hacia la derecha
   const streaks: THREE.Mesh[] = [];
   for (let i = 0; i < 26; i++) {
     const st = paper(ellipseShape(rand(0.7, 1.9), rand(0.07, 0.12)), 0.02, PAL.aguaClara, 0.008);
@@ -91,11 +274,19 @@ export function buildTianguisScene3D(
     streaks.push(st);
     world.add(st);
   }
-  animations.push((t) => {
+  animations.push((t, dt) => {
     for (const s of streaks) {
       const phase = s.userData.phase as number;
-      s.position.x += Math.sin(t * 0.5 + phase) * 0.0012;
-      (s.material as THREE.MeshStandardMaterial).opacity = 0.35 + Math.sin(t * 0.8 + phase) * 0.15;
+      // Flujo continuo hacia la derecha (X positivo)
+      s.position.x += dt * 0.28;
+      // Ondulación en Z
+      s.position.z += Math.sin(t * 1.6 + phase) * 0.003;
+      // Re-envolver al salir del diorama
+      if (s.position.x > 9.5) {
+        s.position.x = -9.5;
+        s.position.z = rand(-7, 8.6);
+      }
+      (s.material as THREE.MeshStandardMaterial).opacity = 0.25 + Math.sin(t * 0.8 + phase) * 0.15;
     }
   });
 
@@ -204,6 +395,7 @@ export function buildTianguisScene3D(
     s.position.set(0, 2.0, 0.62);
     banco.add(s);
     attendantAnchor(banco, "fountain", 0, 0.3, 0.2);
+    addLantern(banco, 0.0, 2.3, 0.85, PAL.amarillo, 0.8, quality, glowingMeshes);
     banco.scale.setScalar(0.92);
     banco.position.set(0.0, TOP + 0.3, -4.6);
     banco.rotation.y = 0.0;
@@ -271,6 +463,7 @@ export function buildTianguisScene3D(
     ticket.rotation.x = 0.5;
     reciclon.add(ticket);
     attendantAnchor(reciclon, "forja", 0, 0.35, -0.75);
+    addLantern(reciclon, 1.1, 2.0, 0.1, PAL.naranja, 0.85, quality, glowingMeshes);
     reciclon.scale.setScalar(0.82);
     reciclon.position.set(2.3, TOP + 0.05, -2.9);
     reciclon.rotation.y = -0.35;
@@ -351,9 +544,10 @@ export function buildTianguisScene3D(
     s.rotation.z = 0.05;
     sobrecitos.add(s);
     attendantAnchor(sobrecitos, "booster", 0, 0.38, -0.85);
+    addLantern(sobrecitos, -1.0, 2.0, 0.3, PAL.rosa, 0.8, quality, glowingMeshes);
     sobrecitos.scale.setScalar(0.85);
     sobrecitos.position.set(-1.7, TOP + 0.05, -1.5);
-    sobrecitos.rotation.y = 0.38;
+    sobrecitos.rotation.y = 0.32; // Ajustado levemente para ver la linterna
     markStall(sobrecitos, "booster");
     world.add(sobrecitos);
   }
@@ -413,6 +607,7 @@ export function buildTianguisScene3D(
     s.rotation.z = -0.07;
     webitos.add(s);
     attendantAnchor(webitos, "adopcion", -0.3, 0.28, -0.95);
+    addLantern(webitos, 0.8, 1.6, 0.2, PAL.teal, 0.75, quality, glowingMeshes);
     webitos.scale.setScalar(0.9);
     webitos.position.set(-1.9, TOP + 0.05, 2.4);
     webitos.rotation.y = 0.32;
@@ -454,6 +649,7 @@ export function buildTianguisScene3D(
     bills.position.set(-0.4, 0.65, 0.2);
     dock.add(bills);
     attendantAnchor(dock, "p2p", 0.3, 0.6, 0.3);
+    addLantern(dock, 1.3, 1.6, -0.8, PAL.magenta, 0.8, quality, glowingMeshes);
     dock.scale.setScalar(0.9);
     dock.position.set(1.1, TOP, 4.4);
     dock.rotation.y = -0.15;
@@ -672,6 +868,96 @@ export function buildTianguisScene3D(
       v.b.position.z += (dz / dist) * step;
       v.b.position.y = FLOOR + Math.abs(Math.sin(t * 7 + v.speed * 20)) * 0.045; // pasitos
       v.b.setWalk(dx, dz);
+    }
+  });
+
+  // ── Inicialización de Efectos Creativos ──
+  
+  // 1. Rayos de sol volumétricos de papel picado
+  createSunRays(world, TOP, animations);
+  
+  // 2. Lirios de agua flotantes
+  const lilies: THREE.Group[] = [];
+  createLily(world, TOP, -4.5, 4.5, 0.0, lilies);
+  createLily(world, TOP, 4.0, 3.5, 2.1, lilies);
+  createLily(world, TOP, -6.0, -1.5, 4.3, lilies);
+  
+  animations.push((t) => {
+    for (const lily of lilies) {
+      const phase = lily.userData.phase as number;
+      lily.position.y = TOP + 0.01 + Math.sin(t * 1.2 + phase) * 0.022;
+      lily.rotation.z = Math.sin(t * 0.9 + phase) * 0.06;
+      lily.rotation.x = Math.cos(t * 0.8 + phase) * 0.04;
+      lily.rotation.y = t * 0.08 + phase;
+    }
+  });
+
+  // 3. Registrar todos los materiales emisivos y configurar el pulso de respiración bioluminiscente + resaltado interactivo
+  const stallGroups = [banco, reciclon, sobrecitos, webitos, dock];
+  const stallLighting: Array<{
+    group: THREE.Object3D;
+    light?: THREE.PointLight;
+    core?: THREE.Mesh;
+    baseScale: number;
+  }> = [];
+
+  for (const sg of stallGroups) {
+    let light: THREE.PointLight | undefined;
+    let core: THREE.Mesh | undefined;
+    sg.traverse((child) => {
+      if ((child as THREE.PointLight).isPointLight) light = child as THREE.PointLight;
+      if (child.name === "lanternCore") core = child as THREE.Mesh;
+    });
+    stallLighting.push({
+      group: sg,
+      light,
+      core,
+      baseScale: sg.scale.x
+    });
+  }
+
+  world.traverse((obj) => {
+    const mesh = obj as THREE.Mesh;
+    if (mesh.material && (mesh.material as THREE.MeshStandardMaterial).emissive) {
+      const mat = mesh.material as THREE.MeshStandardMaterial;
+      if (mat.emissive.getHex() > 0) {
+        if (!mesh.userData.baseEmissive) {
+          mesh.userData.baseEmissive = mat.emissive.clone();
+        }
+        // Evitamos meter los lantern cores en el pulso genérico para controlarlos individualmente con el hover
+        if (mesh.name !== "lanternCore") {
+          glowingMeshes.push(mesh);
+        }
+      }
+    }
+  });
+
+  animations.push((t) => {
+    // 1. Pulso de respiración genérico (plantas bioluminiscentes, etc.)
+    const pulse = 0.8 + Math.sin(t * 1.5) * 0.2;
+    for (const m of glowingMeshes) {
+      const mat = m.material as THREE.MeshStandardMaterial;
+      const baseE = m.userData.baseEmissive as THREE.Color;
+      mat.emissive.copy(baseE).multiplyScalar(pulse);
+    }
+
+    // 2. Pulso de linternas de puestos + Boost de intensidad cuando el usuario interactúa (hover o click)
+    for (const item of stallLighting) {
+      const isInteracting = item.group.scale.x > item.baseScale * 1.01;
+      
+      if (item.light) {
+        const targetIntensity = isInteracting ? 3.2 : 1.8;
+        item.light.intensity += (targetIntensity - item.light.intensity) * 0.15;
+      }
+      
+      if (item.core) {
+        const mat = item.core.material as THREE.MeshStandardMaterial;
+        const baseE = item.core.userData.baseEmissive as THREE.Color;
+        if (baseE) {
+          const interactBoost = isInteracting ? 1.6 : 1.0;
+          mat.emissive.copy(baseE).multiplyScalar(pulse * interactBoost);
+        }
+      }
     }
   });
 

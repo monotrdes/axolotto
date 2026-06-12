@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const [,, file = 'tianguis_demo_3d.html', out = 'tianguis_shot.png', w = '450', h = '920'] = process.argv;
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: +w, height: +h } });
+p.on('console', m => { if (m.type() === 'error') console.log('PAGE ERROR:', m.text()); });
+p.on('pageerror', e => console.log('PAGE EXCEPTION:', e.message));
+await p.goto('file:///D:/Axolotto_2026/axolotto/docs/prototipos/' + file);
+await p.waitForTimeout(4500);
+await p.screenshot({ path: 'D:/Axolotto_2026/axolotto/docs/prototipos/' + out });
+await b.close();
+console.log('OK');

@@ -14,8 +14,8 @@ import {
   rand,
   paperMat,
 } from "./paperPrimitives";
-import { skinToTint } from "../world/puppet/paperParts";
-import type { AxolotitoData } from "../world/entities/AxolotitoSprite";
+import { skinToTint } from "./skinColors";
+import type { AxolotitoData } from "@/types/axolotito";
 
 export function buildPiramideScene3D(
   opts: {} = {}
@@ -270,6 +270,11 @@ export function buildPiramideScene3D(
   };
   buildGashapons();
 
+  const salaHotspot = (mesh: THREE.Object3D) => {
+    mesh.userData.stallId = "salas";
+    hotspots.push(mesh);
+  };
+
   // ── 5. Salas (Portal de Entrada de la Pirámide) ──
   const buildSalas3D = () => {
     clearGroup(salaGroup);
@@ -309,11 +314,6 @@ export function buildPiramideScene3D(
     salaGroup.add(pool);
   };
   buildSalas3D();
-
-  const salaHotspot = (mesh: THREE.Object3D) => {
-    mesh.userData.stallId = "salas";
-    hotspots.push(mesh);
-  };
 
   // ── 6. Sincronización y deambular de Axolotitos ──
   const syncAxolotitos = () => {

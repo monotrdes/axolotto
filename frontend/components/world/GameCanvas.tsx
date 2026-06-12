@@ -1,466 +1,281 @@
 "use client";
 import React, { forwardRef, useImperativeHandle, useRef, useEffect } from "react";
-import type { WorldScene } from "./WorldScene";
-import type { AxolotitoData } from "./entities/AxolotitoSprite";
+import type { AxolotitoData } from "@/types/axolotito";
+import type { AmigoData } from "@/services/mapBackendAxolotito";
+import type { CaveStatusData, DecoracionesData } from "./zones/santuario/santuarioTypes";
 import PaperCurtain, { type PaperCurtainHandle } from "@/components/play/PaperCurtain";
-import type { WorldEngine } from "./engine/WorldEngine";
-import type { ZoneManager } from "./zones/ZoneManager";
-import type {
-  SantuarioScene,
-  CaveStatusData,
-  DecoracionesData,
-} from "./zones/santuario/SantuarioScene";
-import type { PiramideScene } from "./zones/piramide/PiramideScene";
-import type { TianguisScene } from "./zones/tianguis/TianguisScene";
-import type { AmigoData } from "./mapBackendAxolotito";
-import { TIANGUIS_STALL_FRAMINGS, framingFor } from "./zones/zoneConfig";
 import type { ThreeWorldEngine, World3DScene } from "@/components/world3d/ThreeWorldEngine";
 
 /**
- * Mundo 2.5D de papel picado (plan task-84). Detrás del flag
- * NEXT_PUBLIC_PAPER_WORLD=1: monta PixiJS (import dinámico — sin flag no se
- * descarga el chunk) con 3 macrozonas y cortina de papel. Sin flag, conserva
- * el comportamiento stub original intacto.
+ * Mundo-diorama 3D de papel (three.js). Reemplaza por completo al motor Pixi
+ * legacy. Cada macrozona (santuario, tianguis, piramide) es una escena 3D
+ * construida bajo demanda con cortina de papel entre transiciones.
  */
-
-const PAPER_WORLD_ENABLED = process.env.NEXT_PUBLIC_PAPER_WORLD === "1";
-/**
- * Mundo-diorama 3D de papel (decisión 2026-06-12): zonas migradas se renderizan
- * con three.js (hoy: Tianguis); el resto sigue en Pixi. El swap de canvas
- * ocurre bajo la cortina de papel, en zoneSettled.
- */
-const WORLD3D_ENABLED =
-  PAPER_WORLD_ENABLED && process.env.NEXT_PUBLIC_WORLD3D === "1";
 
 export interface GameCanvasHandle {
   setAxolotitos(data: AxolotitoData[]): void;
-  focusZone(zoneId: string): void;
   navigateToZone(zoneId: string): void;
   focusStall(stallId: string): void;
   resetFocus(): void;
-  /** Top-3 del ranking para el podio de la Pirámide (mundo papel picado). */
   setPodio?(data: AxolotitoData[]): void;
-  /** Amigos para el embarcadero del Santuario (mundo papel picado). */
   setAmigos?(amigos: AmigoData[]): void;
-  /** Nivel/spots/mesa de la cueva (GET /cave/status) para nidos dinámicos. */
   setCaveStatus?(status: CaveStatusData): void;
-  /** Decoraciones equipadas + layout de slots (GET /cave/decorations). */
   setDecoraciones?(data: DecoracionesData): void;
-  /** Fase lunar 1-6 (🌑→🌟) — tiñe la luz superficial de las 3 macrozonas. */
   setLunarPhase?(phase: number): void;
-  /** Lanza la animación de fuegos/estrellas en la forja del Tianguis. */
   playMeltAnimation?(): void;
 }
 
 interface GameCanvasProps {
-  visible?: boolean;
-  onReady?: (app: unknown, scene: WorldScene) => void;
-  onZoneClick?: (zoneId: string) => void;
-  onCaveClick?: (caveIndex: number) => void;
-  onAxolotitoClick?: (axoId: string) => void;
+  onReady?: (app: null, scene: null) => void;
   onStallClick?: (stallType: string) => void;
   initialZone?: string;
 }
 
-const ZONES = [
-  { id: "nido", label: "El Nido", emoji: "🏠" },
-  { id: "tianguis", label: "Tianguis", emoji: "🛒" },
-  { id: "sala", label: "Sala", emoji: "🎴" },
-  { id: "piramide", label: "Pirámide", emoji: "🏆" },
-  { id: "capsulas", label: "Cápsulas", emoji: "🎰" },
-];
+/** Mapea un id de zona legacy a su macrozona 3D. */
+function zoneToMacro(zoneId: string): string {
+  switch (zoneId) {
+    case "nido": case "santuario": case "criadero": case "axolotitos":
+      return "santuario";
+    case "tianguis": case "tienda":
+      return "tianguis";
+    case "piramide": case "rankings": case "capsulas": case "gashapon":
+    case "sala": case "salas": case "jugar":
+      return "piramide";
+    default:
+      return "tianguis";
+  }
+}
 
 const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCanvas(
   {
-    visible = false,
     onReady,
-    onZoneClick,
-    onCaveClick: _onCaveClick,
-    onAxolotitoClick: _onAxolotitoClick,
     onStallClick,
-    initialZone = "nido",
+    initialZone = "tianguis",
   },
   ref,
 ) {
-  const hostRef = useRef<HTMLDivElement>(null);
   const host3dRef = useRef<HTMLDivElement>(null);
   const curtainRef = useRef<PaperCurtainHandle>(null);
-  const engineRef = useRef<WorldEngine | null>(null);
   const engine3dRef = useRef<ThreeWorldEngine | null>(null);
   const scene3dRef = useRef<World3DScene | null>(null);
-  const active3dRef = useRef(false);
-  const zonesRef = useRef<ZoneManager | null>(null);
-  const santuarioRef = useRef<SantuarioScene | null>(null);
-  const tianguisRef = useRef<TianguisScene | null>(null);
-  const piramideRef = useRef<PiramideScene | null>(null);
   const axolotitosRef = useRef<AxolotitoData[]>([]);
   const podioRef = useRef<AxolotitoData[]>([]);
   const amigosRef = useRef<AmigoData[]>([]);
   const caveStatusRef = useRef<CaveStatusData | null>(null);
   const decoracionesRef = useRef<DecoracionesData | null>(null);
-  // Ref para evitar closures viejos dentro del listener del bridge.
   const onStallClickRef = useRef(onStallClick);
   onStallClickRef.current = onStallClick;
 
   useImperativeHandle(ref, () => ({
     setAxolotitos(data: AxolotitoData[]) {
       axolotitosRef.current = data;
-      if (santuarioRef.current && !santuarioRef.current.destroyed) {
-        santuarioRef.current.setAxolotitos(data);
-      }
-      if (active3dRef.current && scene3dRef.current && "setAxolotitos" in scene3dRef.current) {
+      if (scene3dRef.current && "setAxolotitos" in scene3dRef.current) {
         (scene3dRef.current as any).setAxolotitos(data);
       }
     },
     setCaveStatus(status: CaveStatusData) {
       caveStatusRef.current = status;
-      if (santuarioRef.current && !santuarioRef.current.destroyed) {
-        santuarioRef.current.setCaveStatus(status);
-      }
-      if (active3dRef.current && scene3dRef.current && "setCaveStatus" in scene3dRef.current) {
+      if (scene3dRef.current && "setCaveStatus" in scene3dRef.current) {
         (scene3dRef.current as any).setCaveStatus(status);
       }
     },
     setDecoraciones(data: DecoracionesData) {
       decoracionesRef.current = data;
-      if (santuarioRef.current && !santuarioRef.current.destroyed) {
-        santuarioRef.current.setDecoraciones(data);
-      }
-      if (active3dRef.current && scene3dRef.current && "setDecoraciones" in scene3dRef.current) {
+      if (scene3dRef.current && "setDecoraciones" in scene3dRef.current) {
         (scene3dRef.current as any).setDecoraciones(data);
       }
     },
-    setLunarPhase(phase: number) {
-      if (engineRef.current) engineRef.current.lunarPhase = phase;
-    },
-    focusZone(zoneId: string) {
-      zonesRef.current?.navigate(zoneId, null);
+    setLunarPhase(_phase: number) {
+      // TODO: implementar tinte lunar en escenas 3D
     },
     navigateToZone(zoneId: string) {
-      zonesRef.current?.navigate(zoneId, curtainRef.current);
+      const macro = zoneToMacro(zoneId);
+      void navigateToMacro(macro);
     },
     focusStall(stallId: string) {
-      if (active3dRef.current) {
-        engine3dRef.current?.focusStall(stallId);
-        return;
-      }
-      const framing = TIANGUIS_STALL_FRAMINGS[stallId];
-      if (framing && engineRef.current) {
-        engineRef.current.camera.panTo(framing);
-      }
+      engine3dRef.current?.focusStall(stallId);
     },
     resetFocus() {
-      if (active3dRef.current) {
-        engine3dRef.current?.resetFocus();
-        return;
-      }
-      if (!engineRef.current || !zonesRef.current) return;
-      const activeTarget = zonesRef.current.activeTarget;
-      if (!activeTarget) return;
-      engineRef.current.camera.panTo(framingFor(activeTarget));
+      engine3dRef.current?.resetFocus();
     },
     setPodio(data: AxolotitoData[]) {
       podioRef.current = data;
-      if (piramideRef.current && !piramideRef.current.destroyed) {
-        piramideRef.current.setPodio(data);
-      }
-      if (active3dRef.current && scene3dRef.current && "setPodio" in scene3dRef.current) {
+      if (scene3dRef.current && "setPodio" in scene3dRef.current) {
         (scene3dRef.current as any).setPodio(data);
       }
     },
     setAmigos(amigos: AmigoData[]) {
       amigosRef.current = amigos;
-      if (santuarioRef.current && !santuarioRef.current.destroyed) {
-        santuarioRef.current.setAmigos(amigos);
-      }
-      if (active3dRef.current && scene3dRef.current && "setAmigos" in scene3dRef.current) {
+      if (scene3dRef.current && "setAmigos" in scene3dRef.current) {
         (scene3dRef.current as any).setAmigos(amigos);
       }
     },
     playMeltAnimation() {
-      if (active3dRef.current) {
-        scene3dRef.current?.playMelt?.();
-        return;
-      }
-      if (tianguisRef.current && !tianguisRef.current.destroyed) {
-        tianguisRef.current.playMeltAnimation();
-      }
+      scene3dRef.current?.playMelt?.();
     },
   }));
 
-  // Contrato legacy hacia play/page.tsx (worldSceneRef) — sin cambios.
+  // Legacy contract — page.tsx espera onReady para setCanvasReady(true).
   useEffect(() => {
-    if (!onReady) return;
-    const scene: WorldScene = {
-      setAxolotitos: (data) => {
-        axolotitosRef.current = data;
-      },
-      setCaveDecorations: () => {},
-      focusZone: (zoneId) => {
-        zonesRef.current?.navigate(zoneId, null);
-      },
-    };
-    onReady(null, scene);
+    onReady?.(null, null);
   }, [onReady]);
 
-  // Montaje del motor Pixi (solo con flag).
+  /** Construye una escena 3D para la macrozona dada y la monta en el motor. */
+  const buildSceneForMacro = async (macro: string): Promise<World3DScene> => {
+    const { configurePaperStyle } = await import("@/components/world3d/paperPrimitives");
+    configurePaperStyle({ grain: engine3dRef.current!.quality !== "ligera" });
+
+    if (macro === "tianguis") {
+      const { buildTianguisScene3D } = await import("@/components/world3d/TianguisScene3D");
+      const visitantes = axolotitosRef.current
+        .filter((a) => !a.isEgg)
+        .slice(0, 4)
+        .map((a) => ({
+          skinColor: a.skinColor,
+          seed: [...a.id].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 9973, 7),
+        }));
+      const scene3d = buildTianguisScene3D({ visitantes });
+      scene3d.group.userData = { macro: "tianguis" };
+      return scene3d;
+    }
+
+    if (macro === "santuario") {
+      const { buildSantuarioScene3D } = await import("@/components/world3d/SantuarioScene3D");
+      const scene3d = buildSantuarioScene3D();
+      scene3d.group.userData = { macro: "santuario" };
+
+      if (caveStatusRef.current) scene3d.setCaveStatus(caveStatusRef.current);
+      if (decoracionesRef.current) scene3d.setDecoraciones(decoracionesRef.current);
+      scene3d.setAxolotitos(axolotitosRef.current);
+      scene3d.setAmigos(amigosRef.current);
+
+      return scene3d;
+    }
+
+    // piramide (y fallback)
+    const { buildPiramideScene3D } = await import("@/components/world3d/PiramideScene3D");
+    const scene3d = buildPiramideScene3D();
+    scene3d.group.userData = { macro: "piramide" };
+
+    scene3d.setPodio(podioRef.current);
+    scene3d.setAxolotitos(axolotitosRef.current);
+
+    return scene3d;
+  };
+
+  /** Navega a una macrozona con cortina de papel. */
+  const navigateToMacro = async (macro: string) => {
+    const current = scene3dRef.current?.group.userData?.macro as string | undefined;
+    if (current === macro) return;
+
+    const curtain = curtainRef.current;
+    if (!curtain) {
+      // Sin cortina (primera carga): construir y montar directo.
+      const scene3d = await buildSceneForMacro(macro);
+      scene3dRef.current = scene3d;
+      engine3dRef.current?.setScene(scene3d);
+      return;
+    }
+
+    await curtain.cover();
+    const scene3d = await buildSceneForMacro(macro);
+    scene3dRef.current = scene3d;
+    engine3dRef.current?.setScene(scene3d);
+    await curtain.reveal();
+  };
+
+  // Montaje del motor 3D (única vez).
   useEffect(() => {
-    if (!PAPER_WORLD_ENABLED || !hostRef.current) return;
+    if (!host3dRef.current) return;
     let cancelled = false;
 
     (async () => {
-      const [
-        { WorldEngine },
-        { ZoneManager },
-        { SantuarioScene },
-        { TianguisScene },
-        { PiramideScene },
-      ] = await Promise.all([
-        import("./engine/WorldEngine"),
-        import("./zones/ZoneManager"),
-        import("./zones/santuario/SantuarioScene"),
-        import("./zones/tianguis/TianguisScene"),
-        import("./zones/piramide/PiramideScene"),
-      ]);
-      if (cancelled || !hostRef.current) return;
+      const { ThreeWorldEngine } = await import("@/components/world3d/ThreeWorldEngine");
+      if (cancelled || !host3dRef.current) return;
 
-      const engine = await WorldEngine.create(hostRef.current);
-      if (cancelled) {
-        engine.destroy();
-        return;
-      }
-      const zones = new ZoneManager(engine);
-      // Dioramas reales (la Pirámide sigue placeholder hasta Fase 2b).
-      zones.registerBuilder("santuario", (e) => {
-        const scene = new SantuarioScene(e);
-        santuarioRef.current = scene;
-        if (caveStatusRef.current) scene.setCaveStatus(caveStatusRef.current);
-        if (decoracionesRef.current) scene.setDecoraciones(decoracionesRef.current);
-        scene.setAxolotitos(axolotitosRef.current);
-        scene.setAmigos(amigosRef.current);
-        return scene;
-      });
-      zones.registerBuilder("tianguis", (e) => {
-        const scene = new TianguisScene(e);
-        tianguisRef.current = scene;
-        return scene;
-      });
-      zones.registerBuilder("piramide", (e) => {
-        const scene = new PiramideScene(e);
-        piramideRef.current = scene;
-        scene.setPodio(podioRef.current);
-        return scene;
-      });
-      engine.bridge.on("hotspot", ({ kind, id }) => {
-        onStallClickRef.current?.(id ? `${kind}:${id}` : kind);
-      });
-
-      // Zonas migradas al diorama 3D: swap de canvas bajo la cortina.
-      if (WORLD3D_ENABLED) {
-        const setWorld3DActive = async (active: boolean, macro: string) => {
-          const host3d = host3dRef.current;
-          const hostPixi = hostRef.current;
-          if (!host3d || !hostPixi) return;
-
-          if (active) {
-            if (active3dRef.current && scene3dRef.current && scene3dRef.current.group.userData?.macro === macro) {
-              return;
-            }
-            active3dRef.current = true;
-
-            if (!engine3dRef.current) {
-              const { ThreeWorldEngine } = await import("@/components/world3d/ThreeWorldEngine");
-              engine3dRef.current = ThreeWorldEngine.create(host3d);
-              engine3dRef.current.onHotspot = (stallId) => {
-                if (stallId.startsWith("trajinera:")) {
-                  const friendId = stallId.slice("trajinera:".length);
-                  if (scene3dRef.current && "toggleActionBubbles" in scene3dRef.current) {
-                    (scene3dRef.current as any).toggleActionBubbles(friendId);
-                  }
-                  return;
-                }
-                onStallClickRef.current?.(stallId);
-              };
-            }
-
-            const { configurePaperStyle } = await import("@/components/world3d/paperPrimitives");
-            configurePaperStyle({ grain: engine3dRef.current.quality !== "ligera" });
-
-            if (macro === "tianguis") {
-              const { buildTianguisScene3D } = await import("@/components/world3d/TianguisScene3D");
-              if (cancelled || !active3dRef.current) return;
-              const visitantes = axolotitosRef.current
-                .filter((a) => !a.isEgg)
-                .slice(0, 4)
-                .map((a) => ({
-                  skinColor: a.skinColor,
-                  seed: [...a.id].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 9973, 7),
-                }));
-              const scene3d = buildTianguisScene3D({ visitantes });
-              scene3d.group.userData = { macro: "tianguis" };
-              scene3dRef.current = scene3d;
-              engine3dRef.current.setScene(scene3d);
-            } else if (macro === "santuario") {
-              const { buildSantuarioScene3D } = await import("@/components/world3d/SantuarioScene3D");
-              if (cancelled || !active3dRef.current) return;
-              const scene3d = buildSantuarioScene3D();
-              scene3d.group.userData = { macro: "santuario" };
-              scene3dRef.current = scene3d;
-
-              if (caveStatusRef.current) scene3d.setCaveStatus(caveStatusRef.current);
-              if (decoracionesRef.current) scene3d.setDecoraciones(decoracionesRef.current);
-              scene3d.setAxolotitos(axolotitosRef.current);
-              scene3d.setAmigos(amigosRef.current);
-
-              engine3dRef.current.setScene(scene3d);
-            } else if (macro === "piramide") {
-              const { buildPiramideScene3D } = await import("@/components/world3d/PiramideScene3D");
-              if (cancelled || !active3dRef.current) return;
-              const scene3d = buildPiramideScene3D();
-              scene3d.group.userData = { macro: "piramide" };
-              scene3dRef.current = scene3d;
-
-              scene3d.setPodio(podioRef.current);
-              scene3d.setAxolotitos(axolotitosRef.current);
-
-              engine3dRef.current.setScene(scene3d);
-            }
-
-            host3d.style.display = "";
-            hostPixi.style.display = "none";
-            engine3dRef.current.setUiPaused(false);
-            engine.setUiPaused(true);
-          } else {
-            if (!active3dRef.current) return;
-            active3dRef.current = false;
-            engine3dRef.current?.setUiPaused(true);
-            engine3dRef.current?.clearScene();
-            scene3dRef.current = null;
-            host3d.style.display = "none";
-            hostPixi.style.display = "";
-            hostPixi.style.opacity = "1";
-            engine.setUiPaused(false);
+      const engine = ThreeWorldEngine.create(host3dRef.current);
+      engine.onHotspot = (stallId) => {
+        if (stallId.startsWith("trajinera:")) {
+          const friendId = stallId.slice("trajinera:".length);
+          if (scene3dRef.current && "toggleActionBubbles" in scene3dRef.current) {
+            (scene3dRef.current as any).toggleActionBubbles(friendId);
           }
-        };
-        engine.bridge.on("zoneSettled", ({ macro }) => {
-          void setWorld3DActive(macro === "tianguis" || macro === "santuario" || macro === "piramide", macro).catch((err) =>
-            console.error("World3D: error montando la escena", err),
-          );
-        });
-      }
+          return;
+        }
+        onStallClickRef.current?.(stallId);
+      };
 
-      engineRef.current = engine;
-      zonesRef.current = zones;
-      await zones.enter(initialZone);
+      engine3dRef.current = engine;
+
+      // Construir escena inicial.
+      const initialMacro = zoneToMacro(initialZone);
+      const scene3d = await buildSceneForMacro(initialMacro);
+      scene3dRef.current = scene3d;
+      engine.setScene(scene3d);
     })().catch((err) => {
-      console.error("PaperWorld: error inicializando el motor", err);
+      console.error("GameCanvas: error inicializando el motor 3D", err);
     });
 
     return () => {
       cancelled = true;
-      zonesRef.current?.destroy();
-      zonesRef.current = null;
-      engineRef.current?.destroy();
-      engineRef.current = null;
-      active3dRef.current = false;
       scene3dRef.current = null;
       engine3dRef.current?.destroy();
       engine3dRef.current = null;
     };
-    // initialZone solo aplica al primer mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (PAPER_WORLD_ENABLED) {
-    return (
-      <>
-        <div
-          ref={hostRef}
-          className="fixed inset-0 z-0"
-          style={{
-            opacity: (WORLD3D_ENABLED && initialZone === "tianguis") ? 0 : 1,
-            transition: "opacity 0.2s ease-in-out",
-          }}
-          aria-hidden
-        />
-        {WORLD3D_ENABLED && (
-          <div ref={host3dRef} className="fixed inset-0 z-0" style={{ display: "none" }} aria-hidden>
-            {/* Viñeta del diorama (mismo encuadre que el prototipo aprobado) */}
-            <div
-              className="pointer-events-none absolute inset-0 z-10"
-              style={{
-                background:
-                  "radial-gradient(ellipse 105% 88% at 50% 42%, transparent 58%, rgba(16, 8, 36, 0.55) 100%)",
-              }}
-            />
-
-            {/* CSS animations block */}
-            <style>{`
-              @keyframes sway {
-                0% { transform: rotate(-3deg); }
-                100% { transform: rotate(3deg); }
-              }
-            `}</style>
-
-            {/* Guirnalda de Papel Picado (Top Border) */}
-            <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none flex justify-center gap-0.5 overflow-hidden h-20 px-2 select-none">
-              {Array.from({ length: 24 }).map((_, i) => {
-                const colors = ["#e04a7a", "#2fb8b0", "#e8893a", "#f2c23e", "#f08aac", "#6cc06a"];
-                const color = colors[i % colors.length];
-                const delay = (i * 0.12).toFixed(2);
-                return (
-                  <svg
-                    key={i}
-                    width="54"
-                    height="68"
-                    viewBox="0 0 60 76"
-                    className="flex-shrink-0 drop-shadow-sm"
-                    style={{
-                      fill: color,
-                      transformOrigin: "top center",
-                      animation: "sway 2.5s ease-in-out infinite alternate",
-                      animationDelay: `${delay}s`,
-                    }}
-                  >
-                    <path
-                      d="M 0 8 H 60 V 68 L 50 58 L 40 68 L 30 58 L 20 68 L 10 58 L 0 68 Z M 30 20 L 42 32 L 30 44 L 18 32 Z M 15 16 L 19 20 L 15 24 L 11 20 Z M 45 16 L 49 20 L 45 24 L 41 20 Z M 15 42 L 19 46 L 15 50 L 11 46 Z M 45 42 L 49 46 L 45 50 L 41 46 Z"
-                      fillRule="evenodd"
-                    />
-                  </svg>
-                );
-              })}
-            </div>
-
-          </div>
-        )}
-        <PaperCurtain ref={curtainRef} />
-      </>
-    );
-  }
-
-  // ── Comportamiento stub original (flag apagado) ────────────────────────
-  if (!visible) return null;
-
   return (
-    <div className="fixed inset-0 z-0 pointer-events-none" style={{ background: "transparent" }}>
-      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 flex gap-3 pointer-events-auto">
-        {ZONES.map((z) => (
-          <button
-            key={z.id}
-            onClick={() => onZoneClick?.(z.id)}
-            className={`
-              px-3 py-2 rounded-xl text-xs font-bold transition-all
-              border border-white/10 bg-black/40 backdrop-blur-sm
-              hover:bg-white/10 hover:border-white/20
-              ${z.id === initialZone ? "ring-2 ring-[#E4007C]/50 border-[#E4007C]/30" : ""}
-            `}
-          >
-            <span className="mr-1">{z.emoji}</span>
-            {z.label}
-          </button>
-        ))}
+    <>
+      <div ref={host3dRef} className="fixed inset-0 z-0" aria-hidden>
+        {/* Viñeta del diorama */}
+        <div
+          className="pointer-events-none absolute inset-0 z-10"
+          style={{
+            background:
+              "radial-gradient(ellipse 105% 88% at 50% 42%, transparent 58%, rgba(16, 8, 36, 0.55) 100%)",
+          }}
+        />
+
+        {/* CSS animations */}
+        <style>{`
+          @keyframes sway {
+            0% { transform: rotate(-3deg); }
+            100% { transform: rotate(3deg); }
+          }
+        `}</style>
+
+        {/* Guirnalda de Papel Picado (Top Border) */}
+        <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none flex justify-center gap-0.5 overflow-hidden h-20 px-2 select-none">
+          {Array.from({ length: 24 }).map((_, i) => {
+            const colors = ["#e04a7a", "#2fb8b0", "#e8893a", "#f2c23e", "#f08aac", "#6cc06a"];
+            const color = colors[i % colors.length];
+            const delay = (i * 0.12).toFixed(2);
+            return (
+              <svg
+                key={i}
+                width="54"
+                height="68"
+                viewBox="0 0 60 76"
+                className="flex-shrink-0 drop-shadow-sm"
+                style={{
+                  fill: color,
+                  transformOrigin: "top center",
+                  animation: "sway 2.5s ease-in-out infinite alternate",
+                  animationDelay: `${delay}s`,
+                }}
+              >
+                <path
+                  d="M 0 8 H 60 V 68 L 50 58 L 40 68 L 30 58 L 20 68 L 10 58 L 0 68 Z M 30 20 L 42 32 L 30 44 L 18 32 Z M 15 16 L 19 20 L 15 24 L 11 20 Z M 45 16 L 49 20 L 45 24 L 41 20 Z M 15 42 L 19 46 L 15 50 L 11 46 Z M 45 42 L 49 46 L 45 50 L 41 46 Z"
+                  fillRule="evenodd"
+                />
+              </svg>
+            );
+          })}
+        </div>
       </div>
-    </div>
+      <PaperCurtain ref={curtainRef} />
+    </>
   );
 });
 

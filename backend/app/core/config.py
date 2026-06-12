@@ -191,6 +191,25 @@ class Settings(BaseSettings):
     CHAOS_SIMULATION_REPORT_PATH: str = "/app/chaos_simulation_report.txt"
     CHAOS_SIMULATION_PROGRESS_PATH: str = "/app/chaos_simulation_progress.log"
 
+    # ── El Reciclón — economía de reciclaje de cartas ─────────────────────────
+    # Tickets obtenidos al reciclar 1 carta duplicada (según rareza).
+    # Ratio 5:1 — reciclar 5 de una rareza da justo para comprar 1 de esa misma.
+    RECYCLE_TICKETS_COMMON: int = 3
+    RECYCLE_TICKETS_RARE: int = 9
+    RECYCLE_TICKETS_EPIC: int = 30
+    RECYCLE_TICKETS_LEGENDARY: int = 100
+    # Costo en tickets para canjear 1 carta específica del catálogo.
+    REDEEM_COST_COMMON: int = 15
+    REDEEM_COST_RARE: int = 45
+    REDEEM_COST_EPIC: int = 150
+    REDEEM_COST_LEGENDARY: int = 500
+    # Dirección del ReciclonVault — contrato de custodia para cartas recicladas.
+    # Si está vacío, las cartas recicladas solo se borran de la DB (sin on-chain).
+    RECICLON_VAULT_ADDRESS: str = ""
+    # Feature flag: activa operaciones on-chain en El Reciclón (transferCard al vault).
+    # False = solo DB (default). True = enqueua ChainOutbox para transferir cartas al vault.
+    RECICLON_ONCHAIN_ENABLED: bool = False
+
     # ── Dev Corcholata Auto-Reward ────────────────────────────────────────────
     # Movido a backend/app/api/v1/endpoints/dev.py como constantes del módulo.
     # Importar desde ahí si se necesita en modo local:

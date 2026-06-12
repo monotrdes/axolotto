@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { API_BASE } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
-import type { DecoracionesData } from "@/components/world/zones/santuario/SantuarioScene";
+import type { DecoracionesData } from "@/components/world/zones/santuario/santuarioTypes";
 
 /**
  * Panel de decoración del mundo papel picado (plan task-84): se abre al tocar

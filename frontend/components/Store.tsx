@@ -3,7 +3,7 @@ import React from 'react';
 import { useStore } from '@/hooks/useStore';
 import OfficialTab from '@/components/store/OfficialTab';
 import MarketTab from '@/components/store/MarketTab';
-import CardMelter from '@/components/CardMelter';
+import ReciclonPanel from '@/components/ReciclonPanel';
 import UnboxingModal from '@/components/ui/UnboxingModal';
 import UnboxingFlow from '@/components/store/UnboxingFlow';
 import StoreHeader from '@/components/store/StoreHeader';
@@ -19,12 +19,11 @@ export default function AxolottoStore({
   recargarSaldos,
   initialSection,
   sectionNonce,
-  onMeltSuccess,
 }: StoreProps) {
   const store = useStore({ userId, token, recargarSaldos, cambiarTab });
 
   // Mundo papel picado: el puesto tocado en el diorama abre su sección
-  // (forja→melter, trajineras→market, puestos→official).
+  // (forja→reciclon, trajineras→market, puestos→official).
   React.useEffect(() => {
     if (initialSection) store.setStoreTab(initialSection);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -39,7 +38,7 @@ export default function AxolottoStore({
   }
 
   const handleBack = () => {
-    if (store.storeTab === 'market' || store.storeTab === 'melter') {
+    if (store.storeTab === 'market' || store.storeTab === 'reciclon') {
       store.setStoreTab('official');
     } else {
       cambiarTab('jugar');
@@ -78,16 +77,13 @@ export default function AxolottoStore({
         />
       )}
 
-      {store.storeTab === 'melter' && (
+      {store.storeTab === 'reciclon' && (
         <div className="animate-in fade-in duration-300">
-          <CardMelter
+          <ReciclonPanel
             userId={userId}
             token={token}
             recargarSaldos={recargarSaldos}
-            balances={balances}
             onBack={() => store.setStoreTab('official')}
-            onNavigateToMarket={() => store.setStoreTab('market')}
-            onMeltSuccess={onMeltSuccess}
           />
         </div>
       )}

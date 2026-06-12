@@ -604,3 +604,43 @@ def forge_card_endpoint(
 ):
     """Forjar una carta específica consumiendo fragmentos de su rareza y FRJ."""
     return forge_card(session, verified_user_id, request.target_card_id)
+
+
+# ── El Reciclon ─────────────────────────────────────────────────────────
+
+
+class RecycleItem(BaseModel):
+    card_id: int
+    quantity: int = 1
+    is_first_edition: bool = False
+
+
+class RecycleCardsRequest(BaseModel):
+    items: list[RecycleItem]
+
+
+class RedeemTicketsRequest(BaseModel):
+    target_card_id: int
+
+
+@router.post("/reciclon/recycle")
+def recycle_cards_endpoint(
+    request: RecycleCardsRequest,
+    session: Session = Depends(get_session),
+    verified_user_id: str = Depends(verify_no_active_game),
+):
+    """Recicla cartas duplicadas para obtener Tickets de Reciclon. Sin costo de FRJ."""
+    from app.services.reciclon_service import recycle_cards
+    items = [item.model_dump() for item in request.items]
+    return recycle_cards(session, verified_user_id, items)
+
+
+@router.post("/reciclon/redeem")
+def redeem_tickets_endpoint(
+    request: RedeemTicketsRequest,
+    session: Session = Depends(get_session),
+    verified_user_id: str = Depends(verify_no_active_game),
+):
+    """Canjea Tickets de Reciclon por una carta especifica del catalogo."""
+    from app.services.reciclon_service import redeem_ticket
+    return redeem_ticket(session, verified_user_id, request.target_card_id)

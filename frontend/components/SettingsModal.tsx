@@ -5,7 +5,7 @@ import { usePWAInstall } from '@/hooks/usePWAInstall';
 import { X, Volume2, VolumeX, Download, Share, PlusSquare, HelpCircle, LogOut, Monitor } from 'lucide-react';
 import { playPurchaseSound } from '@/lib/audioUtils';
 import { PAPER_WORLD } from '@/lib/paperWorld';
-import type { QualityTier } from '@/components/world/engine/qualityTier';
+import type { QualityTier } from '@/components/world3d/qualityTier';
 
 const QUALITY_STORAGE_KEY = 'axolotto_world_quality';
 

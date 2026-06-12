@@ -12,7 +12,7 @@ interface OfficialTabProps {
   token: string | null;
   recargarSaldos: () => void;
   cambiarTab: (tab: string) => void;
-  setStoreTab: (tab: 'official' | 'market' | 'melter') => void;
+  setStoreTab: (tab: 'official' | 'market' | 'reciclon') => void;
   setSobresDrawerAbierto: (v: boolean) => void;
   sobresDrawerAbierto: boolean;
   setWebitosDrawerAbierto: (v: boolean) => void;
@@ -224,26 +224,26 @@ export default function OfficialTab({
 
         {/* ROW 3: EL CENOTE MÍSTICO */}
         <button
-          onClick={() => setStoreTab('melter')}
-          className="w-full text-left bg-gradient-to-r from-slate-950 via-purple-950/20 to-slate-950 hover:via-purple-950/40 border border-purple-500/20 hover:border-purple-500/50 rounded-3xl p-4 flex items-center justify-between transition-all duration-300 group shadow-[0_0_20px_rgba(0,0,0,0.4)] active:scale-[0.98] cursor-pointer"
+          onClick={() => setStoreTab('reciclon')}
+          className="w-full text-left bg-gradient-to-r from-slate-950 via-emerald-950/20 to-slate-950 hover:via-emerald-950/40 border border-emerald-500/20 hover:border-emerald-500/50 rounded-3xl p-4 flex items-center justify-between transition-all duration-300 group shadow-[0_0_20px_rgba(0,0,0,0.4)] active:scale-[0.98] cursor-pointer"
         >
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300 shrink-0">
-              🌊
+            <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-300 shrink-0">
+              ♻️
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h4 className="text-lg sm:text-xl font-black italic uppercase text-white tracking-tight leading-none mb-1">
-                  El Cenote Místico
+                  El Reciclón
                 </h4>
-                <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white font-black text-[8px] tracking-wider px-2 py-0.5 rounded-full shadow-md uppercase">
+                <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-[8px] tracking-wider px-2 py-0.5 rounded-full shadow-md uppercase">
                   NUEVO
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Funde duplicados y forja cartas</p>
+              <p className="text-xs text-slate-400">Recicla duplicados por cartas</p>
             </div>
           </div>
-          <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-all">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-all">
             <ChevronRight size={16} />
           </div>
         </button>

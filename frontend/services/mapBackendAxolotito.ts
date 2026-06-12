@@ -1,4 +1,4 @@
-import type { AxolotitoData } from "./entities/AxolotitoSprite";
+import type { AxolotitoData } from "@/types/axolotito";
 
 /**
  * Mapea el row crudo del backend (GET /auth/axolotitos/{userId} — modelo

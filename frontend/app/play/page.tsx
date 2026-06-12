@@ -21,8 +21,7 @@ import SettingsModal from "@/components/SettingsModal";
 import HostingSetupModal from "@/components/HostingSetupModal";
 import { GameCanvas } from "@/components/world/GameCanvas";
 import type { GameCanvasHandle } from "@/components/world/GameCanvas";
-import type { WorldScene } from "@/components/world/WorldScene";
-import type { AxolotitoData } from "@/components/world/entities/AxolotitoSprite";
+import type { AxolotitoData } from "@/types/axolotito";
 import { DecorSlotPanel } from "@/components/world/hud/DecorSlotPanel";
 import { MochilaFloating } from "@/components/world/hud/MochilaFloating";
 import LunarFloating from "@/components/world/hud/LunarFloating";
@@ -32,7 +31,6 @@ import { TutorialFlow } from "@/components/tutorial/TutorialFlow";
 import TutorialResetButton from "@/components/dev/TutorialResetButton";
 import VipChip from "@/components/play/VipChip";
 import WorldOrbs from "@/components/play/WorldOrbs";
-import ZoneDock from "@/components/play/ZoneDock";
 import ZoneDockMacro from "@/components/play/ZoneDockMacro";
 import { fetchAxolotitos, fetchIncubaciones, fetchCaveStatus } from "@/services/santuarioService";
 import {
@@ -43,36 +41,13 @@ import {
   type BackendAxolotito,
   type BackendIncubation,
   type BackendFriendInfo,
-} from "@/components/world/mapBackendAxolotito";
+} from "@/services/mapBackendAxolotito";
 import type { TabId, OnboardingPhase, SyncData } from '@/types/play';
 import type { MochilaTab } from '@/types/inventory';
 
 // Legacy tab IDs 'criadero'/'axolotitos' kept for backwards compat — redirect to santuario
 
-// Mundo papel picado (plan task-84): con flag se usa el dock de 3 macrozonas.
-const PAPER_WORLD = process.env.NEXT_PUBLIC_PAPER_WORLD === "1";
-
-// Etiquetas del botón "abrir panel" del mundo papel picado
-const PANEL_LABELS: Partial<Record<TabId, string>> = {
-  tienda: 'Abrir Tienda',
-  jugar: 'Abrir Salas',
-  rankings: 'Ver Rankings',
-  gashapon: 'Abrir Cápsulas',
-  santuario: 'Gestionar Nido',
-  criadero: 'Gestionar Nido',
-  axolotitos: 'Gestionar Nido',
-  amigos: 'Abrir Amigos',
-  mochila: 'Abrir Mochila',
-  cartas: 'Abrir Mochila',
-  tablas: 'Abrir Mochila',
-};
-
-// New 3-zone dock matching the paper world
-const ZONE_TABS = [
-  { id: 'santuario' as TabId, label: 'Nido',     emoji: '🪺', color: '#E4007C', glow: 'rgba(228,0,124,0.5)',   zone: 'nido' },
-  { id: 'tienda'    as TabId, label: 'Tianguis',  emoji: '🏪', color: '#FF6B35', glow: 'rgba(255,107,53,0.5)',  zone: 'tianguis' },
-  { id: 'rankings'  as TabId, label: 'Pirámide',  emoji: '🏆', color: '#FBBF24', glow: 'rgba(251,191,36,0.5)',  zone: 'piramide' },
-] as const;
+// Mundo 3D always-on: se usa el dock de 3 macrozonas.
 
 export default function Home() {
   const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
@@ -82,7 +57,7 @@ export default function Home() {
   const [tabActiva, setTabActiva]         = useState<TabId>('tienda');
   // Mundo papel picado: los paneles HTML viven ocultos y se abren como overlay
   // (hotspots del diorama o botón 📜). Sin flag siempre visibles (legacy).
-  const [panelVisible, setPanelVisible]   = useState(!PAPER_WORLD);
+  const [panelVisible, setPanelVisible]   = useState(true);
   // Sección del Store a abrir según el puesto tocado en el Tianguis
   const [storeSection, setStoreSection]   = useState<'official' | 'reciclon' | 'market' | undefined>(undefined);
   const [storeSectionNonce, setStoreSectionNonce] = useState(0);
@@ -174,7 +149,6 @@ export default function Home() {
   const [vipModalOpen, setVipModalOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [tickerFeed, setTickerFeed]     = useState<any[]>([]);
-  const worldSceneRef = useRef<WorldScene | null>(null);
   const gameCanvasRef = useRef<GameCanvasHandle | null>(null);
   // GameCanvas solo se monta con datosBanco + onboarding terminado: los fetch
   // del mundo deben esperar a que exista o sus set* caen al vacío.
@@ -214,7 +188,7 @@ export default function Home() {
     })
       .then(res => {
         setDailyClaimAvailable(res.data?.can_claim === true);
-        if (PAPER_WORLD && res.data?.lunar_week) {
+        if (res.data?.lunar_week) {
           gameCanvasRef.current?.setLunarPhase?.(res.data.lunar_week);
         }
       })
@@ -229,7 +203,7 @@ export default function Home() {
   // Mundo papel picado: los axolotitos reales viven en /auth/axolotitos/{userId},
   // no en el payload de /auth/sync — cargarlos directo para el canvas.
   useEffect(() => {
-    if (!PAPER_WORLD || !canvasReady || !accessToken || !user?.id) return;
+    if (!canvasReady || !accessToken || !user?.id) return;
     let cancelled = false;
     Promise.all([
       fetchAxolotitos(user.id, accessToken),
@@ -254,7 +228,7 @@ export default function Home() {
 
   // Mundo papel picado: amigos para el embarcadero del Santuario.
   useEffect(() => {
-    if (!PAPER_WORLD || !canvasReady || !accessToken) return;
+    if (!canvasReady || !accessToken) return;
     let cancelled = false;
     axios
       .get(`${API_BASE}/social/friends`, { headers: { Authorization: `Bearer ${accessToken}` } })
@@ -272,7 +246,7 @@ export default function Home() {
 
   // Mundo papel picado: resetear zoom/enfoque de cámara al cerrar los paneles overlay (Fase 2).
   useEffect(() => {
-    if (!PAPER_WORLD || !canvasReady) return;
+    if (!canvasReady) return;
     if (!panelVisible) {
       gameCanvasRef.current?.resetFocus?.();
     }
@@ -281,7 +255,7 @@ export default function Home() {
   // Mundo papel picado: estado de la cueva (nivel/spots/mesa) → nidos
   // dinámicos del diorama; de paso cachea los asientos para hostear.
   useEffect(() => {
-    if (!PAPER_WORLD || !canvasReady || !accessToken || !user?.id) return;
+    if (!canvasReady || !accessToken || !user?.id) return;
     let cancelled = false;
     fetchCaveStatus(user.id, accessToken)
       .then((d) => {
@@ -302,7 +276,7 @@ export default function Home() {
 
   // Mundo papel picado: decoraciones equipadas + layout de slots → sala del diorama.
   useEffect(() => {
-    if (!PAPER_WORLD || !canvasReady || !accessToken) return;
+    if (!canvasReady || !accessToken) return;
     let cancelled = false;
     axios
       .get(`${API_BASE}/cave/decorations`, {
@@ -320,7 +294,7 @@ export default function Home() {
 
   // Mundo papel picado: top-3 del ranking para el podio de la Pirámide (endpoint público).
   useEffect(() => {
-    if (!PAPER_WORLD || !canvasReady) return;
+    if (!canvasReady) return;
     let cancelled = false;
     axios
       .get(`${API_BASE}/ranking/axolotitos?sort_by=level&limit=3`)
@@ -689,32 +663,8 @@ export default function Home() {
           {/* ── 2.5D Paper World background ──────────────────────────── */}
           <GameCanvas
             ref={gameCanvasRef}
-            onReady={(_app, scene) => {
-              worldSceneRef.current = scene;
+            onReady={() => {
               setCanvasReady(true);
-            }}
-            onZoneClick={(zoneId) => {
-              if (isGameLocked) {
-                setTabBlocked(true);
-                return;
-              }
-              const zoneToTab: Record<string, TabId> = {
-                nido: "santuario",
-                tianguis: "tienda",
-                sala: "jugar",
-                piramide: "rankings",
-                capsulas: "gashapon",
-              };
-              const tab = zoneToTab[zoneId];
-              if (tab) setTabActiva(tab);
-            }}
-            onAxolotitoClick={(_axoId: string) => {
-              if (isGameLocked) {
-                setTabBlocked(true);
-                return;
-              }
-              setTabActiva("santuario");
-              setPanelVisible(true);
             }}
             onStallClick={(stallType) => {
               if (isGameLocked) {
@@ -723,13 +673,12 @@ export default function Home() {
               }
               // Hotspots del diorama → abrir el panel HTML correspondiente
               if (stallType.startsWith("decor:")) {
-                // Slot de decoración de la sala → panel filtrado a su categoría
                 setDecorSlotId(stallType.slice("decor:".length));
-                return; // panel sobre el mundo, sin abrir pergamino
+                return;
               }
               if (stallType.startsWith("nido-")) {
                 const parts = stallType.split(":");
-                const kind = parts[0]; // nido-huevo, nido-axo, nido-vacio, nido-bloqueado
+                const kind = parts[0];
                 const id = parts[1];
                 if (kind === "nido-bloqueado") {
                   toast.info("Este nido sigue enterrado — expande tu cueva para excavarlo 🪨");
@@ -747,11 +696,9 @@ export default function Home() {
                 return;
               }
               if (stallType === "mesa-amigos") {
-                // Mesa del Santuario: hostear sala para jugar con amigos
                 void abrirHostingMundo(null);
-                return; // modal sobre el mundo, sin abrir panel
+                return;
               } else if (stallType.startsWith("amigo-")) {
-                // Burbujas de la trajinerita: "amigo-<accion>:<friendId>"
                 const [accion, amigoId] = stallType.split(":");
                 if (!amigoId) return;
                 if (accion === "amigo-like") {
@@ -761,19 +708,17 @@ export default function Home() {
                     })
                     .then((res) => toast.ok(res.data?.message || "❤️ Like enviado"))
                     .catch((e) => toast.error(e.response?.data?.detail || "Error al dar like"));
-                  return; // el like se queda en el mundo, sin abrir panel
+                  return;
                 }
                 if (accion === "amigo-visita") {
                   setVisitaAmigoId(amigoId);
                   setTabActiva("amigos");
                 } else {
-                  // amigo-invita → hostear sala con el amigo preseleccionado
                   const amigo = amigosData.find((a) => a.id === amigoId);
                   void abrirHostingMundo(amigo?.nickname ?? null);
-                  return; // modal sobre el mundo, sin abrir panel
+                  return;
                 }
               } else if (stallType === "canasta-amigos") {
-                // Canasta de mimbre → pergamino de amigos (4 sub-tabs)
                 setTabActiva("amigos");
               } else if (stallType === "podio") {
                 setTabActiva("rankings");
@@ -782,12 +727,10 @@ export default function Home() {
               } else if (stallType === "salas") {
                 setTabActiva("jugar");
               } else if (stallType === "fountain") {
-                // Fuente-banco: conversión FRJ↔AXF
                 setTabActiva("tienda");
                 setOpenBancoCount((c) => c + 1);
                 gameCanvasRef.current?.focusStall?.("fountain");
               } else {
-                // Puestos del Tianguis → tienda en su sección
                 const seccion =
                   stallType === "forja" ? "reciclon" : stallType === "p2p" ? "market" : "official";
                 setStoreSection(seccion);
@@ -797,8 +740,7 @@ export default function Home() {
               }
               setPanelVisible(true);
             }}
-            visible={false}
-            initialZone={PAPER_WORLD ? "tianguis" : "nido"}
+            initialZone="tianguis"
           />
 
           {/* HUD TOP BAR — brand (desktop only) → tokens → VIP → settings */}
@@ -979,7 +921,7 @@ export default function Home() {
               pointer-events-none para que los taps lleguen al diorama. */}
           <main
             className={`relative z-10 ${tickerFeed.length > 0 ? 'pt-20' : 'pt-14'} pb-20 min-h-screen ${
-              PAPER_WORLD && !panelVisible ? 'pointer-events-none' : ''
+              !panelVisible ? 'pointer-events-none' : ''
             }`}
           >
             {/* Tab-lock banner */}
@@ -988,7 +930,7 @@ export default function Home() {
                 🔒 Termina tu partida actual antes de cambiar de zona
               </div>
             )}
-            {(!PAPER_WORLD || panelVisible) && (
+            {panelVisible && (
             <div key={tabActiva} className="max-w-5xl mx-auto px-3 sm:px-6 py-4 animate-tab-fade">
               {tabActiva === 'tienda' && (
                 <AxolottoStore
@@ -1051,19 +993,17 @@ export default function Home() {
             )}
           </main>
 
-          {/* Mundo papel picado: botón flotante para abrir/cerrar el panel de la zona */}
-          {PAPER_WORLD && (
-            <button
-              onClick={() => setPanelVisible((v) => !v)}
-              className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-full text-sm font-bold border transition-all active:scale-95 ${
-                panelVisible
-                  ? 'bg-[#1C1C35]/90 text-gray-300 border-white/15 hover:border-white/40'
-                  : 'bg-[var(--papel-cempasuchil)] text-black border-transparent shadow-[0_0_18px_rgba(245,158,11,0.45)]'
-              }`}
-            >
-              {panelVisible ? '🌊 Ver mundo' : `📜 ${PANEL_LABELS[tabActiva] ?? 'Abrir panel'}`}
-            </button>
-          )}
+          {/* Botón flotante para abrir/cerrar el panel de la zona */}
+          <button
+            onClick={() => setPanelVisible((v) => !v)}
+            className={`fixed bottom-24 left-1/2 -translate-x-1/2 z-40 px-4 py-2 rounded-full text-sm font-bold border transition-all active:scale-95 ${
+              panelVisible
+                ? 'bg-[#1C1C35]/90 text-gray-300 border-white/15 hover:border-white/40'
+                : 'bg-[var(--papel-cempasuchil)] text-black border-transparent shadow-[0_0_18px_rgba(245,158,11,0.45)]'
+            }`}
+          >
+            {panelVisible ? '🌊 Ver mundo' : '📜 Abrir panel'}
+          </button>
 
           {/* Mochila flotante — abre el dashboard unificado en la sección seleccionada */}
           <MochilaFloating
@@ -1093,37 +1033,20 @@ export default function Home() {
             />
           )}
 
-          {/* BOTTOM DOCK — 3 macrozonas (flag) o 5 zonas legacy */}
-          {PAPER_WORLD ? (
-            <ZoneDockMacro
-              tabActiva={tabActiva}
-              dailyClaimAvailable={dailyClaimAvailable}
-              onNavigate={(tab, zone) => {
-                if (isGameLocked && tab !== 'jugar') {
-                  setTabBlocked(true);
-                  return;
-                }
-                setTabActiva(tab);
-                setPanelVisible(false); // navegar muestra el mundo limpio
-                gameCanvasRef.current?.navigateToZone(zone);
-              }}
-            />
-          ) : (
-            <ZoneDock
-              zoneTabs={ZONE_TABS}
-              tabActiva={tabActiva}
-              dailyClaimAvailable={dailyClaimAvailable}
-              gameSessionActive={isGameLocked}
-              onTabChange={(tab, zone) => {
-                if (isGameLocked && tab !== 'jugar') {
-                  setTabBlocked(true);
-                  return;
-                }
-                setTabActiva(tab);
-                gameCanvasRef.current?.navigateToZone(zone);
-              }}
-            />
-          )}
+          {/* BOTTOM DOCK — 3 macrozonas */}
+          <ZoneDockMacro
+            tabActiva={tabActiva}
+            dailyClaimAvailable={dailyClaimAvailable}
+            onNavigate={(tab, zone) => {
+              if (isGameLocked && tab !== 'jugar') {
+                setTabBlocked(true);
+                return;
+              }
+              setTabActiva(tab);
+              setPanelVisible(false);
+              gameCanvasRef.current?.navigateToZone(zone);
+            }}
+          />
         </>
       ) : authenticated ? (
         /* ── Authenticated but wallet data still loading ────────────────── */

@@ -51,6 +51,7 @@ def get_my_wallet(
         "user_id": wallet.user_id,
         "axofichas": axf_to_display(wallet.axofichas),
         "frijolitos": frj_to_display(wallet.frijolitos),
+        "tickets_reciclon": wallet.tickets_reciclon,
         "fragmentos": {
             "comunes": wallet.frag_comun,
             "raros": wallet.frag_raro,

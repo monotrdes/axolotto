@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>World3D harness — escena TS real</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #342b52; }
+  #host { position: fixed; inset: 0; }
+  /* Viñeta equivalente a la del prototipo aprobado (replicar en GameCanvas). */
+  #vignette {
+    position: fixed; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse 105% 88% at 50% 42%, transparent 58%, rgba(16, 8, 36, 0.55) 100%);
+  }
+</style>
+</head>
+<body>
+<div id="host"></div>
+<div id="vignette"></div>
+<script src="_world3d_bundle.js"></script>
+</body>
+</html>

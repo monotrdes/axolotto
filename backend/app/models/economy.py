@@ -17,6 +17,8 @@ class CurrencyType(str, Enum):
     FRAGMENTO_RARO = "frag_r"
     FRAGMENTO_EPICO = "frag_e"
     FRAGMENTO_LEGENDARIO = "frag_l"
+    # Tickets de El Reciclón
+    TICKET_RECICLON = "ticket_reciclon"
 
 class TransactionType(str, Enum):
     DEPOSIT = "deposit"          # Carga de saldo (Admin/SPEI)
@@ -28,6 +30,8 @@ class TransactionType(str, Enum):
     REWARD = "reward"            # Premio por jugar/retos
     BOOSTER_PURCHASE = "booster" # Compra de sobres
     CRAFTING = "crafting"        # Gasto de fragmentos para crear carta
+    RECICLON_RECYCLE = "reciclon_recycle"  # Recicló cartas duplicadas → tickets
+    RECICLON_REDEEM = "reciclon_redeem"    # Canjeó tickets → carta específica
     BURN = "burn"                # Quema de tokens (comisiones de plataforma)
     VIP_GAL_EXPIRED = "vip_gal_expired"  # GAL VIP que expiró sin reclamar
     F2P_REWARD = "f2p_reward"            # Micro-recompensa por ver partidas (jugador F2P)
@@ -40,6 +44,7 @@ class Wallet(SQLModel, table=True):
     __table_args__ = (
         CheckConstraint("axofichas >= 0", name="axofichas_non_negative"),
         CheckConstraint("frijolitos >= 0", name="frijolitos_non_negative"),
+        CheckConstraint("tickets_reciclon >= 0", name="tickets_reciclon_non_negative"),
     )
 
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -81,10 +86,14 @@ class Wallet(SQLModel, table=True):
         super().__init__(**data)
     
     # Fragmentos (Se guardan como enteros porque no hay "medio fragmento")
+    # DEPRECATED: El Reciclón reemplaza fragmentos por tickets_reciclon.
     frag_comun: int = Field(default=0)
     frag_raro: int = Field(default=0)
     frag_epico: int = Field(default=0)
     frag_legendario: int = Field(default=0)
+
+    # Tickets de El Reciclón — moneda única cross-rarity para reciclaje de cartas
+    tickets_reciclon: int = Field(default=0)
 
     last_updated: datetime = Field(default_factory=datetime.utcnow)
 

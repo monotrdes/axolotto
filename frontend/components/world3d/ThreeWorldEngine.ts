@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { detectQualityTier, TIER_PROFILE, type QualityTier } from "../world/engine/qualityTier";
+import { detectQualityTier, TIER_PROFILE, type QualityTier } from "./qualityTier";
 
 /**
  * Motor three.js del mundo-diorama 3D de papel (decisión 2026-06-12).
@@ -77,6 +77,18 @@ export class ThreeWorldEngine {
   private sunLight!: THREE.DirectionalLight;
   private bubbles?: THREE.Points;
   private bubbleData: Array<{ seed: number; speed: number }> = [];
+  private bubbleTexture!: THREE.Texture;
+  private dynamicBubbles: Array<{
+    sprite: THREE.Sprite;
+    vx: number;
+    vy: number;
+    vz: number;
+    life: number;
+    maxLife: number;
+    wobbleSpeed: number;
+    wobbleAmp: number;
+    seed: number;
+  }> = [];
 
   // Micro-interacciones: hover (solo desktop) y rebote de cartón al tocar.
   private hoverFine = false;
@@ -114,6 +126,7 @@ export class ThreeWorldEngine {
       ((e.clientX - rect.left) / rect.width) * 2 - 1,
       -((e.clientY - rect.top) / rect.height) * 2 + 1,
     );
+    this.spawnBubbleBurstAtNdc(ndc);
     const root = this.stallRootAt(ndc);
     if (root) {
       this.bounce(root);
@@ -134,6 +147,51 @@ export class ThreeWorldEngine {
       }
     }
     return null;
+  }
+
+  private spawnBubbleBurstAtNdc(ndc: THREE.Vector2): void {
+    if (!this.current) return;
+    this.raycaster.setFromCamera(ndc, this.camera);
+    const hits = this.raycaster.intersectObjects(this.scene.children, true);
+    if (hits.length > 0) {
+      this.spawnBubbleBurst(hits[0].point);
+    }
+  }
+
+  spawnBubbleBurst(pos: THREE.Vector3): void {
+    if (this.reducedMotion) return;
+    const count = this.quality === "alta" ? 10 : (this.quality === "media" ? 6 : 4);
+    for (let i = 0; i < count; i++) {
+      const mat = new THREE.SpriteMaterial({
+        map: this.bubbleTexture,
+        transparent: true,
+        opacity: 0.85,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      });
+      const sprite = new THREE.Sprite(mat);
+      const scale = 0.12 + Math.random() * 0.16;
+      sprite.scale.set(scale, scale, 1);
+      
+      sprite.position.copy(pos);
+      sprite.position.x += (Math.random() - 0.5) * 0.4;
+      sprite.position.y += Math.random() * 0.2;
+      sprite.position.z += (Math.random() - 0.5) * 0.4;
+      
+      this.scene.add(sprite);
+      
+      this.dynamicBubbles.push({
+        sprite,
+        vx: (Math.random() - 0.5) * 0.8,
+        vy: 1.2 + Math.random() * 1.0,
+        vz: (Math.random() - 0.5) * 0.8,
+        life: 1.0,
+        maxLife: 1.0 + Math.random() * 0.8,
+        wobbleSpeed: 5 + Math.random() * 6,
+        wobbleAmp: 0.1 + Math.random() * 0.15,
+        seed: Math.random() * 100,
+      });
+    }
   }
 
   private fxFor(obj: THREE.Object3D): { base: number; k: number; bounceStart: number } {
@@ -177,7 +235,7 @@ export class ThreeWorldEngine {
 
     // Neblina Xochimilco pre-hispánica cristalina (linear Fog).
     // Deja el primer plano totalmente claro y nítido (0% niebla), y desvanece suavemente el fondo.
-    this.scene.fog = new THREE.Fog(0x0f5a54, 30, 60);
+    this.scene.fog = new THREE.Fog(0x35bdae, 35, 72);
 
     // Gradiente de laguna de Xochimilco ancestral (aguas cristalinas y luminosas).
     const bg = document.createElement("canvas");
@@ -185,21 +243,21 @@ export class ThreeWorldEngine {
     bg.height = 256;
     const bgCtx = bg.getContext("2d")!;
     const grad = bgCtx.createLinearGradient(0, 256, 0, 0);
-    grad.addColorStop(0, "#0c3c3a");   // Profundidades cristalinas color esmeralda-azul
-    grad.addColorStop(0.4, "#0f5a54"); // Turquesa medio
-    grad.addColorStop(0.75, "#1fa394"); // Esmeralda transparente
-    grad.addColorStop(1, "#5ce1c9");    // Luz brillante filtrando por el agua
+    grad.addColorStop(0, "#104c48");   // Profundidades esmeralda claras
+    grad.addColorStop(0.4, "#1d7c76"); // Turquesa medio luminoso
+    grad.addColorStop(0.8, "#4bd1c5"); // Turquesa brillante
+    grad.addColorStop(1, "#ffe2c4");    // Resplandor cálido durazno (invita a quedarse, combina con colinas)
     bgCtx.fillStyle = grad;
     bgCtx.fillRect(0, 0, 4, 256);
     const bgTex = new THREE.CanvasTexture(bg);
     bgTex.colorSpace = THREE.SRGBColorSpace;
     this.scene.background = bgTex;
 
-    // Luces con tonalidad acuática brillante y mágica (bioluminiscencia turquesa).
-    this.ambientLight = new THREE.AmbientLight(0x40dfcc, 1.2);
+    // Luces con tonalidad cálida y clara (remueve el tinte verde pesado)
+    this.ambientLight = new THREE.AmbientLight(0xe3f9f6, 1.25);
     this.scene.add(this.ambientLight);
 
-    this.sunLight = new THREE.DirectionalLight(0xfff2d4, 1.9); // Sol cálido brillante cruzando el agua
+    this.sunLight = new THREE.DirectionalLight(0xfff5e0, 2.1); // Sol cálido brillante cruzando el agua
     this.sunLight.position.set(4, 16, 9);
     this.sunLight.castShadow = this.quality !== "ligera";
     this.sunLight.shadow.mapSize.set(2048, 2048);
@@ -240,6 +298,7 @@ export class ThreeWorldEngine {
     bCtx.fill();
 
     const bTex = new THREE.CanvasTexture(bCanvas);
+    this.bubbleTexture = bTex;
     const mat = new THREE.PointsMaterial({
       size: 0.26,
       map: bTex,
@@ -276,6 +335,12 @@ export class ThreeWorldEngine {
     if (!this.current) return;
     this.fx.clear();
     this.hoverRoot = null;
+    for (const b of this.dynamicBubbles) {
+      this.scene.remove(b.sprite);
+      b.sprite.geometry.dispose();
+      (b.sprite.material as THREE.SpriteMaterial).dispose();
+    }
+    this.dynamicBubbles = [];
     this.scene.remove(this.current.group);
     this.current.dispose();
     this.current = null;
@@ -316,6 +381,7 @@ export class ThreeWorldEngine {
       (this.bubbles.material as THREE.PointsMaterial).dispose();
       this.bubbles = undefined;
     }
+    this.bubbleTexture?.dispose();
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
@@ -393,6 +459,30 @@ export class ThreeWorldEngine {
       for (const anim of this.current.animations) anim(t, dt);
     }
 
+    // Update dynamic bubbles
+    if (this.dynamicBubbles.length > 0) {
+      for (let i = this.dynamicBubbles.length - 1; i >= 0; i--) {
+        const b = this.dynamicBubbles[i];
+        b.life -= dt;
+        if (b.life <= 0) {
+          this.scene.remove(b.sprite);
+          b.sprite.geometry.dispose();
+          (b.sprite.material as THREE.SpriteMaterial).dispose();
+          this.dynamicBubbles.splice(i, 1);
+        } else {
+          b.sprite.position.y += b.vy * dt;
+          b.sprite.position.x += b.vx * dt + Math.sin(b.seed + b.life * b.wobbleSpeed) * b.wobbleAmp * dt;
+          b.sprite.position.z += b.vz * dt + Math.cos(b.seed + b.life * b.wobbleSpeed) * b.wobbleAmp * dt;
+          b.vx *= 0.95;
+          b.vz *= 0.95;
+          const progress = b.life / b.maxLife;
+          (b.sprite.material as THREE.SpriteMaterial).opacity = progress * 0.85;
+          const s = b.sprite.scale.x * (1 + 0.15 * dt);
+          b.sprite.scale.set(s, s, 1);
+        }
+      }
+    }
+
     // Actualización de burbujas flotantes (efecto bajo el agua)
     if (this.bubbles && this.bubbleData.length > 0 && !this.reducedMotion) {
       const posAttr = this.bubbles.geometry.getAttribute("position") as THREE.BufferAttribute;
@@ -401,15 +491,19 @@ export class ThreeWorldEngine {
         const data = this.bubbleData[i];
         let y = array[i * 3 + 1];
         let x = array[i * 3];
+        let z = array[i * 3 + 2];
         y += dt * data.speed;
         const wobble = Math.sin(t * 1.8 + data.seed) * 0.007;
         x += wobble;
+        z += Math.cos(t * 1.5 + data.seed) * 0.007;
         if (y > 7.5) {
           y = -1.0;
           x = (Math.random() - 0.5) * 15;
+          z = (Math.random() - 0.5) * 15 - 1;
         }
         array[i * 3] = x;
         array[i * 3 + 1] = y;
+        array[i * 3 + 2] = z;
       }
       posAttr.needsUpdate = true;
     }
@@ -468,6 +562,34 @@ export class ThreeWorldEngine {
     this.zoom += (this.zoomGoal - this.zoom) * 0.08;
     if (Math.abs(this.zoom - prevZoom) > 1e-4) this.resize();
     this.placeCamera();
+
+    // Ondulación de la cámara como bajo el agua (modulando las fronteras de proyección)
+    if (!this.reducedMotion) {
+      const wobbleSpeed = 1.4;
+      const wobbleAmp = 0.025;
+      const offsetX = Math.sin(t * wobbleSpeed) * wobbleAmp + Math.cos(t * wobbleSpeed * 0.6) * (wobbleAmp * 0.4);
+      const offsetY = Math.cos(t * wobbleSpeed * 1.2) * wobbleAmp + Math.sin(t * wobbleSpeed * 0.5) * (wobbleAmp * 0.4);
+
+      const w = this.host.clientWidth;
+      const h = Math.max(1, this.host.clientHeight);
+      const a = w / h;
+      const vh = this.viewH();
+
+      this.camera.left = (-vh * a) / 2 + offsetX;
+      this.camera.right = (vh * a) / 2 + offsetX;
+      this.camera.top = vh / 2 + 0.8 + offsetY;
+      this.camera.bottom = -vh / 2 + 0.8 + offsetY;
+      
+      this.camera.up.set(
+        Math.sin(t * 0.8) * 0.005,
+        1.0,
+        0.0
+      ).normalize();
+      
+      this.camera.updateProjectionMatrix();
+    } else {
+      this.camera.up.set(0, 1, 0);
+    }
 
     this.renderer.render(this.scene, this.camera);
   }
