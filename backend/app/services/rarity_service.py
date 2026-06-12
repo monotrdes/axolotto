@@ -28,11 +28,10 @@ def get_card_dynamic_rarities(session: Session) -> dict:
     circ_results = session.exec(circ_query).all()
     circ_map = {item_id: int(total_qty) for item_id, total_qty in circ_results if total_qty is not None}
     
-    # 2b. Obtener la cantidad de copias colocadas en tableros activos (excluyendo bots)
+    # 2b. Obtener la cantidad de copias colocadas en tableros activos (tanto de jugadores como de bots)
     from app.models.board import PlayerBoard
     boards = session.exec(
         select(PlayerBoard)
-        .where(PlayerBoard.is_npc_pool == False)
         .where(PlayerBoard.is_dead == False)
     ).all()
     

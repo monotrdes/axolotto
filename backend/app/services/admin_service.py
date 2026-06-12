@@ -1272,11 +1272,10 @@ def get_card_distribution(session: Session) -> dict:
         for row in circ_results
     }
 
-    # 3b. Obtener la cantidad de copias de cartas en tableros activos (excluyendo bots)
+    # 3b. Obtener la cantidad de copias de cartas en tableros activos (tanto de jugadores como de bots)
     from app.models.board import PlayerBoard
     boards = session.exec(
         select(PlayerBoard)
-        .where(PlayerBoard.is_npc_pool == False)
         .where(PlayerBoard.is_dead == False)
     ).all()
     
