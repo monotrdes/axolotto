@@ -23,6 +23,8 @@ interface GritonCharacterProps {
   allCards?: any[];
   /** Show dramatic pause ( "...") before revealing urgent card */
   showDramaticPause?: boolean;
+  /** Tension level of the room */
+  tensionLevel?: 'low' | 'medium' | 'high' | 'critical';
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -33,6 +35,7 @@ export default function GritonCharacter({
   urgencyName,
   allCards = [],
   showDramaticPause = false,
+  tensionLevel = "low",
 }: GritonCharacterProps) {
   const [displayCard, setDisplayCard] = useState<GritonCardData | null>(null);
   const [isPausing, setIsPausing] = useState(false);
@@ -108,11 +111,21 @@ export default function GritonCharacter({
     };
   }, [scheduleThroatClear]);
 
-  // ── Reset idle emoji when urgent ─────────────────────────────────────────
+  // ── Reset idle emoji based on tension level or urgency ───────────────────
 
   useEffect(() => {
-    setIdleEmoji(isUrgent ? "😳" : "🦎");
-  }, [isUrgent]);
+    if (isUrgent) {
+      setIdleEmoji("😳");
+    } else {
+      const emojiMap: Record<string, string> = {
+        low: "🦎",
+        medium: "🤨",
+        high: "😳",
+        critical: "😱",
+      };
+      setIdleEmoji(emojiMap[tensionLevel] || "🦎");
+    }
+  }, [isUrgent, tensionLevel]);
 
   // ── Render ───────────────────────────────────────────────────────────────
 
@@ -191,7 +204,17 @@ export default function GritonCharacter({
       <div
         className={`absolute bottom-4 left-1/2 -translate-x-1/2 flex flex-col items-center ${leanAnimClass}`}
         style={{
-          animationDuration: isUrgent ? "0.35s" : (isCalling ? "0.5s" : "4s"),
+          animationDuration: isUrgent
+            ? "0.35s"
+            : isCalling
+              ? "0.5s"
+              : tensionLevel === "critical"
+                ? "1s"
+                : tensionLevel === "high"
+                  ? "1.8s"
+                  : tensionLevel === "medium"
+                    ? "2.8s"
+                    : "4s",
           animationIterationCount: isCalling ? 2 : undefined,
         }}
       >

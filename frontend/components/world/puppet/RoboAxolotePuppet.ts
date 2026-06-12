@@ -11,6 +11,7 @@ import {
   drawRoboMouth,
   drawRoboShadow,
   drawWindUpKey,
+  createGear,
 } from "./roboParts";
 
 /**
@@ -45,15 +46,16 @@ export class RoboAxolotePuppet extends Container {
   readonly axoId: string;
   state: RoboPuppetState = "idle";
 
-  private windUpKey: Graphics;
+  private windUpKey: Container;
   private body: Container;
-  private tail: Graphics;
-  private gills: Graphics[] = [];
-  private eyeOpenL: Graphics;
-  private eyeOpenR: Graphics;
-  private eyeClosedL: Graphics;
-  private eyeClosedR: Graphics;
-  private shadow: Graphics;
+  private tail: Container;
+  private gills: Container[] = [];
+  private eyeOpenL: Container;
+  private eyeOpenR: Container;
+  private eyeClosedL: Container;
+  private eyeClosedR: Container;
+  private shadow: Container;
+  private chestGear: Container | null = null;
 
   private elapsed = Math.random() * 8;
   private tickPhase = 0; // 0..1 fase discreta del tic-tac
@@ -80,6 +82,11 @@ export class RoboAxolotePuppet extends Container {
 
     this.body = new Container();
     this.body.addChild(drawRoboBody());
+
+    this.chestGear = createGear(10);
+    this.chestGear.position.set(0, 2);
+    this.body.addChild(this.chestGear);
+
     for (const [lx, ly] of [[-26, 22], [10, 26]] as const) {
       const limb = drawRoboLimb();
       limb.position.set(lx, ly);
@@ -180,6 +187,18 @@ export class RoboAxolotePuppet extends Container {
 
     // Llave de cuerda: rotación constante.
     this.windUpKey.rotation += dt * 2.8;
+
+    // Rotate gears
+    if (this.chestGear) {
+      this.chestGear.rotation += dt * 3.5;
+    }
+    this.gills.forEach((gill) => {
+      const gear = gill.children.find(c => c.label === "rotating_gear");
+      if (gear) {
+        const direction = gill.scale.x < 0 ? -1 : 1;
+        gear.rotation += dt * 4 * direction;
+      }
+    });
 
     // Sombra.
     const shadowScale = 1 - (Math.abs(bob) / Math.max(1, p.bobAmp)) * 0.1;

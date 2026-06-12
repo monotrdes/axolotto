@@ -689,3 +689,96 @@ body {
       0 0 32px rgba(251, 191, 36, 0.25);
   }
 }
+
+/* Pergamino de papel amate para la Tienda / Altar (Tianguis) */
+.papel-amate {
+  position: relative;
+  background: 
+    linear-gradient(rgba(10, 25, 40, 0.88), rgba(6, 16, 28, 0.94)), /* Dark tinted overlay for high text contrast */
+    radial-gradient(circle at 10% 10%, rgba(184, 153, 104, 0.12), transparent 45%),
+    radial-gradient(circle at 90% 90%, rgba(232, 213, 176, 0.08), transparent 45%),
+    repeating-linear-gradient(45deg, rgba(184, 153, 104, 0.02) 0px, rgba(184, 153, 104, 0.02) 2px, transparent 2px, transparent 10px),
+    #091522;
+  border-left: 5px solid var(--papel-amate-sombra);
+  border-right: 5px solid var(--papel-amate-sombra);
+  border-top: 2px solid rgba(184, 153, 104, 0.3);
+  border-bottom: 2px solid rgba(184, 153, 104, 0.3);
+  border-radius: 8px;
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.65),
+    0 0 25px rgba(184, 153, 104, 0.15),
+    inset 0 0 50px rgba(0, 0, 0, 0.8);
+  
+  /* Animación de desenrollado táctil/visual (Sprint 2 §4) */
+  animation: unroll-parchment 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Rodillos de madera superior e inferior del pergamino amate */
+.papel-amate::before {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: -8px;
+  right: -8px;
+  height: 16px;
+  background: linear-gradient(90deg, #3d2610 0%, #634320 12%, #755028 50%, #634320 88%, #3d2610 100%);
+  border-radius: 6px;
+  border: 1.5px solid #201306;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.6);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.papel-amate::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: -8px;
+  right: -8px;
+  height: 16px;
+  background: linear-gradient(90deg, #3d2610 0%, #634320 12%, #755028 50%, #634320 88%, #3d2610 100%);
+  border-radius: 6px;
+  border: 1.5px solid #201306;
+  box-shadow: 0 -3px 8px rgba(0, 0, 0, 0.6);
+  z-index: 10;
+  pointer-events: none;
+}
+
+@keyframes unroll-parchment {
+  0% {
+    clip-path: inset(-20px -20px 100% -20px);
+    opacity: 0.3;
+  }
+  100% {
+    clip-path: inset(-20px -20px -20px -20px);
+    opacity: 1;
+  }
+}
+
+/* ── Griton character animations ── */
+.animate-griton-idle {
+  animation: griton-idle 4s ease-in-out infinite;
+}
+
+.animate-griton-lean {
+  animation: griton-lean 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes griton-idle {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-2.5px) rotate(1.5deg);
+  }
+}
+
+@keyframes griton-lean {
+  0% {
+    transform: translateY(0) scale(1) skewX(0deg);
+  }
+  100% {
+    transform: translateY(3px) scale(1.06, 0.94) skewX(1deg);
+  }
+}
+

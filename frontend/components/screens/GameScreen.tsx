@@ -719,6 +719,7 @@ export default function GameScreen(props: GameScreenProps) {
               onCellTap={(idx) => onCellTap?.(0, idx)}
               variant="player"
               label={axoName}
+              winPatterns={winPatterns}
             />
           </div>
         </div>

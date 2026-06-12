@@ -8,6 +8,7 @@ import QuickReactionWheel from "../chat/QuickReactionWheel";
 import CasiCanto from "./CasiCanto";
 import { PAPER_WORLD } from "@/lib/paperWorld";
 import type { TensionLevel } from "../ui/TensionEffects";
+import GritonCharacter from "./GritonCharacter";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -57,6 +58,10 @@ interface CenoteRoomProps {
   playerVipTier?: string | null;
   /** Player nature */
   playerNature?: import("@/data/personality-config").Nature | null;
+  /** Current card called (for GritonCharacter) */
+  currentCard?: any;
+  /** Card catalog */
+  allCards?: any[];
 }
 
 // ── Tension → water depth CSS custom property mapping ─────────────────────────
@@ -83,6 +88,8 @@ export default function CenoteRoom({
   chatDisabled = false,
   playerVipTier,
   playerNature,
+  currentCard = null,
+  allCards = [],
 }: CenoteRoomProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [mouseX, setMouseX] = useState(0);
@@ -140,7 +147,16 @@ export default function CenoteRoom({
 
       {/* ── Circular table (z-index 1) ──────────────────────────────────── */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ zIndex: 1 }}>
-        <CircularTable diameter={tableDiameter} tensionLevel={tensionLevel} />
+        <CircularTable diameter={tableDiameter} tensionLevel={tensionLevel}>
+          <div className="pointer-events-auto">
+            <GritonCharacter
+              currentCard={currentCard}
+              isUrgent={tensionLevel === "high" || tensionLevel === "critical"}
+              tensionLevel={tensionLevel}
+              allCards={allCards}
+            />
+          </div>
+        </CircularTable>
       </div>
 
       {/* ── Table seats (z-index 2) ──────────────────────────────────────── */}
