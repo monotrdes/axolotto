@@ -27,11 +27,15 @@ export default function Santuario({
   token,
   cambiarTab,
   vipTier,
+  initialSelectedSlotId,
+  onClearSelectedSlot,
 }: {
   userId: string;
   token: string | null;
   cambiarTab?: (tab: string) => void;
   vipTier?: string | null;
+  initialSelectedSlotId?: { type: 'egg' | 'axo' | 'empty'; id?: number | string } | null;
+  onClearSelectedSlot?: () => void;
 }) {
   const { toast } = useToast();
   // ── Data states ──────────────────────────────────────
@@ -195,6 +199,25 @@ export default function Santuario({
     };
     load();
   }, [userId, token, recargaTrigger]);
+
+  // ── Auto-open bottom sheet for 2.5D diorama (initialSelectedSlotId prop) ──
+  useEffect(() => {
+    if (!initialSelectedSlotId) return;
+    const { type, id } = initialSelectedSlotId;
+    if (type === 'egg' && id && incubaciones.length > 0) {
+      const inc = incubaciones.find(i => String(i.id) === String(id));
+      if (inc) {
+        setSelectedSlot({ type: 'egg', data: inc });
+      }
+    } else if (type === 'axo' && id && axolotitos.length > 0) {
+      const axo = axolotitos.find(a => String(a.id) === String(id));
+      if (axo) {
+        setSelectedSlot({ type: 'axo', data: axo });
+      }
+    } else if (type === 'empty') {
+      setSelectedSlot({ type: 'empty', data: null });
+    }
+  }, [initialSelectedSlotId, incubaciones, axolotitos]);
 
   // ── Fetch staking status ──────────────────────────────
   useEffect(() => {
@@ -424,7 +447,10 @@ export default function Santuario({
         <EggSheet
           inc={selectedSlot.data}
           axolotitos={axolotitos}
-          onClose={() => setSelectedSlot(null)}
+          onClose={() => {
+            setSelectedSlot(null);
+            onClearSelectedSlot?.();
+          }}
           onHatch={handleHatchEgg}
           onStartImprinting={handleStartImprinting}
           hatchingId={hatchingId}
@@ -434,7 +460,10 @@ export default function Santuario({
       {(selectedSlot?.type === 'axo' || selectedSlot?.type === 'bed') && (
         <AxoSheet
           axo={selectedSlot.data}
-          onClose={() => setSelectedSlot(null)}
+          onClose={() => {
+            setSelectedSlot(null);
+            onClearSelectedSlot?.();
+          }}
           token={token}
           onSetMain={() => setRecargaTrigger(prev => prev + 1)}
           onOpenCave={(axo) => setActiveCaveAxo(axo)}
@@ -445,7 +474,13 @@ export default function Santuario({
         />
       )}
 
-      <BottomSheet open={selectedSlot?.type === 'empty'} onClose={() => setSelectedSlot(null)}>
+      <BottomSheet
+        open={selectedSlot?.type === 'empty'}
+        onClose={() => {
+          setSelectedSlot(null);
+          onClearSelectedSlot?.();
+        }}
+      >
             <div className="p-6 flex flex-col items-center gap-4">
               <span className="text-4xl">🪺</span>
               <div className="text-center">
@@ -455,7 +490,11 @@ export default function Santuario({
                 </p>
               </div>
               <button
-                onClick={() => { setSelectedSlot(null); cambiarTab && cambiarTab('tienda'); }}
+                onClick={() => {
+                  setSelectedSlot(null);
+                  onClearSelectedSlot?.();
+                  cambiarTab && cambiarTab('tienda');
+                }}
                 className="w-full py-3.5 bg-gradient-to-r from-[#E4007C] to-purple-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg shadow-pink-500/20 active:scale-95 transition-all"
               >
                 🏪 Ir a la Tienda

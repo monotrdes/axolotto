@@ -185,6 +185,7 @@ export default function Home() {
   // Panel de decoración de la sala (slot tipado tocado en el diorama)
   const [decorSlotId, setDecorSlotId] = useState<string | null>(null);
   const [decorNonce, setDecorNonce] = useState(0);
+  const [initialSelectedSlotId, setInitialSelectedSlotId] = useState<{ type: 'egg' | 'axo' | 'empty'; id?: number | string } | null>(null);
   const [axolotitosData, setAxolotitosData] = useState<AxolotitoData[]>([]);
 
   // Poll global capsule feed for ticker
@@ -723,13 +724,22 @@ export default function Home() {
                 return; // panel sobre el mundo, sin abrir pergamino
               }
               if (stallType.startsWith("nido-")) {
-                // Zona de crianza: huevo/camita → gestión en el panel
-                // Santuario (EggSheet/AxoSheet); bloqueado → invitar a expandir.
-                if (stallType === "nido-bloqueado") {
+                const parts = stallType.split(":");
+                const kind = parts[0]; // nido-huevo, nido-axo, nido-vacio, nido-bloqueado
+                const id = parts[1];
+                if (kind === "nido-bloqueado") {
                   toast.info("Este nido sigue enterrado — expande tu cueva para excavarlo 🪨");
+                  return;
                 }
                 setTabActiva("santuario");
                 setPanelVisible(true);
+                if (kind === "nido-vacio") {
+                  setInitialSelectedSlotId({ type: "empty" });
+                } else if (kind === "nido-huevo" && id) {
+                  setInitialSelectedSlotId({ type: "egg", id: Number(id) });
+                } else if (kind === "nido-axo" && id) {
+                  setInitialSelectedSlotId({ type: "axo", id: Number(id) });
+                }
                 return;
               }
               if (stallType === "mesa-amigos") {
@@ -1014,7 +1024,14 @@ export default function Home() {
               {/* santuario = El Nido (merged webitos + axolotitos). Legacy criadero/axolotitos ids redirect here.
                   Con el mundo activo solo aparece como panel (gestión: alimentar/eclosionar/expandir). */}
               {(tabActiva === 'santuario' || tabActiva === 'criadero' || tabActiva === 'axolotitos') && (
-                <Santuario userId={user?.id || ""} token={accessToken} cambiarTab={(tab) => setTabActiva(tab as TabId)} vipTier={datosBanco?.vip_tier} />
+                <Santuario
+                  userId={user?.id || ""}
+                  token={accessToken}
+                  cambiarTab={(tab) => setTabActiva(tab as TabId)}
+                  vipTier={datosBanco?.vip_tier}
+                  initialSelectedSlotId={initialSelectedSlotId}
+                  onClearSelectedSlot={() => setInitialSelectedSlotId(null)}
+                />
               )}
               {tabActiva === 'rankings'   && <Rankings  userId={user?.id || ""} token={accessToken} cambiarTab={setTabActiva}                   />}
 {tabActiva === 'amigos'    && <AmigosPage userId={user?.id || ""} token={accessToken} onNavigate={(tab) => setTabActiva(tab as TabId)} visitFriendId={visitaAmigoId} onVisitHandled={() => setVisitaAmigoId(null)} />}
