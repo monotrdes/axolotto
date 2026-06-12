@@ -142,3 +142,4 @@
 | 2026-06-12 | (este) | Efectos subacuáticos en ThreeWorldEngine: implementado fog verde de profundidad, gradiente de Xochimilco turbio para fondo, iluminación acuática bioluminiscente, refracción de luz animada en tiempo real y sistema optimizado de partículas de burbujas flotantes |
 | 2026-06-12 | (este) | Tianguis 3D zoom móvil ajustado: reducido minW a 6.0 en ThreeWorldEngine para acercar la cámara y mejorar visibilidad en pantallas estrechas como Galaxy Fold 5 |
 | 2026-06-12 | (este) | Ajuste estético subacuático: aclarados los colores del agua y neblina hacia turquesa/esmeralda cristalino y potenciada la intensidad luminosa para evocar un Xochimilco pre-hispánico mágico y alegre |
+| 2026-06-12 | (este) | Corrección de visuales subacuáticos: reemplazada neblina exponencial por neblina lineal (THREE.Fog) para mantener nítido el primer plano y evitar que se opaque, y desvinculada la niebla de las burbujas para que resplandezcan siempre |

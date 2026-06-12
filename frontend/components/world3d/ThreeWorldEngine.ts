@@ -175,9 +175,9 @@ export class ThreeWorldEngine {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     host.appendChild(this.renderer.domElement);
 
-    // Neblina Xochimilco pre-hispánica cristalina para el efecto bajo el agua (clean turquoise depth).
-    // Muy ligera y optimizada en celulares de gama baja.
-    this.scene.fog = new THREE.FogExp2(0x0e4d46, 0.026);
+    // Neblina Xochimilco pre-hispánica cristalina (linear Fog).
+    // Deja el primer plano totalmente claro y nítido (0% niebla), y desvanece suavemente el fondo.
+    this.scene.fog = new THREE.Fog(0x0f5a54, 30, 60);
 
     // Gradiente de laguna de Xochimilco ancestral (aguas cristalinas y luminosas).
     const bg = document.createElement("canvas");
@@ -207,52 +207,51 @@ export class ThreeWorldEngine {
     this.sunLight.shadow.bias = -0.0004;
     this.scene.add(this.sunLight);
 
-    // Burbujas flotantes (Points) solo para calidad Media/Alta (optimización gama baja).
-    if (this.quality !== "ligera") {
-      const bubbleCount = this.quality === "alta" ? 80 : 40;
-      const geo = new THREE.BufferGeometry();
-      const positions = new Float32Array(bubbleCount * 3);
-      this.bubbleData = [];
-      for (let i = 0; i < bubbleCount; i++) {
-        positions[i * 3] = (Math.random() - 0.5) * 16;
-        positions[i * 3 + 1] = Math.random() * 8;
-        positions[i * 3 + 2] = (Math.random() - 0.5) * 16 - 1;
-        this.bubbleData.push({
-          seed: Math.random() * 100,
-          speed: 0.35 + Math.random() * 0.4,
-        });
-      }
-      geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-
-      // Creación del canvas para la textura de burbuja transparente con borde y specular
-      const bCanvas = document.createElement("canvas");
-      bCanvas.width = 32;
-      bCanvas.height = 32;
-      const bCtx = bCanvas.getContext("2d")!;
-      bCtx.clearRect(0, 0, 32, 32);
-      bCtx.strokeStyle = "rgba(255, 255, 255, 0.7)";
-      bCtx.lineWidth = 2;
-      bCtx.beginPath();
-      bCtx.arc(16, 16, 12, 0, Math.PI * 2);
-      bCtx.stroke();
-      bCtx.fillStyle = "rgba(255, 255, 255, 0.8)";
-      bCtx.beginPath();
-      bCtx.arc(11, 11, 3, 0, Math.PI * 2);
-      bCtx.fill();
-
-      const bTex = new THREE.CanvasTexture(bCanvas);
-      const mat = new THREE.PointsMaterial({
-        size: 0.22,
-        map: bTex,
-        transparent: true,
-        opacity: 0.65,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
+    // Burbujas flotantes (Points) siempre habilitadas (variando conteo para optimizar).
+    const bubbleCount = this.quality === "alta" ? 80 : (this.quality === "media" ? 40 : 18);
+    const geo = new THREE.BufferGeometry();
+    const positions = new Float32Array(bubbleCount * 3);
+    this.bubbleData = [];
+    for (let i = 0; i < bubbleCount; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 16;
+      positions[i * 3 + 1] = Math.random() * 8;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 16 - 1;
+      this.bubbleData.push({
+        seed: Math.random() * 100,
+        speed: 0.35 + Math.random() * 0.4,
       });
-
-      this.bubbles = new THREE.Points(geo, mat);
-      this.scene.add(this.bubbles);
     }
+    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+    // Creación del canvas para la textura de burbuja transparente con borde y specular
+    const bCanvas = document.createElement("canvas");
+    bCanvas.width = 32;
+    bCanvas.height = 32;
+    const bCtx = bCanvas.getContext("2d")!;
+    bCtx.clearRect(0, 0, 32, 32);
+    bCtx.strokeStyle = "rgba(255, 255, 255, 0.75)";
+    bCtx.lineWidth = 2.5;
+    bCtx.beginPath();
+    bCtx.arc(16, 16, 12, 0, Math.PI * 2);
+    bCtx.stroke();
+    bCtx.fillStyle = "rgba(255, 255, 255, 0.85)";
+    bCtx.beginPath();
+    bCtx.arc(11, 11, 3.5, 0, Math.PI * 2);
+    bCtx.fill();
+
+    const bTex = new THREE.CanvasTexture(bCanvas);
+    const mat = new THREE.PointsMaterial({
+      size: 0.26,
+      map: bTex,
+      transparent: true,
+      opacity: 0.75,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      fog: false, // Desactivar niebla para que resplandezcan siempre
+    });
+
+    this.bubbles = new THREE.Points(geo, mat);
+    this.scene.add(this.bubbles);
 
     this.resize();
     this.resizeObserver = new ResizeObserver(() => this.resize());
