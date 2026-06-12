@@ -283,6 +283,7 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
             scene3dRef.current = null;
             host3d.style.display = "none";
             hostPixi.style.display = "";
+            hostPixi.style.opacity = "1";
             engine.setUiPaused(false);
           }
         };
@@ -318,7 +319,15 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
   if (PAPER_WORLD_ENABLED) {
     return (
       <>
-        <div ref={hostRef} className="fixed inset-0 z-0" aria-hidden />
+        <div
+          ref={hostRef}
+          className="fixed inset-0 z-0"
+          style={{
+            opacity: (WORLD3D_ENABLED && initialZone === "tianguis") ? 0 : 1,
+            transition: "opacity 0.2s ease-in-out",
+          }}
+          aria-hidden
+        />
         {WORLD3D_ENABLED && (
           <div ref={host3dRef} className="fixed inset-0 z-0" style={{ display: "none" }} aria-hidden>
             {/* Viñeta del diorama (mismo encuadre que el prototipo aprobado) */}
