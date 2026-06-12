@@ -175,31 +175,31 @@ export class ThreeWorldEngine {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     host.appendChild(this.renderer.domElement);
 
-    // Neblina Xochimilco para el efecto bajo el agua (murky green depth).
-    // Funciona de forma nativa en shaders y es ultra ligera en celulares de gama baja.
-    this.scene.fog = new THREE.FogExp2(0x0c2c25, 0.05);
+    // Neblina Xochimilco pre-hispánica cristalina para el efecto bajo el agua (clean turquoise depth).
+    // Muy ligera y optimizada en celulares de gama baja.
+    this.scene.fog = new THREE.FogExp2(0x0e4d46, 0.026);
 
-    // Gradiente de laguna de Xochimilco: verde profundo → verde alga/teal bajo el sol.
+    // Gradiente de laguna de Xochimilco ancestral (aguas cristalinas y luminosas).
     const bg = document.createElement("canvas");
     bg.width = 4;
     bg.height = 256;
     const bgCtx = bg.getContext("2d")!;
     const grad = bgCtx.createLinearGradient(0, 256, 0, 0);
-    grad.addColorStop(0, "#091b1a");   // Profundidades
-    grad.addColorStop(0.45, "#0c2c25"); // Agua turbia
-    grad.addColorStop(0.8, "#114b3d");  // Algas
-    grad.addColorStop(1, "#2e8b75");    // Luz superficial
+    grad.addColorStop(0, "#0c3c3a");   // Profundidades cristalinas color esmeralda-azul
+    grad.addColorStop(0.4, "#0f5a54"); // Turquesa medio
+    grad.addColorStop(0.75, "#1fa394"); // Esmeralda transparente
+    grad.addColorStop(1, "#5ce1c9");    // Luz brillante filtrando por el agua
     bgCtx.fillStyle = grad;
     bgCtx.fillRect(0, 0, 4, 256);
     const bgTex = new THREE.CanvasTexture(bg);
     bgTex.colorSpace = THREE.SRGBColorSpace;
     this.scene.background = bgTex;
 
-    // Luces con tonalidad acuática / laguna verde bioluminiscente.
-    this.ambientLight = new THREE.AmbientLight(0x1f5f56, 0.95);
+    // Luces con tonalidad acuática brillante y mágica (bioluminiscencia turquesa).
+    this.ambientLight = new THREE.AmbientLight(0x40dfcc, 1.2);
     this.scene.add(this.ambientLight);
 
-    this.sunLight = new THREE.DirectionalLight(0x8ae8c8, 1.6);
+    this.sunLight = new THREE.DirectionalLight(0xfff2d4, 1.9); // Sol cálido brillante cruzando el agua
     this.sunLight.position.set(4, 16, 9);
     this.sunLight.castShadow = this.quality !== "ligera";
     this.sunLight.shadow.mapSize.set(2048, 2048);
@@ -417,7 +417,7 @@ export class ThreeWorldEngine {
 
     // Refracción de luz (efecto bajo el agua en calidad media/alta)
     if (this.quality !== "ligera" && this.ambientLight) {
-      this.ambientLight.intensity = 0.9 + Math.sin(t * 1.3) * 0.05;
+      this.ambientLight.intensity = 1.2 + Math.sin(t * 1.3) * 0.08;
       if (this.sunLight) {
         this.sunLight.position.x = 4 + Math.sin(t * 0.8) * 0.3;
         this.sunLight.position.z = 9 + Math.cos(t * 0.8) * 0.3;

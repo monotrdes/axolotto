@@ -141,3 +141,4 @@
 | 2026-06-12 | (este) | Tianguis 3D pulido final: removidas etiquetas de esquina, 2 trajineras únicamente, letrero de trajineras ensanchado de poste a poste, reubicado puesto de sobresitos en tierra y corregida altura de tenderos en Reciclón, Sobrecitos y Webitos |
 | 2026-06-12 | (este) | Efectos subacuáticos en ThreeWorldEngine: implementado fog verde de profundidad, gradiente de Xochimilco turbio para fondo, iluminación acuática bioluminiscente, refracción de luz animada en tiempo real y sistema optimizado de partículas de burbujas flotantes |
 | 2026-06-12 | (este) | Tianguis 3D zoom móvil ajustado: reducido minW a 6.0 en ThreeWorldEngine para acercar la cámara y mejorar visibilidad en pantallas estrechas como Galaxy Fold 5 |
+| 2026-06-12 | (este) | Ajuste estético subacuático: aclarados los colores del agua y neblina hacia turquesa/esmeralda cristalino y potenciada la intensidad luminosa para evocar un Xochimilco pre-hispánico mágico y alegre |
