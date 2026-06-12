@@ -22,6 +22,14 @@
 
 ## Decisiones ya tomadas (NO re-litigar)
 
+> **⚠️ CAMBIO DE RUMBO (2026-06-12, VoBo del usuario)**: el mundo migra a
+> **diorama 3D de papel extruido con three.js** (ver
+> `docs/plan_migracion_estilo_diorama_isometrico.md`, bloque ACTUALIZACIÓN).
+> Pixi sigue rendereando las zonas aún no migradas; el Tianguis ya corre en
+> three.js (`frontend/components/world3d/`, flag `NEXT_PUBLIC_WORLD3D=1`).
+> Los axolotitos serán billboards 2D orientados a cámara. Las decisiones de
+> abajo siguen vigentes para las zonas Pixi mientras no se migren.
+
 - Motor: **PixiJS v8** + **GSAP**. NO three.js, NO R3F, NO zustand, NO @pixi/react.
 - 3 macrozonas (Santuario / Tianguis / Pirámide); la Pirámide contiene 3 subzonas
   (rankings / salas / capsulas) con paneo de cámara, sin cortina.
@@ -216,6 +224,7 @@
 | 2026-06-11 | 63ab8c3 | Decoraciones validadas por usuario ✓. Re-skin HTML por tokens (Fase 2): `.papel-*` en globals.css + `lib/paperWorld.ts`; Store/Inventory panel cartón+guirnalda/códice, VipModal marco metálico, SettlingScreen recibo de amate. ⏳ Falta: validación visual con flag |
 | 2026-06-11 | (este) | Merge fast-forward a `dev`; worktree tumbado por orden del usuario — trabajo directo en `dev` desde ahora. Changelog del wiki actualizado |
 | 2026-06-11 | - | Corrección de bug en SantuarioScene (rebuildNests): se elimina el fallback `?? eggs[slot]` que sobreescribía erróneamente los dormitorios de axolotitos con huevos de índices superiores, y corrección de tipos en PersonalityReactions.tsx |
+| 2026-06-12 | (este) | **Tianguis 3D**: motor three.js (`components/world3d/`) con escena del concept aprobado (BANCO/EL RECICLÓN/SOBRECITOS/WEBITOS/TRAJINERAS P2P), swap de canvas Pixi↔three bajo la cortina vía zoneSettled, flag `NEXT_PUBLIC_WORLD3D=1`. Prototipos en docs/prototipos/ |
 
 ## Notas para el verificador humano
 

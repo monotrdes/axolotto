@@ -22,6 +22,14 @@ last_modified: "2026-06-11"
 
 ---
 
+## 2026-06-12 | frontend mundo 3D | Tianguis migrado a diorama 3D de papel con three.js (task-1781252081-99)
+- **Campo**: Nuevo módulo `frontend/components/world3d/` (ThreeWorldEngine, TianguisScene3D, paperPrimitives) + integración en `GameCanvas.tsx`.
+- **Anterior**: Tianguis rendereado por Pixi (`TianguisScene.ts`, vista frontal 2.5D); la forja era el puesto de fundido.
+- **Nuevo**: Con `NEXT_PUBLIC_WORLD3D=1` (además de `NEXT_PUBLIC_PAPER_WORLD=1`), el Tianguis se renderea como diorama 3D de papel extruido (three.js, cámara ortográfica 34°): BANCO (`fountain`), EL RECICLÓN (`forja`, rediseño de la forja: cartas repetidas→tickets), VENTA DE SOBRECITOS (`booster`), WEBITOS ADOPCIÓN (`adopcion`), TRAJINERAS P2P (`p2p`). Swap de canvas Pixi↔three bajo la cortina (zoneSettled). Anclas `attendant:<id>` listas para los axolotitos billboard 2D. Sin el flag, todo queda idéntico. Decisión y plan: `docs/plan_migracion_estilo_diorama_isometrico.md`; prototipos aprobados en `docs/prototipos/`.
+- **Motivo**: Migración visual al estilo del concept art (VoBo del usuario 2026-06-12); el Tianguis es la primera zona.
+- **Autor**: Claude
+- **Fuente en código**: `frontend/components/world3d/TianguisScene3D.ts`, `frontend/components/world/GameCanvas.tsx`
+
 ## 2026-06-11 | frontend mundo papel picado | Fase 2 completa: eclosión animada + re-skin HTML por tokens (task-1781159264-84)
 - **Campo**: Transformación animada nido→camita en `SantuarioScene.ts`; re-skin `.papel-*` de Store/Inventory/VipModal/SettlingScreen.
 - **Anterior**: El swap nido→camita era estático; los paneles HTML conservaban el neón oscuro original incluso con el flag.

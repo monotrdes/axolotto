@@ -14,6 +14,7 @@ import type { PiramideScene } from "./zones/piramide/PiramideScene";
 import type { TianguisScene } from "./zones/tianguis/TianguisScene";
 import type { AmigoData } from "./mapBackendAxolotito";
 import { TIANGUIS_STALL_FRAMINGS, framingFor } from "./zones/zoneConfig";
+import type { ThreeWorldEngine, World3DScene } from "@/components/world3d/ThreeWorldEngine";
 
 /**
  * Mundo 2.5D de papel picado (plan task-84). Detrás del flag
@@ -23,6 +24,13 @@ import { TIANGUIS_STALL_FRAMINGS, framingFor } from "./zones/zoneConfig";
  */
 
 const PAPER_WORLD_ENABLED = process.env.NEXT_PUBLIC_PAPER_WORLD === "1";
+/**
+ * Mundo-diorama 3D de papel (decisión 2026-06-12): zonas migradas se renderizan
+ * con three.js (hoy: Tianguis); el resto sigue en Pixi. El swap de canvas
+ * ocurre bajo la cortina de papel, en zoneSettled.
+ */
+const WORLD3D_ENABLED =
+  PAPER_WORLD_ENABLED && process.env.NEXT_PUBLIC_WORLD3D === "1";
 
 export interface GameCanvasHandle {
   setAxolotitos(data: AxolotitoData[]): void;
@@ -75,8 +83,12 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
   ref,
 ) {
   const hostRef = useRef<HTMLDivElement>(null);
+  const host3dRef = useRef<HTMLDivElement>(null);
   const curtainRef = useRef<PaperCurtainHandle>(null);
   const engineRef = useRef<WorldEngine | null>(null);
+  const engine3dRef = useRef<ThreeWorldEngine | null>(null);
+  const scene3dRef = useRef<World3DScene | null>(null);
+  const active3dRef = useRef(false);
   const zonesRef = useRef<ZoneManager | null>(null);
   const santuarioRef = useRef<SantuarioScene | null>(null);
   const tianguisRef = useRef<TianguisScene | null>(null);
@@ -119,12 +131,20 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
       zonesRef.current?.navigate(zoneId, curtainRef.current);
     },
     focusStall(stallId: string) {
+      if (active3dRef.current) {
+        engine3dRef.current?.focusStall(stallId);
+        return;
+      }
       const framing = TIANGUIS_STALL_FRAMINGS[stallId];
       if (framing && engineRef.current) {
         engineRef.current.camera.panTo(framing);
       }
     },
     resetFocus() {
+      if (active3dRef.current) {
+        engine3dRef.current?.resetFocus();
+        return;
+      }
       if (!engineRef.current || !zonesRef.current) return;
       const activeTarget = zonesRef.current.activeTarget;
       if (!activeTarget) return;
@@ -143,6 +163,10 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
       }
     },
     playMeltAnimation() {
+      if (active3dRef.current) {
+        scene3dRef.current?.playMelt?.();
+        return;
+      }
       if (tianguisRef.current && !tianguisRef.current.destroyed) {
         tianguisRef.current.playMeltAnimation();
       }
@@ -215,6 +239,48 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
       engine.bridge.on("hotspot", ({ kind, id }) => {
         onStallClickRef.current?.(id ? `${kind}:${id}` : kind);
       });
+
+      // Zonas migradas al diorama 3D: swap de canvas bajo la cortina.
+      if (WORLD3D_ENABLED) {
+        const setWorld3DActive = async (active: boolean) => {
+          if (active === active3dRef.current) return;
+          active3dRef.current = active;
+          const host3d = host3dRef.current;
+          const hostPixi = hostRef.current;
+          if (!host3d || !hostPixi) return;
+          if (active) {
+            const [{ ThreeWorldEngine }, { buildTianguisScene3D }] = await Promise.all([
+              import("@/components/world3d/ThreeWorldEngine"),
+              import("@/components/world3d/TianguisScene3D"),
+            ]);
+            if (cancelled || !active3dRef.current) return;
+            if (!engine3dRef.current) {
+              engine3dRef.current = ThreeWorldEngine.create(host3d);
+              engine3dRef.current.onHotspot = (stallId) => onStallClickRef.current?.(stallId);
+            }
+            const scene3d = buildTianguisScene3D();
+            scene3dRef.current = scene3d;
+            engine3dRef.current.setScene(scene3d);
+            host3d.style.display = "";
+            hostPixi.style.display = "none";
+            engine3dRef.current.setUiPaused(false);
+            engine.setUiPaused(true);
+          } else {
+            engine3dRef.current?.setUiPaused(true);
+            engine3dRef.current?.clearScene();
+            scene3dRef.current = null;
+            host3d.style.display = "none";
+            hostPixi.style.display = "";
+            engine.setUiPaused(false);
+          }
+        };
+        engine.bridge.on("zoneSettled", ({ macro }) => {
+          void setWorld3DActive(macro === "tianguis").catch((err) =>
+            console.error("World3D: error montando la escena", err),
+          );
+        });
+      }
+
       engineRef.current = engine;
       zonesRef.current = zones;
       await zones.enter(initialZone);
@@ -228,6 +294,10 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
       zonesRef.current = null;
       engineRef.current?.destroy();
       engineRef.current = null;
+      active3dRef.current = false;
+      scene3dRef.current = null;
+      engine3dRef.current?.destroy();
+      engine3dRef.current = null;
     };
     // initialZone solo aplica al primer mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -237,6 +307,9 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
     return (
       <>
         <div ref={hostRef} className="fixed inset-0 z-0" aria-hidden />
+        {WORLD3D_ENABLED && (
+          <div ref={host3dRef} className="fixed inset-0 z-0" style={{ display: "none" }} aria-hidden />
+        )}
         <PaperCurtain ref={curtainRef} />
       </>
     );

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Axolotto — Prototipo Diorama 3D (papel recortado)</title>
+<style>
+  html, body { margin:0; height:100%; overflow:hidden; background:#2a2440; }
+  #app { position:fixed; inset:0; }
+  /* Viñeta de "mesa de trabajo" como en el concept */
+  #vignette { position:fixed; inset:0; pointer-events:none;
+    background: radial-gradient(ellipse at 50% 42%, transparent 45%, rgba(16,12,30,.55) 100%); }
+  #hud { position:fixed; left:12px; bottom:12px; color:#e8e0f5; z-index:10;
+    font:13px/1.4 system-ui, sans-serif; max-width:340px;
+    background:rgba(30,24,50,.72); padding:10px 14px; border-radius:12px; backdrop-filter:blur(4px); }
+  #hud b { color:#f2c23e; }
+  button { margin-top:8px; margin-right:6px; cursor:pointer; border:none; border-radius:8px;
+    padding:7px 12px; font:600 13px system-ui; background:#b8d94a; color:#2a2440; }
+  button.alt { background:#e04a7a; color:#fff7ec; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="vignette"></div>
+<div id="hud">
+  <b>Prototipo:</b> diorama dimétrico de papel en three.js (cámara ortográfica,
+  capas planas extruidas, sombras suaves). Mueve el mouse / toca para el parallax.
+  <br/>
+  <button id="btnOrbit">🎥 Orbitar (ver la profundidad)</button>
+  <button id="btnTilt" class="alt">📐 Ángulo concept / picado</button>
+</div>
+<script type="module">
+import * as THREE from "https://unpkg.com/three@0.170.0/build/three.module.js";
+
+// ---------- Setup ----------
+const app = document.getElementById("app");
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+app.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x342b52); // papel morado
+
+// Cámara ortográfica dimétrica (la del concept: ~32° elevación, 45° rotación)
+const cam = new THREE.OrthographicCamera();
+let viewSize = 11.5;
+let azBase = Math.PI / 4, elBase = THREE.MathUtils.degToRad(32);
+let az = azBase, el = elBase, orbit = false;
+const camTarget = new THREE.Vector3(0, 1.0, 0);
+function placeCam() {
+  const r = 40;
+  cam.position.set(
+    camTarget.x + r * Math.cos(el) * Math.sin(az),
+    camTarget.y + r * Math.sin(el),
+    camTarget.z + r * Math.cos(el) * Math.cos(az),
+  );
+  cam.lookAt(camTarget);
+}
+function resize() {
+  const w = innerWidth, h = innerHeight, a = w / h;
+  cam.left = -viewSize * a / 2; cam.right = viewSize * a / 2;
+  cam.top = viewSize / 2 + 1.2; cam.bottom = -viewSize / 2 + 1.2;
+  cam.near = 1; cam.far = 100;
+  cam.updateProjectionMatrix();
+  renderer.setSize(w, h);
+}
+addEventListener("resize", resize);
+
+// Luz: cenital-frontal suave (sombras cortas de maqueta)
+scene.add(new THREE.AmbientLight(0xc8bdf0, 0.85));
+const sun = new THREE.DirectionalLight(0xfff2dd, 1.6);
+sun.position.set(5, 14, 6);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+const sc = sun.shadow.camera;
+sc.left = -12; sc.right = 12; sc.top = 12; sc.bottom = -12; sc.far = 50;
+sun.shadow.bias = -0.0004;
+scene.add(sun);
+
+// ---------- Helpers de "papel" ----------
+const R = (a, b) => a + Math.random() * (b - a);
+
+function mat(color) {
+  return new THREE.MeshStandardMaterial({ color, roughness: 0.95, metalness: 0 });
+}
+
+/** Blob orgánico suave (terrazas, rocas, charcos). */
+function blobShape(r, irr = 0.16, n = 9, seed = Math.random() * 10) {
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    const rad = r * (1 + Math.sin(a * 3 + seed) * irr * R(0.5, 1));
+    pts.push(new THREE.Vector2(Math.cos(a) * rad, Math.sin(a) * rad));
+  }
+  const s = new THREE.Shape();
+  s.moveTo(pts[0].x, pts[0].y);
+  s.splineThru(pts.slice(1).concat([pts[0]]));
+  return s;
+}
+function circleShape(r) { const s = new THREE.Shape(); s.absarc(0, 0, r, 0, Math.PI * 2); return s; }
+function ellipseShape(rx, ry) { const s = new THREE.Shape(); s.absellipse(0, 0, rx, ry, 0, Math.PI * 2); return s; }
+function roundedRectShape(w, h, r) {
+  const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y);
+  s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r);
+  s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+  s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y);
+  return s;
+}
+
+/** Capa de papel: forma 2D extruida con filo biselado (el "canto" del papel). */
+function paper(shape, depth, color, bevel = 0.035) {
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel,
+    bevelSegments: 1, curveSegments: 14,
+  });
+  const m = new THREE.Mesh(geo, mat(color));
+  m.rotation.x = -Math.PI / 2; // extrusión hacia arriba
+  m.castShadow = true; m.receiveShadow = true;
+  return m;
+}
+
+/** Pila topográfica de terrazas. */
+function terraces(layers) {
+  const g = new THREE.Group();
+  let y = 0;
+  for (const L of layers) {
+    const m = paper(blobShape(L.r, L.irr ?? 0.16), L.h, L.c);
+    m.position.set(R(-0.1, 0.1) + (L.dx ?? 0), y, R(-0.1, 0.1) + (L.dz ?? 0));
+    g.add(m);
+    y += L.h;
+  }
+  g.userData.top = y;
+  return g;
+}
+
+function textTexture(text, color = "#fff7ec", size = 90, font = "900 %spx system-ui") {
+  const c = document.createElement("canvas");
+  const pad = 30; const ctx = c.getContext("2d");
+  ctx.font = font.replace("%s", size);
+  c.width = Math.ceil(ctx.measureText(text).width) + pad * 2; c.height = size + pad * 2;
+  const ctx2 = c.getContext("2d");
+  ctx2.font = font.replace("%s", size);
+  ctx2.fillStyle = color; ctx2.textBaseline = "middle"; ctx2.textAlign = "center";
+  ctx2.shadowColor = "rgba(40,30,20,.45)"; ctx2.shadowBlur = 8; ctx2.shadowOffsetY = 4;
+  ctx2.fillText(text, c.width / 2, c.height / 2);
+  const t = new THREE.CanvasTexture(c);
+  return { tex: t, aspect: c.width / c.height };
+}
+function textPlane(text, h, color) {
+  const { tex, aspect } = textTexture(text, color);
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(h * aspect, h),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true }),
+  );
+  return m;
+}
+
+// ---------- Plataforma base (la "caja" del diorama) ----------
+const world = new THREE.Group();
+scene.add(world);
+
+const PAL = {
+  aguaDeep: 0x0f7e96, agua: 0x1798a8, aguaClara: 0xbde8e4,
+  salvia: 0x7fa86e, oliva: 0x9dbe8a, pasto: 0xc7d9a8, arena: 0xe8dec4,
+  limon: 0xb8d94a, madera: 0x9c6b3f, maderaOscura: 0x7a4e2c,
+  rosa: 0xf6a8bc, branquia: 0xe8889e,
+  magenta: 0xe04a7a, amarillo: 0xf2c23e, teal: 0x2fb8b0, crema: 0xfdf3df,
+};
+
+const base = new THREE.Group();
+const baseLayers = [
+  { w: 17.5, c: 0x241e3c, h: 0.42 },
+  { w: 16.8, c: 0x14506b, h: 0.42 },
+  { w: 16.2, c: PAL.aguaDeep, h: 0.42 },
+  { w: 15.8, c: PAL.agua, h: 0.34 },
+];
+let baseY = 0;
+for (const L of baseLayers) {
+  const m = paper(roundedRectShape(L.w, L.w, 2.2), L.h, L.c, 0.05);
+  m.position.y = baseY; base.add(m); baseY += L.h;
+}
+const TOP = baseY; // superficie del agua
+world.add(base);
+
+// Camino de agua clara que serpentea (conector de composición)
+const path = new THREE.Group();
+[[-5.2, 4.6, 1.5], [-3.8, 3.4, 1.3], [-2.6, 2.0, 1.2], [-1.6, 0.6, 1.1], [-0.2, -0.4, 1.2], [1.2, -1.4, 1.0]]
+  .forEach(([x, z, r], i) => {
+    const m = paper(blobShape(r, 0.22, 8, i * 2.3), 0.05, PAL.aguaClara, 0.015);
+    m.position.set(x, TOP, z); m.castShadow = false;
+    path.add(m);
+  });
+world.add(path);
+
+// ---------- Terrazas / masa de equilibrio (izquierda y fondo) ----------
+function rockStack(x, z, r0, n, pal) {
+  const Ls = [];
+  for (let i = 0; i < n; i++) Ls.push({ r: r0 * (1 - i * 0.14), h: 0.26, c: pal[i % pal.length] });
+  const t = terraces(Ls);
+  t.position.set(x, TOP, z);
+  return t;
+}
+world.add(rockStack(-5.6, 0.6, 2.1, 5, [PAL.salvia, PAL.oliva, PAL.pasto]));
+world.add(rockStack(-5.0, -2.6, 1.6, 4, [PAL.oliva, PAL.pasto, PAL.arena]));
+world.add(rockStack(-2.2, -4.8, 2.6, 6, [PAL.arena, PAL.pasto, PAL.oliva, PAL.arena])); // colina del fondo
+world.add(rockStack(1.6, -5.4, 1.4, 4, [PAL.salvia, PAL.oliva, PAL.pasto]));
+world.add(rockStack(6.0, 0.8, 1.2, 3, [PAL.oliva, PAL.pasto]));
+
+// ---------- Mesa con axolotitos (foco primario, centro-izquierda) ----------
+function table(x, z) {
+  const g = new THREE.Group();
+  const topM = new THREE.Mesh(new THREE.BoxGeometry(2.7, 0.16, 1.6), mat(PAL.madera));
+  topM.position.y = 0.85; topM.castShadow = topM.receiveShadow = true;
+  g.add(topM);
+  for (const [lx, lz] of [[-1.15, -0.6], [1.15, -0.6], [-1.15, 0.6], [1.15, 0.6]]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.85, 0.16), mat(PAL.maderaOscura));
+    leg.position.set(lx, 0.42, lz); leg.castShadow = true; g.add(leg);
+  }
+  // tablillas de lotería (cartoncitos de colores sobre la mesa)
+  [[-0.9, -0.35, PAL.crema], [-0.2, -0.45, PAL.crema], [0.6, -0.35, PAL.crema],
+   [-0.9, 0.4, PAL.crema], [0.7, 0.4, PAL.crema]].forEach(([cx, cz, cc]) => {
+    const card = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.03, 0.55), mat(cc));
+    card.position.set(cx, 0.95, cz); card.rotation.y = R(-0.2, 0.2); card.castShadow = true;
+    g.add(card);
+  });
+  // platitos de frijolitos
+  [[0, 0], [-0.45, 0.1], [0.35, -0.05]].forEach(([cx, cz]) => {
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.15, 0.1, 16), mat(0x6e8ca8));
+    bowl.position.set(cx, 0.98, cz); bowl.castShadow = true; g.add(bowl);
+  });
+  g.position.set(x, TOP, z);
+  return g;
+}
+
+/** Axolotito cuadrúpedo: recorte de papel visto desde arriba (como el concept). */
+const allGills = [];
+function axolotl(color = PAL.rosa, s = 1) {
+  const g = new THREE.Group();
+  const TH = 0.12;
+  const piece = (shape, c, x, z, rot = 0, th = TH) => {
+    const m = paper(shape, th, c, 0.02);
+    m.position.set(x, 0, z); m.rotation.z = rot; // (z del shape ya apunta arriba tras paper())
+    g.add(m); return m;
+  };
+  // cola → cuerpo → cabeza (la cabeza ~40% del largo, como el concept)
+  piece(ellipseShape(0.16, 0.4), color, 0, 0.95);             // cola
+  const finM = paper(ellipseShape(0.08, 0.5), 0.06, PAL.branquia, 0.015);
+  finM.position.set(0, TH * 0.5, 1.0); g.add(finM);           // aleta caudal
+  piece(ellipseShape(0.3, 0.55), color, 0, 0.45);             // cuerpo
+  piece(circleShape(0.42), color, 0, -0.25);                  // cabezota
+  // 4 patas sprawl
+  for (const [px, pz, rr] of [[-0.34, 0.12, 0.6], [0.34, 0.12, -0.6], [-0.3, 0.75, 0.9], [0.3, 0.75, -0.9]]) {
+    const leg = paper(ellipseShape(0.09, 0.22), TH, color, 0.015);
+    leg.position.set(px, 0, pz);
+    leg.rotation.z = rr;
+    g.add(leg);
+  }
+  // 6 branquias (3 por lado) — el alma del ajolote, ondean en cascada
+  const gills = [];
+  for (let side = -1; side <= 1; side += 2) {
+    for (let i = 0; i < 3; i++) {
+      const a = (-0.85 - i * 0.5) * side;
+      const gx = Math.sin(a) * 0.46, gz = -0.25 - Math.cos(a) * 0.46;
+      const gm = paper(ellipseShape(0.07, 0.2), TH * 0.7, PAL.branquia, 0.012);
+      gm.position.set(gx, TH * 0.4, gz);
+      gm.rotation.z = Math.atan2(gx, gz + 0.25) + Math.PI;
+      gm.userData = { phase: i * 0.55 + (side > 0 ? 0.3 : 0), baseRot: gm.rotation.z };
+      g.add(gm); gills.push(gm);
+    }
+  }
+  allGills.push(...gills);
+  // ojos + brillo
+  for (const ex of [-0.18, 0.18]) {
+    const eye = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.03, 10), mat(0x2b2b3a));
+    eye.position.set(ex, TH + 0.04, -0.33); g.add(eye);
+  }
+  g.scale.setScalar(s);
+  return g;
+}
+
+const mesa = table(-1.6, 0.4);
+world.add(mesa);
+// 6 axolotitos alrededor de la mesa, mirando al centro
+const seats = [[-1.6, -0.9, 0], [-3.0, 0.0, Math.PI / 2], [-3.0, 0.9, Math.PI / 2],
+               [-1.6, 1.8, Math.PI], [-0.2, 0.9, -Math.PI / 2], [-0.2, 0.0, -Math.PI / 2]];
+for (const [x, z, ry] of seats) {
+  const a = axolotl(PAL.rosa, R(0.85, 1.0));
+  a.position.set(x, TOP + 0.02, z); a.rotation.y = ry + R(-0.15, 0.15);
+  world.add(a);
+}
+// uno nadando por el camino de agua
+const nadador = axolotl(PAL.rosa, 0.95);
+nadador.position.set(-4.2, TOP + 0.03, 3.8); nadador.rotation.y = -2.2;
+world.add(nadador);
+
+// ---------- Rueda JUGAR (CTA dominante, arriba-derecha) ----------
+const ctaMound = rockStack(3.9, -2.9, 3.0, 3, [PAL.salvia, PAL.oliva, PAL.pasto]);
+world.add(ctaMound);
+const wheel = new THREE.Group();
+const ring = new THREE.Shape(); ring.absarc(0, 0, 2.05, 0, Math.PI * 2);
+const hole = new THREE.Path(); hole.absarc(0, 0, 1.7, 0, Math.PI * 2);
+ring.holes.push(hole);
+wheel.add(paper(ring, 0.2, PAL.limon, 0.04));
+for (let i = 0; i < 3; i++) {
+  const spoke = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.2, 3.8), mat(PAL.limon));
+  spoke.position.y = 0.1; spoke.castShadow = true;
+  const holder = new THREE.Group(); holder.add(spoke);
+  holder.rotation.y = (i / 3) * Math.PI;
+  wheel.add(holder);
+}
+const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.26, 20), mat(PAL.limon));
+hub.position.y = 0.13; hub.castShadow = true; wheel.add(hub);
+const jugarTxt = textPlane("JUGAR", 1.25, "#56691e");
+jugarTxt.rotation.x = -Math.PI / 2; jugarTxt.rotation.z = -Math.PI / 12;
+jugarTxt.position.y = 0.32; wheel.add(jugarTxt);
+wheel.position.set(3.9, TOP + ctaMound.userData.top, -2.9);
+world.add(wheel);
+
+// ---------- Cofre de corcholatas y frijolitos (economía, abajo-centro) ----------
+const cofreMound = rockStack(0.9, 4.6, 1.5, 4, [PAL.salvia, PAL.oliva, PAL.pasto]);
+world.add(cofreMound);
+const cofre = new THREE.Group();
+const cbody = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.62, 0.78), mat(PAL.madera));
+cbody.position.y = 0.31; cbody.castShadow = true; cofre.add(cbody);
+const clid = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 1.15, 14, 1, false, 0, Math.PI), mat(PAL.maderaOscura));
+clid.rotation.z = Math.PI / 2; clid.position.y = 0.62; clid.castShadow = true; cofre.add(clid);
+const band = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.1, 0.82), mat(PAL.amarillo));
+band.position.y = 0.45; cofre.add(band);
+cofre.position.set(0.9, TOP + 1.05, 4.6); cofre.rotation.y = 0.3;
+world.add(cofre);
+const cofreTxt = textPlane("CORCHOLATAS Y FRIJOLITOS", 0.42, "#f2c23e");
+cofreTxt.position.set(0.9, TOP + 0.55, 6.3); cofreTxt.rotation.x = -el;
+world.add(cofreTxt);
+
+// ---------- Banderines colgantes OPCIONES / TIENDA (nav, derecha) ----------
+function picadoShape(w, h) {
+  const s = new THREE.Shape();
+  s.moveTo(-w / 2, h); s.lineTo(w / 2, h); s.lineTo(w / 2, 0.18 * h);
+  const n = 5;
+  for (let i = 0; i <= n; i++) {
+    const x = w / 2 - (i / n) * w;
+    s.lineTo(x, i % 2 === 0 ? 0.18 * h : 0);
+  }
+  s.closePath();
+  return s;
+}
+const banners = [];
+function hangBanner(label, color, txtColor, x, z, ry, w = 1.7, h = 1.5) {
+  const g = new THREE.Group();
+  const flag = paper(picadoShape(w, h), 0.03, color, 0.01);
+  flag.rotation.x = 0; // vertical
+  flag.castShadow = true;
+  g.add(flag);
+  const t = textPlane(label, 0.34, txtColor);
+  t.position.set(0, h * 0.32, 0.05);
+  g.add(t);
+  // poste
+  const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, h + 1.2, 8), mat(PAL.maderaOscura));
+  pole.position.set(-w / 2 - 0.15, (h + 1.2) / 2 - h, 0); pole.castShadow = true;
+  g.add(pole);
+  g.position.set(x, TOP + h + 0.4, z); g.rotation.y = ry;
+  g.userData.phase = R(0, 6);
+  banners.push(g);
+  world.add(g);
+}
+hangBanner("OPCIONES", PAL.amarillo, "#7a4e2c", 3.3, 2.4, -0.5);
+hangBanner("TIENDA", 0xe8a04a, "#5c3a1a", 5.1, 3.4, -0.6);
+
+// ---------- Marco perimetral de papel picado ----------
+const picadoColors = [PAL.magenta, PAL.amarillo, PAL.teal, PAL.crema];
+const edge = 7.6, n = 6;
+// Lados 1 (z+) y 3 (x+) quedan hacia la cámara: banderines más bajos e
+// inclinados hacia afuera para no tapar la escena (como en el concept).
+const N_FLAGS = 8;
+for (let side = 0; side < 4; side++) {
+  const near = side === 1 || side === 3;
+  const fw = near ? 1.25 : 1.5, fh = near ? 0.95 : 1.25;
+  for (let i = 0; i < N_FLAGS; i++) {
+    const c = picadoColors[(i + side) % picadoColors.length];
+    const f = paper(picadoShape(fw, fh), 0.025, c, 0.008);
+    f.material.side = THREE.DoubleSide;
+    f.material.emissive = new THREE.Color(c).multiplyScalar(0.4);
+    f.rotation.order = "YXZ";
+    f.rotation.x = near ? 0.55 : 0; // lean hacia afuera
+    const y = near ? TOP + 0.9 : TOP + 2.0;
+    const t = (i + 0.5) / N_FLAGS * (edge * 2) - edge;
+    if (side === 0) { f.position.set(t, y, -edge); f.rotation.y = 0; }
+    if (side === 1) { f.position.set(t, y, edge); f.rotation.y = Math.PI; }
+    if (side === 2) { f.position.set(-edge, y, t); f.rotation.y = Math.PI / 2; }
+    if (side === 3) { f.position.set(edge, y, t); f.rotation.y = -Math.PI / 2; }
+    f.userData.phase = R(0, 6);
+    banners.push(f);
+    world.add(f);
+  }
+}
+// etiquetas de zona en las esquinas frontales (señalética diegética)
+const zl = textPlane("EL BARRIL", 0.4, "#fdf3df"); zl.position.set(-edge + 1.5, TOP + 0.55, edge + 0.45); zl.rotation.x = -0.35; world.add(zl);
+const zr = textPlane("EL FRIJOLITO", 0.4, "#f2c23e"); zr.position.set(edge - 1.7, TOP + 0.55, edge + 0.45); zr.rotation.x = -0.35; world.add(zr);
+
+// ---------- Plantas de papel ----------
+function plant(x, z, c, s = 1) {
+  const g = new THREE.Group();
+  for (let i = 0; i < 3; i++) {
+    const leaf = paper(ellipseShape(0.12, 0.45), 0.04, c, 0.01);
+    // dejar la hoja vertical: deshacer la rotación de paper()
+    leaf.rotation.x = 0;
+    leaf.position.y = 0.4;
+    const holder = new THREE.Group();
+    holder.add(leaf);
+    holder.rotation.y = (i / 3) * Math.PI;
+    holder.rotation.z = R(-0.25, 0.25);
+    g.add(holder);
+  }
+  g.position.set(x, TOP, z); g.scale.setScalar(s);
+  world.add(g);
+}
+plant(-6.3, 2.6, 0x3ee8c0, 1.2); plant(-4.0, -3.8, 0x9b6df0, 1.0);
+plant(5.9, -0.6, 0x3ee8c0, 1.3); plant(6.3, 4.9, 0xe87ad0, 0.9);
+plant(-0.9, 5.9, 0x52d0a8, 1.0); plant(2.6, -5.6, 0xb8d94a, 1.1);
+
+// ---------- Interacción ----------
+let px = 0, py = 0;
+addEventListener("pointermove", (e) => {
+  px = (e.clientX / innerWidth - 0.5) * 2;
+  py = (e.clientY / innerHeight - 0.5) * 2;
+});
+document.getElementById("btnOrbit").onclick = () => { orbit = !orbit; };
+let tiltAlt = false;
+document.getElementById("btnTilt").onclick = () => {
+  tiltAlt = !tiltAlt;
+  elBase = THREE.MathUtils.degToRad(tiltAlt ? 50 : 32);
+};
+
+// ---------- Loop ----------
+const clock = new THREE.Clock();
+function tick() {
+  const t = clock.getElapsedTime();
+  // branquias en cascada
+  for (const gm of allGills) {
+    gm.rotation.z = gm.userData.baseRot + Math.sin(t * 2.4 + gm.userData.phase) * 0.16;
+  }
+  // papel picado y banderines se mecen
+  for (const b of banners) b.rotation.z = Math.sin(t * 1.2 + b.userData.phase) * 0.045;
+  // la rueda respira (invita a tocarla)
+  wheel.rotation.y += 0.0012;
+  // nadador avanza despacio por el camino
+  nadador.position.x = -4.2 + Math.sin(t * 0.3) * 0.6;
+  nadador.position.z = 3.8 + Math.cos(t * 0.3) * 0.4;
+  nadador.rotation.y = -2.2 + Math.sin(t * 0.6) * 0.15;
+  // cámara: parallax + órbita opcional (aquí es donde el 3D "se siente")
+  const targetAz = azBase + (orbit ? t * 0.25 : px * 0.10);
+  const targetEl = elBase + (orbit ? 0 : -py * 0.06);
+  az += (targetAz - az) * 0.06;
+  el += (targetEl - el) * 0.06;
+  placeCam();
+  renderer.render(scene, cam);
+  requestAnimationFrame(tick);
+}
+resize(); placeCam(); tick();
+</script>
+</body>
+</html>
