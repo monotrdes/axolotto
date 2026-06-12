@@ -1,8 +1,9 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
-import { SpotSlot, AxoPos } from '@/types/santuario';
+import React from 'react';
+import { SpotSlot } from '@/types/santuario';
 import SpotFluido from './SpotFluido';
 import { API_BASE } from '@/lib/api';
+import { useSwimAnimation } from '@/hooks/useSwimAnimation';
 
 const API = `${API_BASE}`;
 
@@ -33,9 +34,10 @@ export default function NidoScene({
     clima?.period === 'Mañana'    ? 'rgba(52,211,153,0.04)' :
     clima?.period === 'Tarde'     ? 'rgba(251,146,60,0.05)' :
     clima?.period === 'Noche'     ? 'rgba(139,92,246,0.06)' : null;
-  const [axoPositions, setAxoPositions] = useState<Record<number, AxoPos>>({});
-  const positionsRef = useRef<Record<number, AxoPos>>({});
   const isManagement = viewMode === 'gestion';
+
+  // Swim animation — bubbles, positions, dynamic CSS keyframes
+  const { bubbles, axoPositions, positionsRef, cssBlock } = useSwimAnimation(axolotitos, isManagement);
 
   // Find connections between eggs and their godfather spots
   const connections: { fromIndex: number; toIndex: number; padrinoId: number }[] = [];
@@ -55,91 +57,13 @@ export default function NidoScene({
     }
   });
 
-  // Bubbles generated client-side only (SSR safe)
-  const [bubbles] = useState<{ left: number; delay: number; duration: number; size: number }[]>(() => {
-    if (typeof window === 'undefined') return [];
-    return Array.from({ length: 14 }, () => ({
-      left: Math.random() * 94,
-      delay: Math.random() * 10,
-      duration: 5 + Math.random() * 7,
-      size: 2 + Math.random() * 5,
-    }));
-  });
-
-  // Free-range axo positions (used in libre mode; in gestion mode they snap to spots)
-  useEffect(() => {
-    if (isManagement) return;
-    let changed = false;
-    axolotitos.forEach(axo => {
-      if (!positionsRef.current[axo.id]) {
-        positionsRef.current[axo.id] = {
-          left:     12 + Math.random() * 68,
-          bottom:   38 + Math.random() * 28,
-          depth:    0.3 + Math.random() * 0.7,
-          duration: 8 + Math.random() * 8,
-          delay:    Math.random() * 5,
-          driftX:   (Math.random() > 0.5 ? 1 : -1) * (18 + Math.random() * 30),
-        };
-        changed = true;
-      }
-    });
-    if (changed) setAxoPositions({ ...positionsRef.current });
-  }, [axolotitos, isManagement]);
-
   const isFrost = (clima?.freeze_chance || 0) > 0.5;
   const isHot   = (clima?.heat_multiplier || 1) > 1.5;
   const isGood  = (clima?.stats_multiplier || 1) > 1 && !isFrost;
 
-  // Build per-axolotito swim CSS (libre mode only)
-  const swimCss = !isManagement ? axolotitos.map(axo => {
-    const p = positionsRef.current[axo.id];
-    if (!p) return '';
-    const dx = p.driftX;
-    return `@keyframes axo-swim-${axo.id} {
-      0%   { transform: translateX(0px)          translateY(0px)   scaleX(1);  }
-      25%  { transform: translateX(${dx * 0.4}px) translateY(-7px)  scaleX(1);  }
-      50%  { transform: translateX(${dx}px)        translateY(-12px) scaleX(${dx > 0 ? 1 : -1}); }
-      75%  { transform: translateX(${dx * 0.4}px) translateY(-5px)  scaleX(-1); }
-      100% { transform: translateX(0px)          translateY(0px)   scaleX(1);  }
-    }`;
-  }).join('\n') : '';
-
   return (
     <>
-      <style>{`
-        @keyframes cenote-bubble {
-          0%   { opacity: 0.35; transform: translateY(0)      scale(1);   }
-          60%  { opacity: 0.55; }
-          100% { opacity: 0;    transform: translateY(-320px) scale(0.3); }
-        }
-        @keyframes ray-flicker {
-          0%,100% { opacity: 0.04; }
-          50%     { opacity: 0.12; }
-        }
-        @keyframes shimmer-heat {
-          0%,100% { opacity: 0.04; }
-          50%     { opacity: 0.10; }
-        }
-        @keyframes golden-float {
-          0%   { opacity: 0;   transform: translateY(0);     }
-          20%  { opacity: 0.7; }
-          100% { opacity: 0;   transform: translateY(-70px); }
-        }
-        @keyframes glow-pulse {
-          0%,100% { opacity: 0.5; }
-          50%     { opacity: 0.8; }
-        }
-        @keyframes energy-flow {
-          to {
-            stroke-dashoffset: -20;
-          }
-        }
-        .energy-line {
-          stroke-dasharray: 4 4;
-          animation: energy-flow 1.5s linear infinite;
-        }
-        ${swimCss}
-      `}</style>
+      <style>{cssBlock}</style>
 
       <div
         className={`relative w-full overflow-hidden rounded-3xl border border-white/5 shadow-2xl ${className ?? 'h-[340px] sm:h-[500px]'}`}
