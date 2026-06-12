@@ -852,6 +852,7 @@ export function buildTianguisScene3D(
       if (v.pause > 0) {
         v.pause -= dt;
         v.b.position.y = FLOOR;
+        v.b.setState("idle");
         if (v.pause <= 0) v.target = wanderTarget();
         continue;
       }
@@ -860,13 +861,15 @@ export function buildTianguisScene3D(
       const dist = Math.hypot(dx, dz);
       if (dist < 0.08) {
         v.pause = rand(1.2, 3.5);
+        v.b.setState("idle");
         v.b.setWalk(0, 1); // de frente mientras descansa
         continue;
       }
       const step = Math.min(dist, v.speed * dt);
       v.b.position.x += (dx / dist) * step;
       v.b.position.z += (dz / dist) * step;
-      v.b.position.y = FLOOR + Math.abs(Math.sin(t * 7 + v.speed * 20)) * 0.045; // pasitos
+      v.b.position.y = FLOOR; // el ciclo de caminado vive en el billboard
+      v.b.setState("walk");
       v.b.setWalk(dx, dz);
     }
   });

@@ -111,9 +111,25 @@
       espalda al caminar hacia el fondo. Snapshot al entrar a la zona (si
       cambian los axolotitos no se refresca hasta re-entrar — aceptado).
 - [x] Sombra de contacto elíptica bajo cada billboard.
-- [ ] (Mejora futura) ADN visual completo en el painter: hoy solo varía
-      skin/seed; gill/eye/mouth/tail/forehead/limb _type quedan para cuando
-      haya atlas de arte o se porte el painter por variantes.
+- [x] **Puppet rediseñado (2026-06-12)**: rig cut-out por capas en
+      `world3d/puppet/` (poses, animations, axolotitoPainter, frameAtlas,
+      parts/*). Atlas único de ~21 frames por puppet (una CanvasTexture,
+      cambio de frame = texture.offset). Estados `setState("idle"|"walk"|
+      "swim"|"sleep")`: caminado real en 2 patas de perfil (6 frames,
+      piernas alternadas, lean 8°), nado horizontal (4 frames, cola
+      propulsando), dormir acostado. Vista `side` nueva con histéresis en
+      `setWalk` (side si |dx|>0.45|dz|). Las escenas ya NO hacen brinquitos
+      manuales de position.y.
+- [x] ADN visual completo: las 7 dimensiones (gill/eye/mouth/tail/forehead/
+      limb + skin) renderizan variantes procedurales distintas por capas.
+      `BillboardDNA` extendida (todo opcional — tenderos con skin+seed
+      siguen igual); Santuario las recibe gratis vía `AxolotitoData`.
+- [x] Contrato de sprites: `world3d/puppet/spriteContract.ts` +
+      `docs/sprite_contract_axolotito.md` — 1 PNG por parte × vista con
+      pivote (cut-out); los painters procedurales se sustituyen por
+      drawImage sin tocar locomoción/atlas/escenas.
+- [ ] (Mejora futura) cache de atlas por hash de ADN para compartir textura
+      entre puppets idénticos (los 5 tenderos fijos se beneficiarían).
 
 ### P3 — Migrar Santuario al diorama 3D
 - Mismo patrón que Tianguis (escena 3D + swap en zoneSettled). Conservar TODOS
@@ -143,3 +159,4 @@
 | 2026-06-12 | (este) | Tianguis 3D zoom móvil ajustado: reducido minW a 6.0 en ThreeWorldEngine para acercar la cámara y mejorar visibilidad en pantallas estrechas como Galaxy Fold 5 |
 | 2026-06-12 | (este) | Ajuste estético subacuático: aclarados los colores del agua y neblina hacia turquesa/esmeralda cristalino y potenciada la intensidad luminosa para evocar un Xochimilco pre-hispánico mágico y alegre |
 | 2026-06-12 | (este) | Corrección de visuales subacuáticos: reemplazada neblina exponencial por neblina lineal (THREE.Fog) para mantener nítido el primer plano y evitar que se opaque, y desvinculada la niebla de las burbujas para que resplandezcan siempre |
+| 2026-06-12 | (este) | Rediseño puppet Axolotito: rig cut-out en world3d/puppet/ (atlas de frames única textura), caminado bípedo real de perfil + nado horizontal + sleep vía setState, vistas front/back/side con histéresis, 7 dimensiones de ADN visibles (27 variantes procedurales), contrato de sprites por parte (docs/sprite_contract_axolotito.md); Tianguis/Santuario/Pirámide migradas (sin brinquitos manuales). Harness dedicado _harness_puppet.ts (untracked, modos ?dna / ?anim) |

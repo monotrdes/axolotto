@@ -657,6 +657,7 @@ export function buildSantuarioScene3D(
           const dist = billboard.position.distanceTo(entry.salaTarget);
           if (dist < 0.15) {
             entry.pauseTimer -= dt;
+            billboard.setState("idle");
             billboard.setWalk(0, 1); // De frente si reposa
             if (entry.pauseTimer <= 0) {
               entry.salaTarget.set(rand(-2.2, 2.2), platformY, rand(-1.0, 1.0));
@@ -666,8 +667,8 @@ export function buildSantuarioScene3D(
           } else {
             const dir = new THREE.Vector3().subVectors(entry.salaTarget, billboard.position).normalize();
             billboard.position.addScaledVector(dir, entry.speed * dt);
-            // Salto/caminar
-            billboard.position.y = platformY + Math.abs(Math.sin(t * 8)) * 0.07;
+            billboard.position.y = platformY; // el ciclo de caminado vive en el billboard
+            billboard.setState("walk");
             billboard.setWalk(dir.x, dir.z);
           }
           break;
@@ -680,8 +681,7 @@ export function buildSantuarioScene3D(
           } else {
             const dir = new THREE.Vector3().subVectors(entry.bedPos, billboard.position).normalize();
             billboard.position.addScaledVector(dir, 1.6 * dt);
-            // Ondulación natación
-            billboard.position.y += Math.sin(t * 6 + entry.swimPhase) * 0.008;
+            billboard.setState("swim"); // ondulación interna del billboard
             billboard.setWalk(dir.x, dir.z);
           }
           break;
@@ -695,15 +695,14 @@ export function buildSantuarioScene3D(
           } else {
             const dir = new THREE.Vector3().subVectors(entry.salaTarget, billboard.position).normalize();
             billboard.position.addScaledVector(dir, 1.6 * dt);
-            billboard.position.y += Math.sin(t * 6 + entry.swimPhase) * 0.008;
+            billboard.setState("swim");
             billboard.setWalk(dir.x, dir.z);
           }
           break;
         }
         case "inBed": {
-          billboard.position.copy(entry.bedPos);
-          billboard.position.y = entry.bedPos.y + Math.sin(t * 1.6) * 0.012; // Respiración lenta
-          billboard.setWalk(0, 1);
+          billboard.position.copy(entry.bedPos); // respiración interna (sleep)
+          billboard.setState("sleep");
           break;
         }
       }

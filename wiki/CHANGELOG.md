@@ -22,6 +22,14 @@ last_modified: "2026-06-11"
 
 ---
 
+## 2026-06-12 | frontend mundo 3D | Rediseño puppet Axolotito: caminado bípedo, nado y ADN completo
+- **Campo**: Nuevo rig cut-out `frontend/components/world3d/puppet/` (poses, animations, axolotitoPainter, frameAtlas, dnaDefaults, spriteContract, parts/*) + reescritura de `AxolotitoBillboard.ts` + migración de Tianguis/Santuario/Pirámide a `setState`.
+- **Anterior**: Billboard con 4 texturas fijas; locomoción simulada con brinquitos verticales de position.y en cada escena; solo skinColor+seed del ADN.
+- **Nuevo**: Atlas de ~21 frames horneados en una sola CanvasTexture por puppet (cambio de frame = texture.offset). Estados idle/walk/swim/sleep: caminado real en 2 patas de perfil (6 frames, piernas alternadas, lean 8°), nado horizontal con cola propulsando, dormir acostado. Vista "side" nueva con histéresis. Las 7 dimensiones de ADN (gill/eye/mouth/tail/forehead/limb + skin) renderizan 27 variantes procedurales por capas. Contrato de sprites cut-out en `docs/sprite_contract_axolotito.md` (1 PNG por parte × vista con pivote).
+- **Motivo**: Proporciones según referencia papercraft del usuario; dejar el puppet listo para swap a sprites de arte real sin tocar locomoción/escenas.
+- **Autor**: Claude
+- **Fuente en código**: `frontend/components/world3d/puppet/`, `frontend/components/world3d/AxolotitoBillboard.ts`
+
 ## 2026-06-12 | frontend mundo 3D | P2: axolotitos billboard 2D en el Tianguis 3D (task-1781252081-99)
 - **Campo**: Nuevo `frontend/components/world3d/AxolotitoBillboard.ts` + tenderos/transeúntes en `TianguisScene3D.ts` + yaw de billboards en `ThreeWorldEngine.ts`.
 - **Anterior**: Los 5 puestos del Tianguis 3D tenían anclas `attendant:<id>` vacías; sin habitantes.

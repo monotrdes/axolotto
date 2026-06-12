@@ -358,6 +358,7 @@ export function buildPiramideScene3D(
         if (v.pause > 0) {
           v.pause -= dt;
           v.b.position.y = FLOOR;
+          v.b.setState("idle");
           if (v.pause <= 0) v.target = wanderTarget();
           v.b.setWalk(0, 1);
           continue;
@@ -369,6 +370,7 @@ export function buildPiramideScene3D(
 
         if (dist < 0.08) {
           v.pause = rand(1.0, 3.0);
+          v.b.setState("idle");
           v.b.setWalk(0, 1);
           continue;
         }
@@ -376,8 +378,8 @@ export function buildPiramideScene3D(
         const step = Math.min(dist, v.speed * dt);
         v.b.position.x += (dx / dist) * step;
         v.b.position.z += (dz / dist) * step;
-        // Caminata saltarina
-        v.b.position.y = FLOOR + Math.abs(Math.sin(t * 7.5 + v.speed * 20)) * 0.04;
+        v.b.position.y = FLOOR; // el ciclo de caminado vive en el billboard
+        v.b.setState("walk");
         v.b.setWalk(dx, dz);
       }
     };
