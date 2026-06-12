@@ -88,8 +88,12 @@ function Restart-Axo {
     Write-Step "Backend..."
     docker compose up -d --build backend_axolotto
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "  ERROR: No se pudo levantar el backend" -ForegroundColor Red
-        return
+        Write-Host "  WARNING: No se pudo compilar/reconstruir el backend (sin conexion / proxy Docker?). Intentando iniciar con la imagen local..." -ForegroundColor Yellow
+        docker compose up -d backend_axolotto
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "  ERROR: No se pudo levantar el backend" -ForegroundColor Red
+            return
+        }
     }
 
     Write-Step "Frontend..."

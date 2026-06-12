@@ -37,7 +37,10 @@ restart_axo() {
     bash scripts/deploy_local.sh
 
     echo "🚀 Iniciando Backend..."
-    docker-compose up -d --build backend_axolotto
+    docker-compose up -d --build backend_axolotto || {
+        echo "⚠️  WARNING: No se pudo compilar/reconstruir el backend (sin red?). Intentando iniciar con la imagen local..."
+        docker-compose up -d backend_axolotto
+    }
 
     echo "📦 Compilando y reiniciando Frontend..."
     cd frontend
@@ -88,7 +91,10 @@ echo "📦 Compilando y desplegando contratos locales..."
 bash scripts/deploy_local.sh
 
 echo "🚀 Iniciando Backend..."
-docker-compose up -d --build backend_axolotto
+docker-compose up -d --build backend_axolotto || {
+    echo "⚠️  WARNING: No se pudo compilar/reconstruir el backend (sin red?). Intentando iniciar con la imagen local..."
+    docker-compose up -d backend_axolotto
+}
 
 echo "📦 Compilando y reiniciando Frontend..."
 cd frontend
