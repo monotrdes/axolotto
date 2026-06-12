@@ -67,13 +67,11 @@ const PANEL_LABELS: Partial<Record<TabId, string>> = {
   tablas: 'Abrir Mochila',
 };
 
-// New 5-zone dock matching the paper world
+// New 3-zone dock matching the paper world
 const ZONE_TABS = [
   { id: 'santuario' as TabId, label: 'Nido',     emoji: '🪺', color: '#E4007C', glow: 'rgba(228,0,124,0.5)',   zone: 'nido' },
   { id: 'tienda'    as TabId, label: 'Tianguis',  emoji: '🏪', color: '#FF6B35', glow: 'rgba(255,107,53,0.5)',  zone: 'tianguis' },
-  { id: 'jugar'     as TabId, label: 'Sala',      emoji: '🎲', color: '#34D399', glow: 'rgba(52,211,153,0.5)',  zone: 'sala' },
   { id: 'rankings'  as TabId, label: 'Pirámide',  emoji: '🏆', color: '#FBBF24', glow: 'rgba(251,191,36,0.5)',  zone: 'piramide' },
-  { id: 'gashapon'  as TabId, label: 'Cápsulas',  emoji: '🎰', color: '#A855F7', glow: 'rgba(168,85,247,0.5)',  zone: 'capsulas' },
 ] as const;
 
 export default function Home() {
@@ -86,7 +84,7 @@ export default function Home() {
   // (hotspots del diorama o botón 📜). Sin flag siempre visibles (legacy).
   const [panelVisible, setPanelVisible]   = useState(!PAPER_WORLD);
   // Sección del Store a abrir según el puesto tocado en el Tianguis
-  const [storeSection, setStoreSection]   = useState<'official' | 'melter' | 'market' | undefined>(undefined);
+  const [storeSection, setStoreSection]   = useState<'official' | 'reciclon' | 'market' | undefined>(undefined);
   const [storeSectionNonce, setStoreSectionNonce] = useState(0);
   const [mochilaInitialTab, setMochilaInitialTab] = useState<MochilaTab>('cartas');
   // Burbuja 👁 del embarcadero: amigo cuya cueva se abre al entrar a AmigosPage
@@ -791,7 +789,7 @@ export default function Home() {
               } else {
                 // Puestos del Tianguis → tienda en su sección
                 const seccion =
-                  stallType === "forja" ? "melter" : stallType === "p2p" ? "market" : "official";
+                  stallType === "forja" ? "reciclon" : stallType === "p2p" ? "market" : "official";
                 setStoreSection(seccion);
                 setStoreSectionNonce((n) => n + 1);
                 setTabActiva("tienda");
@@ -1003,7 +1001,6 @@ export default function Home() {
                   openBanco={openBancoCount}
                   initialSection={storeSection}
                   sectionNonce={storeSectionNonce}
-                  onMeltSuccess={() => gameCanvasRef.current?.playMeltAnimation?.()}
                 />
               )}
               {tabActiva === 'jugar' && (

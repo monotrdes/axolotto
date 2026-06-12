@@ -17,12 +17,6 @@ interface ZoneDockMacroProps {
 
 type MacroId = "santuario" | "piramide" | "tianguis";
 
-const SUB_PILLS: Array<{ tab: TabId; zone: string; emoji: string; label: string }> = [
-  { tab: "gashapon", zone: "capsulas", emoji: "🎰", label: "Cápsulas" },
-  { tab: "jugar", zone: "salas", emoji: "🎲", label: "Salas" },
-  { tab: "rankings", zone: "rankings", emoji: "🏆", label: "Rankings" },
-];
-
 function activeMacro(tab: TabId): MacroId | null {
   if (tab === "santuario" || tab === "criadero" || tab === "axolotitos" || tab === "amigos")
     return "santuario";
@@ -41,32 +35,6 @@ export default function ZoneDockMacro({
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-40 overflow-visible bg-[#060610]/90 backdrop-blur-xl border-t border-white/5">
-      {/* Sub-pills de la Pirámide — banderines que emergen sobre el dock */}
-      {piramideActive && (
-        <div className="absolute -top-10 left-1/2 -translate-x-1/2 flex gap-2 animate-tab-fade">
-          {SUB_PILLS.map((pill) => {
-            const isActive = tabActiva === pill.tab;
-            return (
-              <button
-                key={pill.tab}
-                onClick={() => onNavigate(pill.tab, pill.zone)}
-                className={`relative flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${
-                  isActive
-                    ? "bg-[var(--papel-cempasuchil)] text-black border-transparent shadow-[0_0_14px_rgba(245,158,11,0.5)]"
-                    : "bg-[#1C1C35]/90 text-gray-300 border-white/10 hover:border-white/30"
-                }`}
-              >
-                <span>{pill.emoji}</span>
-                <span>{pill.label}</span>
-                {pill.tab === "gashapon" && dailyClaimAvailable && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-red-500 shadow-[0_0_6px_2px_rgba(239,68,68,0.7)] animate-pulse" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
       <div className="flex items-end justify-around px-1 pt-1 pb-2.5 max-w-xl mx-auto">
         {/* Santuario */}
         <MacroButton
@@ -81,7 +49,7 @@ export default function ZoneDockMacro({
         {/* Pirámide — FAB central */}
         <div className="flex flex-col items-center flex-1 -translate-y-5">
           <button
-            onClick={() => onNavigate("jugar", "salas")}
+            onClick={() => onNavigate("rankings", "rankings")}
             className="relative w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200"
             style={
               piramideActive

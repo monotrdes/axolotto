@@ -108,17 +108,26 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
       if (santuarioRef.current && !santuarioRef.current.destroyed) {
         santuarioRef.current.setAxolotitos(data);
       }
+      if (active3dRef.current && scene3dRef.current && "setAxolotitos" in scene3dRef.current) {
+        (scene3dRef.current as any).setAxolotitos(data);
+      }
     },
     setCaveStatus(status: CaveStatusData) {
       caveStatusRef.current = status;
       if (santuarioRef.current && !santuarioRef.current.destroyed) {
         santuarioRef.current.setCaveStatus(status);
       }
+      if (active3dRef.current && scene3dRef.current && "setCaveStatus" in scene3dRef.current) {
+        (scene3dRef.current as any).setCaveStatus(status);
+      }
     },
     setDecoraciones(data: DecoracionesData) {
       decoracionesRef.current = data;
       if (santuarioRef.current && !santuarioRef.current.destroyed) {
         santuarioRef.current.setDecoraciones(data);
+      }
+      if (active3dRef.current && scene3dRef.current && "setDecoraciones" in scene3dRef.current) {
+        (scene3dRef.current as any).setDecoraciones(data);
       }
     },
     setLunarPhase(phase: number) {
@@ -155,11 +164,17 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
       if (piramideRef.current && !piramideRef.current.destroyed) {
         piramideRef.current.setPodio(data);
       }
+      if (active3dRef.current && scene3dRef.current && "setPodio" in scene3dRef.current) {
+        (scene3dRef.current as any).setPodio(data);
+      }
     },
     setAmigos(amigos: AmigoData[]) {
       amigosRef.current = amigos;
       if (santuarioRef.current && !santuarioRef.current.destroyed) {
         santuarioRef.current.setAmigos(amigos);
+      }
+      if (active3dRef.current && scene3dRef.current && "setAmigos" in scene3dRef.current) {
+        (scene3dRef.current as any).setAmigos(amigos);
       }
     },
     playMeltAnimation() {
@@ -242,42 +257,82 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
 
       // Zonas migradas al diorama 3D: swap de canvas bajo la cortina.
       if (WORLD3D_ENABLED) {
-        const setWorld3DActive = async (active: boolean) => {
-          if (active === active3dRef.current) return;
-          active3dRef.current = active;
+        const setWorld3DActive = async (active: boolean, macro: string) => {
           const host3d = host3dRef.current;
           const hostPixi = hostRef.current;
           if (!host3d || !hostPixi) return;
+
           if (active) {
-            const [{ ThreeWorldEngine }, { buildTianguisScene3D }, { configurePaperStyle }] =
-              await Promise.all([
-                import("@/components/world3d/ThreeWorldEngine"),
-                import("@/components/world3d/TianguisScene3D"),
-                import("@/components/world3d/paperPrimitives"),
-              ]);
-            if (cancelled || !active3dRef.current) return;
-            if (!engine3dRef.current) {
-              engine3dRef.current = ThreeWorldEngine.create(host3d);
-              engine3dRef.current.onHotspot = (stallId) => onStallClickRef.current?.(stallId);
+            if (active3dRef.current && scene3dRef.current && scene3dRef.current.group.userData?.macro === macro) {
+              return;
             }
+            active3dRef.current = true;
+
+            if (!engine3dRef.current) {
+              const { ThreeWorldEngine } = await import("@/components/world3d/ThreeWorldEngine");
+              engine3dRef.current = ThreeWorldEngine.create(host3d);
+              engine3dRef.current.onHotspot = (stallId) => {
+                if (stallId.startsWith("trajinera:")) {
+                  const friendId = stallId.slice("trajinera:".length);
+                  if (scene3dRef.current && "toggleActionBubbles" in scene3dRef.current) {
+                    (scene3dRef.current as any).toggleActionBubbles(friendId);
+                  }
+                  return;
+                }
+                onStallClickRef.current?.(stallId);
+              };
+            }
+
+            const { configurePaperStyle } = await import("@/components/world3d/paperPrimitives");
             configurePaperStyle({ grain: engine3dRef.current.quality !== "ligera" });
-            // Transeúntes: hasta 4 axolotitos del usuario (no huevos) pasean
-            // por la plaza; el seed determinista mantiene sus chapas entre visitas.
-            const visitantes = axolotitosRef.current
-              .filter((a) => !a.isEgg)
-              .slice(0, 4)
-              .map((a) => ({
-                skinColor: a.skinColor,
-                seed: [...a.id].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 9973, 7),
-              }));
-            const scene3d = buildTianguisScene3D({ visitantes });
-            scene3dRef.current = scene3d;
-            engine3dRef.current.setScene(scene3d);
+
+            if (macro === "tianguis") {
+              const { buildTianguisScene3D } = await import("@/components/world3d/TianguisScene3D");
+              if (cancelled || !active3dRef.current) return;
+              const visitantes = axolotitosRef.current
+                .filter((a) => !a.isEgg)
+                .slice(0, 4)
+                .map((a) => ({
+                  skinColor: a.skinColor,
+                  seed: [...a.id].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 9973, 7),
+                }));
+              const scene3d = buildTianguisScene3D({ visitantes });
+              scene3d.group.userData = { macro: "tianguis" };
+              scene3dRef.current = scene3d;
+              engine3dRef.current.setScene(scene3d);
+            } else if (macro === "santuario") {
+              const { buildSantuarioScene3D } = await import("@/components/world3d/SantuarioScene3D");
+              if (cancelled || !active3dRef.current) return;
+              const scene3d = buildSantuarioScene3D();
+              scene3d.group.userData = { macro: "santuario" };
+              scene3dRef.current = scene3d;
+
+              if (caveStatusRef.current) scene3d.setCaveStatus(caveStatusRef.current);
+              if (decoracionesRef.current) scene3d.setDecoraciones(decoracionesRef.current);
+              scene3d.setAxolotitos(axolotitosRef.current);
+              scene3d.setAmigos(amigosRef.current);
+
+              engine3dRef.current.setScene(scene3d);
+            } else if (macro === "piramide") {
+              const { buildPiramideScene3D } = await import("@/components/world3d/PiramideScene3D");
+              if (cancelled || !active3dRef.current) return;
+              const scene3d = buildPiramideScene3D();
+              scene3d.group.userData = { macro: "piramide" };
+              scene3dRef.current = scene3d;
+
+              scene3d.setPodio(podioRef.current);
+              scene3d.setAxolotitos(axolotitosRef.current);
+
+              engine3dRef.current.setScene(scene3d);
+            }
+
             host3d.style.display = "";
             hostPixi.style.display = "none";
             engine3dRef.current.setUiPaused(false);
             engine.setUiPaused(true);
           } else {
+            if (!active3dRef.current) return;
+            active3dRef.current = false;
             engine3dRef.current?.setUiPaused(true);
             engine3dRef.current?.clearScene();
             scene3dRef.current = null;
@@ -288,7 +343,7 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
           }
         };
         engine.bridge.on("zoneSettled", ({ macro }) => {
-          void setWorld3DActive(macro === "tianguis").catch((err) =>
+          void setWorld3DActive(macro === "tianguis" || macro === "santuario" || macro === "piramide", macro).catch((err) =>
             console.error("World3D: error montando la escena", err),
           );
         });
