@@ -270,7 +270,7 @@ export function buildTianguisScene3D(
     ticket.position.set(0, 0.12, 0.72);
     ticket.rotation.x = 0.5;
     reciclon.add(ticket);
-    attendantAnchor(reciclon, "forja", 0, 0, -0.1);
+    attendantAnchor(reciclon, "forja", 0, 0.35, -0.75);
     reciclon.scale.setScalar(0.82);
     reciclon.position.set(2.3, TOP + 0.05, -2.9);
     reciclon.rotation.y = -0.35;
@@ -350,9 +350,9 @@ export function buildTianguisScene3D(
     s.rotation.x = -0.1;
     s.rotation.z = 0.05;
     sobrecitos.add(s);
-    attendantAnchor(sobrecitos, "booster", 0, 0, -0.55);
+    attendantAnchor(sobrecitos, "booster", 0, 0.38, -0.85);
     sobrecitos.scale.setScalar(0.85);
-    sobrecitos.position.set(-2.3, TOP + 0.05, -2.0);
+    sobrecitos.position.set(-1.7, TOP + 0.05, -1.5);
     sobrecitos.rotation.y = 0.38;
     markStall(sobrecitos, "booster");
     world.add(sobrecitos);
@@ -412,7 +412,7 @@ export function buildTianguisScene3D(
     s.rotation.x = -0.25;
     s.rotation.z = -0.07;
     webitos.add(s);
-    attendantAnchor(webitos, "adopcion", -0.3, 0, -0.95);
+    attendantAnchor(webitos, "adopcion", -0.3, 0.28, -0.95);
     webitos.scale.setScalar(0.9);
     webitos.position.set(-1.9, TOP + 0.05, 2.4);
     webitos.rotation.y = 0.32;
@@ -439,8 +439,13 @@ export function buildTianguisScene3D(
       post.position.set(px, 1.55, -1.0);
       dock.add(post);
     }
-    const s = sign("TRAJINERAS\nP2P", 0.85, PAL.maderaClara, "#4a2e12");
-    s.position.set(0, 2.35, -0.95);
+    const s = new THREE.Group();
+    const board = box(2.72, 0.85, 0.08, PAL.maderaClara, 0.25);
+    s.add(board);
+    const txt = textPlane("TRAJINERAS\nP2P", 0.85 * 0.62, "#4a2e12");
+    txt.position.z = 0.05;
+    s.add(txt);
+    s.position.set(0, 2.35, -1.0);
     dock.add(s);
     const goods = box(0.3, 0.18, 0.4, PAL.magenta);
     goods.position.set(0.5, 0.69, 0.4);
@@ -522,9 +527,9 @@ export function buildTianguisScene3D(
     boats.push(g);
     world.add(g);
   }
-  trajinera(PAL.magenta, PAL.verde, 2.8, 3.8, 0.55);
+  // Solo 2 lanchas para dejar ver al axolotito asistente
+  trajinera(PAL.magenta, PAL.verde, 2.5, 5.2, 0.55);
   trajinera(0xd0386a, PAL.teal, -1.1, 5.4, -0.35);
-  trajinera(PAL.naranja, PAL.limon, 2.0, 5.8, 0.15);
   animations.push((t) => {
     for (const b of boats) {
       const phase = b.userData.phase as number;
@@ -597,29 +602,7 @@ export function buildTianguisScene3D(
     for (const f of flags) f.rotation.z = Math.sin(t * 1.3 + (f.userData.phase as number)) * 0.06;
   });
 
-  // ── Etiquetas de esquina (señalética diegética) ───────────────
-  {
-    const zl = paper(picadoShape(2.2, 1.7), 0.03, PAL.magenta, 0.01, 0.35);
-    zl.rotation.x = 0.55;
-    zl.rotation.y = 0.5;
-    zl.position.set(-3.0, TOP + 1.5, 6.9);
-    world.add(zl);
-    const zlt = textPlane("EL BARRIL", 0.34, "#5c1030");
-    zlt.position.set(-2.85, TOP + 1.65, 7.3);
-    zlt.rotation.x = -0.4;
-    zlt.rotation.z = 0.4;
-    world.add(zlt);
-    const zr = paper(picadoShape(2.2, 1.7), 0.03, PAL.amarillo, 0.01, 0.35);
-    zr.rotation.x = 0.55;
-    zr.rotation.y = -0.5;
-    zr.position.set(3.2, TOP + 1.5, 6.9);
-    world.add(zr);
-    const zrt = textPlane("EL FRIJOLITO", 0.34, "#6e4e08");
-    zrt.position.set(3.05, TOP + 1.65, 7.3);
-    zrt.rotation.x = -0.4;
-    zrt.rotation.z = -0.4;
-    world.add(zrt);
-  }
+  // ── Etiquetas de esquina removidas por solicitud del usuario ──
 
   // ── Tenderos: axolotitos billboard en las anclas attendant:<id> ──
   const tenderoSkins: Record<string, { skinColor: string; seed: number }> = {
