@@ -41,6 +41,8 @@ interface CardMetric {
   numero_loteria: number | null;
   dynamic_rarity: string;
   total_circulation: number;
+  inventory_circulation: number;
+  board_circulation: number;
   shiny_circulation: number;
   first_edition_circulation: number;
   times_called: number;
@@ -346,8 +348,14 @@ export default function AdminCardDistribution({ token }: { token: string | null 
                 <th className="py-3 px-4 w-28 cursor-pointer hover:text-white" onClick={() => toggleSort("dynamic_rarity")}>
                   Rareza {renderSortIcon("dynamic_rarity")}
                 </th>
+                <th className="py-3 px-4 w-28 cursor-pointer hover:text-white text-right" onClick={() => toggleSort("inventory_circulation")}>
+                  Inventario {renderSortIcon("inventory_circulation")}
+                </th>
+                <th className="py-3 px-4 w-28 cursor-pointer hover:text-white text-right" onClick={() => toggleSort("board_circulation")}>
+                  En Tablas {renderSortIcon("board_circulation")}
+                </th>
                 <th className="py-3 px-4 w-28 cursor-pointer hover:text-white text-right" onClick={() => toggleSort("total_circulation")}>
-                  Suministro {renderSortIcon("total_circulation")}
+                  Gran Total {renderSortIcon("total_circulation")}
                 </th>
                 <th className="py-3 px-4 w-28 cursor-pointer hover:text-white text-right" onClick={() => toggleSort("times_called")}>
                   Cantada {renderSortIcon("times_called")}
@@ -363,7 +371,7 @@ export default function AdminCardDistribution({ token }: { token: string | null 
             <tbody className="divide-y divide-white/5 text-xs text-slate-300 font-semibold font-mono">
               {sortedCards.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-8 text-center text-gray-500 italic bg-slate-950/20">
+                  <td colSpan={9} className="py-8 text-center text-gray-500 italic bg-slate-950/20">
                     No se encontraron cartas que coincidan con la búsqueda.
                   </td>
                 </tr>
@@ -382,7 +390,13 @@ export default function AdminCardDistribution({ token }: { token: string | null 
                           {card.dynamic_rarity}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right font-bold text-white">
+                      <td className="py-3 px-4 text-right text-slate-300">
+                        {card.inventory_circulation?.toLocaleString() || "0"}
+                      </td>
+                      <td className="py-3 px-4 text-right text-purple-400">
+                        {card.board_circulation?.toLocaleString() || "0"}
+                      </td>
+                      <td className="py-3 px-4 text-right font-bold text-white bg-white/[0.01]">
                         {card.total_circulation.toLocaleString()}
                       </td>
                       <td className="py-3 px-4 text-right">

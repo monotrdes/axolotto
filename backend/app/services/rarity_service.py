@@ -19,19 +19,36 @@ def get_card_dynamic_rarities(session: Session) -> dict:
     if not cards:
         return {}
         
-    # 2. Obtener la cantidad total en circulación por item_id
+    # 2. Obtener la cantidad total en circulación por item_id (en inventario de jugadores reales)
     circ_query = (
         select(PlayerInventory.item_id, func.sum(PlayerInventory.quantity))
+        .where(PlayerInventory.user_id != "npc_axolotto_system")
         .group_by(PlayerInventory.item_id)
     )
     circ_results = session.exec(circ_query).all()
     circ_map = {item_id: int(total_qty) for item_id, total_qty in circ_results if total_qty is not None}
     
-    # 3. Mapear cada carta a su cantidad en circulación actual
+    # 2b. Obtener la cantidad de copias colocadas en tableros activos (excluyendo bots)
+    from app.models.board import PlayerBoard
+    boards = session.exec(
+        select(PlayerBoard)
+        .where(PlayerBoard.is_npc_pool == False)
+        .where(PlayerBoard.is_dead == False)
+    ).all()
+    
+    board_card_counts = {}
+    for board in boards:
+        if board.card_ids:
+            for cid in board.card_ids:
+                board_card_counts[cid] = board_card_counts.get(cid, 0) + 1
+                
+    # 3. Mapear cada carta a su cantidad en circulación actual (Inventario + Tableros)
     card_circulations = []
     for c in cards:
-        qty = circ_map.get(c.id, 0)
-        card_circulations.append((c.id, qty))
+        qty_inventory = circ_map.get(c.id, 0)
+        qty_boards = board_card_counts.get(c.id, 0)
+        total_qty = qty_inventory + qty_boards
+        card_circulations.append((c.id, total_qty))
         
     # 4. Ordenar las cartas por circulación de menor a mayor (más escasas primero)
     card_circulations.sort(key=lambda x: x[1])

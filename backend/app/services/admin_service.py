@@ -1272,6 +1272,20 @@ def get_card_distribution(session: Session) -> dict:
         for row in circ_results
     }
 
+    # 3b. Obtener la cantidad de copias de cartas en tableros activos (excluyendo bots)
+    from app.models.board import PlayerBoard
+    boards = session.exec(
+        select(PlayerBoard)
+        .where(PlayerBoard.is_npc_pool == False)
+        .where(PlayerBoard.is_dead == False)
+    ).all()
+    
+    board_card_counts = {}
+    for board in boards:
+        if board.card_ids:
+            for cid in board.card_ids:
+                board_card_counts[cid] = board_card_counts.get(cid, 0) + 1
+
     cards_list = []
     total_copies_in_circulation = 0
     total_shiny_in_circulation = 0
@@ -1297,13 +1311,17 @@ def get_card_distribution(session: Session) -> dict:
         dyn_rarity = r_info["dynamic_rarity"]
 
         stats = circ_map.get(c.id, {"total_qty": 0, "shiny_qty": 0, "first_ed_qty": 0})
+        
+        qty_inventory = stats["total_qty"]
+        qty_boards = board_card_counts.get(c.id, 0)
+        qty_grand_total = qty_inventory + qty_boards
 
-        total_copies_in_circulation += stats["total_qty"]
+        total_copies_in_circulation += qty_grand_total
         total_shiny_in_circulation += stats["shiny_qty"]
         total_first_ed_in_circulation += stats["first_ed_qty"]
 
         catalog_rarity_counts[dyn_rarity] += 1
-        circulation_rarity_counts[dyn_rarity] += stats["total_qty"]
+        circulation_rarity_counts[dyn_rarity] += qty_grand_total
 
         cards_list.append({
             "id": c.id,
@@ -1312,7 +1330,9 @@ def get_card_distribution(session: Session) -> dict:
                 c.item_metadata.get("numero_loteria") if c.item_metadata else None
             ),
             "dynamic_rarity": dyn_rarity,
-            "total_circulation": stats["total_qty"],
+            "total_circulation": qty_grand_total,
+            "inventory_circulation": qty_inventory,
+            "board_circulation": qty_boards,
             "shiny_circulation": stats["shiny_qty"],
             "first_edition_circulation": stats["first_ed_qty"],
             "times_called": c.times_called or 0,
