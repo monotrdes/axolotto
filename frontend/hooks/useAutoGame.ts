@@ -11,44 +11,31 @@ export type AutoGamePhase = "loading" | "playing" | "result";
 export interface AutoGameState {
   phase: AutoGamePhase;
   error: string | null;
-  /** Main player board numbers (4×4 = 16) */
-  playerBoardNums: number[];
-  /** Opponent states: mini boards */
+  playerBoardId: number | null;
+  playerMatchedIndices: number[];
+  playerMissedIndices: number[];
   opponents: OpponentState[];
-  /** Cards called so far (history) */
-  cardsDrawn: CardDrawnEntry[];
-  /** Current card being called */
-  currentCard: CardDrawnEntry | null;
-  /** Tension metadata */
+  cardsDrawnIds: number[];
+  currentCardId: number | null;
+  currentCardName: string | null;
+  currentCardNumber: number | null;
   tensionLevel: "low" | "medium" | "high" | "critical";
   nearWinPlayers: number[];
   turnsPlayed: number;
-  /** Escrow balance snapshot */
   escrowBalance: number;
-  /** Interpolated match indices for player board */
-  playerMatchedIndices: number[];
 }
 
 export interface OpponentState {
-  axolotitoId: number;
+  axolotitoId: string | number;
   axoName: string;
   markedCount: number;
-  boardCardIds: number[]; // card IDs, need to be resolved to numbers by caller
-}
-
-export interface CardDrawnEntry {
-  cardId: number;
-  numeroLoteria: number;
-  turn: number;
-  timestampMs: number;
+  boardCardIds: number[];
 }
 
 export interface UseAutoGameOptions {
   axolotitoId: number;
   token: string | null;
-  /** Interval in ms for polling (default 2000) */
   pollIntervalMs?: number;
-  /** Callback when game ends */
   onGameEnd?: (result: AutoGameEndResult) => void;
 }
 
@@ -67,17 +54,19 @@ export function useAutoGame(options: UseAutoGameOptions): AutoGameState & {
 
   const [phase, setPhase] = useState<AutoGamePhase>("loading");
   const [error, setError] = useState<string | null>(null);
-  const [playerBoardNums, setPlayerBoardNums] = useState<number[]>(Array(16).fill(0));
+  const [playerBoardId, setPlayerBoardId] = useState<number | null>(null);
+  const [playerMatchedIndices, setPlayerMatchedIndices] = useState<number[]>([]);
+  const [playerMissedIndices, setPlayerMissedIndices] = useState<number[]>([]);
   const [opponents, setOpponents] = useState<OpponentState[]>([]);
-  const [cardsDrawn, setCardsDrawn] = useState<CardDrawnEntry[]>([]);
-  const [currentCard, setCurrentCard] = useState<CardDrawnEntry | null>(null);
+  const [cardsDrawnIds, setCardsDrawnIds] = useState<number[]>([]);
+  const [currentCardId, setCurrentCardId] = useState<number | null>(null);
+  const [currentCardName, setCurrentCardName] = useState<string | null>(null);
+  const [currentCardNumber, setCurrentCardNumber] = useState<number | null>(null);
   const [tensionLevel, setTensionLevel] = useState<"low" | "medium" | "high" | "critical">("low");
   const [nearWinPlayers, setNearWinPlayers] = useState<number[]>([]);
   const [turnsPlayed, setTurnsPlayed] = useState(0);
   const [escrowBalance, setEscrowBalance] = useState(0);
-  const [playerMatchedIndices, setPlayerMatchedIndices] = useState<number[]>([]);
 
-  const prevCardsRef = useRef<number>(0);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const fetchGameState = useCallback(async () => {
@@ -106,27 +95,39 @@ export function useAutoGame(options: UseAutoGameOptions): AutoGameState & {
 
       setPhase("playing");
 
-      // Board
-      if (data.player_board_nums && data.player_board_nums.length > 0) {
-        setPlayerBoardNums(data.player_board_nums);
+      // Player boards mapping
+      if (data.player_boards && data.player_boards.length > 0) {
+        const pb = data.player_boards[0];
+        setPlayerBoardId(pb.board_id);
+        setPlayerMatchedIndices(pb.marked_indices ?? []);
+        setPlayerMissedIndices(pb.missed_indices ?? []);
       }
 
-      // Opponents
-      if (data.opponents) {
-        setOpponents(data.opponents);
+      // Bots mapping
+      if (data.bot_boards) {
+        const mapped: OpponentState[] = data.bot_boards.map((b: any) => ({
+          axolotitoId: b.board_id,
+          axoName: String(b.board_id).replace("bot_", "Bot "),
+          markedCount: b.marked_count ?? 0,
+          boardCardIds: [],
+        }));
+        setOpponents(mapped);
       }
 
-      // Cards drawn
+      // Cards drawn IDs
       if (data.cards_drawn) {
-        const cards = data.cards_drawn as CardDrawnEntry[];
-        setCardsDrawn(cards);
+        setCardsDrawnIds(data.cards_drawn);
+      }
 
-        // New card since last poll
-        if (cards.length > prevCardsRef.current) {
-          const newCard = cards[cards.length - 1];
-          setCurrentCard(newCard);
-          prevCardsRef.current = cards.length;
-        }
+      // Current card mapping
+      if (data.current_card) {
+        setCurrentCardId(data.current_card.card_id ?? null);
+        setCurrentCardName(data.current_card.name ?? null);
+        setCurrentCardNumber(data.current_card.numero ?? null);
+      } else {
+        setCurrentCardId(null);
+        setCurrentCardName(null);
+        setCurrentCardNumber(null);
       }
 
       // Tension
@@ -140,9 +141,6 @@ export function useAutoGame(options: UseAutoGameOptions): AutoGameState & {
       // Meta
       if (data.turns_played != null) setTurnsPlayed(data.turns_played);
       if (data.escrow_balance != null) setEscrowBalance(data.escrow_balance);
-      if (data.player_matched_indices) {
-        setPlayerMatchedIndices(data.player_matched_indices);
-      }
     } catch (err: any) {
       setError(err.response?.data?.detail ?? "Error obteniendo estado de partida.");
     }
@@ -161,15 +159,18 @@ export function useAutoGame(options: UseAutoGameOptions): AutoGameState & {
   return {
     phase,
     error,
-    playerBoardNums,
+    playerBoardId,
+    playerMatchedIndices,
+    playerMissedIndices,
     opponents,
-    cardsDrawn,
-    currentCard,
+    cardsDrawnIds,
+    currentCardId,
+    currentCardName,
+    currentCardNumber,
     tensionLevel,
     nearWinPlayers,
     turnsPlayed,
     escrowBalance,
-    playerMatchedIndices,
     refetch: fetchGameState,
   };
 }

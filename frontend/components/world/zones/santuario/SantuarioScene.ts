@@ -4,7 +4,11 @@ import type { WorldEngine } from "../../engine/WorldEngine";
 import type { AxolotitoData } from "../../entities/AxolotitoSprite";
 import type { AmigoData } from "../../mapBackendAxolotito";
 import { AxolotitoPuppet, type PuppetState } from "../../puppet/AxolotitoPuppet";
+import { WanderController } from "../../puppet/wanderController";
+import { bubbleParticle, dustParticle, zzzParticle } from "../../particles";
 import { DESIGN_SPACE, PAINTED_BOUNDS, lunarSurfaceTint } from "../zoneConfig";
+import { setupWaterDisplacement } from "../../engine/waterDisplacement";
+import { TIER_PROFILE } from "../../engine/qualityTier";
 
 /**
  * Diorama del Santuario (plan task-84 §2, rediseño cueva submarina):
@@ -28,7 +32,9 @@ const NIVEL_EMBARCADERO_Y = 1500;
 const NEST_SLOTS_X = [180, 420, 660, 900];
 // El backend define 8 niveles de cueva = 8 nidos máximo (spot i abre en nivel i+1).
 const MAX_NEST_SLOTS = 8;
-const WANDER_SPEED = 55; // px/s en espacio de diseño
+const WANDER_SPEED = 55; // px/s en espacio de diseño (caminata)
+const SWIM_SPEED = 95; // px/s nadando hacia/desde la camita
+const BED_PUPPET_DY = 26; // los pies del títere sobre el colchón de la camita
 
 /** Posición del slot de nido i (2 filas de 4). */
 function nestSlotPos(i: number): { x: number; y: number } {
@@ -94,11 +100,19 @@ function parseHexColor(color: string | null | undefined, fallback: number): numb
   return Number.isNaN(n) ? fallback : n;
 }
 
+/**
+ * Modos de locomoción en el diorama: en la sala caminan (bípedos); para ir
+ * a dormir nadan hasta su camita en la zona de nidos, y de regreso igual.
+ */
+type PuppetMode = "sala" | "toBed" | "inBed" | "toSala";
+
 interface PuppetEntry {
   puppet: AxolotitoPuppet;
-  targetX: number;
+  mode: PuppetMode;
   baseY: number;
-  paused: number;
+  bedPos: { x: number; y: number };
+  salaTarget: { x: number; y: number };
+  wander: WanderController;
   particleTimer: number;
 }
 
@@ -126,6 +140,7 @@ export class SantuarioScene extends Container {
   private amigosLayer = new Container();
   private particleLayer = new Container();
   private puppets = new Map<string, PuppetEntry>();
+  private displacement?: ReturnType<typeof setupWaterDisplacement>;
   private caveStatus: CaveStatusData = { level: 1, spots: 1, hasTable: false, tableSeats: 0 };
   private lastAxolotitos: AxolotitoData[] = [];
   private decoraciones: DecoracionesData | null = null;
@@ -143,6 +158,7 @@ export class SantuarioScene extends Container {
     super();
     this.engine = engine;
     this.buildBackdrop();
+    this.puppetLayer.sortableChildren = true; // 2.5D: más abajo = más al frente
     this.addChild(
       this.ambientOverlay,
       this.salaLayer,
@@ -163,6 +179,9 @@ export class SantuarioScene extends Container {
     this.puppets.clear();
     this.particles = [];
     this.boats = [];
+    if (this.displacement) {
+      this.displacement.destroy();
+    }
     super.destroy(options);
   }
 
@@ -236,29 +255,39 @@ export class SantuarioScene extends Container {
     this.lastAxolotitos = data;
     this.rebuildNests();
 
-    const axos = data.filter((a) => !a.isEgg && a.state !== "sleeping");
+    const axos = data.filter((a) => !a.isEgg);
 
-    // Nivel central: títeres vivos.
+    // Títeres vivos: despiertos en la sala, dormidos en su camita.
     const seen = new Set<string>();
     for (const axo of axos) {
       seen.add(axo.id);
       const existing = this.puppets.get(axo.id);
       const state = toPuppetState(axo);
       if (existing) {
-        existing.puppet.setState(state);
+        this.applyBackendState(existing, state);
         continue;
       }
       const puppet = new AxolotitoPuppet(axo);
       const baseY =
         NIVEL_SALA.top + 80 + Math.random() * (NIVEL_SALA.bottom - NIVEL_SALA.top - 160);
-      puppet.position.set(120 + Math.random() * (W - 240), baseY);
+      const bedSlot = nestSlotPos(Math.min(Math.max(axo.caveIndex, 0), MAX_NEST_SLOTS - 1));
+      const bedPos = { x: bedSlot.x, y: bedSlot.y + BED_PUPPET_DY };
+      const salaTarget = { x: 120 + Math.random() * (W - 240), y: baseY };
+      const dormido = state === "sleeping";
+      if (dormido) {
+        puppet.position.set(bedPos.x, bedPos.y);
+      } else {
+        puppet.position.set(salaTarget.x, baseY);
+      }
       puppet.setState(state, true);
       this.puppetLayer.addChild(puppet);
       this.puppets.set(axo.id, {
         puppet,
-        targetX: puppet.x,
+        mode: dormido ? "inBed" : "sala",
         baseY,
-        paused: 1 + Math.random() * 3,
+        bedPos,
+        salaTarget,
+        wander: new WanderController(puppet, { minX: 120, maxX: W - 120, speed: WANDER_SPEED }),
         particleTimer: 1 + Math.random() * 2,
       });
     }
@@ -269,6 +298,45 @@ export class SantuarioScene extends Container {
         this.puppets.delete(id);
       }
     }
+  }
+
+  /** Reacciona al estado del backend: ir a dormir = nadar a la camita. */
+  private applyBackendState(entry: PuppetEntry, state: PuppetState): void {
+    const dormido = state === "sleeping";
+    if (dormido && (entry.mode === "sala" || entry.mode === "toSala")) {
+      entry.mode = "toBed";
+      entry.puppet.setState("swimming");
+      return;
+    }
+    if (!dormido && (entry.mode === "inBed" || entry.mode === "toBed")) {
+      entry.mode = "toSala";
+      entry.salaTarget = {
+        x: 120 + Math.random() * (W - 240),
+        y: entry.baseY,
+      };
+      entry.puppet.setState("swimming");
+      return;
+    }
+    // En la sala el deambular decide walking/idle; solo forzamos playing.
+    if (entry.mode === "sala" && state === "playing") entry.puppet.setState("playing");
+    else if (entry.mode === "sala" && state === "idle" && entry.puppet.state === "playing") {
+      entry.puppet.setState("idle");
+    }
+  }
+
+  /** Avanza nadando hacia (tx,ty); true al llegar. */
+  private swimToward(entry: PuppetEntry, tx: number, ty: number, dt: number): boolean {
+    const { puppet } = entry;
+    const dx = tx - puppet.x;
+    const dy = ty - puppet.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 12) return true;
+    const step = Math.min(SWIM_SPEED * dt, dist);
+    puppet.x += (dx / dist) * step;
+    puppet.y += (dy / dist) * step;
+    // El rig mira a la izquierda por defecto (cara en -x).
+    if (Math.abs(dx) > 4) puppet.scale.x = dx > 0 ? -1 : 1;
+    return false;
   }
 
   /**
@@ -301,7 +369,7 @@ export class SantuarioScene extends Container {
       const node = egg
         ? buildNestWithEgg(x, y, egg)
         : owner
-          ? buildCamita(x, y, owner.name, owner.state === "sleeping")
+          ? buildCamita(x, y, owner.name)
           : buildEmptyNest(x, y);
       if (egg) this.hotspot(node, "nido-huevo", egg.id);
       else if (owner) this.hotspot(node, "nido-axo", owner.id);
@@ -479,6 +547,9 @@ export class SantuarioScene extends Container {
   private update(dt: number): void {
     if (this.destroyed) return;
     this.elapsed += dt;
+    if (this.displacement) {
+      this.displacement.update(dt);
+    }
 
     // Trajineritas meciéndose en el agua.
     for (const b of this.boats) {
@@ -507,10 +578,27 @@ export class SantuarioScene extends Container {
         entry.particleTimer -= dt;
         if (entry.particleTimer <= 0) {
           if (puppet.state === "sleeping") {
-            this.spawnParticle(zzzParticle(), puppet.x + 30, puppet.y - 60, 28, 2.2);
+            this.spawnParticle(zzzParticle(), puppet.x + 30, puppet.y - 80, 28, 2.2);
             entry.particleTimer = 1.8 + Math.random();
+          } else if (puppet.state === "swimming") {
+            // Estela de burbujas detrás del nadador.
+            this.spawnParticle(
+              bubbleParticle(),
+              puppet.x + 40 * (puppet.scale.x || 1),
+              puppet.y - 60,
+              55,
+              1.2,
+            );
+            entry.particleTimer = 0.5 + Math.random() * 0.5;
           } else if (puppet.state === "walking") {
-            this.spawnParticle(bubbleParticle(), puppet.x - 40 * Math.sign(puppet.scale.x || 1), puppet.y - 10, 55, 1.2);
+            // Polvito a los pies de la caminata bípeda.
+            this.spawnParticle(
+              dustParticle(),
+              puppet.x + 14 * (puppet.scale.x || 1),
+              puppet.y - 4,
+              18,
+              0.6,
+            );
             entry.particleTimer = 0.5 + Math.random() * 0.5;
           } else {
             entry.particleTimer = 1 + Math.random();
@@ -518,27 +606,29 @@ export class SantuarioScene extends Container {
         }
       }
 
-      if (puppet.state === "sleeping") continue;
-
-      // Deambular: elegir destino, nadar hacia él, pausar, repetir.
-      if (entry.paused > 0) {
-        entry.paused -= dt;
-        if (entry.paused <= 0) {
-          entry.targetX = 120 + Math.random() * (W - 240);
-        }
-        continue;
+      // Máquina de modos: sala (camina) / toBed–toSala (nada) / inBed (duerme).
+      switch (entry.mode) {
+        case "sala":
+          entry.wander.update(dt);
+          break;
+        case "toBed":
+          if (this.swimToward(entry, entry.bedPos.x, entry.bedPos.y, dt)) {
+            puppet.position.set(entry.bedPos.x, entry.bedPos.y);
+            puppet.setState("sleeping");
+            entry.mode = "inBed";
+          }
+          break;
+        case "toSala":
+          if (this.swimToward(entry, entry.salaTarget.x, entry.salaTarget.y, dt)) {
+            puppet.setState("idle");
+            entry.mode = "sala";
+            entry.wander.reset();
+          }
+          break;
+        case "inBed":
+          break;
       }
-      const dx = entry.targetX - puppet.x;
-      if (Math.abs(dx) < 8) {
-        entry.paused = 2 + Math.random() * 4;
-        if (puppet.state === "walking") puppet.setState("idle");
-        continue;
-      }
-      if (puppet.state === "idle") puppet.setState("walking");
-      const dir = Math.sign(dx);
-      puppet.x += dir * WANDER_SPEED * dt;
-      // El rig mira a la izquierda por defecto (cabeza en -x).
-      puppet.scale.x = dir > 0 ? -1 : 1;
+      puppet.zIndex = puppet.y;
     }
   }
 
@@ -568,6 +658,13 @@ export class SantuarioScene extends Container {
       }
     }
     this.addChild(bg);
+
+    const profile = TIER_PROFILE[this.engine.quality];
+    if (profile.waterShader) {
+      this.displacement = setupWaterDisplacement(512, 512);
+      this.addChild(this.displacement.sprite);
+      bg.filters = [this.displacement.filter];
+    }
 
     const label = new Text({
       text: "🪺 El Santuario",
@@ -695,20 +792,6 @@ export class SantuarioScene extends Container {
   }
 }
 
-function zzzParticle(): Container {
-  const t = new Text({ text: "z", style: { fontSize: 30, fill: 0x9bd9e4, fontWeight: "900" } });
-  t.anchor.set(0.5);
-  t.rotation = -0.3 + Math.random() * 0.6;
-  return t;
-}
-
-function bubbleParticle(): Container {
-  const g = new Graphics()
-    .circle(0, 0, 4 + Math.random() * 5)
-    .stroke({ color: 0x9bd9e4, width: 2 });
-  return g;
-}
-
 function toPuppetState(axo: AxolotitoData): PuppetState {
   if (axo.state === "sleeping" || axo.energy === 0) return "sleeping";
   if (axo.state === "playing") return "playing";
@@ -791,8 +874,9 @@ function buildLockedNest(x: number, y: number, levelNeeded: number): Container {
   return c;
 }
 
-/** Camita del axolotito nacido en este nido (plan §2: nido→camita). */
-function buildCamita(x: number, y: number, name?: string, isSleeping?: boolean): Container {
+/** Camita del axolotito nacido en este nido (plan §2: nido→camita).
+ *  El títere real duerme encima — la camita ya no necesita emoji. */
+function buildCamita(x: number, y: number, name?: string): Container {
   const c = new Container();
   c.position.set(x, y);
   const bed = new Graphics()
@@ -802,15 +886,6 @@ function buildCamita(x: number, y: number, name?: string, isSleeping?: boolean):
     .roundRect(-58, -14, 34, 26, 8)
     .fill(0xfff7ec);
   c.addChild(bed);
-  if (isSleeping) {
-    const zzz = new Text({
-      text: "💤 🦎",
-      style: { fontSize: 24, fill: 0xfff7ec },
-    });
-    zzz.anchor.set(0.5);
-    zzz.position.set(0, -18);
-    c.addChild(zzz);
-  }
   if (name) {
     const tag = new Text({
       text: name,

@@ -12,6 +12,12 @@ export interface BackendAxolotito {
   energy_current?: number;
   status?: string;
   skin_color?: string;
+  gill_type?: string;
+  eye_type?: string;
+  mouth_type?: string;
+  tail_type?: string;
+  forehead_type?: string;
+  limb_type?: string;
   stat_luck?: number;
   stat_focus?: number;
   stat_stamina?: number;
@@ -87,5 +93,11 @@ export function mapBackendAxolotito(axo: BackendAxolotito, idx: number): Axoloti
     caveIndex: idx,
     isEgg: false,
     skinColor: axo.skin_color,
+    gillType: axo.gill_type,
+    eyeType: axo.eye_type,
+    mouthType: axo.mouth_type,
+    tailType: axo.tail_type,
+    foreheadType: axo.forehead_type,
+    limbType: axo.limb_type,
   };
 }

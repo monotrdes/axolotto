@@ -11,6 +11,7 @@ import type {
   DecoracionesData,
 } from "./zones/santuario/SantuarioScene";
 import type { PiramideScene } from "./zones/piramide/PiramideScene";
+import type { TianguisScene } from "./zones/tianguis/TianguisScene";
 import type { AmigoData } from "./mapBackendAxolotito";
 import { TIANGUIS_STALL_FRAMINGS, framingFor } from "./zones/zoneConfig";
 
@@ -39,6 +40,8 @@ export interface GameCanvasHandle {
   setDecoraciones?(data: DecoracionesData): void;
   /** Fase lunar 1-6 (🌑→🌟) — tiñe la luz superficial de las 3 macrozonas. */
   setLunarPhase?(phase: number): void;
+  /** Lanza la animación de fuegos/estrellas en la forja del Tianguis. */
+  playMeltAnimation?(): void;
 }
 
 interface GameCanvasProps {
@@ -76,6 +79,7 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
   const engineRef = useRef<WorldEngine | null>(null);
   const zonesRef = useRef<ZoneManager | null>(null);
   const santuarioRef = useRef<SantuarioScene | null>(null);
+  const tianguisRef = useRef<TianguisScene | null>(null);
   const piramideRef = useRef<PiramideScene | null>(null);
   const axolotitosRef = useRef<AxolotitoData[]>([]);
   const podioRef = useRef<AxolotitoData[]>([]);
@@ -138,6 +142,11 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
         santuarioRef.current.setAmigos(amigos);
       }
     },
+    playMeltAnimation() {
+      if (tianguisRef.current && !tianguisRef.current.destroyed) {
+        tianguisRef.current.playMeltAnimation();
+      }
+    },
   }));
 
   // Contrato legacy hacia play/page.tsx (worldSceneRef) — sin cambios.
@@ -192,7 +201,11 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
         scene.setAmigos(amigosRef.current);
         return scene;
       });
-      zones.registerBuilder("tianguis", (e) => new TianguisScene(e));
+      zones.registerBuilder("tianguis", (e) => {
+        const scene = new TianguisScene(e);
+        tianguisRef.current = scene;
+        return scene;
+      });
       zones.registerBuilder("piramide", (e) => {
         const scene = new PiramideScene(e);
         piramideRef.current = scene;

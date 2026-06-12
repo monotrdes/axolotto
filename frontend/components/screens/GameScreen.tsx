@@ -12,6 +12,8 @@ import CalledCardsHistory, { type CardHistoryEntry } from "../ui/CalledCardsHist
 import ChatFeed, { type ChatMessage } from "../chat/ChatFeed";
 import { LOTERIA_EMOJI, CARD_IMAGE } from "../ui/LoteriaCard";
 import Image from "next/image";
+import CenoteRoom from "../multiplayer/CenoteRoom";
+import LoteriaBoard from "../ui/LoteriaBoard";
 
 // ── Win-line definitions ──────────────────────────────────────────────────────
 
@@ -243,6 +245,60 @@ export default function GameScreen(props: GameScreenProps) {
   const primaryMatched = primaryBoard?.matchedIndices ?? [];
   const primaryBoardNums = primaryBoard?.boardNums ?? Array(16).fill(0);
   const priorityLine = calcPriorityLine(primaryMatched);
+
+  // ── Circular table seats configuration ───────────────────────────────────
+  const seats = useMemo(() => {
+    const totalSeats = opponents.length + 1;
+    const playerSeatIdx = Math.floor(totalSeats / 2);
+    const seatList: any[] = [];
+    let opponentPointer = 0;
+
+    for (let i = 0; i < totalSeats; i++) {
+      if (i === playerSeatIdx) {
+        seatList.push({
+          index: i,
+          axoName: axoName || "Tú",
+          nature: "hyperactive",
+          isPlayer: true,
+          isNPC: false,
+          isHot: primaryMatched.length >= 14,
+          content: (
+            <LoteriaBoard
+              boardCards={primaryBoardNums}
+              matchedIndices={primaryMatched}
+              depth="front"
+              size="xs"
+              variant="player"
+              winPatterns={winPatterns}
+            />
+          ),
+        });
+      } else {
+        const opp = opponents[opponentPointer++];
+        if (opp) {
+          seatList.push({
+            index: i,
+            axoName: opp.axo_name || "CPU",
+            isPlayer: false,
+            isNPC: opp.kind === "bot",
+            isHot: opp.matchedIndices.length >= 14,
+            content: (
+              <LoteriaBoard
+                boardCards={opp.boardNums && opp.boardNums.length > 0 ? opp.boardNums : Array(16).fill(0)}
+                matchedIndices={opp.matchedIndices}
+                depth="mid"
+                size="xs"
+                variant="cpu"
+                winPatterns={winPatterns}
+                isWinner={opp.isWinner}
+              />
+            ),
+          });
+        }
+      }
+    }
+    return seatList;
+  }, [opponents, axoName, primaryBoardNums, primaryMatched, winPatterns]);
 
   // ── Card history entries for result screen ────────────────────────────────
   const cardHistoryEntries: CardHistoryEntry[] = useMemo(() => {
@@ -616,102 +672,111 @@ export default function GameScreen(props: GameScreenProps) {
   // ── Playing (mode = cpu | auto | manual) ─────────────────────────────────
   return (
     <TensionEffects level={tensionLevel} disableHeartbeat={mode === "auto"}>
-      <div className="relative">
-        {/* Chat Feed */}
+      <div className="relative w-full h-full min-h-[92vh] flex flex-col justify-between">
+        
+        {/* 1. Immersive CenoteRoom at the top half */}
+        <div className="w-full relative flex-1 min-h-[380px] sm:min-h-[460px] rounded-3xl overflow-hidden shadow-2xl border border-indigo-500/20">
+          <CenoteRoom
+            playerCount={opponents.length + 1}
+            tensionLevel={tensionLevel}
+            mode={mode === "manual" ? "manual" : "auto"}
+            seats={seats}
+            tableDiameter={320}
+            currentCard={currentCard}
+            allCards={allCards}
+          >
+            {/* Minimal overlays inside the room */}
+            <div className="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none z-30">
+              
+              {/* Back / Exit Button */}
+              {onChangeAll && (
+                <button
+                  onClick={onChangeAll}
+                  className="pointer-events-auto p-2 bg-slate-950/80 hover:bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white rounded-xl transition-all shadow-lg active:scale-95 flex items-center justify-center"
+                  title="Salir de la partida"
+                >
+                  <ArrowLeft size={16} />
+                </button>
+              )}
+
+              {/* Escrow info / Stats */}
+              <div className="flex flex-col gap-1.5 items-end">
+                {mode === "auto" && escrowBalance != null && (
+                  <div className="bg-slate-950/80 border border-purple-500/35 rounded-xl px-3 py-1.5 shadow-lg flex flex-col items-end">
+                    <p className="text-[7px] text-purple-400 uppercase tracking-widest font-black">En custodia</p>
+                    <p className="text-xs font-black text-purple-200">{escrowBalance.toFixed(1)} FRJ</p>
+                  </div>
+                )}
+                {mode === "manual" && (
+                  <div className="bg-slate-950/80 border border-pink-500/35 rounded-xl px-3 py-1.5 shadow-lg">
+                    <p className="text-[7px] text-pink-400 uppercase tracking-widest font-black">Jugadores</p>
+                    <p className="text-xs font-black text-pink-200">{opponents.length + 1}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Speed hold badge */}
+            {mode === "cpu" && holding && (
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+                <span className="inline-flex items-center gap-1 bg-amber-500/90 text-white font-black text-[10px] px-3 py-1 rounded-full shadow-lg animate-pulse">
+                  ⚡ x2
+                </span>
+              </div>
+            )}
+          </CenoteRoom>
+        </div>
+
+        {/* 2. Chat Feed Floating (if present) */}
         {onSendChat && onToggleChat && (
-          <ChatFeed
-            messages={chatMessages ?? []}
-            send={onSendChat ?? null}
-            phase={phase}
-            playMode={mode === "manual" ? "manual" : "auto"}
-            collapsed={chatCollapsed ?? true}
-            onToggleCollapse={onToggleChat}
-          />
+          <div className="z-40">
+            <ChatFeed
+              messages={chatMessages ?? []}
+              send={onSendChat ?? null}
+              phase={phase}
+              playMode={mode === "manual" ? "manual" : "auto"}
+              collapsed={chatCollapsed ?? true}
+              onToggleCollapse={onToggleChat}
+            />
+          </div>
         )}
+
+        {/* 3. Player controls and Board at the bottom half */}
         <div
-          className="space-y-3 animate-slide-step"
+          className="w-full flex flex-col items-center justify-center p-3 sm:p-5 mt-3 bg-slate-950/80 backdrop-blur-md border-t border-indigo-500/20 rounded-t-[2rem] gap-2.5 z-30"
           onPointerDown={handleSpeedHoldStart}
           onPointerUp={handleSpeedHoldEnd}
           onPointerLeave={handleSpeedHoldEnd}
           onPointerCancel={handleSpeedHoldEnd}
         >
-        {/* ── Speed badge (CPU mode only) ──────────────────────────────────── */}
-        {mode === "cpu" && holding && (
-          <div className="flex justify-center -mb-1">
-            <span className="inline-flex items-center gap-1 bg-amber-500/90 text-white font-black text-xs px-3 py-1 rounded-full shadow-[0_0_16px_rgba(245,158,11,0.5)] animate-pulse">
-              ⚡ x2
-            </span>
-          </div>
-        )}
-        {/* ── AxoAvatar + Status row ─────────────────────────────────────── */}
-        <div className="flex items-center justify-between">
-          <AxoAvatar name={axoName} reaction={axoReaction} size={60} />
-
-          {/* Escrow info (auto mode only) */}
-          {mode === "auto" && escrowBalance != null && (
-            <div className="bg-purple-950/40 border border-purple-500/20 rounded-xl px-3 py-1.5 text-right">
-              <p className="text-[8px] text-purple-400 uppercase tracking-widest font-black">
-                En custodia
-              </p>
-              <p className="text-sm font-black text-purple-200">
-                {escrowBalance.toFixed(1)} FRJ
-              </p>
+          {/* Active Win Patterns Row */}
+          {winPatterns.length > 0 && (
+            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+              <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Patrones:</span>
+              {winPatterns.map(p => {
+                const meta = PATTERN_META[p];
+                if (!meta) return null;
+                return (
+                  <span
+                    key={p}
+                    className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-violet-950/40 border border-violet-500/25 text-[8px] font-black text-violet-300"
+                  >
+                    {meta.icon} {meta.label}
+                  </span>
+                );
+              })}
             </div>
           )}
 
-          {/* Player count badge (manual mode) */}
-          {mode === "manual" && (
-            <div className="bg-pink-950/40 border border-pink-500/20 rounded-xl px-3 py-1.5">
-              <p className="text-[8px] text-pink-400 uppercase tracking-widest font-black">
-                Jugadores
-              </p>
-              <p className="text-sm font-black text-pink-200">
-                {opponents.length + 1}
-              </p>
-            </div>
-          )}
-        </div>
-
-        {/* ── Gritón Banner ──────────────────────────────────────────────── */}
-        <GritonBanner
-          card={currentCard}
-          totalCards={totalCards}
-          allCards={allCards}
-          showTimer={mode === "manual"}
-        />
-
-        {/* ── Opponent Strip ─────────────────────────────────────────────── */}
-        <OpponentStrip opponents={sortedOpponents} cardSize={16} />
-
-        {/* ── Pattern indicator ──────────────────────────────────────────── */}
-        {phase === "playing" && winPatterns.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 flex-wrap">
-            <span className="text-[8px] font-black uppercase tracking-widest text-slate-500">Para ganar:</span>
-            {winPatterns.map(p => {
-              const meta = PATTERN_META[p];
-              if (!meta) return null;
-              return (
-                <span
-                  key={p}
-                  className="flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-violet-950/40 border border-violet-500/25 text-[9px] font-black text-violet-300"
-                >
-                  {meta.icon} {meta.label}
-                </span>
-              );
-            })}
-          </div>
-        )}
-
-        {/* ── Player Board ───────────────────────────────────────────────── */}
-        <div className="flex justify-center">
-          <div className="flex flex-col items-center gap-1">
+          {/* Board Grid */}
+          <div className="flex justify-center w-full">
             <BoardCardGrid
               boardNums={primaryBoardNums}
-              cardSize={mode === "manual" ? 80 : 90}
+              cardSize={mode === "manual" ? 64 : 72} // Compact sizes for mobile portrait viewports
               matchedIndices={primaryMatched}
               winLine={undefined}
-              priorityLine={phase === "result" ? [] : priorityLine}
-              patternHintCells={phase === "playing" ? patternHintCells : []}
+              priorityLine={priorityLine}
+              patternHintCells={patternHintCells}
               isWinner={result?.resultado === "victoria"}
               interactive={mode === "manual"}
               highlightedCell={mode === "manual" ? highlightedCell : null}
@@ -722,41 +787,45 @@ export default function GameScreen(props: GameScreenProps) {
               winPatterns={winPatterns}
             />
           </div>
+
+          {/* Action Bar (Manual / Auto) */}
+          {mode === "manual" && showActionBar && (
+            <div className="flex items-center gap-2 w-full max-w-sm">
+              <button
+                onClick={onUseHint}
+                disabled={hintsRemaining <= 0}
+                className="flex-1 py-2.5 bg-slate-900 border border-indigo-500/30 hover:border-indigo-500/60 text-indigo-300 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+              >
+                💡 Pista {hintsRemaining > 0 ? `(${hintsRemaining})` : ""}
+              </button>
+              <button
+                onClick={onShoutLoteria}
+                className="flex-1 py-3 bg-gradient-to-r from-amber-600 to-[var(--brand-hot)] hover:from-amber-500 hover:to-pink-500 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 animate-pulse"
+              >
+                📣 ¡LOTERÍA!
+              </button>
+            </div>
+          )}
+
+          {mode === "auto" && onRecall && (
+            <div className="w-full max-w-sm">
+              <button
+                onClick={onRecall}
+                className="w-full py-2.5 bg-slate-900 hover:bg-red-950/20 border border-slate-800 hover:border-red-500/30 text-slate-400 hover:text-red-300 font-black text-[10px] uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5"
+              >
+                📣 Llamar de Regreso
+              </button>
+            </div>
+          )}
+
+          {mode === "cpu" && (
+            <p className="text-[8px] text-slate-500 font-bold tracking-wider select-none animate-pulse">
+              {holding ? "⚡ Acelerando simulación..." : "Mantén presionado o presiona Espacio para acelerar"}
+            </p>
+          )}
+
         </div>
-
-        {/* ── Action Bar (manual mode only) ──────────────────────────────── */}
-        {showActionBar && mode === "manual" && (
-          <div className="flex items-center gap-3 pt-2">
-            {/* Hint button */}
-            <button
-              onClick={onUseHint}
-              disabled={hintsRemaining <= 0}
-              className="flex-1 py-3 bg-indigo-950/60 border border-indigo-500/30 hover:border-indigo-500/60 text-indigo-300 font-black text-xs uppercase tracking-widest rounded-2xl transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              💡 Pista {hintsRemaining > 0 ? `(${hintsRemaining})` : "(0)"}
-            </button>
-
-            {/* ¡LOTERÍA! button */}
-            <button
-              onClick={onShoutLoteria}
-              className="flex-1 py-4 bg-gradient-to-r from-amber-600 to-[var(--brand-hot)] hover:from-amber-500 hover:to-pink-500 text-white font-black text-base uppercase tracking-widest rounded-2xl transition-all shadow-[0_0_24px_var(--brand-glow)] active:scale-[0.96] animate-pulse"
-            >
-              📣 ¡LOTERÍA!
-            </button>
-          </div>
-        )}
-
-        {/* ── Recall button (auto mode only) ─────────────────────────────── */}
-        {mode === "auto" && onRecall && (
-          <button
-            onClick={onRecall}
-            className="w-full py-3 bg-slate-800 hover:bg-red-900/30 border border-slate-700 hover:border-red-500/40 text-slate-300 hover:text-red-300 font-bold text-xs uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-2"
-          >
-            📣 Llamar de Regreso
-          </button>
-        )}
       </div>
-      </div> {/* close relative wrapper */}
     </TensionEffects>
   );
 }

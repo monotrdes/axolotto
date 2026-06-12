@@ -15,7 +15,7 @@ import BoardSelectScreen   from './screens/BoardSelectScreen';
 import BudgetScreen        from './screens/BudgetScreen';
 import SalaSelectScreen    from './screens/SalaSelectScreen';
 import CpuGameWrapper      from './CpuGameWrapper';
-import PlayingScreen       from './screens/PlayingScreen';
+import AutoGameWrapper     from './multiplayer/AutoGameWrapper';
 import SettlingScreen      from './screens/SettlingScreen';
 import ManualGameWrapper   from './multiplayer/ManualGameWrapper';
 
@@ -709,13 +709,22 @@ export default function PlayMode({
               }}
             />
           ) : (
-            <PlayingScreen
-              selectedAxo={selectedAxo}
+            <AutoGameWrapper
+              axolotitoId={selectedAxo.id}
+              token={token}
+              allCards={allCards}
+              playerBoards={playerBoards}
               budget={budget}
               recallRequested={recallRequested}
               recalling={recalling}
               onRecall={handleRecall}
               escrowNotifs={escrowNotifs}
+              onDone={() => {
+                setActiveGame(null);
+                recargarSaldos();
+                loadData();
+                navigate('axo-select');
+              }}
             />
           )
         )}

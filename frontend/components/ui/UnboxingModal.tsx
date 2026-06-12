@@ -90,6 +90,388 @@ const getThemeStyles = (theme: string) => {
   }
 };
 
+interface TearCanvasProps {
+  theme: string;
+  themeStyles: any;
+  onTearComplete: () => void;
+}
+
+function TearCanvas({ theme, themeStyles, onTearComplete }: TearCanvasProps) {
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  const [dragX, setDragX] = React.useState(30);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [tearProgress, setTearProgress] = React.useState(0);
+
+  // For the split animation
+  const [isAnimatingOut, setIsAnimatingOut] = React.useState(false);
+  const animProgressRef = React.useRef(0);
+
+  // Sparks/confetti particles at the tear point
+  const particlesRef = React.useRef<Array<{ x: number; y: number; vx: number; vy: number; color: string; size: number; alpha: number; life: number }>>([]);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let active = true;
+
+    const render = () => {
+      if (!active) return;
+
+      // Update particles
+      for (let i = particlesRef.current.length - 1; i >= 0; i--) {
+        const p = particlesRef.current[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.15; // gravity
+        p.alpha -= 0.02;
+        p.life -= 1;
+        if (p.life <= 0 || p.alpha <= 0) {
+          particlesRef.current.splice(i, 1);
+        }
+      }
+
+      // Clear canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const W = canvas.width;
+      const H = canvas.height;
+      const packX = 30;
+      const packY = 40;
+      const packW = W - 60;
+      const packH = H - 80;
+      const tearY = 120; // Y coordinate where the tear occurs
+
+      // Render top and bottom parts with offsets if animating out
+      let topYOffset = 0;
+      let topXOffset = 0;
+      let topRot = 0;
+      let bottomYOffset = 0;
+      let bottomXOffset = 0;
+      let bottomRot = 0;
+      let globalAlpha = 1;
+
+      if (isAnimatingOut) {
+        animProgressRef.current += 0.04;
+        const p = animProgressRef.current;
+        if (p >= 1) {
+          active = false;
+          onTearComplete();
+          return;
+        }
+
+        // Ease out formulas
+        const ease = 1 - Math.pow(1 - p, 3); // cubic ease out
+        topYOffset = -ease * 120;
+        topXOffset = -ease * 20;
+        topRot = -ease * 0.15;
+
+        bottomYOffset = ease * 180;
+        bottomXOffset = ease * 10;
+        bottomRot = ease * 0.08;
+        globalAlpha = 1 - p;
+      }
+
+      const drawPackContent = (c: CanvasRenderingContext2D) => {
+        // Background Gradient
+        const grad = c.createLinearGradient(packX, packY, packX, packY + packH);
+        if (theme === 'fiesta') {
+          grad.addColorStop(0, '#ec4899');
+          grad.addColorStop(0.5, '#E4007C');
+          grad.addColorStop(1, '#eab308');
+        } else if (theme === 'nido') {
+          grad.addColorStop(0, '#10b981');
+          grad.addColorStop(0.5, '#0d9488');
+          grad.addColorStop(1, '#15803d');
+        } else if (theme === 'cosmos') {
+          grad.addColorStop(0, '#1e1b4b');
+          grad.addColorStop(0.5, '#581c87');
+          grad.addColorStop(1, '#312e81');
+        } else if (theme === 'foil') {
+          grad.addColorStop(0, '#fbbf24');
+          grad.addColorStop(0.5, '#d946ef');
+          grad.addColorStop(1, '#9333ea');
+        } else {
+          grad.addColorStop(0, '#334155');
+          grad.addColorStop(0.5, '#1e293b');
+          grad.addColorStop(1, '#0f172a');
+        }
+
+        c.fillStyle = grad;
+        // Draw main pack body
+        c.beginPath();
+        if (typeof (c as any).roundRect === 'function') {
+          (c as any).roundRect(packX, packY, packW, packH, 20);
+        } else {
+          const radius = 20;
+          c.moveTo(packX + radius, packY);
+          c.lineTo(packX + packW - radius, packY);
+          c.quadraticCurveTo(packX + packW, packY, packX + packW, packY + radius);
+          c.lineTo(packX + packW, packY + packH - radius);
+          c.quadraticCurveTo(packX + packW, packY + packH, packX + packW - radius, packY + packH);
+          c.lineTo(packX + radius, packY + packH);
+          c.quadraticCurveTo(packX, packY + packH, packX, packY + packH - radius);
+          c.lineTo(packX, packY + radius);
+          c.quadraticCurveTo(packX, packY, packX + radius, packY);
+        }
+        c.fill();
+
+        // Border
+        c.lineWidth = 4;
+        c.strokeStyle = themeStyles.accentColor || '#E4007C';
+        c.stroke();
+
+        // Foil shines/decorations
+        c.fillStyle = 'rgba(255, 255, 255, 0.05)';
+        c.beginPath();
+        c.ellipse(packX + packW/2, packY + packH/2, packW * 0.7, packH * 0.25, Math.PI / 4, 0, Math.PI * 2);
+        c.fill();
+
+        // Symbol Emoji
+        c.font = '72px Arial';
+        c.textAlign = 'center';
+        c.textBaseline = 'middle';
+        c.fillStyle = '#fff';
+        c.fillText(themeStyles.cardBackSymbol || '🃏', packX + packW/2, packY + packH/2 + 10);
+
+        // Pack Title
+        c.font = 'bold 16px Arial';
+        c.fillStyle = '#fff';
+        c.fillText(themeStyles.packLabel ? themeStyles.packLabel.split(' ')[0] : 'BOOSTER', packX + packW/2, packY + packH - 45);
+
+        c.font = 'bold 8px Arial';
+        c.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        c.fillText('7 CARTAS • AXOLOTTO 2.0', packX + packW/2, packY + packH - 25);
+      };
+
+      // Draw Top Piece
+      ctx.save();
+      ctx.globalAlpha = globalAlpha;
+      ctx.translate(W/2 + topXOffset, tearY + topYOffset);
+      ctx.rotate(topRot);
+      ctx.translate(-W/2, -tearY);
+      // Clip mask for top half
+      ctx.beginPath();
+      ctx.rect(0, 0, W, tearY);
+      ctx.clip();
+      drawPackContent(ctx);
+
+      // Draw wavy tear edge at the bottom of top piece
+      if (dragX > packX) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(packX, tearY);
+        for (let x = packX; x <= Math.min(dragX, packX + packW); x += 5) {
+          const dy = Math.sin(x * 0.3) * 2;
+          ctx.lineTo(x, tearY + dy);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Draw Bottom Piece
+      ctx.save();
+      ctx.globalAlpha = globalAlpha;
+      ctx.translate(W/2 + bottomXOffset, tearY + bottomYOffset);
+      ctx.rotate(bottomRot);
+      ctx.translate(-W/2, -tearY);
+      // Clip mask for bottom half
+      ctx.beginPath();
+      ctx.rect(0, tearY, W, H - tearY);
+      ctx.clip();
+      drawPackContent(ctx);
+
+      // Draw wavy tear edge at the top of bottom piece
+      if (dragX > packX) {
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(packX, tearY);
+        for (let x = packX; x <= Math.min(dragX, packX + packW); x += 5) {
+          const dy = Math.sin(x * 0.3) * 2;
+          ctx.lineTo(x, tearY + dy);
+        }
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // Draw Tear Guide Line & Swipe Target (only if not animating out)
+      if (!isAnimatingOut) {
+        ctx.save();
+        // Dashed line
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(packX, tearY);
+        ctx.lineTo(packX + packW, tearY);
+        ctx.stroke();
+
+        const pulse = 1 + Math.sin(Date.now() * 0.015) * 0.12;
+        const dragLimitLeft = packX;
+
+        // Draw progress trail
+        if (dragX > dragLimitLeft) {
+          ctx.strokeStyle = themeStyles.accentColor || '#E4007C';
+          ctx.lineWidth = 4;
+          ctx.setLineDash([]);
+          ctx.beginPath();
+          ctx.moveTo(dragLimitLeft, tearY);
+          ctx.lineTo(dragX, tearY);
+          ctx.stroke();
+        }
+
+        // Draw swipe handler handle (glowing circle + scissor emoji)
+        ctx.shadowColor = themeStyles.accentColor || '#E4007C';
+        ctx.shadowBlur = 12 * pulse;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(dragX, tearY, 15 * pulse, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0; // reset
+
+        ctx.font = '12px Arial';
+        ctx.fillStyle = '#000';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('✂️', dragX, tearY);
+
+        // Help text if not dragged much
+        if (tearProgress < 0.2) {
+          ctx.font = 'bold 11px Arial';
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+          ctx.fillText('ARRANCA EL SOBRE AQUÍ ➔', W / 2, tearY - 26);
+        }
+        ctx.restore();
+      }
+
+      // Draw sparks/particles
+      ctx.save();
+      particlesRef.current.forEach((p) => {
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+
+      requestAnimationFrame(render);
+    };
+
+    const handleId = requestAnimationFrame(render);
+    return () => {
+      active = false;
+      cancelAnimationFrame(handleId);
+    };
+  }, [dragX, isDragging, tearProgress, isAnimatingOut, theme, themeStyles]);
+
+  const handleStart = (clientX: number, clientY: number) => {
+    if (isAnimatingOut) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    const tearY = 120;
+
+    // Check if clicked near the current dragX and tearY
+    const dx = x - dragX;
+    const dy = y - tearY;
+    if (Math.abs(dx) < 35 && Math.abs(dy) < 35) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleMove = (clientX: number, clientY: number) => {
+    if (!isDragging || isAnimatingOut) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    const W = canvas.width;
+    const packX = 30;
+    const packW = W - 60;
+    const tearY = 120;
+
+    // Constrain x to pack boundary
+    const newX = Math.max(packX, Math.min(x, packX + packW));
+
+    // Only allow dragging forward/to the right
+    if (newX > dragX) {
+      setDragX(newX);
+      const progress = (newX - packX) / packW;
+      setTearProgress(progress);
+
+      // Spawn sparks
+      const sparkColors = theme === 'foil' ? ['#fbbf24', '#f43f5e', '#fff'] : [themeStyles.accentColor, '#fff', '#ffd700'];
+      for (let i = 0; i < 4; i++) {
+        particlesRef.current.push({
+          x: newX,
+          y: tearY + (Math.random() - 0.5) * 6,
+          vx: (Math.random() - 0.5) * 4 - 1.5,
+          vy: -Math.random() * 3 - 0.5,
+          color: sparkColors[Math.floor(Math.random() * sparkColors.length)],
+          size: Math.random() * 3 + 1.5,
+          alpha: 1,
+          life: 30 + Math.random() * 20
+        });
+      }
+
+      // Check for completion
+      if (progress >= 0.95) {
+        setIsDragging(false);
+        setIsAnimatingOut(true);
+        // Spawn massive explosion sparks
+        for (let i = 0; i < 40; i++) {
+          particlesRef.current.push({
+            x: newX,
+            y: tearY,
+            vx: (Math.random() - 0.5) * 10,
+            vy: -Math.random() * 8 - 2,
+            color: sparkColors[Math.floor(Math.random() * sparkColors.length)],
+            size: Math.random() * 5 + 2,
+            alpha: 1,
+            life: 40 + Math.random() * 30
+          });
+        }
+      }
+    }
+  };
+
+  const handleEnd = () => {
+    setIsDragging(false);
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center p-2">
+      <canvas
+        ref={canvasRef}
+        width={300}
+        height={420}
+        className="touch-none mx-auto select-none bg-transparent cursor-grab active:cursor-grabbing max-w-full drop-shadow-[0_15px_30px_rgba(0,0,0,0.5)]"
+        onMouseDown={(e) => handleStart(e.clientX, e.clientY)}
+        onMouseMove={(e) => handleMove(e.clientX, e.clientY)}
+        onMouseUp={handleEnd}
+        onMouseLeave={handleEnd}
+        onTouchStart={(e) => {
+          if (e.touches[0]) handleStart(e.touches[0].clientX, e.touches[0].clientY);
+        }}
+        onTouchMove={(e) => {
+          if (e.touches[0]) handleMove(e.touches[0].clientX, e.touches[0].clientY);
+        }}
+        onTouchEnd={handleEnd}
+      />
+    </div>
+  );
+}
+
 export default function UnboxingModal({
   open,
   onClose,
@@ -98,7 +480,7 @@ export default function UnboxingModal({
   txHash,
   ownedCardIds = new Set()
 }: UnboxingModalProps) {
-  const [unboxingState, setUnboxingState] = useState<'pack' | 'opening' | 'reveal' | 'summary'>('pack');
+  const [unboxingState, setUnboxingState] = useState<'pack' | 'tearing' | 'opening' | 'reveal' | 'summary'>('pack');
   const [currentRevealIndex, setCurrentRevealIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [particles, setParticles] = useState<any[]>([]);
@@ -393,7 +775,7 @@ export default function UnboxingModal({
             <p className="text-slate-400 text-sm mb-10">Haz clic en el sobre para abrirlo.</p>
             
             <div
-              onClick={() => setUnboxingState('opening')}
+              onClick={() => setUnboxingState('tearing')}
               className={`w-56 h-80 sm:w-64 sm:h-[360px] rounded-2xl bg-gradient-to-br ${themeStyles.gradient} border-4 ${themeStyles.borderColor} p-4 shadow-[0_10px_35px_${themeStyles.glowColor}] flex flex-col items-center justify-between cursor-pointer transform hover:scale-105 active:scale-95 transition-all duration-300 group relative overflow-hidden animate-booster-hover-shake animate-booster-shake`}
             >
               <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.05)_50%,transparent_75%)] bg-[length:250%_250%] group-hover:animate-[shiny-card_3s_infinite]" />
@@ -417,6 +799,22 @@ export default function UnboxingModal({
                 </span>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* PHASE 1.5: SWIPE TO TEAR */}
+        {unboxingState === 'tearing' && (
+          <div className="py-4 flex flex-col items-center animate-in fade-in duration-300 relative z-10">
+            <h2 className={`text-2xl sm:text-3xl font-black italic ${themeStyles.titleText} mb-1 uppercase tracking-widest animate-pulse`}>
+              ¡DESGARRA EL SOBRE!
+            </h2>
+            <p className="text-slate-400 text-xs mb-4">Desliza la tijera ✂️ de izquierda a derecha para rasgar el papel.</p>
+            
+            <TearCanvas
+              theme={theme}
+              themeStyles={themeStyles}
+              onTearComplete={() => setUnboxingState('opening')}
+            />
           </div>
         )}
 

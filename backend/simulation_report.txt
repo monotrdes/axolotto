@@ -3,121 +3,118 @@
 📊  REPORTE FINAL — SIMULADOR AXOLOTTO v3
 ======================================================================
 👥  Usuarios creados:          0
-🎟️  Corcholatas canjeadas:     12
+🎟️  Corcholatas canjeadas:     13
 🎁  Corcholatas reclamadas:    5
-💸  AXF comprados (Sim.):      205050 AXF (Pesos: $25893.00 MXN)
-💎  Paquetes FRJ comprados:    58
-🃏  Boosters normales:         227
+💸  AXF comprados (Sim.):      222225 AXF (Pesos: $28064.00 MXN)
+💎  Paquetes FRJ comprados:    55
+🃏  Boosters normales:         242
 ✨  Boosters foil:             0
 🎯  Boosters extra (abiertos): 0
-🎴  Cartas abiertas total:     1190
-🥚  Webitos adoptados:         12
-🐣  Axolotitos eclosionados:   24
-🎓  Tutoriales completados:    12 (Tabla Tutorial creada)
-🧬  Naturalezas obtenidas:     lucky: 4, shy: 6, wise: 3, glutton: 4, hyperactive: 3, methodical: 4
-😇  Karma Lucky:               10
-🧂  Karma Salty:               2
-💧  Recompensas Salty (FRJ):   2
+🎴  Cartas abiertas total:     1288
+🥚  Webitos adoptados:         13
+🐣  Axolotitos eclosionados:   26
+🎓  Tutoriales completados:    13 (Tabla Tutorial creada)
+🧬  Naturalezas obtenidas:     glutton: 7, hyperactive: 5, wise: 3, lucky: 2, methodical: 7, shy: 2
+😇  Karma Lucky:               12
+🧂  Karma Salty:               1
+💧  Recompensas Salty (FRJ):   1
 🎉  Evento de prueba creado:   No
 ----------------------------------------------------------------------
-🎰  Gashapon rolls:            40
+🎰  Gashapon rolls:            41
 💊  Cápsulas reclamadas:       0
 🌟  Triple Suerte:             4
-📋  Tableros creados:          23  (0 manuales)
-🏪  Tableros en venta P2P:     2 (Comprados: 1)
+📋  Tableros creados:          25  (0 manuales)
+🏪  Tableros en venta P2P:     4 (Comprados: 1)
 🏠  Tableros en renta:         0 (Rentados: 0)
 📈  Slots desbloqueados:       4
-🦎  Axos en venta P2P:         0 (Comprados: 0)
+🦎  Axos en venta P2P:         2 (Comprados: 2)
 ----------------------------------------------------------------------
-👑  VIP activados:             10
+👑  VIP activados:             11
 🔄  VIP Auto-Renovación:       4
 🌿  FRJ VIP reclamados:        0
-💸  Ahorro jugadores (VIP):    483.42 AXF  ← ingresos perdidos por la casa
+💸  Ahorro jugadores (VIP):    585.78 AXF  ← ingresos perdidos por la casa
 ----------------------------------------------------------------------
-🎮  Partidas individuales:     87
-  🏆 Victorias:               36  (41.4%)
-  💔 Derrotas:                51
-  🤖 Autojuego:               27 partidas
-  💰 FRJ obtenidas:           1567.54
-  🍽️  Alimentaciones:          10
+🎮  Partidas individuales:     95
+  🏆 Victorias:               34  (35.8%)
+  💔 Derrotas:                61
+  🤖 Autojuego:               30 partidas
+  💰 FRJ obtenidas:           1599.69
+  🍽️  Alimentaciones:          8
   😴 Ciclos sueño:            0
   🔧 Cave items equipados:    0
-  💍 Accesorios equipados:    28
+  💍 Accesorios equipados:    30
 ----------------------------------------------------------------------
 ⚔️  Salas multijugador:        6
   📞 Recall pasó:             1
-  💵 Axos liquidados:         12
+  💵 Axos liquidados:         13
   💰 Jackpots ganados:        0
 ----------------------------------------------------------------------
-  📊 Partidas jugadas:         26
-  🏆 Victorias:               11  (42%)
-  💸 FRJ neto total:          -118.0
+  📊 Partidas jugadas:         23
+  🏆 Victorias:               8  (35%)
+  💸 FRJ neto total:          -136.0
   Detalle:
-    💔 Sandía Robusta       │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
-    💔 Tlacoyito Perdurable │ Charco de Novatos        │ Neto:   -30.0 FRJ │ XP: +15
-    💔 Corazón Floreciente  │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
-    🏆 Neblina Fecunda      │ Fosa del Campeón         │ Neto:   +92.5 FRJ │ XP: +55
-    💔 Chalchi Inmortal     │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
-    💔 Requinto Lozano      │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
-    💔 Xipe Inmortal        │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
-    🏆 Tula Determinada     │ Charco de Novatos        │ Neto:   +63.5 FRJ │ XP: +60
-    💔 Pulsar Lúcido        │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
-    🏆 Cuitláhuac Vital     │ Fosa del Campeón         │ Neto:   +22.5 FRJ │ XP: +25
-    💔 Melón Imperecedero   │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
-    🏆 Arpa Resistente      │ Charco de Novatos        │ Neto:   +39.5 FRJ │ XP: +25
-    💔 Sandía Robusta       │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
-    🏆 Tlacoyito Perdurable │ Charco de Novatos        │ Neto:   +36.0 FRJ │ XP: +60
-    🏆 Corazón Floreciente  │ Charco de Novatos        │ Neto:   +22.0 FRJ │ XP: +25
-    🏆 Neblina Fecunda      │ Fosa del Campeón         │ Neto:   +81.2 FRJ │ XP: +70
-    💔 Requinto Lozano      │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
-    🏆 Pulsar Lúcido        │ Fosa del Campeón         │ Neto:    -6.2 FRJ │ XP: +20
-    💔 Cuitláhuac Vital     │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
-    💔 Melón Imperecedero   │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
-    💔 Arpa Resistente      │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
-    💔 Corazón Floreciente  │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
-    🏆 Neblina Fecunda      │ Fosa del Campeón         │ Neto:   +37.5 FRJ │ XP: +55
-    🏆 Pulsar Lúcido        │ Fosa del Campeón         │ Neto:   +37.5 FRJ │ XP: +20
-    💔 Cuitláhuac Vital     │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
-    🏆 Arpa Resistente      │ Charco de Novatos        │ Neto:   +16.0 FRJ │ XP: +70
+    💔 Maceta Robusta       │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    🏆 Ámbar Resistente     │ Charco de Novatos        │ Neto:   +84.5 FRJ │ XP: +55
+    💔 Venado Floreciente   │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    💔 Sirena Interminable  │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    💔 Xochicalco Incombust │ Charco de Novatos        │ Neto:   -30.0 FRJ │ XP: +15
+    💔 Jacaranda Imperturba │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    🏆 Xipe Inmortal        │ Charco de Novatos        │ Neto:   +36.5 FRJ │ XP: +30
+    🏆 Neblina Sólida       │ Fosa del Campeón         │ Neto:  +175.0 FRJ │ XP: +70
+    💔 Pulsar Lúcido        │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Mazorca Vital        │ Charco de Novatos        │ Neto:   -30.0 FRJ │ XP: +15
+    💔 Axolote Incesante    │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
+    💔 Tajín Vigoroso       │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Castor Incombustible │ Charco de Novatos        │ Neto:   -20.0 FRJ │ XP: +10
+    🏆 Ámbar Resistente     │ Charco de Novatos        │ Neto:   +11.5 FRJ │ XP: +25
+    💔 Venado Floreciente   │ Fosa del Campeón         │ Neto:  -100.0 FRJ │ XP: +10
+    🏆 Sirena Interminable  │ Charco de Novatos        │ Neto:   +29.5 FRJ │ XP: +55
+    🏆 Jacaranda Imperturba │ Fosa del Campeón         │ Neto:   +60.0 FRJ │ XP: +50
+    💔 Pulsar Lúcido        │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    💔 Mazorca Vital        │ Charco de Novatos        │ Neto:   -30.0 FRJ │ XP: +15
+    🏆 Axolote Incesante    │ Fosa del Campeón         │ Neto:   +20.0 FRJ │ XP: +20
+    💔 Tajín Vigoroso       │ Charco de Novatos        │ Neto:   -10.0 FRJ │ XP: +5
+    🏆 Sirena Interminable  │ Charco de Novatos        │ Neto:   -13.0 FRJ │ XP: +25
+    💔 Jacaranda Imperturba │ Fosa del Campeón         │ Neto:   -50.0 FRJ │ XP: +5
 
 ----------------------------------------------------------------------
 🌙  Ciclo Lunar (Daily):
-  💰 FRJ acumulados:          4965 FRJ
+  💰 FRJ acumulados:          5160 FRJ
   💊 Cápsulas ganadas:        6
   🌕 Máx Luna alcanzada:      2
   📅 Máx racha diaria:        6
 ----------------------------------------------------------------------
 ⛏️  Expansión del Cenote:
-  🏗️  Expansiones totales:     47
-  💸 AXF gastados (aceler.):  1464
+  🏗️  Expansiones totales:     50
+  💸 AXF gastados (aceler.):  1520
   🏆 Máx nivel alcanzado:     8
 ----------------------------------------------------------------------
 🖼️  Decoración del Cenote:
-  🎨 Items equipados:         28
-  🔒 Tests seguridad slot:    12
+  🎨 Items equipados:         31
+  🔒 Tests seguridad slot:    13
   🧬 Tests límite mentoría:   0
 ----------------------------------------------------------------------
 👑  Staking de Axolotitos:
-  🥚 Axolotitos en staking:    12
-  🔓 Axolotitos retirados:     12
-  💰 FRJ ganado en staking:    143.28 FRJ
+  🥚 Axolotitos en staking:    13
+  🔓 Axolotitos retirados:     13
+  💰 FRJ ganado en staking:    137.32 FRJ
 ----------------------------------------------------------------------
 👥  Capa Social — Amigos:
-  📨 Solicitudes enviadas:     36
-  ✅ Solicitudes aceptadas:    22
-  ❌ Solicitudes rechazadas:   14
-  🤝 Amistades activas total:  14
-  ❤️  Likes dados:             36 (total BD: 36)
-  🏠 Cuevas visitadas:         28 (total BD: 28)
-  🚫 Bloqueos:                 18
-  💔 Amistades eliminadas:     12
-  🔍 Sugerencias encontradas:  7
+  📨 Solicitudes enviadas:     47
+  ✅ Solicitudes aceptadas:    32
+  ❌ Solicitudes rechazadas:   15
+  🤝 Amistades activas total:  23
+  ❤️  Likes dados:             43 (total BD: 43)
+  🏠 Cuevas visitadas:         36 (total BD: 36)
+  🚫 Bloqueos:                 21
+  💔 Amistades eliminadas:     13
+  🔍 Sugerencias encontradas:  5
 ----------------------------------------------------------------------
 🔗  Capa Social — Referidos:
-  🏷️  Códigos generados:       12 (total BD: 12)
-  📥 Códigos canjeados:        4
-  🎯 Milestones procesados:    8
-  👶 Referidos totales:        4
+  🏷️  Códigos generados:       13 (total BD: 13)
+  📥 Códigos canjeados:        5
+  🎯 Milestones procesados:    10
+  👶 Referidos totales:        5
 ----------------------------------------------------------------------
 🛡️  Capa Social — Anti-Abuso:
   🔒 Anti-fraud bloqueos:      3
@@ -128,11 +125,12 @@
   ❌ Fallaron:                1
 ======================================================================
 
-⚠️  ERRORES (49):
-  x4  booster_buy did:privy:sim_player_6: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x3  booster_buy did:privy:sim_player_8: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x2  booster_buy did:privy:cmnn1tv0o02au0ckzho9ugkb2: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x2  booster_buy did:privy:sim_player_2: Límite de 5 unidades por wallet alcanzado para este ítem.
+⚠️  ERRORES (61):
+  x6  booster_buy did:privy:sim_player_3: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x4  booster_buy did:privy:sim_player_8: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x2  booster_buy did:privy:sim_player_7: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x2  booster_buy did:privy:sim_player_11: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x2  cave_decor_place did:privy:sim_player_11/Mantel Tenango@MANTEL_0: Necesitas una mesa equipada para ponerle mantel.
   x1  egg_buy_after_expand did:privy:cmnn1tv0o02au0ckzho9ugkb2: Límite de 1 unidades por wallet alcanzado para este ítem.
   x1  egg_buy_after_expand did:privy:sim_player_1: Límite de 1 unidades por wallet alcanzado para este ítem.
   x1  egg_buy_after_expand did:privy:sim_player_2: Límite de 1 unidades por wallet alcanzado para este ítem.
@@ -150,25 +148,32 @@
   x1  egg_buy_after_expand did:privy:sim_player_9: Límite de 1 unidades por wallet alcanzado para este ítem.
   x1  claim_corcholata_unexpected did:privy:sim_player_10: 429: 5 per 1 minute
   x1  egg_buy_after_expand did:privy:sim_player_10: Límite de 1 unidades por wallet alcanzado para este ítem.
+  x1  claim_corcholata_unexpected did:privy:sim_player_11: 429: 5 per 1 minute
+  x1  egg_buy_after_expand did:privy:sim_player_11: Límite de 1 unidades por wallet alcanzado para este ítem.
   x1  claim_corcholata_unexpected did:privy:cmpl1jf3t01cc0ck4gqt004l5: 429: 5 per 1 minute
   x1  egg_buy_after_expand did:privy:cmpl1jf3t01cc0ck4gqt004l5: Límite de 1 unidades por wallet alcanzado para este ítem.
-  x1  booster_buy did:privy:sim_player_1: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:cmnn1tv0o02au0ckzho9ugkb2: Límite de 5 unidades por wallet alcanzado para este ítem.
+  x1  booster_buy did:privy:sim_player_4: Límite de 5 unidades por wallet alcanzado para este ítem.
   x1  booster_buy did:privy:sim_player_5: Límite de 5 unidades por wallet alcanzado para este ítem.
-  x1  board_manual did:privy:cmnn1tv0o02au0ckzho9ugkb2: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
+  x1  booster_buy did:privy:sim_player_6: Límite de 5 unidades por wallet alcanzado para este ítem.
   x1  board_manual did:privy:sim_player_8: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
   x1  board_manual did:privy:sim_player_10: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
-  x1  board_manual did:privy:cmpl1jf3t01cc0ck4gqt004l5: Límite de tableros alcanzado. Tienes 3/3 tableros creados. Desbloquea un nuevo espacio para poder crear más.
-  x1  board_sale_list did:privy:sim_player_4: La Tabla Tutorial no se puede vender.
-  x1  board_sale_list did:privy:sim_player_9: La Tabla Tutorial no se puede vender.
   x1  board_rent_list did:privy:sim_player_1: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_4: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_5: La Tabla Tutorial no se puede rentar.
   x1  board_rent_list did:privy:sim_player_6: La Tabla Tutorial no se puede rentar.
-  x1  board_rent_list did:privy:sim_player_9: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_10: La Tabla Tutorial no se puede rentar.
+  x1  board_rent_list did:privy:sim_player_11: La Tabla Tutorial no se puede rentar.
   x1  board_rent_list did:privy:cmpl1jf3t01cc0ck4gqt004l5: La Tabla Tutorial no se puede rentar.
-  x1  axo_sale_list did:privy:sim_player_10: El Axolotito del tutorial no se puede vender.
-  x1  board_buy_p2p did:privy:sim_player_7 board #20: Límite de tableros alcanzado. Tienes 3/3 tableros activos. Desbloquea un nuevo slot para poder adquirir más.
+  x1  axo_sale_list did:privy:sim_player_4: El Axolotito del tutorial no se puede vender.
+  x1  axo_sale_list did:privy:sim_player_6: El Axolotito del tutorial no se puede vender.
+  x1  axo_sale_list did:privy:sim_player_11: El Axolotito del tutorial no se puede vender.
+  x1  board_buy_p2p did:privy:cmnn1tv0o02au0ckzho9ugkb2 board #18: Límite de tableros alcanzado. Tienes 3/3 tableros activos. Desbloquea un nuevo slot para poder adquirir más.
+  x1  board_buy_p2p did:privy:sim_player_6 board #28: Límite de tableros alcanzado. Tienes 3/3 tableros activos. Desbloquea un nuevo slot para poder adquirir más.
   x1  cave_decor_place did:privy:cmnn1tv0o02au0ckzho9ugkb2/Mantel Otomí Real@MANTEL_0: Necesitas una mesa equipada para ponerle mantel.
-  x1  cave_decor_place did:privy:sim_player_9/Mantel Otomí Real@MANTEL_0: Necesitas una mesa equipada para ponerle mantel.
+  x1  cave_decor_place did:privy:sim_player_4/Mantel Tenango@MANTEL_0: Necesitas una mesa equipada para ponerle mantel.
+  x1  cave_decor_place did:privy:sim_player_6/Mantel Otomí Real@MANTEL_0: Necesitas una mesa equipada para ponerle mantel.
+  x1  cave_item_buy did:privy:sim_player_9/Mesa de Obsidiana: Límite de 1 unidades por wallet alcanzado para este ítem.
   x1  cave_decor_place did:privy:sim_player_10/Mantel de Fiesta@MANTEL_0: Necesitas una mesa equipada para ponerle mantel.
-  x1  cave_decor_place did:privy:sim_player_10/Mantel Tenango@MANTEL_0: Necesitas una mesa equipada para ponerle mantel.
+  x1  cave_decor_place did:privy:sim_player_10/Mantel Otomí Real@MANTEL_0: Necesitas una mesa equipada para ponerle mantel.
+  x1  cave_decor_place did:privy:cmpl1jf3t01cc0ck4gqt004l5/Mantel Tenango@MANTEL_0: Necesitas una mesa equipada para ponerle mantel.
 ======================================================================

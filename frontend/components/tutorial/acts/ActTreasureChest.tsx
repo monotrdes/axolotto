@@ -18,10 +18,11 @@ type ChestPhase = "chest_closed" | "chest_opening" | "rewards_revealed";
 interface Props {
   hasPendingReward: boolean;
   token: string | null;
+  onRewardClaimed?: () => void;
   onComplete: () => void;
 }
 
-export default function ActTreasureChest({ hasPendingReward, token, onComplete }: Props) {
+export default function ActTreasureChest({ hasPendingReward, token, onRewardClaimed, onComplete }: Props) {
   const { getAccessToken, authenticated } = usePrivy();
   const [phase, setPhase] = useState<ChestPhase>("chest_closed");
   const [reward, setReward] = useState<{
@@ -68,6 +69,7 @@ export default function ActTreasureChest({ hasPendingReward, token, onComplete }
         console.log("✅ Premio reclamado:", data);
         setReward(data.reward);
         setPhase("rewards_revealed");
+        onRewardClaimed?.();
       } catch (e) {
         console.error("❌ Error de red en claim:", e);
         setError("Error de conexión al reclamar");

@@ -57,6 +57,8 @@ def get_axolotito_ranking(
             "eye_type": axo.eye_type,
             "mouth_type": axo.mouth_type,
             "tail_type": axo.tail_type,
+            "forehead_type": axo.forehead_type,
+            "limb_type": axo.limb_type,
             "status": axo.status,
             "energy_current": axo.energy_current,
             "stat_stamina": axo.stat_stamina,

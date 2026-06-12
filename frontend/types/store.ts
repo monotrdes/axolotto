@@ -71,6 +71,7 @@ export interface StoreProps {
   initialSection?: StoreTab;
   /** Nonce para re-disparar initialSection aunque sea la misma sección. */
   sectionNonce?: number;
+  onMeltSuccess?: () => void;
   [key: string]: any;
 }
 

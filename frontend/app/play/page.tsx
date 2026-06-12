@@ -357,6 +357,12 @@ export default function Home() {
         isEgg: axo.is_egg ?? axo.es_huevo ?? false,
         eggProgress: axo.egg_progress ?? axo.progreso_huevo ?? undefined,
         skinColor: axo.skin_color ?? axo.color_piel ?? undefined,
+        gillType: axo.gill_type ?? undefined,
+        eyeType: axo.eye_type ?? undefined,
+        mouthType: axo.mouth_type ?? undefined,
+        tailType: axo.tail_type ?? undefined,
+        foreheadType: axo.forehead_type ?? undefined,
+        limbType: axo.limb_type ?? undefined,
       }),
     );
 
@@ -997,6 +1003,7 @@ export default function Home() {
                   openBanco={openBancoCount}
                   initialSection={storeSection}
                   sectionNonce={storeSectionNonce}
+                  onMeltSuccess={() => gameCanvasRef.current?.playMeltAnimation?.()}
                 />
               )}
               {tabActiva === 'jugar' && (

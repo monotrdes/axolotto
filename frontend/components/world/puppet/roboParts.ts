@@ -117,11 +117,11 @@ export function drawRoboBody(): Container {
   const sprite = getTextureOrFallback("robo_body", 0.5, 0.5);
   if (sprite) return sprite;
   const g = new Graphics();
-  // Cuerpo de latón con textura metálica real y remaches.
-  g.ellipse(0, 0, 52, 38).fill({ texture: getBrassTexture() }).stroke({ color: PAPER_EDGE, width: EDGE_W });
-  // Remaches (3 en cada lado).
-  for (const x of [-28, 0, 28]) {
-    for (const y of [-8, 8]) {
+  // Torso bípedo de latón con textura metálica real y remaches.
+  g.ellipse(0, 0, 30, 42).fill({ texture: getBrassTexture() }).stroke({ color: PAPER_EDGE, width: EDGE_W });
+  // Remaches (2 columnas de 3).
+  for (const x of [-14, 14]) {
+    for (const y of [-22, 0, 22]) {
       g.circle(x, y, 3.5).fill({ texture: getCopperTexture() }).stroke({ color: PAPER_EDGE, width: 1.5 });
     }
   }
@@ -133,12 +133,12 @@ export function drawRoboHead(): Container {
   if (sprite) return sprite;
   const g = new Graphics();
   // Cabeza de latón con textura real.
-  g.circle(0, 0, 36).fill({ texture: getBrassTexture() }).stroke({ color: PAPER_EDGE, width: EDGE_W });
+  g.circle(0, 0, 30).fill({ texture: getBrassTexture() }).stroke({ color: PAPER_EDGE, width: EDGE_W });
   // Visor (banda oscura horizontal).
-  g.ellipse(0, -2, 28, 10).fill(0x1e293b).stroke({ color: BRASS_DARK, width: 2.5 });
+  g.ellipse(0, -2, 23, 9).fill(0x1e293b).stroke({ color: BRASS_DARK, width: 2.5 });
   // Antena.
-  g.moveTo(18, -28).lineTo(22, -44).stroke({ color: BRASS_DARK, width: 3 });
-  g.circle(22, -48, 5).fill({ texture: getCopperTexture() }).stroke({ color: PAPER_EDGE, width: 2 });
+  g.moveTo(15, -23).lineTo(19, -38).stroke({ color: BRASS_DARK, width: 3 });
+  g.circle(19, -42, 5).fill({ texture: getCopperTexture() }).stroke({ color: PAPER_EDGE, width: 2 });
   return g;
 }
 
@@ -185,26 +185,26 @@ export function drawRoboTail(): Container {
   const sprite = getTextureOrFallback("robo_tail", 0, 0.5);
   if (sprite) return sprite;
   const g = new Graphics();
-  g.poly([0, -16, 64, -4, 64, 4, 0, 16])
+  g.poly([0, -12, 44, -4, 44, 4, 0, 12])
     .fill({ texture: getBrassTexture() })
     .stroke({ color: PAPER_EDGE, width: 4 });
   // Segmentos de cola (articulaciones).
-  g.lineTo(24, -10).lineTo(24, 10).stroke({ color: BRASS_DARK, width: 2 });
-  g.lineTo(44, -5).lineTo(44, 5).stroke({ color: BRASS_DARK, width: 2 });
+  g.lineTo(16, -9).lineTo(16, 9).stroke({ color: BRASS_DARK, width: 2 });
+  g.lineTo(30, -6).lineTo(30, 6).stroke({ color: BRASS_DARK, width: 2 });
   return g;
 }
 
-export function drawRoboLimb(): Container {
+export function drawRoboLimb(length = 26): Container {
   const sprite = getTextureOrFallback("robo_limb", 0.5, 0);
   if (sprite) return sprite;
   const g = new Graphics();
-  g.roundRect(-6, 0, 12, 26, 6)
+  g.roundRect(-6, 0, 12, length, 6)
     .fill({ texture: getBrassTexture() })
     .stroke({ color: PAPER_EDGE, width: 3 });
   // Remache en la articulación superior.
   g.circle(0, 6, 3.5).fill({ texture: getCopperTexture() }).stroke({ color: PAPER_EDGE, width: 1.5 });
   // Garra en la punta.
-  g.moveTo(-4, 26).lineTo(0, 32).lineTo(4, 26).fill({ texture: getCopperTexture() });
+  g.moveTo(-4, length).lineTo(0, length + 6).lineTo(4, length).fill({ texture: getCopperTexture() });
   return g;
 }
 
@@ -242,7 +242,7 @@ export function drawRoboMouth(): Container {
 export function drawRoboShadow(): Container {
   const sprite = getTextureOrFallback("robo_shadow", 0.5, 0.5);
   if (sprite) return sprite;
-  return new Graphics().ellipse(0, 0, 44, 10).fill({ color: 0x000000, alpha: 0.22 });
+  return new Graphics().ellipse(0, 0, 36, 9).fill({ color: 0x000000, alpha: 0.22 });
 }
 
 export function drawWindUpKey(): Container {

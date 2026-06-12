@@ -4,6 +4,8 @@ import type { WorldEngine } from "../../engine/WorldEngine";
 import type { AxolotitoData } from "../../entities/AxolotitoSprite";
 import { AxolotitoPuppet } from "../../puppet/AxolotitoPuppet";
 import { DESIGN_SPACE, lunarSurfaceTint } from "../zoneConfig";
+import { setupWaterDisplacement } from "../../engine/waterDisplacement";
+import { TIER_PROFILE } from "../../engine/qualityTier";
 
 /**
  * Diorama de la Pirámide (plan task-84 §2, macrozona 3): escena ancha con
@@ -26,6 +28,7 @@ export class PiramideScene extends Container {
   private engine: WorldEngine;
   private podioLayer = new Container();
   private podioPuppets: AxolotitoPuppet[] = [];
+  private displacement?: ReturnType<typeof setupWaterDisplacement>;
   private tick = (ticker: Ticker) => this.update(ticker.deltaMS / 1000);
 
   constructor(engine: WorldEngine) {
@@ -41,6 +44,9 @@ export class PiramideScene extends Container {
 
   override destroy(options?: Parameters<Container["destroy"]>[0]): void {
     this.engine.app.ticker.remove(this.tick);
+    if (this.displacement) {
+      this.displacement.destroy();
+    }
     this.podioPuppets = [];
     super.destroy(options);
   }
@@ -52,10 +58,11 @@ export class PiramideScene extends Container {
     this.podioPuppets = [];
 
     // Posiciones: 🥇 centro (más alto), 🥈 izquierda, 🥉 derecha.
+    // El origen del puppet son los pies → y = cara superior del pedestal.
     const spots: Array<{ x: number; y: number; medal: string }> = [
-      { x: CX_EXPLANADA, y: 1020, medal: "🥇" },
-      { x: CX_EXPLANADA - 190, y: 1090, medal: "🥈" },
-      { x: CX_EXPLANADA + 190, y: 1120, medal: "🥉" },
+      { x: CX_EXPLANADA, y: 1080, medal: "🥇" },
+      { x: CX_EXPLANADA - 190, y: 1130, medal: "🥈" },
+      { x: CX_EXPLANADA + 190, y: 1150, medal: "🥉" },
     ];
     data.slice(0, 3).forEach((axo, i) => {
       const spot = spots[i];
@@ -77,6 +84,9 @@ export class PiramideScene extends Container {
 
   private update(dt: number): void {
     if (this.destroyed) return;
+    if (this.displacement) {
+      this.displacement.update(dt);
+    }
     for (const puppet of this.podioPuppets) puppet.update(dt);
   }
 
@@ -99,6 +109,13 @@ export class PiramideScene extends Container {
       }
     }
     this.addChild(bg);
+
+    const profile = TIER_PROFILE[this.engine.quality];
+    if (profile.waterShader) {
+      this.displacement = setupWaterDisplacement(512, 512);
+      this.addChild(this.displacement.sprite);
+      bg.filters = [this.displacement.filter];
+    }
   }
 
   // ── Subzona central: Explanada de Rankings ────────────────────────────

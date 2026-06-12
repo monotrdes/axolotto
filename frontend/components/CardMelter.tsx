@@ -20,6 +20,7 @@ interface CardMelterProps {
   balances: any;
   onBack?: () => void;
   onNavigateToMarket?: () => void;
+  onMeltSuccess?: () => void;
 }
 
 export default function CardMelter({
@@ -29,6 +30,7 @@ export default function CardMelter({
   balances,
   onBack,
   onNavigateToMarket,
+  onMeltSuccess,
 }: CardMelterProps) {
   const { toast } = useToast();
   const [subTab, setSubTab] = useState<'melt' | 'forge'>('melt');
@@ -103,6 +105,7 @@ export default function CardMelter({
       recargarSaldos();
       setSelectedMeltCard(null);
       toast.ok("¡Carta fundida con éxito en el Cenote Místico! 🌌");
+      onMeltSuccess?.();
     } catch (err: any) {
       console.error("Error melting card:", err);
       toast.error(err.response?.data?.detail || "Error al fundir la carta");

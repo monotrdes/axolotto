@@ -75,6 +75,23 @@ function injectExtraStyles() {
       from { transform: translateY(0) scale(1); opacity: 1; }
       to   { transform: translateY(-60px) scale(0); opacity: 0; }
     }
+    @keyframes banner-shrink-out {
+      0%   { transform: translateX(-50%) scale(1);   opacity: 1; }
+      100% { transform: translateX(-50%) scale(0.3); opacity: 0; }
+    }
+    @keyframes badge-pop-in {
+      0%   { transform: scale(0);   opacity: 0; }
+      60%  { transform: scale(1.25); opacity: 1; }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+    @keyframes badge-glow {
+      0%, 100% { box-shadow: 0 0 6px rgba(234,179,8,0.3), 0 0 12px rgba(234,179,8,0.15); }
+      50%      { box-shadow: 0 0 12px rgba(234,179,8,0.5), 0 0 24px rgba(234,179,8,0.25); }
+    }
+    @keyframes badge-float {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-3px); }
+    }
   `;
   document.head.appendChild(style);
 }
@@ -90,9 +107,32 @@ export function TutorialFlow({ userId, token, hasPendingReward, onComplete }: Tu
   const startedRef              = useRef(false);
   const completedRef            = useRef(false);
   const axoNameRef              = useRef<string | undefined>(undefined);
+  const [bannerCollapsed, setBannerCollapsed] = useState(false);
+  const bannerTimerRef          = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [rewardClaimed, setRewardClaimed] = useState(false);
 
   useEffect(() => {
     injectExtraStyles();
+  }, []);
+
+  // ── Banner auto-collapse: full message → small badge after 5 seconds ──────
+  useEffect(() => {
+    if (!hasPendingReward) return;
+    bannerTimerRef.current = setTimeout(() => {
+      setBannerCollapsed(true);
+    }, 5000);
+    return () => {
+      if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+    };
+  }, [hasPendingReward]);
+
+  // Expand banner again on hover/click, auto-collapse after 3s
+  const expandBanner = useCallback(() => {
+    setBannerCollapsed(false);
+    if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+    bannerTimerRef.current = setTimeout(() => {
+      setBannerCollapsed(true);
+    }, 3000);
   }, []);
 
   // ── Init: call start_tutorial to get tutorial id + stats ─────────────────────
@@ -295,20 +335,57 @@ export function TutorialFlow({ userId, token, hasPendingReward, onComplete }: Tu
 
   return (
     <div className="w-full">
-      {/* Floating banner: "Tu premio te espera" */}
-      {hasPendingReward && (
-        <div
-          className="fixed bottom-6 left-1/2 z-50 rounded-full px-6 py-2.5 shadow-lg backdrop-blur-md border border-yellow-500/30"
-          style={{
-            transform: "translateX(-50%)",
-            background: "rgba(234,179,8,0.1)",
-            animation: "fade-in-up 0.5s ease-out 2s both",
-          }}
-        >
-          <p className="text-yellow-400 text-xs font-bold flex items-center gap-2 animate-pulse">
-            <span>🎁</span> Tu premio Corcholata te espera al final del tutorial
-          </p>
-        </div>
+      {/* 🎁 Corcholata prize indicator — full banner → shrinks to badge */}
+      {hasPendingReward && !rewardClaimed && (
+        <>
+          {/* Full banner — fades out when collapsed */}
+          <div
+            className="fixed bottom-6 left-1/2 z-50 rounded-full px-6 py-2.5 shadow-lg backdrop-blur-md border border-yellow-500/30 cursor-pointer"
+            style={{
+              transform: "translateX(-50%)",
+              background: "rgba(234,179,8,0.1)",
+              animation: bannerCollapsed
+                ? "banner-shrink-out 0.5s ease-in forwards"
+                : "fade-in-up 0.5s ease-out 0.5s both",
+              pointerEvents: bannerCollapsed ? "none" : "auto",
+            }}
+            onClick={expandBanner}
+            onMouseEnter={expandBanner}
+          >
+            <p className="text-yellow-400 text-xs font-bold flex items-center gap-2 whitespace-nowrap">
+              <span>🎁</span> Tu premio Corcholata te espera al final del tutorial
+            </p>
+          </div>
+
+          {/* Collapsed badge — pops in when banner shrinks */}
+          <div
+            className="fixed z-50 cursor-pointer select-none"
+            style={{
+              bottom: bannerCollapsed ? "24px" : "12px",
+              right: bannerCollapsed ? "20px" : "50%",
+              transform: bannerCollapsed ? "translateX(0)" : "translateX(50%)",
+              opacity: bannerCollapsed ? 1 : 0,
+              pointerEvents: bannerCollapsed ? "auto" : "none",
+              transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              animation: bannerCollapsed
+                ? "badge-pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.35s both, badge-glow 3s ease-in-out 1s infinite, badge-float 4s ease-in-out 1s infinite"
+                : "none",
+            }}
+            onClick={expandBanner}
+            onMouseEnter={expandBanner}
+            title="¡Tu premio Corcholata te espera!"
+          >
+            <div
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 shadow-lg backdrop-blur-md border border-yellow-500/40"
+              style={{ background: "rgba(234,179,8,0.15)" }}
+            >
+              <span className="text-lg leading-none">🎁</span>
+              <span className="text-yellow-400 text-[10px] font-black uppercase tracking-wider">
+                Premio
+              </span>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Act label (debug-style, subtle) */}
@@ -365,6 +442,7 @@ export function TutorialFlow({ userId, token, hasPendingReward, onComplete }: Tu
         <ActTreasureChest
           hasPendingReward={hasPendingReward ?? false}
           token={webito.token}
+          onRewardClaimed={() => setRewardClaimed(true)}
           onComplete={() => advance()}
         />
       )}
