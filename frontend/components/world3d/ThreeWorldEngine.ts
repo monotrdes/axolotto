@@ -73,6 +73,11 @@ export class ThreeWorldEngine {
   private raycaster = new THREE.Raycaster();
   private downPos: { x: number; y: number } | null = null;
 
+  private ambientLight!: THREE.AmbientLight;
+  private sunLight!: THREE.DirectionalLight;
+  private bubbles?: THREE.Points;
+  private bubbleData: Array<{ seed: number; speed: number }> = [];
+
   // Micro-interacciones: hover (solo desktop) y rebote de cartón al tocar.
   private hoverFine = false;
   private hoverNdc: THREE.Vector2 | null = null;
@@ -170,29 +175,84 @@ export class ThreeWorldEngine {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     host.appendChild(this.renderer.domElement);
 
-    // Gradiente de atardecer en papel: morado profundo abajo → cálido arriba.
+    // Neblina Xochimilco para el efecto bajo el agua (murky green depth).
+    // Funciona de forma nativa en shaders y es ultra ligera en celulares de gama baja.
+    this.scene.fog = new THREE.FogExp2(0x0c2c25, 0.05);
+
+    // Gradiente de laguna de Xochimilco: verde profundo → verde alga/teal bajo el sol.
     const bg = document.createElement("canvas");
     bg.width = 4;
     bg.height = 256;
     const bgCtx = bg.getContext("2d")!;
     const grad = bgCtx.createLinearGradient(0, 256, 0, 0);
-    grad.addColorStop(0, "#241e3c");
-    grad.addColorStop(0.45, "#342b52");
-    grad.addColorStop(0.8, "#5c4068");
-    grad.addColorStop(1, "#8a5a6e");
+    grad.addColorStop(0, "#091b1a");   // Profundidades
+    grad.addColorStop(0.45, "#0c2c25"); // Agua turbia
+    grad.addColorStop(0.8, "#114b3d");  // Algas
+    grad.addColorStop(1, "#2e8b75");    // Luz superficial
     bgCtx.fillStyle = grad;
     bgCtx.fillRect(0, 0, 4, 256);
     const bgTex = new THREE.CanvasTexture(bg);
     bgTex.colorSpace = THREE.SRGBColorSpace;
     this.scene.background = bgTex;
-    this.scene.add(new THREE.AmbientLight(0xd0c4f0, 0.95));
-    const sun = new THREE.DirectionalLight(0xffe9c8, 1.5);
-    sun.position.set(4, 16, 9);
-    sun.castShadow = this.quality !== "ligera";
-    sun.shadow.mapSize.set(2048, 2048);
-    Object.assign(sun.shadow.camera, { left: -13, right: 13, top: 14, bottom: -14, far: 60 });
-    sun.shadow.bias = -0.0004;
-    this.scene.add(sun);
+
+    // Luces con tonalidad acuática / laguna verde bioluminiscente.
+    this.ambientLight = new THREE.AmbientLight(0x1f5f56, 0.95);
+    this.scene.add(this.ambientLight);
+
+    this.sunLight = new THREE.DirectionalLight(0x8ae8c8, 1.6);
+    this.sunLight.position.set(4, 16, 9);
+    this.sunLight.castShadow = this.quality !== "ligera";
+    this.sunLight.shadow.mapSize.set(2048, 2048);
+    Object.assign(this.sunLight.shadow.camera, { left: -13, right: 13, top: 14, bottom: -14, far: 60 });
+    this.sunLight.shadow.bias = -0.0004;
+    this.scene.add(this.sunLight);
+
+    // Burbujas flotantes (Points) solo para calidad Media/Alta (optimización gama baja).
+    if (this.quality !== "ligera") {
+      const bubbleCount = this.quality === "alta" ? 80 : 40;
+      const geo = new THREE.BufferGeometry();
+      const positions = new Float32Array(bubbleCount * 3);
+      this.bubbleData = [];
+      for (let i = 0; i < bubbleCount; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * 16;
+        positions[i * 3 + 1] = Math.random() * 8;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 16 - 1;
+        this.bubbleData.push({
+          seed: Math.random() * 100,
+          speed: 0.35 + Math.random() * 0.4,
+        });
+      }
+      geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+
+      // Creación del canvas para la textura de burbuja transparente con borde y specular
+      const bCanvas = document.createElement("canvas");
+      bCanvas.width = 32;
+      bCanvas.height = 32;
+      const bCtx = bCanvas.getContext("2d")!;
+      bCtx.clearRect(0, 0, 32, 32);
+      bCtx.strokeStyle = "rgba(255, 255, 255, 0.7)";
+      bCtx.lineWidth = 2;
+      bCtx.beginPath();
+      bCtx.arc(16, 16, 12, 0, Math.PI * 2);
+      bCtx.stroke();
+      bCtx.fillStyle = "rgba(255, 255, 255, 0.8)";
+      bCtx.beginPath();
+      bCtx.arc(11, 11, 3, 0, Math.PI * 2);
+      bCtx.fill();
+
+      const bTex = new THREE.CanvasTexture(bCanvas);
+      const mat = new THREE.PointsMaterial({
+        size: 0.22,
+        map: bTex,
+        transparent: true,
+        opacity: 0.65,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
+
+      this.bubbles = new THREE.Points(geo, mat);
+      this.scene.add(this.bubbles);
+    }
 
     this.resize();
     this.resizeObserver = new ResizeObserver(() => this.resize());
@@ -251,6 +311,12 @@ export class ThreeWorldEngine {
     this.resizeObserver?.disconnect();
     this.resizeObserver = null;
     this.clearScene();
+    if (this.bubbles) {
+      this.scene.remove(this.bubbles);
+      this.bubbles.geometry.dispose();
+      (this.bubbles.material as THREE.PointsMaterial).dispose();
+      this.bubbles = undefined;
+    }
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
@@ -326,6 +392,36 @@ export class ThreeWorldEngine {
 
     if (this.current && !this.reducedMotion) {
       for (const anim of this.current.animations) anim(t, dt);
+    }
+
+    // Actualización de burbujas flotantes (efecto bajo el agua)
+    if (this.bubbles && this.bubbleData.length > 0 && !this.reducedMotion) {
+      const posAttr = this.bubbles.geometry.getAttribute("position") as THREE.BufferAttribute;
+      const array = posAttr.array as Float32Array;
+      for (let i = 0; i < this.bubbleData.length; i++) {
+        const data = this.bubbleData[i];
+        let y = array[i * 3 + 1];
+        let x = array[i * 3];
+        y += dt * data.speed;
+        const wobble = Math.sin(t * 1.8 + data.seed) * 0.007;
+        x += wobble;
+        if (y > 7.5) {
+          y = -1.0;
+          x = (Math.random() - 0.5) * 15;
+        }
+        array[i * 3] = x;
+        array[i * 3 + 1] = y;
+      }
+      posAttr.needsUpdate = true;
+    }
+
+    // Refracción de luz (efecto bajo el agua en calidad media/alta)
+    if (this.quality !== "ligera" && this.ambientLight) {
+      this.ambientLight.intensity = 0.9 + Math.sin(t * 1.3) * 0.05;
+      if (this.sunLight) {
+        this.sunLight.position.x = 4 + Math.sin(t * 0.8) * 0.3;
+        this.sunLight.position.z = 9 + Math.cos(t * 0.8) * 0.3;
+      }
     }
 
     // Billboards siempre de cara a la cámara (yaw plano, cámara ortográfica).

@@ -139,3 +139,4 @@
 | 2026-06-12 | (este) | Tianguis 3D pulido visual: copetes tradicionales en trajineras y overlays HTML/CSS en GameCanvas (guirnaldas animadas y listón inferior de papel) |
 | 2026-06-12 | (este) | Tianguis 3D adaptabilidad y refinamiento: puestos compactados en X, zoom automático responsivo en pantallas ultraestrechas (Galaxy Fold/Pixel 7), agua en capas delgadas de papel y remoción del listón inferior |
 | 2026-06-12 | (este) | Tianguis 3D pulido final: removidas etiquetas de esquina, 2 trajineras únicamente, letrero de trajineras ensanchado de poste a poste, reubicado puesto de sobresitos en tierra y corregida altura de tenderos en Reciclón, Sobrecitos y Webitos |
+| 2026-06-12 | (este) | Efectos subacuáticos en ThreeWorldEngine: implementado fog verde de profundidad, gradiente de Xochimilco turbio para fondo, iluminación acuática bioluminiscente, refracción de luz animada en tiempo real y sistema optimizado de partículas de burbujas flotantes |
