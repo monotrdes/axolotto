@@ -146,6 +146,17 @@ def phase_reset(engine, config, **state) -> dict:
     except Exception:
         session.rollback()
 
+    # 4b. Resetear estadísticas de cartas cantadas (times_called) a 0
+    try:
+        from sqlalchemy import update
+        session.execute(
+            update(ItemCatalog).values(times_called=0)
+        )
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        progress(f"  ⚠️  No se pudo resetear times_called: {e}")
+
     # 5. Re-crear el código de referido hardcodeado del admin
     #    (debe sobrevivir resets — es el link público que se comparte externamente)
     _ensure_admin_referral_code(session, progress)
