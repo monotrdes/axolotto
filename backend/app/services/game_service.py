@@ -469,7 +469,6 @@ class GameService:
             _imprinting_info = None
 
         # Increment card called stats
-        from app.models.items import ItemCatalog
         drawn_card_ids = deck[:turns]
         ItemCatalog.increment_called_counts(session, drawn_card_ids)
 
