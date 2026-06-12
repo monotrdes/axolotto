@@ -11,11 +11,37 @@ import { Container } from "pixi.js";
  * El rig mira a la izquierda por defecto (cara en -x, cola en +x).
  */
 
-export const RIG_CENTER_Y = -84; // pivote de rigRoot: centro del torso
-const HIP_Y = -48;
-const SHOULDER_Y = -106;
-export const LEG_LENGTH = 48;
-export const ARM_LENGTH = 36;
+export interface RigConfig {
+  legLength: number;
+  armLength: number;
+  rigCenterY: number;
+  hipY: number;
+  shoulderY: number;
+  tailY: number;
+}
+
+export const CLASSIC_CONFIG: RigConfig = {
+  legLength: 36,
+  armLength: 26,
+  rigCenterY: -72,
+  hipY: -36,
+  shoulderY: -94,
+  tailY: -48,
+};
+
+export const TIANGUIS_CONFIG: RigConfig = {
+  legLength: 48,
+  armLength: 36,
+  rigCenterY: -84,
+  hipY: -48,
+  shoulderY: -106,
+  tailY: -60,
+};
+
+// Compatibilidad hacia atrás (otros scripts o clases mecánicas)
+export const LEG_LENGTH = CLASSIC_CONFIG.legLength;
+export const ARM_LENGTH = CLASSIC_CONFIG.armLength;
+export const RIG_CENTER_Y = CLASSIC_CONFIG.rigCenterY;
 
 /** Fábrica de piezas que cada puppet inyecta (papel u hojalata). */
 export interface BipedPartSet {
@@ -53,31 +79,35 @@ export interface BipedRigRefs {
  * Construye la jerarquía y la cuelga de `root`. Orden atrás→adelante:
  * armBack, legBack, tail, torso(+head), legFront, armFront.
  */
-export function buildBipedRig(root: Container, parts: BipedPartSet): BipedRigRefs {
+export function buildBipedRig(
+  root: Container,
+  parts: BipedPartSet,
+  config: RigConfig = CLASSIC_CONFIG,
+): BipedRigRefs {
   const shadow = parts.shadow();
   shadow.position.set(0, 2);
   root.addChild(shadow);
 
   const rigRoot = new Container();
-  rigRoot.pivot.set(0, RIG_CENTER_Y);
-  rigRoot.position.set(0, RIG_CENTER_Y);
+  rigRoot.pivot.set(0, config.rigCenterY);
+  rigRoot.position.set(0, config.rigCenterY);
   root.addChild(rigRoot);
 
-  const armBack = parts.limb(ARM_LENGTH);
-  armBack.position.set(16, SHOULDER_Y);
-  const legBack = parts.limb(LEG_LENGTH);
-  legBack.position.set(10, HIP_Y);
+  const armBack = parts.limb(config.armLength);
+  armBack.position.set(16, config.shoulderY);
+  const legBack = parts.limb(config.legLength);
+  legBack.position.set(10, config.hipY);
 
   const tail = parts.tail();
-  tail.position.set(16, -60);
+  tail.position.set(16, config.tailY);
 
   // El torso pivota en las caderas: la respiración estira hacia arriba
   // y los pies no patinan.
   const torso = new Container();
-  torso.position.set(0, HIP_Y);
+  torso.position.set(0, config.hipY);
   torso.addChild((() => {
     const body = parts.body();
-    body.position.set(0, RIG_CENTER_Y - HIP_Y); // centro del torso rel a caderas
+    body.position.set(0, config.rigCenterY - config.hipY); // centro del torso rel a caderas
     return body;
   })());
 
@@ -116,10 +146,10 @@ export function buildBipedRig(root: Container, parts: BipedPartSet): BipedRigRef
   }
   torso.addChild(head);
 
-  const legFront = parts.limb(LEG_LENGTH);
-  legFront.position.set(-10, HIP_Y);
-  const armFront = parts.limb(ARM_LENGTH);
-  armFront.position.set(-16, SHOULDER_Y);
+  const legFront = parts.limb(config.legLength);
+  legFront.position.set(-10, config.hipY);
+  const armFront = parts.limb(config.armLength);
+  armFront.position.set(-16, config.shoulderY);
 
   rigRoot.addChild(armBack, legBack, tail, torso, legFront, armFront);
 

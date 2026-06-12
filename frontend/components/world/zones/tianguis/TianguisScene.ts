@@ -117,7 +117,7 @@ export class TianguisScene extends Container {
     const minX = PX + 100;
     const maxX = PX + PW - 100;
     for (let i = 0; i < count; i++) {
-      this.addNpc(new AxolotitoPuppet(randomNpcData(i)), minX, maxX);
+      this.addNpc(new AxolotitoPuppet(randomNpcData(i), true), minX, maxX);
     }
     if (this.engine.quality === "alta") {
       this.addNpc(new RoboAxolotePuppet(randomNpcData(99)), minX, maxX);
@@ -177,7 +177,7 @@ export class TianguisScene extends Container {
     // Sitting NPC left
     const npcDataL = randomNpcData(10);
     npcDataL.state = "sitting";
-    const puppetL = new AxolotitoPuppet(npcDataL);
+    const puppetL = new AxolotitoPuppet(npcDataL, true);
     puppetL.position.set(tableX - 45, tableY + 5);
     puppetL.scale.x = -1; // Faces right (towards table)
     puppetL.zIndex = tableY + 5;
@@ -191,7 +191,7 @@ export class TianguisScene extends Container {
     // Sitting NPC right
     const npcDataR = randomNpcData(11);
     npcDataR.state = "sitting";
-    const puppetR = new AxolotitoPuppet(npcDataR);
+    const puppetR = new AxolotitoPuppet(npcDataR, true);
     puppetR.position.set(tableX + 45, tableY + 5);
     puppetR.scale.x = 1; // Faces left (towards table)
     puppetR.zIndex = tableY + 5;

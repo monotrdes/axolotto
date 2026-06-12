@@ -1,5 +1,5 @@
 import type { BipedRigRefs } from "./bipedRig";
-import { RIG_CENTER_Y } from "./bipedRig";
+import { CLASSIC_CONFIG, type RigConfig } from "./bipedRig";
 import type { MotionProfile } from "./motionProfiles";
 
 /**
@@ -7,7 +7,12 @@ import type { MotionProfile } from "./motionProfiles";
  * la comparten el axolotito orgánico (elapsed continuo) y el Robo-Axolote
  * (elapsed cuantizado en ticks para el tic-tac mecánico).
  */
-export function applyBipedPose(rig: BipedRigRefs, p: MotionProfile, elapsed: number): void {
+export function applyBipedPose(
+  rig: BipedRigRefs,
+  p: MotionProfile,
+  elapsed: number,
+  config: RigConfig = CLASSIC_CONFIG,
+): void {
   const phase = elapsed * p.stepRate * Math.PI * 2;
 
   const legOff = p.legOffset ?? 0;
@@ -24,8 +29,13 @@ export function applyBipedPose(rig: BipedRigRefs, p: MotionProfile, elapsed: num
 
   // Inclinación (nado/sueño) + balanceo de peso en idle.
   rig.rigRoot.rotation = p.tilt + Math.sin(elapsed * 1.3) * p.sway;
+  
+  let lift = p.lift;
+  if (config.legLength === 36 && lift === 56) {
+    lift = 46; // Classic style swimming lift height
+  }
   const float = p.lift > 0 ? Math.sin(elapsed * 1.8) * 5 : 0;
-  rig.rigRoot.position.y = RIG_CENTER_Y - p.lift + bob + float;
+  rig.rigRoot.position.y = config.rigCenterY - lift + bob + float;
 
   // Torso: lean al caminar + respiración con pivote en caderas
   // (volumen atenuado, no la conservación 2-breath del rig viejo).

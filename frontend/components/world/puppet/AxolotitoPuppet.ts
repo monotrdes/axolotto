@@ -2,7 +2,7 @@ import { Container } from "pixi.js";
 import type { AxolotitoData } from "../entities/AxolotitoSprite";
 import { drawBody, drawHead, drawShadow, gillAccent, skinToTint } from "./paperParts";
 import { buildPart, type PartCtx } from "./parts";
-import { buildBipedRig, type BipedPartSet, type BipedRigRefs } from "./bipedRig";
+import { buildBipedRig, CLASSIC_CONFIG, TIANGUIS_CONFIG, type BipedPartSet, type BipedRigRefs, type RigConfig } from "./bipedRig";
 import { applyBipedPose } from "./bipedAnimator";
 import {
   PROFILES,
@@ -30,6 +30,7 @@ export class AxolotitoPuppet extends Container {
   state: PuppetState = "idle";
 
   private rig: BipedRigRefs;
+  private config: RigConfig;
 
   private elapsed = Math.random() * 10; // desfase para que no se sincronicen
   private startProfile: MotionProfile = { ...PROFILES.idle };
@@ -40,9 +41,10 @@ export class AxolotitoPuppet extends Container {
   private blinkTimer = 2 + Math.random() * 4;
   private blinking = 0;
 
-  constructor(data: AxolotitoData) {
+  constructor(data: AxolotitoData, isTianguisStyle = false) {
     super();
     this.axoId = data.id;
+    this.config = isTianguisStyle ? TIANGUIS_CONFIG : CLASSIC_CONFIG;
     const tint = skinToTint(data.skinColor);
     const ctx: PartCtx = { tint, accent: gillAccent(tint) };
 
@@ -58,7 +60,7 @@ export class AxolotitoPuppet extends Container {
       mouth: () => buildPart("mouth", data.mouthType, ctx) ?? new Container(),
       forehead: () => buildPart("forehead", data.foreheadType, ctx),
     };
-    this.rig = buildBipedRig(this, parts);
+    this.rig = buildBipedRig(this, parts, this.config);
 
     this.setEyesClosed(false);
     this.setState(data.state ?? "idle", true);
@@ -95,7 +97,7 @@ export class AxolotitoPuppet extends Container {
       );
     }
 
-    applyBipedPose(this.rig, this.profile, this.elapsed);
+    applyBipedPose(this.rig, this.profile, this.elapsed, this.config);
 
     // Parpadeo (solo despierto).
     if (this.state !== "sleeping") {
