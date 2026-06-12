@@ -11,7 +11,6 @@ import {
   fetchStakingStatus, claimAllStaking, expandCave, accelerateCave,
   startImprinting,
 } from '@/services/santuarioService';
-import ZonaCentral from '@/components/santuario/ZonaCentral';
 import ZonaInferior from '@/components/santuario/ZonaInferior';
 import { useSocial } from '@/hooks/useSocial';
 import EggSheet from '@/components/santuario/EggSheet';
@@ -344,87 +343,68 @@ export default function Santuario({
 
   // ── RENDER ───────────────────────────────────────────
   return (
-    <div className={`flex flex-col h-screen w-full max-w-[430px] mx-auto overflow-hidden${caveShaking ? ' animate-cave-shake' : ''}`}>
+    <div className={`flex flex-col h-screen w-full max-w-[430px] mx-auto overflow-hidden${caveShaking ? ' animate-cave-shake' : ''} pointer-events-none`}>
 
       {/* === ESCENA CENTRAL === */}
-      <div className="flex-1 relative">
-        <div className="absolute inset-0">
-          <ZonaCentral
-            spots={spots}
-            axolotitos={axolotitos.filter((a: any) => a.status !== 'playing')}
-            clima={clima}
-            caveLevel={caveLevel}
-            viewMode={viewMode}
-            hasTable={hasTable}
-            tableSeats={tableSeats}
-            onSelectSpot={(slot) => setSelectedSlot(slot)}
-            onSelectAxo={(axo) => setSelectedSlot({ type: 'axo', data: axo })}
-            onToggleViewMode={() => setViewMode(m => m === 'libre' ? 'gestion' : 'libre')}
-            onOpenHosting={() => setHostingModalOpen(true)}
-            selectedAxoId={selectedSlot?.type === 'axo' ? selectedSlot.data.id : null}
-            particulas={particulas}
-            vipTier={vipTier}
-            decoMode={decoMode}
-            onToggleDecoMode={() => setDecoMode(d => !d)}
-          />
-        </div>
+      {/* Ya no renderizamos la escena 2D de React (ZonaCentral), permitiendo ver e interactuar con la escena 3D/Pixi de fondo */}
+      <div className="flex-1 relative pointer-events-none" />
 
       {/* Expand cave button — flotando top-left */}
       <button
         onClick={() => setCavesPanelOpen(true)}
-        className="absolute top-3 left-3 z-[90] px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 text-[8px] font-black text-slate-400 hover:text-amber-300 hover:border-amber-500/30 transition-all"
+        className="absolute top-3 left-3 z-[90] px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/10 text-[8px] font-black text-slate-400 hover:text-amber-300 hover:border-amber-500/30 transition-all pointer-events-auto"
       >
         ⛏️ {caveExpansion ? '⏳' : 'Nv.' + caveLevel}
       </button>
 
       {/* Staking chip — flotando bottom-left cuando activo */}
       {stakingData && stakingData.total_accrued > 0 && (
-        <div className="absolute bottom-3 left-3 z-[90] flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-950/90 border border-amber-500/30 backdrop-blur-sm shadow-lg">
+        <div className="absolute bottom-3 left-3 z-[90] flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-950/90 border border-amber-500/30 backdrop-blur-sm shadow-lg pointer-events-auto">
           <span className="text-[9px] font-black text-amber-300">
             🪙 +{stakingData.total_accrued.toFixed(2)} FRJ
           </span>
           <button
             onClick={handleClaimAllStaking}
             disabled={claimingAll || stakingData.total_accrued < 0.01}
-            className="px-2 py-0.5 rounded-full font-black text-[8px] bg-amber-600 hover:bg-amber-500 text-white transition-all active:scale-95 disabled:opacity-40"
+            className="px-2 py-0.5 rounded-full font-black text-[8px] bg-amber-600 hover:bg-amber-500 text-white transition-all active:scale-95 disabled:opacity-40 pointer-events-auto"
           >
             {claimingAll ? '…' : 'Cobrar'}
           </button>
         </div>
       )}
 
-      </div>{/* end flex-1 relative */}
-
       {/* === ZONA INFERIOR — SOCIAL BAR === */}
-      <ZonaInferior
-        amigos={amigosActivos.map((f: any) => ({
-          id: f.friend_id,
-          name: f.nickname || "Jugador",
-          avatarEmoji: f.vip_tier === "axolite" ? "👑" : f.vip_tier === "dorado" ? "💛" : "🦎",
-          isOnline: f.is_online,
-          isBestFriend: f.is_best_friend,
-        }))}
-        onOpenAmigos={() => cambiarTab && cambiarTab('amigos')}
-        onLike={async (amigoId: string) => {
-          try {
-            await sendLike(amigoId);
-            fetchTopFriends(4).then(setAmigosActivos).catch(() => {});
-          } catch {}
-        }}
-        onInvite={(_amigoId: string) => {
-          cambiarTab && cambiarTab('jugar');
-        }}
-        onVisit={(_amigoId: string) => {
-          cambiarTab && cambiarTab('amigos');
-        }}
-      />
+      <div className="pointer-events-auto">
+        <ZonaInferior
+          amigos={amigosActivos.map((f: any) => ({
+            id: f.friend_id,
+            name: f.nickname || "Jugador",
+            avatarEmoji: f.vip_tier === "axolite" ? "👑" : f.vip_tier === "dorado" ? "💛" : "🦎",
+            isOnline: f.is_online,
+            isBestFriend: f.is_best_friend,
+          }))}
+          onOpenAmigos={() => cambiarTab && cambiarTab('amigos')}
+          onLike={async (amigoId: string) => {
+            try {
+              await sendLike(amigoId);
+              fetchTopFriends(4).then(setAmigosActivos).catch(() => {});
+            } catch {}
+          }}
+          onInvite={(_amigoId: string) => {
+            cambiarTab && cambiarTab('jugar');
+          }}
+          onVisit={(_amigoId: string) => {
+            cambiarTab && cambiarTab('amigos');
+          }}
+        />
+      </div>
 
       {/* caveMuddy overlay — fixed overlay */}
       {caveMuddy && <div className="cave-muddy-overlay fixed inset-0 pointer-events-none z-[200]" />}
 
       {/* ── LEGACY BACKERS BANNER — fixed overlay ── */}
       {legacyStatus?.is_legacy_backer && legacyStatus?.eggs_pending > 0 && (
-        <div className="fixed inset-0 z-[115] flex items-end justify-center bg-black/60">
+        <div className="fixed inset-0 z-[115] flex items-end justify-center bg-black/60 pointer-events-auto">
           <div className="w-full max-w-[430px] bg-gradient-to-r from-amber-950/90 via-yellow-900/80 to-amber-950/90 border-2 border-amber-500/60 rounded-t-3xl p-5 shadow-[0_0_30px_rgba(245,158,11,0.2)] flex flex-col items-center gap-2 text-center">
             <div className="text-xl">🥚✨</div>
             <h3 className="text-sm font-black text-amber-300 uppercase tracking-wider">¡Eres un Fundador Original!</h3>
@@ -442,86 +422,88 @@ export default function Santuario({
         </div>
       )}
 
-      {/* ── BOTTOM SHEETS ── */}
-      {selectedSlot?.type === 'egg' && (
-        <EggSheet
-          inc={selectedSlot.data}
-          axolotitos={axolotitos}
+      {/* ── BOTTOM SHEETS & MODALS ── */}
+      <div className="pointer-events-auto">
+        {selectedSlot?.type === 'egg' && (
+          <EggSheet
+            inc={selectedSlot.data}
+            axolotitos={axolotitos}
+            onClose={() => {
+              setSelectedSlot(null);
+              onClearSelectedSlot?.();
+            }}
+            onHatch={handleHatchEgg}
+            onStartImprinting={handleStartImprinting}
+            hatchingId={hatchingId}
+          />
+        )}
+
+        {(selectedSlot?.type === 'axo' || selectedSlot?.type === 'bed') && (
+          <AxoSheet
+            axo={selectedSlot.data}
+            onClose={() => {
+              setSelectedSlot(null);
+              onClearSelectedSlot?.();
+            }}
+            token={token}
+            onSetMain={() => setRecargaTrigger(prev => prev + 1)}
+            onOpenCave={(axo) => setActiveCaveAxo(axo)}
+            stakingInfo={
+              stakingData?.axolotitos?.find((s) => s.id === selectedSlot.data.id) ?? null
+            }
+            onStakingClaimed={() => setRecargaTrigger(p => p + 1)}
+          />
+        )}
+
+        <BottomSheet
+          open={selectedSlot?.type === 'empty'}
           onClose={() => {
             setSelectedSlot(null);
             onClearSelectedSlot?.();
           }}
-          onHatch={handleHatchEgg}
-          onStartImprinting={handleStartImprinting}
-          hatchingId={hatchingId}
-        />
-      )}
-
-      {(selectedSlot?.type === 'axo' || selectedSlot?.type === 'bed') && (
-        <AxoSheet
-          axo={selectedSlot.data}
-          onClose={() => {
-            setSelectedSlot(null);
-            onClearSelectedSlot?.();
-          }}
-          token={token}
-          onSetMain={() => setRecargaTrigger(prev => prev + 1)}
-          onOpenCave={(axo) => setActiveCaveAxo(axo)}
-          stakingInfo={
-            stakingData?.axolotitos?.find((s) => s.id === selectedSlot.data.id) ?? null
-          }
-          onStakingClaimed={() => setRecargaTrigger(p => p + 1)}
-        />
-      )}
-
-      <BottomSheet
-        open={selectedSlot?.type === 'empty'}
-        onClose={() => {
-          setSelectedSlot(null);
-          onClearSelectedSlot?.();
-        }}
-      >
-            <div className="p-6 flex flex-col items-center gap-4">
-              <span className="text-4xl">🪺</span>
-              <div className="text-center">
-                <h3 className="text-lg font-black text-white uppercase tracking-tighter">Nido Vacío</h3>
-                <p className="text-slate-400 text-sm mt-1 max-w-xs leading-relaxed">
-                  Consigue un Webito en la Tienda y tráelo aquí para comenzar la incubación.
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  setSelectedSlot(null);
-                  onClearSelectedSlot?.();
-                  cambiarTab && cambiarTab('tienda');
-                }}
-                className="w-full py-3.5 bg-gradient-to-r from-[#E4007C] to-purple-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg shadow-pink-500/20 active:scale-95 transition-all"
-              >
-                🏪 Ir a la Tienda
-              </button>
-              <button onClick={() => setSelectedSlot(null)} className="text-slate-600 text-[10px] font-bold uppercase tracking-widest">
-                Cerrar
-              </button>
+        >
+          <div className="p-6 flex flex-col items-center gap-4">
+            <span className="text-4xl">🪺</span>
+            <div className="text-center">
+              <h3 className="text-lg font-black text-white uppercase tracking-tighter">Nido Vacío</h3>
+              <p className="text-slate-400 text-sm mt-1 max-w-xs leading-relaxed">
+                Consigue un Webito en la Tienda y tráelo aquí para comenzar la incubación.
+              </p>
             </div>
-      </BottomSheet>
+            <button
+              onClick={() => {
+                setSelectedSlot(null);
+                onClearSelectedSlot?.();
+                cambiarTab && cambiarTab('tienda');
+              }}
+              className="w-full py-3.5 bg-gradient-to-r from-[#E4007C] to-purple-600 text-white font-black rounded-2xl uppercase tracking-widest text-xs shadow-lg shadow-pink-500/20 active:scale-95 transition-all"
+            >
+              🏪 Ir a la Tienda
+            </button>
+            <button onClick={() => setSelectedSlot(null)} className="text-slate-600 text-[10px] font-bold uppercase tracking-widest">
+              Cerrar
+            </button>
+          </div>
+        </BottomSheet>
 
-      {/* ── HATCH SHEET ── */}
-      {nuevoAxolotito && (
-        <HatchSheet
-          axolotito={nuevoAxolotito}
-          onClose={() => { setNuevoAxolotito(null); setRecargaTrigger(p => p + 1); }}
-        />
-      )}
+        {/* ── HATCH SHEET ── */}
+        {nuevoAxolotito && (
+          <HatchSheet
+            axolotito={nuevoAxolotito}
+            onClose={() => { setNuevoAxolotito(null); setRecargaTrigger(p => p + 1); }}
+          />
+        )}
 
-      {/* ── CAVE ROOM MODAL ── */}
-      {activeCaveAxo && (
-        <CaveRoomModal
-          axo={activeCaveAxo}
-          token={token}
-          userId={userId}
-          onClose={() => setActiveCaveAxo(null)}
-        />
-      )}
+        {/* ── CAVE ROOM MODAL ── */}
+        {activeCaveAxo && (
+          <CaveRoomModal
+            axo={activeCaveAxo}
+            token={token}
+            userId={userId}
+            onClose={() => setActiveCaveAxo(null)}
+          />
+        )}
+      </div>
 
       {/* ── EXPANSION PANEL V3: Camino del Cenote ── */}
       {cavesPanelOpen && (() => {
