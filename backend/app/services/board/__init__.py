@@ -1,19 +1,6 @@
-"""Board service — re-exports from modular sub-packages for backward compatibility.
+"""Board service package — split from monolithic board_service.py."""
 
-All functions are now organised in:
-- board/board_generator.py  — CRUD, slots, validation
-- board/staking_service.py  — staking, XP, hourly yield
-- board/deconstruct_service.py — rental & sale market
-"""
-
-# Re-export models that legacy callers import from this module
-from app.models.board import PlayerBoard  # noqa: F401
-
-# Re-export everything so existing imports continue to work unchanged.
 from app.services.board.staking_service import (
-    _total_board_xp,
-    _apply_preserved_xp_to_board,
-    _level_from_total_xp,
     get_board_hourly_rate,
     get_accrued_staking,
     get_board_csr,
@@ -21,6 +8,9 @@ from app.services.board.staking_service import (
     return_staked_cards,
     claim_staking_operation,
     claim_all_staking_operation,
+    _total_board_xp,
+    _apply_preserved_xp_to_board,
+    _level_from_total_xp,
 )
 
 from app.services.board.board_generator import (

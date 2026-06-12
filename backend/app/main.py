@@ -6,7 +6,7 @@ from app.core.limiter import limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
-from app.api.v1.endpoints import bank, user, shop, incubation, metadata, legacy, board, game, ranking, multiplayer, checkout, market, market_escrow, payments, leonardo, admin, whitelist, codes, f2p, tutorial, cave_expansion, cave_decor, admin_events, events, dev, rewards, staking, social, referrals
+from app.api.v1.endpoints import bank, user, shop, incubation, metadata, legacy, board, game, ranking, multiplayer, checkout, market, market_escrow, payments, leonardo, admin, codes, f2p, tutorial, cave_expansion, cave_decor, admin_events, events, dev, rewards, staking, social, referrals
 from app.api.v1.ws import game_ws
 from app.core.config import settings
 
@@ -513,7 +513,6 @@ app.include_router(market_escrow.router, prefix="/api/v1/market/escrow", tags=["
 app.include_router(payments.router, prefix="/api/v1/payments", tags=["Pagos Fiat (Webhooks)"])
 app.include_router(leonardo.router, prefix="/api/v1/leonardo", tags=["Leonardo.ai Cards"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
-app.include_router(whitelist.router, prefix="/api/v1/whitelist", tags=["Whitelist Fase 1"])
 app.include_router(codes.router, prefix="/api/v1/codes", tags=["Promo Codes"])
 app.include_router(f2p.router, prefix="/api/v1/f2p", tags=["F2P — Huevo Durmiente"])
 app.include_router(tutorial.router, prefix="/api/v1/tutorial", tags=["Tutorial del Axolotito"])

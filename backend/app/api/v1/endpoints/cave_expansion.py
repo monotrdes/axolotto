@@ -431,7 +431,6 @@ def get_cave_status(
         if elapsed >= timedelta(hours=total_hours):
             target_level = user.cave_expansion_target_level
             user.cave_level = target_level
-            user.webito_slots_unlocked = target_level
             user.cave_expansion_target_level = None
             user.cave_expansion_started_at = None
             session.add(user)
@@ -708,7 +707,6 @@ def accelerate_expansion(
         if remaining_hours <= 0:
             # Ya debería haberse completado, forzar finalización
             user.cave_level = target_level
-            user.webito_slots_unlocked = target_level
             user.cave_expansion_target_level = None
             user.cave_expansion_started_at = None
             session.add(user)
@@ -752,7 +750,6 @@ def accelerate_expansion(
 
         # Completar expansión (sin huevo de recompensa — se compra en tienda)
         user.cave_level = target_level
-        user.webito_slots_unlocked = target_level
         user.cave_expansion_target_level = None
         user.cave_expansion_started_at = None
         session.add(user)

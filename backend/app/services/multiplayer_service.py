@@ -3,6 +3,7 @@ import asyncio
 import json
 import random
 from datetime import datetime
+from typing import Optional
 
 # Generador criptográficamente seguro para el sorteo — impide predecir el orden de cartas.
 # random.SystemRandom usa /dev/urandom, a diferencia del Mersenne Twister del módulo random.
@@ -170,6 +171,10 @@ def get_or_create_waiting_room(
 
 class MultiplayerService:
 
+    # ──────────────────────────────────────────────────────────────────────────
+    # Scheduler / Lobby Management
+    # ──────────────────────────────────────────────────────────────────────────
+
     @staticmethod
     def update_host_activity(room_id: int) -> None:
         """Actualiza el timestamp de última actividad del host en el lobby.
@@ -290,6 +295,493 @@ class MultiplayerService:
                     except Exception as match_err:
                         print(f"❌ [Multiplayer Scheduler] Error simulando partida en sala {room.name}: {match_err}")
 
+    # ══════════════════════════════════════════════════════════════════════════
+    # Shared Helper Methods (extracted from simulate + resolve to eliminate
+    # ~450 lines of duplicated logic)
+    # ══════════════════════════════════════════════════════════════════════════
+
+    @staticmethod
+    def _load_registration_data(room: GameRoom, registrations, session: Session):
+        """Batch-load axolotitos + users for all registrations. Returns
+        (_axos_by_id, _users_by_did).
+
+        Called by both simulate_multiplayer_match and resolve_multiplayer_match
+        to avoid N+1 queries (VULN-12)."""
+        _all_axo_ids = [reg.axolotito_id for reg in registrations]
+        _axos_by_id: dict[int, Axolotito] = {}
+        if _all_axo_ids:
+            _axos_loaded = session.exec(
+                select(Axolotito).where(Axolotito.id.in_(_all_axo_ids))
+            ).all()
+            _axos_by_id = {a.id: a for a in _axos_loaded}
+
+        _user_ids_to_load = set(a.user_id for a in _axos_by_id.values())
+        if room.host_id:
+            _user_ids_to_load.add(room.host_id)
+        _users_by_did: dict[str, User] = {}
+        if _user_ids_to_load:
+            _users_loaded = session.exec(
+                select(User).where(User.privy_did.in_(_user_ids_to_load))
+            ).all()
+            _users_by_did = {u.privy_did: u for u in _users_loaded}
+
+        return _axos_by_id, _users_by_did
+
+    @staticmethod
+    def _collect_human_players(
+        room: GameRoom,
+        registrations,
+        session: Session,
+        _axos_by_id: dict,
+        _users_by_did: dict,
+        marked_data: dict | None = None,
+    ) -> tuple[list[dict], set, int, dict]:
+        """Collect human player boards, deduct energy + escrow, build tracking dicts.
+
+        Shared between simulate (marked_data=None → empty sets) and
+        resolve (marked_data=player_marked_data → actual marks).
+
+        Returns: (participating_boards, human_players, human_boards_count, axo_registrations_map)
+        """
+        participating_boards = []
+        human_players: set[str] = set()
+        human_boards_count = 0
+        axo_registrations_map: dict[int, tuple] = {}  # axo_id -> (axolotito, board_ids_list)
+
+        for reg in registrations:
+            axo = _axos_by_id.get(reg.axolotito_id)
+            if not axo:
+                continue
+
+            b_ids = json.loads(reg.boards_json)
+            axo_registrations_map[axo.id] = (axo, b_ids)
+
+            # Descontar energía fija al Axolotito por participar (10 de energía)
+            axo.energy_current = max(0, axo.energy_current - 10)
+
+            # Pérdida extra de energía al finalizar partida basada en salinity
+            extra_energy_loss = round(axo.stat_salinity * 0.2)  # 0-20 puntos según salinity
+            axo.energy_current = max(0, axo.energy_current - extra_energy_loss)
+
+            # Descontar Buy-in del depósito en custodia (escrow) por cada tabla registrada
+            # Axolite VIP paga -15% de cuota de entrada (VULN-06: aritmética entera)
+            owner = _users_by_did.get(axo.user_id)
+            entry_discount_bps = (
+                VIP_CONFIG.get(getattr(owner, "vip_tier", "") or "", {}).get("multiplayer_discount_bps", 0)
+                if (owner and owner.is_vip) else 0
+            )
+            fee_int = _entry_fee_internal(room)
+            effective_fee = fee_int * (10000 - entry_discount_bps) // 10000
+            entry_fee_total = len(b_ids) * effective_fee
+            axo.escrow_balance_gal = max(0, axo.escrow_balance_gal - entry_fee_total)
+
+            for board_id in b_ids:
+                board = session.get(PlayerBoard, board_id)
+                if board:
+                    marked = marked_data.get(axo.id, []) if marked_data is not None else []
+                    participating_boards.append({
+                        "board_id": board.id,
+                        "axo_id": axo.id,
+                        "user_id": axo.user_id,
+                        "card_ids": board.card_ids,
+                        "is_bot": False,
+                        "marked_indices": set(marked),
+                        "axo_focus": axo.stat_focus,
+                        "axo_luck": axo.stat_luck,
+                        "axo_salinity": axo.stat_salinity,
+                    })
+                    human_players.add(axo.user_id)
+                    human_boards_count += 1
+
+        return participating_boards, human_players, human_boards_count, axo_registrations_map
+
+    @staticmethod
+    def _evaluate_jackpot_eligibility(
+        human_players: set[str],
+        human_boards_count: int,
+        _users_by_did: dict,
+    ) -> bool:
+        """Anti-sybil Jackpot check: requires >=5 human boards AND >=2 unique wallets."""
+        human_wallets: set[str] = set()
+        for uid in human_players:
+            owner = _users_by_did.get(uid)
+            if owner and owner.wallet_address:
+                human_wallets.add(owner.wallet_address.lower())
+        return (human_boards_count >= 5) and (len(human_wallets) >= 2)
+
+    @staticmethod
+    def _fill_bots_if_needed(participating_boards: list[dict], session: Session) -> list[int]:
+        """Fill up to minimum 4 boards with virtual bots. Returns all_card_ids list."""
+        all_cards = session.exec(select(ItemCatalog).where(ItemCatalog.item_type == ItemType.CARD)).all()
+        all_card_ids = [c.id for c in all_cards]
+
+        bot_count_needed = max(0, 4 - len(participating_boards))
+        for i in range(bot_count_needed):
+            bot_cards = _rng.sample(all_card_ids, 16)
+            participating_boards.append({
+                "board_id": -i - 1,  # ID negativo para identificar bot
+                "axo_id": None,
+                "user_id": f"bot_{i}",
+                "card_ids": bot_cards,
+                "is_bot": True,
+                "marked_indices": set(),
+                "axo_focus": 50,
+                "axo_luck": 10,
+            })
+
+        return all_card_ids
+
+    @staticmethod
+    def _calculate_and_distribute_pools(
+        human_boards_count: int,
+        room: GameRoom,
+        _users_by_did: dict,
+        session: Session,
+    ) -> dict:
+        """Calculate treasury/jackpot/host shares and P1/P2 prize pools.
+
+        Returns dict with keys: total_collected_gal, treasury_share, jackpot_share,
+        host_share, premio_1_pool, premio_2_pool, treasury, jackpot.
+        Side effects: credits host wallet, updates treasury & jackpot vaults.
+        """
+        total_collected_gal = human_boards_count * _entry_fee_internal(room)
+
+        # Reparto de comisiones (VULN-06: aritmética entera, 5% = 5/100)
+        treasury_share = total_collected_gal * 5 // 100
+        jackpot_share = total_collected_gal * 5 // 100
+
+        # Host commission: 5% del pozo va al anfitrión (si es sala hosted)
+        host_share = 0
+        if room.host_id and room.room_type == "player_hosted":
+            host_share = total_collected_gal * 5 // 100
+            host_user = _users_by_did.get(room.host_id)
+            if host_user:
+                host_wallet = session.exec(select(Wallet).where(Wallet.user_id == room.host_id)).first()
+                if not host_wallet:
+                    host_wallet = Wallet(user_id=room.host_id, frijolitos=0, axofichas=0, gemas_alga=0)
+                    session.add(host_wallet)
+                host_wallet.frijolitos += host_share
+                session.add(host_wallet)
+                session.add(TransactionLedger(
+                    user_id=room.host_id,
+                    amount=host_share,
+                    currency=CurrencyType.FRIJOLITO,
+                    tx_type=TransactionType.REWARD,
+                    description=f"Comision de anfitrion FRJ — sala '{room.name}'",
+                ))
+                # Reputación: +1 por partida, +5 extra si sala llena (>=80% capacidad)
+                config = json.loads(room.room_config or "{}")
+                max_players = config.get("max_players", 4)
+                reputation_gain = 1 + (5 if human_boards_count >= max_players * 80 // 100 else 0)
+                room.host_reputation_earned = (room.host_reputation_earned or 0) + reputation_gain
+
+        # Acumular a Tesorería
+        treasury = session.exec(select(TreasuryVault)).first()
+        if not treasury:
+            treasury = TreasuryVault(balance=0)
+            session.add(treasury)
+        treasury.balance += treasury_share
+        treasury.updated_at = datetime.utcnow()
+
+        # Acumular a Jackpot
+        _FRJ = 10 ** FRJ_DECIMALS_BACKEND
+        jackpot = session.exec(select(JackpotVault)).first()
+        if not jackpot:
+            jackpot = JackpotVault(current_amount=1000 * _FRJ, seed_amount=1000 * _FRJ)
+            session.add(jackpot)
+        jackpot.current_amount += jackpot_share
+        jackpot.updated_at = datetime.utcnow()
+
+        # Bolsas netas de juego (reducidas si hay host commission)
+        premio_1_pool = total_collected_gal * 30 // 100 if host_share > 0 else total_collected_gal * 35 // 100
+        premio_2_pool = total_collected_gal * 55 // 100 if host_share > 0 else total_collected_gal * 55 // 100
+
+        return {
+            "total_collected_gal": total_collected_gal,
+            "treasury_share": treasury_share,
+            "jackpot_share": jackpot_share,
+            "host_share": host_share,
+            "premio_1_pool": premio_1_pool,
+            "premio_2_pool": premio_2_pool,
+            "treasury": treasury,
+            "jackpot": jackpot,
+        }
+
+    @staticmethod
+    def _distribute_pool(
+        winners: list[dict],
+        pool_amount: int,
+        axo_registrations_map: dict,
+        _users_by_did: dict,
+        session: Session,
+        prize_type: str,
+        label: str,
+        axo_xp_amount: int,
+        board_xp_amount: int,
+        axo_prize_won: dict,
+        axo_xp_gained: dict,
+        axo_prize_breakdown: dict,
+        treasury,
+    ) -> int:
+        """Distribute one prize pool among winners with VIP+luck bonuses and
+        normalisation (VULN-05/06: in-pool arithmetic — no phantom funds).
+
+        Returns total_paid (int)."""
+        if not winners:
+            return 0
+
+        share = pool_amount // len(winners)
+        _raw: list = []  # (w, raw_prize, luck_b, vip_b)
+
+        for w in winners:
+            if w["is_bot"]:
+                continue
+            luck_bps = min(int(w["axo_luck"] * 100), 1000)  # cap 10% = 1000 bps
+            winner_user = _users_by_did.get(w["user_id"])
+            vip_bps = (
+                int(VIP_CONFIG.get(getattr(winner_user, "vip_tier", "") or "", {}).get("jackpot_bonus", 0.0) * 10000)
+                if (winner_user and winner_user.is_vip) else 0
+            )
+            raw = share * (10000 + luck_bps + vip_bps) // 10000
+            luck_b = share * luck_bps // 10000
+            vip_b = share * vip_bps // 10000
+            _raw.append((w, raw, luck_b, vip_b))
+
+        _total_raw = sum(r[1] for r in _raw)
+        _total_raw = max(_total_raw, 1)  # evitar div/0
+        _total_paid = 0
+
+        for w, raw, luck_b, vip_b in _raw:
+            axo_obj, _ = axo_registrations_map[w["axo_id"]]
+            final = raw * pool_amount // _total_raw if _total_raw > pool_amount else raw
+            luck_final = luck_b * pool_amount // _total_raw if _total_raw > pool_amount else luck_b
+            vip_final = vip_b * pool_amount // _total_raw if _total_raw > pool_amount else vip_b
+            _total_paid += final
+            axo_obj.escrow_balance_gal += final
+            axo_prize_won[w["axo_id"]] += final
+            axo_prize_breakdown[w["axo_id"]].append({
+                "prize_type": prize_type,
+                "label": label,
+                "gross_gal": share * pool_amount // _total_raw if _total_raw > pool_amount else share,
+                "luck_bonus": luck_final,
+                "vip_bonus": vip_final,
+            })
+            axo_obj.experience += axo_xp_amount
+            axo_xp_gained[w["axo_id"]] += axo_xp_amount
+            board_obj = session.get(PlayerBoard, w["board_id"])
+            if board_obj:
+                board_obj.xp += board_xp_amount
+                board_obj.games_played += 1
+                board_obj.games_won += 1
+
+        # Shares de bots + sobrante de normalización → tesorería
+        _remainder = pool_amount - _total_paid
+        if _remainder > 0:
+            treasury.balance += _remainder
+            treasury.updated_at = datetime.utcnow()
+
+        return _total_paid
+
+    @staticmethod
+    def _distribute_jackpot(
+        jackpot_winners: list[dict],
+        jackpot,
+        treasury,
+        axo_registrations_map: dict,
+        _users_by_did: dict,
+        session: Session,
+        turns: int,
+        axo_prize_won: dict,
+        axo_prize_breakdown: dict,
+    ) -> None:
+        """Distribute Jackpot among winners with VIP bonus normalisation + reseed.
+
+        VULN-05/06: VIP bonus normalised within the 90% of vault (no phantom funds)."""
+        total_jackpot = jackpot.current_amount
+        winner_jackpot_payout = total_jackpot * 90 // 100
+        share_jackpot = winner_jackpot_payout // len(jackpot_winners)
+
+        _jp_raw: list = []
+        for w in jackpot_winners:
+            jackpot_winner_user = _users_by_did.get(w["user_id"])
+            vip_jp_bps = (
+                int(VIP_CONFIG.get(getattr(jackpot_winner_user, "vip_tier", "") or "", {}).get("jackpot_bonus", 0.0) * 10000)
+                if (jackpot_winner_user and jackpot_winner_user.is_vip) else 0
+            )
+            raw_jp = share_jackpot * (10000 + vip_jp_bps) // 10000
+            vip_jp_b = share_jackpot * vip_jp_bps // 10000
+            _jp_raw.append((w, raw_jp, vip_jp_b))
+
+        _total_raw_jp = sum(r[1] for r in _jp_raw)
+        _total_raw_jp = max(_total_raw_jp, 1)
+
+        for w, raw_jp, vip_jp_b in _jp_raw:
+            axo_obj, _ = axo_registrations_map[w["axo_id"]]
+            payout = raw_jp * winner_jackpot_payout // _total_raw_jp if _total_raw_jp > winner_jackpot_payout else raw_jp
+            vip_bonus_final = vip_jp_b * winner_jackpot_payout // _total_raw_jp if _total_raw_jp > winner_jackpot_payout else vip_jp_b
+            axo_obj.escrow_balance_gal += payout
+            axo_prize_won[w["axo_id"]] += payout
+            axo_prize_breakdown[w["axo_id"]].append({
+                "prize_type": "jackpot",
+                "label": "Jackpot Global",
+                "gross_gal": payout - vip_bonus_final,
+                "luck_bonus": 0,
+                "vip_bonus": vip_bonus_final,
+            })
+
+            # Registrar victoria del Jackpot
+            win_record = JackpotWin(
+                axo_id=w["axo_id"],
+                user_id=w["user_id"],
+                amount_won=payout,
+                cards_drawn_count=turns,
+            )
+            session.add(win_record)
+
+            # Ledger record
+            ledger_jackpot = TransactionLedger(
+                user_id=w["user_id"],
+                amount=payout,
+                currency=CurrencyType.FRIJOLITO,
+                tx_type=TransactionType.REWARD,
+                description=f"🎉 GANADOR DEL JACKPOT GLOBAL FRJ! Axo: {axo_obj.name} | Sorteo #{turns}",
+            )
+            session.add(ledger_jackpot)
+
+        # Re-sembrado (Reset)
+        remaining_pool = total_jackpot * 10 // 100
+        _SEED_AMOUNT = 1000 * (10 ** FRJ_DECIMALS_BACKEND)
+        if remaining_pool < _SEED_AMOUNT:
+            diff_needed = _SEED_AMOUNT - remaining_pool
+            amount_from_treasury = min(diff_needed, treasury.balance)
+            treasury.balance -= amount_from_treasury
+            jackpot.current_amount = remaining_pool + amount_from_treasury
+        else:
+            jackpot.current_amount = remaining_pool
+
+        jackpot.last_won_at = datetime.utcnow()
+        jackpot.last_winner_axo_id = jackpot_winners[0]["axo_id"]
+        session.add(jackpot)
+        session.add(treasury)
+        print(f"💰 [Multiplayer Service] ¡Jackpot de {total_jackpot} FRJ-units ganado por {len(jackpot_winners)} Axo(s)!")
+
+    @staticmethod
+    def _create_game_logs(
+        axo_registrations_map: dict,
+        room: GameRoom,
+        participating_boards: list[dict],
+        jackpot_winners: list[dict],
+        premio_1_winners: list[dict],
+        premio_2_winners: list[dict],
+        drawn_cards_history: list[int],
+        axo_prize_won: dict,
+        axo_xp_gained: dict,
+        axo_prize_breakdown: dict,
+        session: Session,
+        registrations=None,  # only needed for AFK penalty in manual mode
+    ) -> None:
+        """Create MultiplayerGameLog records for all participants.
+
+        Handles imprinting, mark_accuracy calculation, and optional AFK penalty
+        (manual mode only, when registrations is provided)."""
+        p1_winner_axo_ids = {w["axo_id"] for w in premio_1_winners if not w["is_bot"]}
+        p2_winner_axo_ids = {w["axo_id"] for w in premio_2_winners if not w["is_bot"]}
+
+        for axo_id, (axo_obj, b_ids) in axo_registrations_map.items():
+            entry_cost = len(b_ids) * _entry_fee_internal(room)
+            prize_won = axo_prize_won.get(axo_id, 0)
+
+            # ── AFK / Disconnect penalty (manual mode only) ──
+            was_afk = False
+            if registrations is not None:
+                reg_obj = next((r for r in registrations if r.axolotito_id == axo_id), None)
+                was_afk = reg_obj is not None and reg_obj.play_mode == "auto"
+                if was_afk:
+                    prize_won = prize_won * 70 // 100
+                    axo_obj.loyalty_points = max(0, axo_obj.loyalty_points - 5)
+                    reward_reduction = axo_prize_won.get(axo_id, 0) - prize_won
+                    if reward_reduction > 0:
+                        axo_obj.escrow_balance_gal = max(0, axo_obj.escrow_balance_gal - reward_reduction)
+
+            net_gal = prize_won - entry_cost
+            xp_total = axo_xp_gained.get(axo_id, 0)
+            is_winner = axo_id in p1_winner_axo_ids or axo_id in p2_winner_axo_ids
+            outcome = "Victoria" if is_winner else "Derrota"
+            if was_afk:
+                outcome += " (AFK Penalty)"
+
+            # Calculate mark_accuracy
+            total_marked = 0
+            total_called_matching = 0
+            for pb in participating_boards:
+                if pb["axo_id"] == axo_id:
+                    total_marked += len(pb["marked_indices"])
+                    total_called_matching += sum(1 for cid in pb["card_ids"] if cid in drawn_cards_history)
+
+            if total_called_matching == 0:
+                mark_accuracy = 1.0
+            else:
+                mark_accuracy = total_marked / total_called_matching
+
+            # Apply imprinting if needed
+            try:
+                _apply_imprinting_if_needed(
+                    axo=axo_obj,
+                    is_win=is_winner,
+                    had_jackpot=any(w["axo_id"] == axo_id for w in jackpot_winners),
+                    mark_accuracy=mark_accuracy,
+                    session=session,
+                )
+            except Exception as exc:
+                print(f"⚠️ [imprinting] error no-fatal in multiplayer: {exc}")
+
+            player_breakdown = axo_prize_breakdown.get(axo_id, [])
+            won_p1 = axo_id in p1_winner_axo_ids
+            won_p2 = axo_id in p2_winner_axo_ids
+            won_jp = any(w["axo_id"] == axo_id for w in jackpot_winners)
+
+            game_log = MultiplayerGameLog(
+                user_id=axo_obj.user_id,
+                axolotito_id=axo_obj.id,
+                axo_name=axo_obj.name,
+                room_name=room.name,
+                outcome=outcome,
+                net_gal=net_gal,
+                xp_gained=xp_total,
+                prize_breakdown_json=json.dumps(player_breakdown) if player_breakdown else None,
+                won_premio_1=won_p1,
+                won_premio_2=won_p2,
+                won_jackpot=won_jp,
+                entry_fee_paid=entry_cost,
+                gross_prize_gal=prize_won,
+                notified=False,
+            )
+            session.add(game_log)
+
+    @staticmethod
+    def _level_up_boards_and_axos(axo_registrations_map: dict, session: Session) -> None:
+        """Level up boards and axolotitos based on accumulated XP (shared between
+        auto and manual finalisation)."""
+        for axo_id, (axo_obj, b_ids) in axo_registrations_map.items():
+            session.refresh(axo_obj)
+            # Nivelar tablas
+            for board_id in b_ids:
+                board_obj = session.get(PlayerBoard, board_id)
+                if board_obj:
+                    while board_obj.xp >= (board_obj.level * 100):
+                        board_obj.xp -= (board_obj.level * 100)
+                        board_obj.level += 1
+                    session.add(board_obj)
+
+            # Nivelar Axolotito
+            while axo_obj.experience >= (axo_obj.level * 100):
+                axo_obj.experience -= (axo_obj.level * 100)
+                axo_obj.level += 1
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # Match Resolution (Auto-simulation + Manual WebSocket)
+    # ══════════════════════════════════════════════════════════════════════════
+
     @staticmethod
     def simulate_multiplayer_match(room_id: int):
         """Simula una partida de Lotería completa para una sala específica."""
@@ -297,211 +789,66 @@ class MultiplayerService:
             room = session.get(GameRoom, room_id)
             if not room:
                 return
-                
+
             registrations = session.exec(
                 select(RoomRegistration).where(RoomRegistration.room_id == room.id)
             ).all()
 
-            # --- 1. RECOPILAR JUGADORES HUMANOS ---
-            participating_boards = []
-            human_players = set()
-            human_boards_count = 0
+            # ── 1. Batch-load + collect human players ──
+            _axos_by_id, _users_by_did = MultiplayerService._load_registration_data(
+                room, registrations, session
+            )
+            participating_boards, human_players, human_boards_count, axo_registrations_map = (
+                MultiplayerService._collect_human_players(
+                    room, registrations, session, _axos_by_id, _users_by_did
+                )
+            )
 
-            # Para re-encolar a los Axolotitos después de procesar
-            axo_registrations_map = {} # axo_id -> (axolotito, board_ids_list)
+            # ── 2. Jackpot eligibility ──
+            jackpot_eligible = MultiplayerService._evaluate_jackpot_eligibility(
+                human_players, human_boards_count, _users_by_did
+            )
 
-            # Precargar axolotitos y usuarios en batch para evitar N+1 (VULN-12)
-            _all_axo_ids = [reg.axolotito_id for reg in registrations]
-            _axos_by_id: dict[int, Axolotito] = {}
-            if _all_axo_ids:
-                _axos_loaded = session.exec(
-                    select(Axolotito).where(Axolotito.id.in_(_all_axo_ids))
-                ).all()
-                _axos_by_id = {a.id: a for a in _axos_loaded}
+            # ── 3. Fill with bots ──
+            all_card_ids = MultiplayerService._fill_bots_if_needed(participating_boards, session)
+            card_map = {c.id: c.name for c in session.exec(
+                select(ItemCatalog).where(ItemCatalog.item_type == ItemType.CARD)
+            ).all()}
 
-            _users_by_did: dict[str, User] = {}
-            _user_ids_to_load = set(a.user_id for a in _axos_by_id.values())
-            if room.host_id:
-                _user_ids_to_load.add(room.host_id)
-            if _user_ids_to_load:
-                _users_loaded = session.exec(
-                    select(User).where(User.privy_did.in_(_user_ids_to_load))
-                ).all()
-                _users_by_did = {u.privy_did: u for u in _users_loaded}
+            # ── 4. Calculate pools ──
+            pools = MultiplayerService._calculate_and_distribute_pools(
+                human_boards_count, room, _users_by_did, session
+            )
+            total_collected_gal = pools["total_collected_gal"]
+            premio_1_pool = pools["premio_1_pool"]
+            premio_2_pool = pools["premio_2_pool"]
+            treasury = pools["treasury"]
+            jackpot = pools["jackpot"]
 
-            for reg in registrations:
-                axo = _axos_by_id.get(reg.axolotito_id)
-                if not axo:
-                    continue
-                
-                b_ids = json.loads(reg.boards_json)
-                axo_registrations_map[axo.id] = (axo, b_ids)
-                
-                # Descontar energía fija al Axolotito por participar (10 de energía)
-                axo.energy_current = max(0, axo.energy_current - 10)
-                
-                # Pérdida extra de energía al finalizar partida basada en salinity
-                extra_energy_loss = round(axo.stat_salinity * 0.2)  # 0-20 puntos según salinity
-                axo.energy_current = max(0, axo.energy_current - extra_energy_loss)
-                
-                # Descontar Buy-in del depósito en custodia (escrow) por cada tabla registrada
-                # Axolite VIP paga -15% de cuota de entrada (VULN-06: aritmética entera)
-                owner = _users_by_did.get(axo.user_id)
-                entry_discount_bps = VIP_CONFIG.get(getattr(owner, "vip_tier", "") or "", {}).get("multiplayer_discount_bps", 0) if (owner and owner.is_vip) else 0
-                fee_int = _entry_fee_internal(room)
-                effective_fee = fee_int * (10000 - entry_discount_bps) // 10000
-                entry_fee_total = len(b_ids) * effective_fee
-                axo.escrow_balance_gal = max(0, axo.escrow_balance_gal - entry_fee_total)
-                
-                for board_id in b_ids:
-                    board = session.get(PlayerBoard, board_id)
-                    if board:
-                        participating_boards.append({
-                            "board_id": board.id,
-                            "axo_id": axo.id,
-                            "user_id": axo.user_id,
-                            "card_ids": board.card_ids,
-                            "is_bot": False,
-                            "marked_indices": set(),
-                            "axo_focus": axo.stat_focus,
-                            "axo_luck": axo.stat_luck,
-                            "axo_salinity": axo.stat_salinity,
-                        })
-                        human_players.add(axo.user_id)
-                        human_boards_count += 1
-            
-            # --- 2. EVALUAR ELEGIBILIDAD DEL JACKPOT (anti-sybil) ---
-            # Requiere: >= 5 tablas humanas Y >= 2 wallet_address ÚNICAS.
-            # Contar wallets distintas (no solo user_ids) impide que un atacante con N
-            # cuentas que comparten la misma billetera controle la elegibilidad del jackpot
-            # y acapare el premio. El check de registro ya bloquea la misma wallet en la
-            # sala, pero este check doble garantiza la invariante incluso ante futuros
-            # cambios en el flujo de registro.
-            human_wallets: set[str] = set()
-            for uid in human_players:
-                owner_for_wallet = _users_by_did.get(uid)
-                if owner_for_wallet and owner_for_wallet.wallet_address:
-                    human_wallets.add(owner_for_wallet.wallet_address.lower())
-            jackpot_eligible = (human_boards_count >= 5) and (len(human_wallets) >= 2)
-            
-            # --- 3. RELLENAR CON BOTS SI ES NECESARIO ---
-            # Si el cupo mínimo total es menor a 4, autocompletamos con bots virtuales
-            all_cards = session.exec(select(ItemCatalog).where(ItemCatalog.item_type == ItemType.CARD)).all()
-            all_card_ids = [c.id for c in all_cards]
-            card_map = {c.id: c.name for c in all_cards}
-            
-            bot_count_needed = max(0, 4 - len(participating_boards))
-            for i in range(bot_count_needed):
-                bot_cards = _rng.sample(all_card_ids, 16)
-                participating_boards.append({
-                    "board_id": -i - 1, # ID negativo para identificar bot
-                    "axo_id": None,
-                    "user_id": f"bot_{i}",
-                    "card_ids": bot_cards,
-                    "is_bot": True,
-                    "marked_indices": set(),
-                    "axo_focus": 50,
-                    "axo_luck": 10
-                })
-                
-            # --- 4. CÁLCULO Y REPARTO DE LA BOLSA (POTS) ---
-            # La bolsa total se calcula en base a los buy-ins pagados por humanos
-            total_collected_gal = human_boards_count * _entry_fee_internal(room)
-
-            # Reparto de comisiones (VULN-06: aritmética entera, 5% = 5/100)
-            treasury_share = total_collected_gal * 5 // 100
-            jackpot_share = total_collected_gal * 5 // 100
-
-            # Host commission: 5% del pozo va al anfitrión (si es sala hosted)
-            host_share = 0
-            if room.host_id and room.room_type == "player_hosted":
-                host_share = total_collected_gal * 5 // 100
-                host_user = _users_by_did.get(room.host_id)
-                if host_user:
-                    host_wallet = session.exec(select(Wallet).where(Wallet.user_id == room.host_id)).first()
-                    if not host_wallet:
-                        host_wallet = Wallet(user_id=room.host_id, frijolitos=0, axofichas=0, gemas_alga=0)
-                        session.add(host_wallet)
-                    host_wallet.frijolitos += host_share
-                    session.add(host_wallet)
-                    session.add(TransactionLedger(
-                        user_id=room.host_id,
-                        amount=host_share,
-                        currency=CurrencyType.FRIJOLITO,
-                        tx_type=TransactionType.REWARD,
-                        description=f"Comision de anfitrion FRJ — sala '{room.name}'",
-                    ))
-                    # Reputación: +1 por partida, +5 extra si sala llena (>=80% capacidad)
-                    config = json.loads(room.room_config or "{}")
-                    max_players = config.get("max_players", 4)
-                    reputation_gain = 1 + (5 if human_boards_count >= max_players * 80 // 100 else 0)
-                    room.host_reputation_earned = (room.host_reputation_earned or 0) + reputation_gain
-
-            # Acumular a Tesorería
-            treasury = session.exec(select(TreasuryVault)).first()
-            if not treasury:
-                treasury = TreasuryVault(balance=0)
-                session.add(treasury)
-            treasury.balance += treasury_share
-            treasury.updated_at = datetime.utcnow()
-
-            # Acumular a Jackpot
-            from app.core.config import FRJ_DECIMALS_BACKEND
-            _FRJ = 10 ** FRJ_DECIMALS_BACKEND
-            jackpot = session.exec(select(JackpotVault)).first()
-            if not jackpot:
-                jackpot = JackpotVault(current_amount=1000 * _FRJ, seed_amount=1000 * _FRJ)
-                session.add(jackpot)
-            jackpot.current_amount += jackpot_share
-            jackpot.updated_at = datetime.utcnow()
-
-            # Bolsas netas de juego (reducidas si hay host commission)
-            # Total comisiones: 5% Tesorería + 5% Jackpot + (5% Anfitrión si aplica)
-            # Suma total de distribución siempre es 100%.
-            premio_1_pool = total_collected_gal * 30 // 100 if host_share > 0 else total_collected_gal * 35 // 100
-            premio_2_pool = total_collected_gal * 55 // 100 if host_share > 0 else total_collected_gal * 55 // 100
-            
-            # --- 5. SIMULACIÓN DEL SORTEO (CARTAS CANTADAS) ---
-            # Leer patrones de victoria configurados en la sala
+            # ── 5. SIMULACIÓN DEL SORTEO (unique logic) ──
             room_cfg = json.loads(room.room_config or "{}")
             active_win_patterns = room_cfg.get("win_patterns", ["line", "cuadrito"])
 
-            # Ajuste dinámico y balanceado del Jackpot (Punto 1.A)
             PATTERN_SIZES = {
-                "line": 4,
-                "cuadrito": 4,
-                "pocito": 4,
-                "esquinas": 4,
-                "cruz": 7,
-                "l_shape": 7,
-                "cruz_diagonal": 8,
-                "z_shape": 10,
-                "full_board": 16
+                "line": 4, "cuadrito": 4, "pocito": 4, "esquinas": 4,
+                "cruz": 7, "l_shape": 7, "cruz_diagonal": 8, "z_shape": 10,
+                "full_board": 16,
             }
             min_pattern_size = min([PATTERN_SIZES.get(p, 4) for p in active_win_patterns]) if active_win_patterns else 4
             jackpot_min_turn = min_pattern_size
-            # Ventana de 5 turnos equilibrada (ej. 4 a 8 para patrones de 4 celdas)
             jackpot_max_turn = min_pattern_size + 4
-
-            # Premio 2 siempre es tabla llena (independiente de patrones de Premio 1)
-            p2_patterns = ["full_board"]
 
             deck = all_card_ids.copy()
             _rng.shuffle(deck)
 
-            # Crear registro de estado en vivo para el visor del frontend (modo auto)
             game_state = ActiveGameState(
-                room_id=room.id,
-                phase="playing",
-                cards_drawn_json="[]",
-                player_states_json="{}",
-                turns_played=0,
-                tension_level="low",
+                room_id=room.id, phase="playing", cards_drawn_json="[]",
+                player_states_json="{}", turns_played=0, tension_level="low",
             )
             session.add(game_state)
             session.flush()
 
-            # Entropia de sala: nivel de caos segun SAL promedio de humanos
+            # Entropia de sala
             human_sal = [pb["axo_salinity"] for pb in participating_boards if not pb.get("is_bot")]
             sala_entropy = room_entropy(human_sal)
             if sala_entropy > 0.3:
@@ -517,25 +864,23 @@ class MultiplayerService:
             for card_drawn in deck:
                 turns += 1
                 drawn_cards_history.append(card_drawn)
-                
-                # 5.1 Actualizar marcas en cada tablero
+
+                # Mark cards on each board
                 for pb in participating_boards:
                     if card_drawn in pb["card_ids"]:
                         idx = pb["card_ids"].index(card_drawn)
                         if pb["is_bot"]:
                             pb["marked_indices"].add(idx)
                         else:
-                            # Logica de Concentracion (Focus): chance de fallar marcar la carta
                             miss_chance = max(0.0, min(0.3, (100.0 - pb["axo_focus"]) * 0.003))
                             if _rng.random() < miss_chance:
-                                continue  # OJO miss: la carta no se marca
-                            # SAL slip: roll independiente — la carta "se escapa"
+                                continue
                             slip = sal_slip_chance(pb.get("axo_salinity", 0.0))
                             if _rng.random() < slip:
-                                continue  # la carta se escapa por SAL
+                                continue
                             pb["marked_indices"].add(idx)
-                                
-                # 5.1b Escribir estado en vivo cada 3 turnos (ActiveGameState para polling)
+
+                # Live state every 3 turns
                 if turns % 3 == 0:
                     from app.services.game_logic import check_tension_status
                     tension = check_tension_status([
@@ -547,7 +892,7 @@ class MultiplayerService:
                         key = str(pb["board_id"])
                         player_states_dict[key] = {
                             "marked": list(pb.get("marked_indices", set())),
-                            "missed": [],  # bots no generan missed
+                            "missed": [],
                         }
                     game_state.cards_drawn_json = json.dumps(drawn_cards_history)
                     game_state.player_states_json = json.dumps(player_states_dict)
@@ -558,153 +903,62 @@ class MultiplayerService:
                     session.add(game_state)
                     session.flush()
 
-                # 5.2 Comprobar Premio 1 usando patrones configurados en la sala
+                # Check Premio 1
                 if not premio_1_awarded:
                     round_winners_p1 = []
                     for pb in participating_boards:
                         won, _ = check_any_pattern(pb["marked_indices"], active_win_patterns)
                         if won:
                             round_winners_p1.append(pb)
-                            
+
                     if round_winners_p1:
                         premio_1_winners = round_winners_p1
                         premio_1_awarded = True
-                        
-                        # Comprobar si se cumple condición de Jackpot (rango dinámico y equilibrado)
                         if jackpot_min_turn <= turns <= jackpot_max_turn and jackpot_eligible:
                             human_winners = [w for w in round_winners_p1 if not w["is_bot"]]
                             if human_winners:
                                 jackpot_winners = human_winners
-                                
-                # 5.3 Comprobar Premio 2 (Tabla Llena)
+
+                # Check Premio 2 (Tabla Llena)
                 round_winners_p2 = []
                 for pb in participating_boards:
                     if len(pb["marked_indices"]) == 16:
                         round_winners_p2.append(pb)
-                        
+
                 if round_winners_p2:
                     premio_2_winners = round_winners_p2
-                    break # Fin de la partida
-                    
-            # Si el deck se termina sin ganador de Tabla Llena (extremadamente raro), elegimos el de mayor puntaje
+                    break
+
+            # Fallback: si nadie ganó tabla llena
             if not premio_2_winners:
                 participating_boards.sort(key=lambda x: len(x["marked_indices"]), reverse=True)
                 premio_2_winners = [participating_boards[0]]
-                
-            # Si nadie hizo Premio 1 en todo el juego (teóricamente imposible antes de tabla llena, pero preventivo)
+
             if not premio_1_winners:
                 premio_1_winners = premio_2_winners
-                
-            # Tracking para game logs de notificación (VULN-06: enteros)
+
+            # ── 6. ENTREGAR RECOMPENSAS ──
             axo_prize_won = {axo_id: 0 for axo_id in axo_registrations_map}
             axo_xp_gained = {axo_id: 0 for axo_id in axo_registrations_map}
             axo_prize_breakdown = {axo_id: [] for axo_id in axo_registrations_map}
 
-            # --- 6. ENTREGAR RECOMPENSAS E HISTORIAL ---
+            # 6.1 Premio 1
+            _total_p1_paid = MultiplayerService._distribute_pool(
+                premio_1_winners, premio_1_pool, axo_registrations_map, _users_by_did,
+                session, "premio_1", "Primer Patrón", axo_xp_amount=20, board_xp_amount=15,
+                axo_prize_won=axo_prize_won, axo_xp_gained=axo_xp_gained,
+                axo_prize_breakdown=axo_prize_breakdown, treasury=treasury,
+            )
 
-            # 6.1 Entrega Premio 1 — VULN-05/06: in-pool bonuses con aritmética entera
-            share_p1 = premio_1_pool // len(premio_1_winners)
-            _p1_raw: list = []  # (w, raw_prize, luck_b, vip_b)
+            # 6.2 Premio 2
+            _total_p2_paid = MultiplayerService._distribute_pool(
+                premio_2_winners, premio_2_pool, axo_registrations_map, _users_by_did,
+                session, "premio_2", "Tabla Llena", axo_xp_amount=50, board_xp_amount=40,
+                axo_prize_won=axo_prize_won, axo_xp_gained=axo_xp_gained,
+                axo_prize_breakdown=axo_prize_breakdown, treasury=treasury,
+            )
 
-            for w in premio_1_winners:
-                if w["is_bot"]:
-                    continue
-                luck_bps = min(int(w["axo_luck"] * 100), 1000)  # cap 10% = 1000 bps
-                winner_user = _users_by_did.get(w["user_id"])
-                vip_bps = (
-                    int(VIP_CONFIG.get(getattr(winner_user, "vip_tier", "") or "", {}).get("jackpot_bonus", 0.0) * 10000)
-                    if (winner_user and winner_user.is_vip) else 0
-                )
-                raw = share_p1 * (10000 + luck_bps + vip_bps) // 10000
-                luck_b = share_p1 * luck_bps // 10000
-                vip_b = share_p1 * vip_bps // 10000
-                _p1_raw.append((w, raw, luck_b, vip_b))
-
-            # Normalizar: Σ prizes ≤ pool — ningún centavo se crea fuera del pool
-            _total_raw_p1 = sum(r[1] for r in _p1_raw)
-            _total_raw_p1 = max(_total_raw_p1, 1)  # evitar div/0
-            _total_p1_paid = 0
-
-            for w, raw, luck_b, vip_b in _p1_raw:
-                axo_obj, _ = axo_registrations_map[w["axo_id"]]
-                final_p1 = raw * premio_1_pool // _total_raw_p1 if _total_raw_p1 > premio_1_pool else raw
-                luck_final = luck_b * premio_1_pool // _total_raw_p1 if _total_raw_p1 > premio_1_pool else luck_b
-                vip_final = vip_b * premio_1_pool // _total_raw_p1 if _total_raw_p1 > premio_1_pool else vip_b
-                _total_p1_paid += final_p1
-                axo_obj.escrow_balance_gal += final_p1
-                axo_prize_won[w["axo_id"]] += final_p1
-                axo_prize_breakdown[w["axo_id"]].append({
-                    "prize_type": "premio_1",
-                    "label": "Primer Patrón",
-                    "gross_gal": share_p1 * premio_1_pool // _total_raw_p1 if _total_raw_p1 > premio_1_pool else share_p1,
-                    "luck_bonus": luck_final,
-                    "vip_bonus": vip_final,
-                })
-                axo_obj.experience += 20
-                axo_xp_gained[w["axo_id"]] += 20
-                board_obj = session.get(PlayerBoard, w["board_id"])
-                if board_obj:
-                    board_obj.xp += 15
-                    board_obj.games_played += 1
-                    board_obj.games_won += 1
-
-            # Shares de bots + sobrante de normalización → tesorería
-            _p1_remainder = premio_1_pool - _total_p1_paid
-            if _p1_remainder > 0:
-                treasury.balance += _p1_remainder
-                treasury.updated_at = datetime.utcnow()
-
-            # 6.2 Entrega Premio 2 (Tabla Llena) — VULN-05/06: mismo patrón in-pool entero
-            share_p2 = premio_2_pool // len(premio_2_winners)
-            _p2_raw: list = []
-
-            for w in premio_2_winners:
-                if w["is_bot"]:
-                    continue
-                luck_bps = min(int(w["axo_luck"] * 100), 1000)
-                winner_user = _users_by_did.get(w["user_id"])
-                vip_bps = (
-                    int(VIP_CONFIG.get(getattr(winner_user, "vip_tier", "") or "", {}).get("jackpot_bonus", 0.0) * 10000)
-                    if (winner_user and winner_user.is_vip) else 0
-                )
-                raw = share_p2 * (10000 + luck_bps + vip_bps) // 10000
-                luck_b = share_p2 * luck_bps // 10000
-                vip_b = share_p2 * vip_bps // 10000
-                _p2_raw.append((w, raw, luck_b, vip_b))
-
-            _total_raw_p2 = sum(r[1] for r in _p2_raw)
-            _total_raw_p2 = max(_total_raw_p2, 1)
-            _total_p2_paid = 0
-
-            for w, raw, luck_b, vip_b in _p2_raw:
-                axo_obj, _ = axo_registrations_map[w["axo_id"]]
-                final_p2 = raw * premio_2_pool // _total_raw_p2 if _total_raw_p2 > premio_2_pool else raw
-                luck_final = luck_b * premio_2_pool // _total_raw_p2 if _total_raw_p2 > premio_2_pool else luck_b
-                vip_final = vip_b * premio_2_pool // _total_raw_p2 if _total_raw_p2 > premio_2_pool else vip_b
-                _total_p2_paid += final_p2
-                axo_obj.escrow_balance_gal += final_p2
-                axo_prize_won[w["axo_id"]] += final_p2
-                axo_prize_breakdown[w["axo_id"]].append({
-                    "prize_type": "premio_2",
-                    "label": "Tabla Llena",
-                    "gross_gal": share_p2 * premio_2_pool // _total_raw_p2 if _total_raw_p2 > premio_2_pool else share_p2,
-                    "luck_bonus": luck_final,
-                    "vip_bonus": vip_final,
-                })
-                axo_obj.experience += 50
-                axo_xp_gained[w["axo_id"]] += 50
-                board_obj = session.get(PlayerBoard, w["board_id"])
-                if board_obj:
-                    board_obj.xp += 40
-                    board_obj.games_played += 1
-                    board_obj.games_won += 1
-
-            _p2_remainder = premio_2_pool - _total_p2_paid
-            if _p2_remainder > 0:
-                treasury.balance += _p2_remainder
-                treasury.updated_at = datetime.utcnow()
-                        
-            # Consolación XP para los que no ganaron nada
+            # Consolación XP
             winner_board_ids = {w["board_id"] for w in premio_1_winners + premio_2_winners}
             for pb in participating_boards:
                 if not pb["is_bot"] and pb["board_id"] not in winner_board_ids:
@@ -715,140 +969,24 @@ class MultiplayerService:
                     if board_obj:
                         board_obj.xp += 5
                         board_obj.games_played += 1
-                        
-            # 6.3 Entrega de Jackpot de Oro si aplica (VULN-06: aritmética entera)
+
+            # 6.3 Jackpot
             if jackpot_winners:
-                total_jackpot = jackpot.current_amount
-                winner_jackpot_payout = total_jackpot * 90 // 100
-                share_jackpot = winner_jackpot_payout // len(jackpot_winners)
-
-                # VULN-05/06: VIP bonus normalizado dentro del 90% del vault (no phantom funds)
-                _jp_raw: list = []
-                for w in jackpot_winners:
-                    jackpot_winner_user = _users_by_did.get(w["user_id"])
-                    vip_jp_bps = (
-                        int(VIP_CONFIG.get(getattr(jackpot_winner_user, "vip_tier", "") or "", {}).get("jackpot_bonus", 0.0) * 10000)
-                        if (jackpot_winner_user and jackpot_winner_user.is_vip) else 0
-                    )
-                    raw_jp = share_jackpot * (10000 + vip_jp_bps) // 10000
-                    vip_jp_b = share_jackpot * vip_jp_bps // 10000
-                    _jp_raw.append((w, raw_jp, vip_jp_b))
-
-                _total_raw_jp = sum(r[1] for r in _jp_raw)
-                _total_raw_jp = max(_total_raw_jp, 1)
-
-                for w, raw_jp, vip_jp_b in _jp_raw:
-                    axo_obj, _ = axo_registrations_map[w["axo_id"]]
-                    payout = raw_jp * winner_jackpot_payout // _total_raw_jp if _total_raw_jp > winner_jackpot_payout else raw_jp
-                    vip_bonus_final = vip_jp_b * winner_jackpot_payout // _total_raw_jp if _total_raw_jp > winner_jackpot_payout else vip_jp_b
-                    axo_obj.escrow_balance_gal += payout
-                    axo_prize_won[w["axo_id"]] += payout
-                    axo_prize_breakdown[w["axo_id"]].append({
-                        "prize_type": "jackpot",
-                        "label": "Jackpot Global",
-                        "gross_gal": payout - vip_bonus_final,
-                        "luck_bonus": 0,
-                        "vip_bonus": vip_bonus_final,
-                    })
-
-                    # Registrar victoria del Jackpot
-                    win_record = JackpotWin(
-                        axo_id=w["axo_id"],
-                        user_id=w["user_id"],
-                        amount_won=payout,
-                        cards_drawn_count=turns
-                    )
-                    session.add(win_record)
-
-                    # Ledger record
-                    ledger_jackpot = TransactionLedger(
-                        user_id=w["user_id"],
-                        amount=payout,
-                        currency=CurrencyType.FRIJOLITO,
-                        tx_type=TransactionType.REWARD,
-                        description=f"🎉 GANADOR DEL JACKPOT GLOBAL FRJ! Axo: {axo_obj.name} | Sorteo #{turns}"
-                    )
-                    session.add(ledger_jackpot)
-
-                # Re-sembrado (Reset)
-                remaining_pool = total_jackpot * 10 // 100
-                _SEED_AMOUNT = 1000 * (10 ** FRJ_DECIMALS_BACKEND)
-                if remaining_pool < _SEED_AMOUNT:
-                    diff_needed = _SEED_AMOUNT - remaining_pool
-                    # Tomar lo que se pueda de la tesorería
-                    amount_from_treasury = min(diff_needed, treasury.balance)
-                    treasury.balance -= amount_from_treasury
-                    jackpot.current_amount = remaining_pool + amount_from_treasury
-                else:
-                    jackpot.current_amount = remaining_pool
-
-                jackpot.last_won_at = datetime.utcnow()
-                jackpot.last_winner_axo_id = jackpot_winners[0]["axo_id"]
-                session.add(jackpot)
-                session.add(treasury)
-                print(f"💰 [Multiplayer Service] ¡Jackpot de {total_jackpot} FRJ-units ganado por {len(jackpot_winners)} Axo(s)!")
-
-            # --- 6.4 CREAR REGISTROS DE PARTIDA PARA NOTIFICACIONES ---
-            p1_winner_axo_ids = {w["axo_id"] for w in premio_1_winners if not w["is_bot"]}
-            p2_winner_axo_ids = {w["axo_id"] for w in premio_2_winners if not w["is_bot"]}
-
-            for axo_id, (axo_obj, b_ids) in axo_registrations_map.items():
-                entry_cost = len(b_ids) * _entry_fee_internal(room)
-                prize_won = axo_prize_won.get(axo_id, 0)
-                net_gal = prize_won - entry_cost
-                xp_total = axo_xp_gained.get(axo_id, 0)
-                is_winner = axo_id in p1_winner_axo_ids or axo_id in p2_winner_axo_ids
-                outcome = "Victoria" if is_winner else "Derrota"
-
-                # Calculate mark_accuracy
-                total_marked = 0
-                total_called_matching = 0
-                for pb in participating_boards:
-                    if pb["axo_id"] == axo_id:
-                        total_marked += len(pb["marked_indices"])
-                        total_called_matching += sum(1 for cid in pb["card_ids"] if cid in drawn_cards_history)
-
-                if total_called_matching == 0:
-                    mark_accuracy = 1.0
-                else:
-                    mark_accuracy = total_marked / total_called_matching
-
-                # Apply imprinting if needed
-                try:
-                    _apply_imprinting_if_needed(
-                        axo=axo_obj,
-                        is_win=is_winner,
-                        had_jackpot=any(w["axo_id"] == axo_id for w in jackpot_winners),
-                        mark_accuracy=mark_accuracy,
-                        session=session,
-                    )
-                except Exception as exc:
-                    print(f"⚠️ [imprinting] error no-fatal in multiplayer: {exc}")
-
-                player_breakdown = axo_prize_breakdown.get(axo_id, [])
-                won_p1 = axo_id in p1_winner_axo_ids
-                won_p2 = axo_id in p2_winner_axo_ids
-                won_jp = any(w["axo_id"] == axo_id for w in jackpot_winners)
-
-                game_log = MultiplayerGameLog(
-                    user_id=axo_obj.user_id,
-                    axolotito_id=axo_obj.id,
-                    axo_name=axo_obj.name,
-                    room_name=room.name,
-                    outcome=outcome,
-                    net_gal=net_gal,
-                    xp_gained=xp_total,
-                    prize_breakdown_json=json.dumps(player_breakdown) if player_breakdown else None,
-                    won_premio_1=won_p1,
-                    won_premio_2=won_p2,
-                    won_jackpot=won_jp,
-                    entry_fee_paid=entry_cost,
-                    gross_prize_gal=prize_won,
-                    notified=False,
+                MultiplayerService._distribute_jackpot(
+                    jackpot_winners, jackpot, treasury,
+                    axo_registrations_map, _users_by_did, session, turns,
+                    axo_prize_won, axo_prize_breakdown,
                 )
-                session.add(game_log)
 
-            # VULN-05/06: Log de invariante — Σ pagos de juego ≤ Σ bolsas de juego
+            # 6.4 Game logs
+            MultiplayerService._create_game_logs(
+                axo_registrations_map, room, participating_boards,
+                jackpot_winners, premio_1_winners, premio_2_winners,
+                drawn_cards_history, axo_prize_won, axo_xp_gained,
+                axo_prize_breakdown, session,
+            )
+
+            # VULN-05 invariant log
             _game_prizes_total = _total_p1_paid + _total_p2_paid
             _player_pool = premio_1_pool + premio_2_pool
             if _game_prizes_total > _player_pool:
@@ -860,29 +998,14 @@ class MultiplayerService:
                       f"collected={total_collected_gal} "
                       f"player_pool={_player_pool} paid={_game_prizes_total}")
 
-            # --- 7. REVOLVER LÍMITES Y AUTO-REINSCRIBIR ---
+            # ── 7. LEVEL-UP + AUTO-REINSCRIBE ──
+            MultiplayerService._level_up_boards_and_axos(axo_registrations_map, session)
+
             for axo_id, (axo_obj, b_ids) in axo_registrations_map.items():
-                session.refresh(axo_obj)
-                # Nivelar tablas
-                for board_id in b_ids:
-                    board_obj = session.get(PlayerBoard, board_id)
-                    if board_obj:
-                        while board_obj.xp >= (board_obj.level * 100):
-                            board_obj.xp -= (board_obj.level * 100)
-                            board_obj.level += 1
-                        session.add(board_obj)
-                        
-                # Nivelar Axolotito
-                while axo_obj.experience >= (axo_obj.level * 100):
-                    axo_obj.experience -= (axo_obj.level * 100)
-                    axo_obj.level += 1
-                    
                 # Evaluar límites de parada
-                # Pérdida acumulada: presupuesto inicial - balance actual en escrow
                 loss_limit_val = axo_obj.bot_loss_limit_axg
                 profit_limit_val = axo_obj.bot_profit_limit_axg
 
-                # Límites de salida
                 triggered_stop_loss = (axo_obj.escrow_balance_gal <= (axo_obj.bot_budget_axg - loss_limit_val))
                 triggered_take_profit = (axo_obj.escrow_balance_gal >= (axo_obj.bot_budget_axg + profit_limit_val))
                 no_energy = axo_obj.energy_current < 10
@@ -891,36 +1014,29 @@ class MultiplayerService:
 
                 if triggered_stop_loss or triggered_take_profit or no_energy or no_funds or wants_to_stop:
                     axo_obj.status = "waiting_settlement"
-                    axo_obj.wants_to_stop = False  # reset para la siguiente sesión
+                    axo_obj.wants_to_stop = False
                     print(f"🛑 [Multiplayer Service] Axolotito {axo_obj.name} salió del juego (SL={triggered_stop_loss}, TP={triggered_take_profit}, Sin Energía={no_energy}, Sin Fondos={no_funds}, Recall={wants_to_stop}).")
                 else:
-                    # AUTO-REINSCRIBIR en la siguiente sala activa en espera
                     new_room = get_or_create_waiting_room(session, room.room_type, len(b_ids), user_id=axo_obj.user_id)
                     new_reg = RoomRegistration(
-                        room_id=new_room.id,
-                        axolotito_id=axo_obj.id,
-                        boards_json=json.dumps(b_ids)
+                        room_id=new_room.id, axolotito_id=axo_obj.id,
+                        boards_json=json.dumps(b_ids),
                     )
                     session.add(new_reg)
                     print(f"🔄 [Multiplayer Service] Axolotito {axo_obj.name} se re-inscribió en {new_room.name}.")
-                    
+
                 session.add(axo_obj)
-                
-            # Establecer sala como terminada
+
+            # Finalise room
             room.status = "finished"
             session.add(room)
-
-            # Marcar ActiveGameState como finished
             game_state.phase = "finished"
             game_state.cards_drawn_json = json.dumps(drawn_cards_history)
             game_state.turns_played = turns
             game_state.updated_at = datetime.utcnow()
             session.add(game_state)
-            
-            # Borrar los registros de inscripción de la sala terminada
             for reg in registrations:
                 session.delete(reg)
-                
             session.commit()
             print(f"✅ [Multiplayer Service] Simulación de la sala {room.name} terminada en {turns} cartas.")
 
@@ -937,24 +1053,6 @@ class MultiplayerService:
         Calcula las recompensas reales usando las marcas reales, cobra entradas,
         actualiza la base de datos y marca la sala como finalizada.
         """
-        import json
-        from sqlmodel import Session, select
-        from app.database import engine
-        from app.models.lobby_models import (
-            GameRoom, RoomRegistration, TreasuryVault, JackpotVault, 
-            JackpotWin, MultiplayerGameLog, ActiveGameState
-        )
-        from app.models.axolotito import Axolotito
-        from app.models.user import User
-        from app.models.board import PlayerBoard, Wallet, TransactionLedger
-        from app.models.items import ItemCatalog, ItemType
-        from app.core.config import VIP_CONFIG, FRJ_DECIMALS_BACKEND, CurrencyType, TransactionType
-        from app.services.bank import BankService
-        from app.services.incubation_service import _apply_imprinting_if_needed
-        import random
-
-        _rng = random.SystemRandom()
-
         with Session(engine) as session:
             room = session.get(GameRoom, room_id)
             if not room or room.status == "finished":
@@ -964,153 +1062,40 @@ class MultiplayerService:
                 select(RoomRegistration).where(RoomRegistration.room_id == room.id)
             ).all()
 
-            # --- 1. RECOPILAR JUGADORES HUMANOS ---
-            participating_boards = []
-            human_players = set()
-            human_boards_count = 0
-            axo_registrations_map = {}
+            # ── 1. Batch-load + collect human players ──
+            _axos_by_id, _users_by_did = MultiplayerService._load_registration_data(
+                room, registrations, session
+            )
+            participating_boards, human_players, human_boards_count, axo_registrations_map = (
+                MultiplayerService._collect_human_players(
+                    room, registrations, session, _axos_by_id, _users_by_did,
+                    marked_data=player_marked_data,
+                )
+            )
 
-            _all_axo_ids = [reg.axolotito_id for reg in registrations]
-            _axos_by_id = {}
-            if _all_axo_ids:
-                _axos_loaded = session.exec(
-                    select(Axolotito).where(Axolotito.id.in_(_all_axo_ids))
-                ).all()
-                _axos_by_id = {a.id: a for a in _axos_loaded}
+            # ── 2. Jackpot eligibility ──
+            jackpot_eligible = MultiplayerService._evaluate_jackpot_eligibility(
+                human_players, human_boards_count, _users_by_did
+            )
 
-            _user_ids_to_load = set(a.user_id for a in _axos_by_id.values())
-            if room.host_id:
-                _user_ids_to_load.add(room.host_id)
-            _users_by_did = {}
-            if _user_ids_to_load:
-                _users_loaded = session.exec(
-                    select(User).where(User.privy_did.in_(_user_ids_to_load))
-                ).all()
-                _users_by_did = {u.privy_did: u for u in _users_loaded}
+            # ── 3. Fill with bots ──
+            all_card_ids = MultiplayerService._fill_bots_if_needed(participating_boards, session)
 
-            for reg in registrations:
-                axo = _axos_by_id.get(reg.axolotito_id)
-                if not axo:
-                    continue
-                
-                b_ids = json.loads(reg.boards_json)
-                axo_registrations_map[axo.id] = (axo, b_ids)
-                
-                # Descontar energía fija al Axolotito por participar (10 de energía)
-                axo.energy_current = max(0, axo.energy_current - 10)
-                
-                # Pérdida extra de energía al finalizar partida basada en salinity
-                extra_energy_loss = round(axo.stat_salinity * 0.2)
-                axo.energy_current = max(0, axo.energy_current - extra_energy_loss)
-                
-                # Descontar Buy-in del depósito en custodia (escrow)
-                owner = _users_by_did.get(axo.user_id)
-                entry_discount_bps = VIP_CONFIG.get(getattr(owner, "vip_tier", "") or "", {}).get("multiplayer_discount_bps", 0) if (owner and owner.is_vip) else 0
-                fee_int = _entry_fee_internal(room)
-                effective_fee = fee_int * (10000 - entry_discount_bps) // 10000
-                entry_fee_total = len(b_ids) * effective_fee
-                axo.escrow_balance_gal = max(0, axo.escrow_balance_gal - entry_fee_total)
-                
-                for board_id in b_ids:
-                    board = session.get(PlayerBoard, board_id)
-                    if board:
-                        marked = player_marked_data.get(axo.id, [])
-                        participating_boards.append({
-                            "board_id": board.id,
-                            "axo_id": axo.id,
-                            "user_id": axo.user_id,
-                            "card_ids": board.card_ids,
-                            "is_bot": False,
-                            "marked_indices": set(marked),
-                            "axo_focus": axo.stat_focus,
-                            "axo_luck": axo.stat_luck,
-                            "axo_salinity": axo.stat_salinity,
-                        })
-                        human_players.add(axo.user_id)
-                        human_boards_count += 1
+            # ── 4. Calculate pools ──
+            pools = MultiplayerService._calculate_and_distribute_pools(
+                human_boards_count, room, _users_by_did, session
+            )
+            premio_1_pool = pools["premio_1_pool"]
+            premio_2_pool = pools["premio_2_pool"]
+            treasury = pools["treasury"]
+            jackpot = pools["jackpot"]
 
-            # --- 2. EVALUAR ELEGIBILIDAD DEL JACKPOT ---
-            human_wallets = set()
-            for uid in human_players:
-                owner_for_wallet = _users_by_did.get(uid)
-                if owner_for_wallet and owner_for_wallet.wallet_address:
-                    human_wallets.add(owner_for_wallet.wallet_address.lower())
-            jackpot_eligible = (human_boards_count >= 5) and (len(human_wallets) >= 2)
-
-            # --- 3. RELLENAR CON BOTS SI ES NECESARIO ---
-            all_cards = session.exec(select(ItemCatalog).where(ItemCatalog.item_type == ItemType.CARD)).all()
-            all_card_ids = [c.id for c in all_cards]
-            
-            bot_count_needed = max(0, 4 - len(participating_boards))
-            for i in range(bot_count_needed):
-                bot_cards = _rng.sample(all_card_ids, 16)
-                participating_boards.append({
-                    "board_id": -i - 1,
-                    "axo_id": None,
-                    "user_id": f"bot_{i}",
-                    "card_ids": bot_cards,
-                    "is_bot": True,
-                    "marked_indices": set(),
-                    "axo_focus": 50,
-                    "axo_luck": 10
-                })
-
-            # --- 4. CÁLCULO Y REPARTO DE LA BOLSA ---
-            total_collected_gal = human_boards_count * _entry_fee_internal(room)
-            treasury_share = total_collected_gal * 5 // 100
-            jackpot_share = total_collected_gal * 5 // 100
-
-            host_share = 0
-            if room.host_id and room.room_type == "player_hosted":
-                host_share = total_collected_gal * 5 // 100
-                host_user = _users_by_did.get(room.host_id)
-                if host_user:
-                    host_wallet = session.exec(select(Wallet).where(Wallet.user_id == room.host_id)).first()
-                    if not host_wallet:
-                        host_wallet = Wallet(user_id=room.host_id, frijolitos=0, axofichas=0, gemas_alga=0)
-                        session.add(host_wallet)
-                    host_wallet.frijolitos += host_share
-                    session.add(host_wallet)
-                    session.add(TransactionLedger(
-                        user_id=room.host_id,
-                        amount=host_share,
-                        currency=CurrencyType.FRIJOLITO,
-                        tx_type=TransactionType.REWARD,
-                        description=f"Comision de anfitrion FRJ — sala '{room.name}'",
-                    ))
-                    config = json.loads(room.room_config or "{}")
-                    max_players = config.get("max_players", 4)
-                    reputation_gain = 1 + (5 if human_boards_count >= max_players * 80 // 100 else 0)
-                    room.host_reputation_earned = (room.host_reputation_earned or 0) + reputation_gain
-
-            # Acumular a Tesorería
-            treasury = session.exec(select(TreasuryVault)).first()
-            if not treasury:
-                treasury = TreasuryVault(balance=0)
-                session.add(treasury)
-            treasury.balance += treasury_share
-            treasury.updated_at = datetime.utcnow()
-
-            # Acumular a Jackpot
-            _FRJ = 10 ** FRJ_DECIMALS_BACKEND
-            jackpot = session.exec(select(JackpotVault)).first()
-            if not jackpot:
-                jackpot = JackpotVault(current_amount=1000 * _FRJ, seed_amount=1000 * _FRJ)
-                session.add(jackpot)
-            jackpot.current_amount += jackpot_share
-            jackpot.updated_at = datetime.utcnow()
-
-            # Bolsas netas de juego
-            premio_1_pool = total_collected_gal * 30 // 100 if host_share > 0 else total_collected_gal * 35 // 100
-            premio_2_pool = total_collected_gal * 55 // 100 if host_share > 0 else total_collected_gal * 55 // 100
-
-            # --- 5. DETERMINAR GANADORES ---
+            # ── 5. DETERMINAR GANADORES (unique logic — manual mode) ──
             premio_1_winners = []
             premio_2_winners = []
             jackpot_winners = []
 
             if winner_axo_id is not None:
-                # El ganador real
                 winner_board = next((pb for pb in participating_boards if pb["axo_id"] == winner_axo_id), None)
                 if winner_board:
                     premio_1_winners = [winner_board]
@@ -1118,108 +1103,35 @@ class MultiplayerService:
                     if jackpot_eligible:
                         jackpot_winners = [winner_board]
             else:
-                # Si no hay ganador explícito, determinar por marcas (fallback)
                 participating_boards.sort(key=lambda x: len(x["marked_indices"]), reverse=True)
                 if participating_boards:
                     premio_2_winners = [participating_boards[0]]
                     premio_1_winners = [participating_boards[0]]
 
-            # --- 6. ENTREGAR RECOMPENSAS E HISTORIAL ---
+            # ── 6. ENTREGAR RECOMPENSAS ──
             axo_prize_won = {axo_id: 0 for axo_id in axo_registrations_map}
             axo_xp_gained = {axo_id: 0 for axo_id in axo_registrations_map}
             axo_prize_breakdown = {axo_id: [] for axo_id in axo_registrations_map}
 
-            # 6.1 Entrega Premio 1
+            # 6.1 Premio 1
             if premio_1_winners:
-                share_p1 = premio_1_pool // len(premio_1_winners)
-                _p1_raw = []
-                for w in premio_1_winners:
-                    if w["is_bot"]:
-                        continue
-                    luck_bps = min(int(w["axo_luck"] * 100), 1000)
-                    winner_user = _users_by_did.get(w["user_id"])
-                    vip_bps = (
-                        int(VIP_CONFIG.get(getattr(winner_user, "vip_tier", "") or "", {}).get("jackpot_bonus", 0.0) * 10000)
-                        if (winner_user and winner_user.is_vip) else 0
-                    )
-                    raw = share_p1 * (10000 + luck_bps + vip_bps) // 10000
-                    luck_b = share_p1 * luck_bps // 10000
-                    vip_b = share_p1 * vip_bps // 10000
-                    _p1_raw.append((w, raw, luck_b, vip_b))
+                MultiplayerService._distribute_pool(
+                    premio_1_winners, premio_1_pool, axo_registrations_map, _users_by_did,
+                    session, "premio_1", "Primer Patrón", axo_xp_amount=20, board_xp_amount=15,
+                    axo_prize_won=axo_prize_won, axo_xp_gained=axo_xp_gained,
+                    axo_prize_breakdown=axo_prize_breakdown, treasury=treasury,
+                )
 
-                _total_raw_p1 = sum(r[1] for r in _p1_raw)
-                _total_raw_p1 = max(_total_raw_p1, 1)
-                _total_p1_paid = 0
-
-                for w, raw, luck_b, vip_b in _p1_raw:
-                    axo_obj, _ = axo_registrations_map[w["axo_id"]]
-                    final_p1 = raw * premio_1_pool // _total_raw_p1 if _total_raw_p1 > premio_1_pool else raw
-                    luck_final = luck_b * premio_1_pool // _total_raw_p1 if _total_raw_p1 > premio_1_pool else luck_b
-                    vip_final = vip_b * premio_1_pool // _total_raw_p1 if _total_raw_p1 > premio_1_pool else vip_b
-                    _total_p1_paid += final_p1
-                    axo_obj.escrow_balance_gal += final_p1
-                    axo_prize_won[w["axo_id"]] += final_p1
-                    axo_prize_breakdown[w["axo_id"]].append({
-                        "prize_type": "premio_1",
-                        "label": "Primer Patrón",
-                        "gross_gal": share_p1 * premio_1_pool // _total_raw_p1 if _total_raw_p1 > premio_1_pool else share_p1,
-                        "luck_bonus": luck_final,
-                        "vip_bonus": vip_final,
-                    })
-                    axo_obj.experience += 20
-                    axo_xp_gained[w["axo_id"]] += 20
-                    board_obj = session.get(PlayerBoard, w["board_id"])
-                    if board_obj:
-                        board_obj.xp += 15
-                        board_obj.games_played += 1
-                        board_obj.games_won += 1
-
-            # 6.2 Entrega Premio 2
+            # 6.2 Premio 2
             if premio_2_winners:
-                share_p2 = premio_2_pool // len(premio_2_winners)
-                _p2_raw = []
-                for w in premio_2_winners:
-                    if w["is_bot"]:
-                        continue
-                    luck_bps = min(int(w["axo_luck"] * 100), 1000)
-                    winner_user = _users_by_did.get(w["user_id"])
-                    vip_bps = (
-                        int(VIP_CONFIG.get(getattr(winner_user, "vip_tier", "") or "", {}).get("jackpot_bonus", 0.0) * 10000)
-                        if (winner_user and winner_user.is_vip) else 0
-                    )
-                    raw = share_p2 * (10000 + luck_bps + vip_bps) // 10000
-                    luck_b = share_p2 * luck_bps // 10000
-                    vip_b = share_p2 * vip_bps // 10000
-                    _p2_raw.append((w, raw, luck_b, vip_b))
+                MultiplayerService._distribute_pool(
+                    premio_2_winners, premio_2_pool, axo_registrations_map, _users_by_did,
+                    session, "premio_2", "Tabla Llena", axo_xp_amount=30, board_xp_amount=20,
+                    axo_prize_won=axo_prize_won, axo_xp_gained=axo_xp_gained,
+                    axo_prize_breakdown=axo_prize_breakdown, treasury=treasury,
+                )
 
-                _total_raw_p2 = sum(r[1] for r in _p2_raw)
-                _total_raw_p2 = max(_total_raw_p2, 1)
-                _total_p2_paid = 0
-
-                for w, raw, luck_b, vip_b in _p2_raw:
-                    axo_obj, _ = axo_registrations_map[w["axo_id"]]
-                    final_p2 = raw * premio_2_pool // _total_raw_p2 if _total_raw_p2 > premio_2_pool else raw
-                    luck_final = luck_b * premio_2_pool // _total_raw_p2 if _total_raw_p2 > premio_2_pool else luck_b
-                    vip_final = vip_b * premio_2_pool // _total_raw_p2 if _total_raw_p2 > premio_2_pool else vip_b
-                    _total_p2_paid += final_p2
-                    axo_obj.escrow_balance_gal += final_p2
-                    axo_prize_won[w["axo_id"]] += final_p2
-                    axo_prize_breakdown[w["axo_id"]].append({
-                        "prize_type": "premio_2",
-                        "label": "Tabla Llena",
-                        "gross_gal": share_p2 * premio_2_pool // _total_raw_p2 if _total_raw_p2 > premio_2_pool else share_p2,
-                        "luck_bonus": luck_final,
-                        "vip_bonus": vip_final,
-                    })
-                    axo_obj.experience += 30
-                    axo_xp_gained[w["axo_id"]] += 30
-                    board_obj = session.get(PlayerBoard, w["board_id"])
-                    if board_obj:
-                        board_obj.xp += 20
-                        board_obj.games_played += 1
-                        board_obj.games_won += 1
-
-            # Consolar a los que no ganaron
+            # Consolación XP
             for pb in participating_boards:
                 if not pb["is_bot"] and pb["board_id"] not in [w["board_id"] for w in premio_1_winners + premio_2_winners]:
                     axo_obj, _ = axo_registrations_map[pb["axo_id"]]
@@ -1230,160 +1142,27 @@ class MultiplayerService:
                         board_obj.xp += 5
                         board_obj.games_played += 1
 
-            # 6.3 Entrega de Jackpot
+            # 6.3 Jackpot
             if jackpot_winners:
-                total_jackpot = jackpot.current_amount
-                winner_jackpot_payout = total_jackpot * 90 // 100
-                share_jackpot = winner_jackpot_payout // len(jackpot_winners)
-                _jp_raw = []
-                for w in jackpot_winners:
-                    jackpot_winner_user = _users_by_did.get(w["user_id"])
-                    vip_jp_bps = (
-                        int(VIP_CONFIG.get(getattr(jackpot_winner_user, "vip_tier", "") or "", {}).get("jackpot_bonus", 0.0) * 10000)
-                        if (jackpot_winner_user and jackpot_winner_user.is_vip) else 0
-                    )
-                    raw_jp = share_jackpot * (10000 + vip_jp_bps) // 10000
-                    vip_jp_b = share_jackpot * vip_jp_bps // 10000
-                    _jp_raw.append((w, raw_jp, vip_jp_b))
-
-                _total_raw_jp = sum(r[1] for r in _jp_raw)
-                _total_raw_jp = max(_total_raw_jp, 1)
-
-                for w, raw_jp, vip_jp_b in _jp_raw:
-                    axo_obj, _ = axo_registrations_map[w["axo_id"]]
-                    payout = raw_jp * winner_jackpot_payout // _total_raw_jp if _total_raw_jp > winner_jackpot_payout else raw_jp
-                    vip_bonus_final = vip_jp_b * winner_jackpot_payout // _total_raw_jp if _total_raw_jp > winner_jackpot_payout else vip_jp_b
-                    axo_obj.escrow_balance_gal += payout
-                    axo_prize_won[w["axo_id"]] += payout
-                    axo_prize_breakdown[w["axo_id"]].append({
-                        "prize_type": "jackpot",
-                        "label": "Jackpot Global",
-                        "gross_gal": payout - vip_bonus_final,
-                        "luck_bonus": 0,
-                        "vip_bonus": vip_bonus_final,
-                    })
-
-                    win_record = JackpotWin(
-                        axo_id=w["axo_id"],
-                        user_id=w["user_id"],
-                        amount_won=payout,
-                        cards_drawn_count=turns
-                    )
-                    session.add(win_record)
-
-                    ledger_jackpot = TransactionLedger(
-                        user_id=w["user_id"],
-                        amount=payout,
-                        currency=CurrencyType.FRIJOLITO,
-                        tx_type=TransactionType.REWARD,
-                        description=f"🎉 GANADOR DEL JACKPOT GLOBAL FRJ! Axo: {axo_obj.name} | Sorteo #{turns}"
-                    )
-                    session.add(ledger_jackpot)
-
-                remaining_pool = total_jackpot * 10 // 100
-                _SEED_AMOUNT = 1000 * (10 ** FRJ_DECIMALS_BACKEND)
-                if remaining_pool < _SEED_AMOUNT:
-                    diff_needed = _SEED_AMOUNT - remaining_pool
-                    amount_from_treasury = min(diff_needed, treasury.balance)
-                    treasury.balance -= amount_from_treasury
-                    jackpot.current_amount = remaining_pool + amount_from_treasury
-                else:
-                    jackpot.current_amount = remaining_pool
-
-                jackpot.last_won_at = datetime.utcnow()
-                jackpot.last_winner_axo_id = jackpot_winners[0]["axo_id"]
-                session.add(jackpot)
-                session.add(treasury)
-
-            # 6.4 CREAR REGISTROS DE PARTIDA PARA NOTIFICACIONES ---
-            p1_winner_axo_ids = {w["axo_id"] for w in premio_1_winners if not w["is_bot"]}
-            p2_winner_axo_ids = {w["axo_id"] for w in premio_2_winners if not w["is_bot"]}
-
-            for axo_id, (axo_obj, b_ids) in axo_registrations_map.items():
-                entry_cost = len(b_ids) * _entry_fee_internal(room)
-                prize_won = axo_prize_won.get(axo_id, 0)
-
-                # --- AFK / Disconnect penalty (-30% reward penalty if they went auto/AFK) ---
-                reg_obj = next((r for r in registrations if r.axolotito_id == axo_id), None)
-                was_afk = reg_obj is not None and reg_obj.play_mode == "auto"
-                
-                # Apply AFK penalty if they were auto
-                if was_afk:
-                    prize_won = prize_won * 70 // 100
-                    axo_obj.loyalty_points = max(0, axo_obj.loyalty_points - 5)
-                    reward_reduction = axo_prize_won.get(axo_id, 0) - prize_won
-                    if reward_reduction > 0:
-                        axo_obj.escrow_balance_gal = max(0, axo_obj.escrow_balance_gal - reward_reduction)
-                
-                net_gal = prize_won - entry_cost
-                xp_total = axo_xp_gained.get(axo_id, 0)
-                is_winner = axo_id in p1_winner_axo_ids or axo_id in p2_winner_axo_ids
-                outcome = "Victoria" if is_winner else "Derrota"
-
-                if was_afk:
-                    outcome += " (AFK Penalty)"
-
-                total_marked = 0
-                total_called_matching = 0
-                for pb in participating_boards:
-                    if pb["axo_id"] == axo_id:
-                        total_marked += len(pb["marked_indices"])
-                        total_called_matching += sum(1 for cid in pb["card_ids"] if cid in drawn_cards_history)
-
-                if total_called_matching == 0:
-                    mark_accuracy = 1.0
-                else:
-                    mark_accuracy = total_marked / total_called_matching
-
-                try:
-                    _apply_imprinting_if_needed(
-                        axo=axo_obj,
-                        is_win=is_winner,
-                        had_jackpot=any(w["axo_id"] == axo_id for w in jackpot_winners),
-                        mark_accuracy=mark_accuracy,
-                        session=session,
-                    )
-                except Exception as exc:
-                    print(f"⚠️ [imprinting] error no-fatal: {exc}")
-
-                player_breakdown = axo_prize_breakdown.get(axo_id, [])
-                won_p1 = axo_id in p1_winner_axo_ids
-                won_p2 = axo_id in p2_winner_axo_ids
-                won_jp = any(w["axo_id"] == axo_id for w in jackpot_winners)
-
-                game_log = MultiplayerGameLog(
-                    user_id=axo_obj.user_id,
-                    axolotito_id=axo_obj.id,
-                    axo_name=axo_obj.name,
-                    room_name=room.name,
-                    outcome=outcome,
-                    net_gal=net_gal,
-                    xp_gained=xp_total,
-                    prize_breakdown_json=json.dumps(player_breakdown) if player_breakdown else None,
-                    won_premio_1=won_p1,
-                    won_premio_2=won_p2,
-                    won_jackpot=won_jp,
-                    entry_fee_paid=entry_cost,
-                    gross_prize_gal=prize_won,
-                    notified=False,
+                MultiplayerService._distribute_jackpot(
+                    jackpot_winners, jackpot, treasury,
+                    axo_registrations_map, _users_by_did, session, turns,
+                    axo_prize_won, axo_prize_breakdown,
                 )
-                session.add(game_log)
 
-            # --- 7. ACTUALIZAR ESTADOS Y LIMPIAR ---
+            # 6.4 Game logs (with AFK penalty support)
+            MultiplayerService._create_game_logs(
+                axo_registrations_map, room, participating_boards,
+                jackpot_winners, premio_1_winners, premio_2_winners,
+                drawn_cards_history, axo_prize_won, axo_xp_gained,
+                axo_prize_breakdown, session,
+                registrations=registrations,  # enables AFK penalty check
+            )
+
+            # ── 7. LEVEL-UP + SETTLE (manual: always settle, no auto-reinstate) ──
+            MultiplayerService._level_up_boards_and_axos(axo_registrations_map, session)
+
             for axo_id, (axo_obj, b_ids) in axo_registrations_map.items():
-                session.refresh(axo_obj)
-                for board_id in b_ids:
-                    board_obj = session.get(PlayerBoard, board_id)
-                    if board_obj:
-                        while board_obj.xp >= (board_obj.level * 100):
-                            board_obj.xp -= (board_obj.level * 100)
-                            board_obj.level += 1
-                        session.add(board_obj)
-                        
-                while axo_obj.experience >= (axo_obj.level * 100):
-                    axo_obj.experience -= (axo_obj.level * 100)
-                    axo_obj.level += 1
-                    
                 axo_obj.status = "waiting_settlement"
                 axo_obj.wants_to_stop = False
                 session.add(axo_obj)
@@ -1395,8 +1174,7 @@ class MultiplayerService:
             game_state = session.exec(select(ActiveGameState).where(ActiveGameState.room_id == room.id)).first()
             if not game_state:
                 game_state = ActiveGameState(
-                    room_id=room.id,
-                    phase="finished",
+                    room_id=room.id, phase="finished",
                     cards_drawn_json=json.dumps(drawn_cards_history),
                     turns_played=turns,
                 )
@@ -1406,9 +1184,9 @@ class MultiplayerService:
                 game_state.turns_played = turns
                 game_state.updated_at = datetime.utcnow()
             session.add(game_state)
-            
+
             for reg in registrations:
                 session.delete(reg)
-                
+
             session.commit()
             print(f"✅ [Multiplayer Service] Partida manual de la sala {room.name} resuelta exitosamente.")

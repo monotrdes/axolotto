@@ -64,5 +64,5 @@ class User(SQLModel, table=True):
     def vip_bonus_axolotito_slots(self) -> int:
         return 1 if self.is_vip and self.vip_tier == "axolite" else 0
 
-    # Deprecated — mantenido para compatibilidad de base de datos
+    # DEPRECATED: Replaced by cave_level. Read-only legacy. No longer written to.
     webito_slots_unlocked: int = Field(default=1)
