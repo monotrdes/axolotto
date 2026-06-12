@@ -17,9 +17,14 @@
    y commitearlo EN EL MISMO commit del avance. Entrada en `wiki/CHANGELOG.md`
    en cambios significativos.
 5. Verificación: `npx tsc --noEmit` y `npx eslint <archivos>` en `frontend/`.
-   NO arrancar servidores. Para iterar visualmente los prototipos:
-   `frontend/_shot.mjs` (untracked) — `node _shot.mjs <html> <out.png> <w> <h>`
-   con Playwright, capturas en `docs/prototipos/`.
+   NO arrancar servidores. Para iterar visualmente la **escena TS real**
+   (untracked, recrear si faltan): `frontend/_harness3d.ts` +
+   `docs/prototipos/_world3d_harness.html` —
+   `npx esbuild _harness3d.ts --bundle --outfile=../docs/prototipos/_world3d_bundle.js --format=iife`
+   y luego `node _shot.mjs _world3d_harness.html _world3d_shot.png 450 920`
+   (Playwright; `_shot.mjs` también sirve para los prototipos HTML).
+   OJO: el Read de imágenes reescala — comparar capturas con un HTML
+   lado-a-lado a la misma escala, no a ojo entre lecturas.
 6. Validación visual del usuario al cierre de cada fase.
 
 ## Decisiones tomadas (NO re-litigar)
@@ -60,32 +65,35 @@
 
 ## Estado actual
 
-- **Último commit de avance**: `278bd88` (Tianguis 3D + docs) y el commit que
-  contiene este checkpoint.
-- Tianguis 3D funcionando detrás de los flags. tsc + eslint limpios.
+- **Último commit de avance**: el commit que contiene este checkpoint (P1
+  completo). Anterior: `278bd88` (Tianguis 3D + docs).
+- Tianguis 3D con "manita de gato" (P1) detrás de los flags. tsc + eslint
+  limpios. Verificado visualmente con el harness (captura
+  `docs/prototipos/_world3d_shot.png`, untracked).
 - ⏳ **Pendiente validación visual del usuario en la app real** (ya validó los
   prototipos; falta verlo en su build tras rebuild).
 
 ## PENDIENTES (en orden)
 
-### P1 — "Manita de gato" al Tianguis 3D (acercarlo más al concept)
-El port fue literal del prototipo procedural; falta el jugo visual del concept:
-- [ ] Textura de grano de papel (overlay sutil en terrazas/fondo/agua; por tier,
-      off en "ligera").
-- [ ] Gradiente de atardecer en el fondo (papel morado → cálido arriba) y
-      mejores colores de colinas (el concept va arena→durazno→teal con más
-      contraste y capas más altas).
-- [ ] Agua: caustics/ondas concéntricas suaves alrededor de orillas y barcas
-      (ahora solo hay vetas elípticas), espuma de borde en plaza/rocas.
-- [ ] Papel picado con troquelado real (agujeros en el shape, no solo dentado).
-- [ ] Tipografía de letreros con más carácter (la del concept es serif gruesa
-      tipo cartel; hoy es system-ui).
-- [ ] Piedras del camino con forma más orgánica y mejor contraste.
-- [ ] Micro-interacciones de hotspot: rebote de cartón al tocar un puesto
-      (hoy solo navega), highlight al hover en desktop.
-- [ ] Viñeta/marco: el prototipo HTML tiene viñeta CSS — en la app no se
-      replicó. Decidir overlay equivalente (div con radial-gradient sobre el
-      canvas 3D, pointer-events-none).
+### P1 — "Manita de gato" al Tianguis 3D — ✅ HECHO
+- [x] Grano de papel: `configurePaperStyle({grain})` + CanvasTexture 128px
+      compartida en `paperMat` (GameCanvas lo apaga en tier "ligera").
+- [x] Gradiente de atardecer (CanvasTexture en scene.background del motor:
+      morado abajo → rosado cálido arriba) y cordillera trasera teal→durazno→
+      arena→crema con capas más altas (paletas de longitud exacta — ojo: el
+      wrap de `pal[i % len]` pone el color 0 en la cumbre si n > len).
+- [x] Agua: ondas concéntricas expandiéndose (RingGeometry) en barcas y
+      orillas + espuma de borde (`flat()` blobs aguaClara bajo las orillas).
+- [x] Papel picado con troquelado real (medallón + 2 ojales + diamante como
+      holes del shape).
+- [x] Tipografía de letreros serif gruesa (Georgia 900).
+- [x] Piedras del camino más orgánicas (irr 0.38, 2 tonos, rotación).
+- [x] Micro-interacciones en el motor: rebote de cartón al tocar puesto
+      (squash con decay) y highlight de hover +5% en desktop
+      (`hover:hover and pointer:fine`), cursor pointer. Mapa `fx` por raíz
+      de puesto, se aplica DESPUÉS de las animaciones de escena.
+- [x] Viñeta: overlay radial-gradient dentro del host 3D en GameCanvas
+      (pointer-events-none, igual al prototipo aprobado).
 
 ### P2 — Axolotitos puppet billboard 2D (siguiente fase grande)
 - [ ] `world3d/AxolotitoBillboard.ts`: plano(s) con el puppet 2D estilo papel.
@@ -120,3 +128,4 @@ El port fue literal del prototipo procedural; falta el jugo visual del concept:
 | :--- | :--- | :--- |
 | 2026-06-12 | 278bd88 | Tianguis 3D: motor three.js + escena port del prototipo aprobado + swap Pixi↔three en GameCanvas + flags + docs/prototipos |
 | 2026-06-12 | (este) | Checkpoint creado; flag WORLD3D agregado a .env.local del usuario; pendientes P1-P5 definidos |
+| 2026-06-12 | (este) | P1 completo: grano de papel por tier, fondo atardecer, colinas con más contraste, ondas+espuma de agua, troquelado real del picado, letreros serif, piedras orgánicas, hover+rebote de hotspots, viñeta en GameCanvas. Harness de captura de la escena TS real (esbuild+Playwright) |

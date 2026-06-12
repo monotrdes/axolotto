@@ -249,15 +249,18 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
           const hostPixi = hostRef.current;
           if (!host3d || !hostPixi) return;
           if (active) {
-            const [{ ThreeWorldEngine }, { buildTianguisScene3D }] = await Promise.all([
-              import("@/components/world3d/ThreeWorldEngine"),
-              import("@/components/world3d/TianguisScene3D"),
-            ]);
+            const [{ ThreeWorldEngine }, { buildTianguisScene3D }, { configurePaperStyle }] =
+              await Promise.all([
+                import("@/components/world3d/ThreeWorldEngine"),
+                import("@/components/world3d/TianguisScene3D"),
+                import("@/components/world3d/paperPrimitives"),
+              ]);
             if (cancelled || !active3dRef.current) return;
             if (!engine3dRef.current) {
               engine3dRef.current = ThreeWorldEngine.create(host3d);
               engine3dRef.current.onHotspot = (stallId) => onStallClickRef.current?.(stallId);
             }
+            configurePaperStyle({ grain: engine3dRef.current.quality !== "ligera" });
             const scene3d = buildTianguisScene3D();
             scene3dRef.current = scene3d;
             engine3dRef.current.setScene(scene3d);
@@ -308,7 +311,16 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
       <>
         <div ref={hostRef} className="fixed inset-0 z-0" aria-hidden />
         {WORLD3D_ENABLED && (
-          <div ref={host3dRef} className="fixed inset-0 z-0" style={{ display: "none" }} aria-hidden />
+          <div ref={host3dRef} className="fixed inset-0 z-0" style={{ display: "none" }} aria-hidden>
+            {/* Viñeta del diorama (mismo encuadre que el prototipo aprobado) */}
+            <div
+              className="pointer-events-none absolute inset-0 z-10"
+              style={{
+                background:
+                  "radial-gradient(ellipse 105% 88% at 50% 42%, transparent 58%, rgba(16, 8, 36, 0.55) 100%)",
+              }}
+            />
+          </div>
         )}
         <PaperCurtain ref={curtainRef} />
       </>

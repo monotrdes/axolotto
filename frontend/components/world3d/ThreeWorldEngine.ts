@@ -68,6 +68,13 @@ export class ThreeWorldEngine {
   private raycaster = new THREE.Raycaster();
   private downPos: { x: number; y: number } | null = null;
 
+  // Micro-interacciones: hover (solo desktop) y rebote de cartón al tocar.
+  private hoverFine = false;
+  private hoverNdc: THREE.Vector2 | null = null;
+  private hoverRoot: THREE.Object3D | null = null;
+  private frame = 0;
+  private fx = new Map<THREE.Object3D, { base: number; k: number; bounceStart: number }>();
+
   private onVisibility = () => {
     if (document.hidden) this.stop();
     else if (!this.pausedByUi) this.start();
@@ -75,6 +82,14 @@ export class ThreeWorldEngine {
   private onPointerMove = (e: PointerEvent) => {
     this.pointer.x = (e.clientX / window.innerWidth - 0.5) * 2;
     this.pointer.y = (e.clientY / window.innerHeight - 0.5) * 2;
+    if (this.hoverFine) {
+      const rect = this.renderer.domElement.getBoundingClientRect();
+      this.hoverNdc ??= new THREE.Vector2();
+      this.hoverNdc.set(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1,
+      );
+    }
   };
   private onPointerDown = (e: PointerEvent) => {
     this.downPos = { x: e.clientX, y: e.clientY };
@@ -89,20 +104,42 @@ export class ThreeWorldEngine {
       ((e.clientX - rect.left) / rect.width) * 2 - 1,
       -((e.clientY - rect.top) / rect.height) * 2 + 1,
     );
+    const root = this.stallRootAt(ndc);
+    if (root) {
+      this.bounce(root);
+      this.onHotspot?.(root.userData.stallId as string);
+    }
+  };
+
+  /** Primer ancestro con userData.stallId bajo el puntero, o null. */
+  private stallRootAt(ndc: THREE.Vector2): THREE.Object3D | null {
+    if (!this.current) return null;
     this.raycaster.setFromCamera(ndc, this.camera);
     const hits = this.raycaster.intersectObjects(this.current.hotspots, true);
     for (const hit of hits) {
       let obj: THREE.Object3D | null = hit.object;
       while (obj) {
-        const id = obj.userData?.stallId as string | undefined;
-        if (id) {
-          this.onHotspot?.(id);
-          return;
-        }
+        if (obj.userData?.stallId) return obj;
         obj = obj.parent;
       }
     }
-  };
+    return null;
+  }
+
+  private fxFor(obj: THREE.Object3D): { base: number; k: number; bounceStart: number } {
+    let st = this.fx.get(obj);
+    if (!st) {
+      st = { base: obj.scale.x, k: 1, bounceStart: -1 };
+      this.fx.set(obj, st);
+    }
+    return st;
+  }
+
+  /** Rebote de cartón al tocar un puesto. */
+  private bounce(obj: THREE.Object3D): void {
+    if (this.reducedMotion) return;
+    this.fxFor(obj).bounceStart = this.clock.elapsedTime;
+  }
 
   static create(host: HTMLElement): ThreeWorldEngine {
     const engine = new ThreeWorldEngine();
@@ -116,6 +153,8 @@ export class ThreeWorldEngine {
     this.fpsCap = TIER_PROFILE[this.quality].fpsCap;
     this.reducedMotion =
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    this.hoverFine =
+      window.matchMedia?.("(hover: hover) and (pointer: fine)").matches ?? false;
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setPixelRatio(
@@ -126,7 +165,21 @@ export class ThreeWorldEngine {
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     host.appendChild(this.renderer.domElement);
 
-    this.scene.background = new THREE.Color(0x342b52);
+    // Gradiente de atardecer en papel: morado profundo abajo → cálido arriba.
+    const bg = document.createElement("canvas");
+    bg.width = 4;
+    bg.height = 256;
+    const bgCtx = bg.getContext("2d")!;
+    const grad = bgCtx.createLinearGradient(0, 256, 0, 0);
+    grad.addColorStop(0, "#241e3c");
+    grad.addColorStop(0.45, "#342b52");
+    grad.addColorStop(0.8, "#5c4068");
+    grad.addColorStop(1, "#8a5a6e");
+    bgCtx.fillStyle = grad;
+    bgCtx.fillRect(0, 0, 4, 256);
+    const bgTex = new THREE.CanvasTexture(bg);
+    bgTex.colorSpace = THREE.SRGBColorSpace;
+    this.scene.background = bgTex;
     this.scene.add(new THREE.AmbientLight(0xd0c4f0, 0.95));
     const sun = new THREE.DirectionalLight(0xffe9c8, 1.5);
     sun.position.set(4, 16, 9);
@@ -157,6 +210,8 @@ export class ThreeWorldEngine {
 
   clearScene(): void {
     if (!this.current) return;
+    this.fx.clear();
+    this.hoverRoot = null;
     this.scene.remove(this.current.group);
     this.current.dispose();
     this.current = null;
@@ -252,9 +307,39 @@ export class ThreeWorldEngine {
   private tick(): void {
     const dt = this.clock.getDelta();
     const t = this.clock.elapsedTime;
+    this.frame++;
 
     if (this.current && !this.reducedMotion) {
       for (const anim of this.current.animations) anim(t, dt);
+    }
+
+    // Hover (desktop): raycast cada 3 frames; resalta el puesto bajo el cursor.
+    if (this.hoverFine && this.hoverNdc && this.frame % 3 === 0) {
+      const root = this.stallRootAt(this.hoverNdc);
+      if (root !== this.hoverRoot) {
+        if (this.hoverRoot) this.fxFor(this.hoverRoot); // asegura el lerp de salida
+        this.hoverRoot = root;
+        if (root) this.fxFor(root);
+        this.renderer.domElement.style.cursor = root ? "pointer" : "";
+      }
+    }
+
+    // Efectos de escala (hover + rebote) — después de las animaciones de la
+    // escena para ganar a cualquier reset de escala propio (p.ej. el melt).
+    for (const [obj, st] of this.fx) {
+      const targetK = obj === this.hoverRoot ? 1.05 : 1;
+      st.k = this.reducedMotion ? targetK : st.k + (targetK - st.k) * 0.16;
+      let env = 1;
+      if (st.bounceStart >= 0) {
+        const bt = t - st.bounceStart;
+        if (bt < 0.7) env = 1 + Math.sin(bt * 18) * 0.09 * Math.exp(-bt * 5);
+        else st.bounceStart = -1;
+      }
+      obj.scale.setScalar(st.base * st.k * env);
+      if (obj !== this.hoverRoot && st.bounceStart < 0 && Math.abs(st.k - 1) < 0.002) {
+        obj.scale.setScalar(st.base);
+        this.fx.delete(obj);
+      }
     }
 
     // Parallax sutil + lerp de enfoque.

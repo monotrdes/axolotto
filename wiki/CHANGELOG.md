@@ -22,6 +22,14 @@ last_modified: "2026-06-11"
 
 ---
 
+## 2026-06-12 | frontend mundo 3D | P1: pulido visual del Tianguis 3D hacia el concept art (task-1781252081-99)
+- **Campo**: `frontend/components/world3d/` (paperPrimitives, ThreeWorldEngine, TianguisScene3D) + viñeta en `GameCanvas.tsx`.
+- **Anterior**: Port literal del prototipo procedural: fondo plano, sin grano de papel, picado solo dentado, letreros system-ui, sin micro-interacciones ni viñeta.
+- **Nuevo**: Grano de papel compartido por tier (`configurePaperStyle`, off en "ligera"); fondo con gradiente de atardecer; cordillera teal→durazno→arena→crema más alta; ondas concéntricas y espuma de borde en el agua; papel picado con troquelado real (holes); letreros serif (Georgia 900); piedras orgánicas a dos tonos; hover highlight (desktop) y rebote de cartón al tocar puestos; viñeta radial sobre el canvas 3D. Harness de captura de la escena TS real (esbuild + Playwright, untracked).
+- **Motivo**: Acercar el Tianguis 3D al concept art aprobado (P1 del checkpoint `docs/checkpoint_world3d.md`).
+- **Autor**: Claude
+- **Fuente en código**: `frontend/components/world3d/paperPrimitives.ts`, `frontend/components/world3d/ThreeWorldEngine.ts`, `frontend/components/world3d/TianguisScene3D.ts`, `frontend/components/world/GameCanvas.tsx`
+
 ## 2026-06-12 | frontend mundo 3D | Tianguis migrado a diorama 3D de papel con three.js (task-1781252081-99)
 - **Campo**: Nuevo módulo `frontend/components/world3d/` (ThreeWorldEngine, TianguisScene3D, paperPrimitives) + integración en `GameCanvas.tsx`.
 - **Anterior**: Tianguis rendereado por Pixi (`TianguisScene.ts`, vista frontal 2.5D); la forja era el puesto de fundido.

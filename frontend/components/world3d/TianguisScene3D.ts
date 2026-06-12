@@ -6,6 +6,7 @@ import {
   box,
   cyl,
   ellipseShape,
+  flat,
   paper,
   picadoShape,
   plant,
@@ -91,9 +92,11 @@ export function buildTianguisScene3D(): World3DScene {
   });
 
   // ── Colinas del fondo y rocas laterales ───────────────────────
-  terraceStack(world, TOP, -2.6, -7.6, 2.2, 5, [PAL.arenaCalida, PAL.durazno, PAL.arena], 0.26, 0.14, 0.5);
-  terraceStack(world, TOP, 0.6, -8.0, 2.6, 6, [PAL.arena, PAL.arenaCalida, PAL.crema], 0.26, 0.12, 0.5);
-  terraceStack(world, TOP, 3.4, -7.4, 2.0, 5, [PAL.durazno, PAL.arena, PAL.arenaCalida], 0.26, 0.15, 0.5);
+  // cordillera trasera: gradiente del concept (teal en la base → durazno →
+  // arena → crema en las cumbres), capas más altas para más presencia
+  terraceStack(world, TOP, -2.6, -7.6, 2.3, 6, [PAL.tealRoca, PAL.durazno, PAL.arenaCalida, PAL.arena, PAL.crema, PAL.blanco], 0.3, 0.14, 0.5);
+  terraceStack(world, TOP, 0.6, -8.0, 2.7, 7, [PAL.tealOscuro, PAL.tealRoca, PAL.durazno, PAL.arenaCalida, PAL.arena, PAL.crema, PAL.blanco], 0.3, 0.12, 0.5);
+  terraceStack(world, TOP, 3.4, -7.4, 2.1, 6, [PAL.tealRoca, PAL.durazno, PAL.arenaCalida, PAL.arena, PAL.crema, PAL.blanco], 0.3, 0.15, 0.5);
   terraceStack(world, TOP, -5.0, -6.6, 1.9, 6, [PAL.tealRoca, PAL.salvia, PAL.oliva], 0.24, 0.18, 0.6);
   terraceStack(world, TOP, 5.6, -6.2, 1.8, 5, [PAL.oliva, PAL.tealRoca, PAL.salvia], 0.24, 0.18, 0.6);
   terraceStack(world, TOP, -4.6, -3.6, 1.3, 6, [PAL.tealOscuro, PAL.tealRoca, PAL.salvia], 0.2, 0.2);
@@ -103,6 +106,19 @@ export function buildTianguisScene3D(): World3DScene {
   terraceStack(world, TOP, 6.6, 1.8, 1.5, 3, [PAL.salvia, PAL.pasto], 0.22, 0.2);
 
   // ── Plaza central + camino al embarcadero ─────────────────────
+  // espuma de borde: anillo claro plano bajo cada orilla que toca el agua
+  const foamAt = (x: number, z: number, r: number, seed: number) => {
+    const f = flat(blobShape(r, 0.16, 10, seed), PAL.aguaClara, 0.32);
+    f.position.set(x, TOP + 0.004, z);
+    world.add(f);
+  };
+  foamAt(0.3, -2.5, 3.45, 2);
+  foamAt(1.35, 4.0, 1.0, 12);
+  foamAt(1.3, 5.1, 1.55, 4);
+  foamAt(-4.3, 7.4, 2.2, 7);
+  foamAt(5.4, 7.2, 2.0, 9);
+  foamAt(-6.4, 0.6, 2.0, 3);
+  foamAt(6.6, 1.8, 1.8, 5);
   const plaza = paper(blobShape(3.0, 0.13, 10, 2), 0.18, PAL.arena, 0.05);
   plaza.position.set(0.3, TOP, -2.5);
   world.add(plaza);
@@ -120,11 +136,14 @@ export function buildTianguisScene3D(): World3DScene {
     m.position.set(x, TOP, z);
     world.add(m);
   });
-  for (let i = 0; i < 14; i++) {
-    const st = paper(blobShape(rand(0.18, 0.34), 0.2, 7, i), 0.04, 0xf0dfba, 0.012);
+  // piedras del camino: formas orgánicas a dos tonos sobre la plaza
+  const stoneCols = [0xcdb488, 0xf4e8c6, 0xc2a878, 0xefdcae];
+  for (let i = 0; i < 12; i++) {
+    const st = paper(blobShape(rand(0.2, 0.4), 0.38, 6, i * 1.7), 0.05, stoneCols[i % stoneCols.length], 0.016);
     const a = rand(0, Math.PI * 2);
-    const rr = rand(0, 2.3);
+    const rr = rand(0, 2.2);
     st.position.set(0.3 + Math.cos(a) * rr * 1.05, TOP + 0.31, -2.6 + Math.sin(a) * rr * 0.8);
+    st.rotation.z = rand(0, Math.PI * 2);
     st.castShadow = false;
     world.add(st);
   }
@@ -456,6 +475,36 @@ export function buildTianguisScene3D(): World3DScene {
       const phase = b.userData.phase as number;
       b.position.y = TOP + Math.sin(t * 1.1 + phase) * 0.045;
       b.rotation.z = Math.sin(t * 0.9 + phase) * 0.025;
+    }
+  });
+
+  // Ondas concéntricas: anillos que se expanden y desvanecen alrededor de
+  // las barcas y de algunos puntos de orilla.
+  const ripples: THREE.Mesh[] = [];
+  const rippleAt = (x: number, z: number, r: number, phase: number) => {
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(r * 0.92, r, 26),
+      new THREE.MeshBasicMaterial({ color: PAL.aguaClara, transparent: true, opacity: 0 }),
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x, TOP + 0.006, z);
+    ring.userData.phase = phase;
+    ripples.push(ring);
+    world.add(ring);
+  };
+  for (const b of boats) {
+    rippleAt(b.position.x, b.position.z, 1.55, rand(0, 1));
+    rippleAt(b.position.x, b.position.z, 1.55, rand(0, 1) + 0.5);
+  }
+  rippleAt(0.3, 1.1, 1.2, 0.2); // orilla de la plaza, lado del camino
+  rippleAt(-3.4, -2.4, 1.0, 0.7); // orilla oeste de la plaza
+  rippleAt(3.6, -1.0, 1.0, 0.45); // orilla este
+  animations.push((t) => {
+    for (const r of ripples) {
+      const p = (t * 0.22 + (r.userData.phase as number)) % 1;
+      const s = 0.45 + p * 0.85;
+      r.scale.set(s, s, 1);
+      (r.material as THREE.MeshBasicMaterial).opacity = Math.sin(Math.PI * p) * 0.35;
     }
   });
 

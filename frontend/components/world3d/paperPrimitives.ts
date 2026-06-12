@@ -37,12 +37,43 @@ export const PAL = {
   fondoPapel: 0x342b52,
 } as const;
 
+let grainEnabled = true;
+let grainTex: THREE.CanvasTexture | null = null;
+
+/**
+ * Ajustes globales de estilo (llamar ANTES de construir la escena).
+ * `grain`: textura de grano de papel en los materiales — apagar en tier
+ * "ligera" (es una textura compartida de 128px, el costo es por-material).
+ */
+export function configurePaperStyle(opts: { grain?: boolean }): void {
+  if (opts.grain !== undefined) grainEnabled = opts.grain;
+}
+
+/** Ruido sutil de fibra de papel, compartido por todos los materiales. */
+function paperGrainTexture(): THREE.CanvasTexture {
+  if (grainTex) return grainTex;
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const ctx = c.getContext("2d")!;
+  const img = ctx.createImageData(128, 128);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const v = 244 + Math.floor(Math.random() * 12);
+    img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+    img.data[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  grainTex = new THREE.CanvasTexture(c);
+  grainTex.wrapS = grainTex.wrapT = THREE.RepeatWrapping;
+  return grainTex;
+}
+
 export function paperMat(color: number, emissive = 0): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
     color,
     roughness: 0.95,
     metalness: 0,
     emissive: new THREE.Color(color).multiplyScalar(emissive),
+    map: grainEnabled ? paperGrainTexture() : null,
   });
 }
 
@@ -88,7 +119,10 @@ export function roundedRectShape(w: number, h: number, r: number): THREE.Shape {
   return s;
 }
 
-/** Banderín de papel picado con borde inferior dentado. */
+/**
+ * Banderín de papel picado: borde inferior dentado + troquelado real
+ * (medallón, ojales y diamante como agujeros en el shape).
+ */
 export function picadoShape(w: number, h: number): THREE.Shape {
   const s = new THREE.Shape();
   s.moveTo(-w / 2, h);
@@ -100,6 +134,24 @@ export function picadoShape(w: number, h: number): THREE.Shape {
     s.lineTo(x, i % 2 === 0 ? 0.18 * h : 0);
   }
   s.closePath();
+  const u = Math.min(w, h);
+  const punch = (cx: number, cy: number, r: number) => {
+    const p = new THREE.Path();
+    p.absarc(cx, cy, r, 0, Math.PI * 2, true);
+    s.holes.push(p);
+  };
+  punch(0, h * 0.66, u * 0.13);
+  punch(-w * 0.27, h * 0.72, u * 0.07);
+  punch(w * 0.27, h * 0.72, u * 0.07);
+  const d = new THREE.Path();
+  const dr = u * 0.1;
+  const dy = h * 0.36;
+  d.moveTo(0, dy + dr);
+  d.lineTo(dr * 0.65, dy);
+  d.lineTo(0, dy - dr);
+  d.lineTo(-dr * 0.65, dy);
+  d.closePath();
+  s.holes.push(d);
   return s;
 }
 
@@ -130,6 +182,16 @@ export function paper(
   return m;
 }
 
+/** Forma plana sin extrusión ni luz (espuma, ondas de agua), acostada en el suelo. */
+export function flat(shape: THREE.Shape, color: number, opacity = 1): THREE.Mesh {
+  const m = new THREE.Mesh(
+    new THREE.ShapeGeometry(shape, 14),
+    new THREE.MeshBasicMaterial({ color, transparent: opacity < 1, opacity }),
+  );
+  m.rotation.x = -Math.PI / 2;
+  return m;
+}
+
 export function box(w: number, h: number, d: number, color: number, emissive = 0): THREE.Mesh {
   const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), paperMat(color, emissive));
   m.castShadow = true;
@@ -152,7 +214,9 @@ function textTexture(
 ): { tex: THREE.CanvasTexture; aspect: number } {
   const c = document.createElement("canvas");
   const pad = 26;
-  const font = `${weight} ${size}px system-ui, sans-serif`;
+  // serif gruesa tipo cartel de feria (concept art); Georgia está en
+  // todos los sistemas y aguanta weight 900 sin desbaratarse
+  const font = `${weight} ${size}px Georgia, "Times New Roman", serif`;
   let ctx = c.getContext("2d")!;
   ctx.font = font;
   const lines = text.split("\n");
