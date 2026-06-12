@@ -329,6 +329,79 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
                   "radial-gradient(ellipse 105% 88% at 50% 42%, transparent 58%, rgba(16, 8, 36, 0.55) 100%)",
               }}
             />
+
+            {/* CSS animations block */}
+            <style>{`
+              @keyframes sway {
+                0% { transform: rotate(-3deg); }
+                100% { transform: rotate(3deg); }
+              }
+              @keyframes bannerFloat {
+                0% { transform: translate(-50%, 0) translateY(0px); }
+                100% { transform: translate(-50%, 0) translateY(-6px); }
+              }
+            `}</style>
+
+            {/* Guirnalda de Papel Picado (Top Border) */}
+            <div className="absolute top-0 left-0 right-0 z-20 pointer-events-none flex justify-center gap-0.5 overflow-hidden h-20 px-2 select-none">
+              {Array.from({ length: 24 }).map((_, i) => {
+                const colors = ["#e04a7a", "#2fb8b0", "#e8893a", "#f2c23e", "#f08aac", "#6cc06a"];
+                const color = colors[i % colors.length];
+                const delay = (i * 0.12).toFixed(2);
+                return (
+                  <svg
+                    key={i}
+                    width="54"
+                    height="68"
+                    viewBox="0 0 60 76"
+                    className="flex-shrink-0 drop-shadow-sm"
+                    style={{
+                      fill: color,
+                      transformOrigin: "top center",
+                      animation: "sway 2.5s ease-in-out infinite alternate",
+                      animationDelay: `${delay}s`,
+                    }}
+                  >
+                    <path
+                      d="M 0 8 H 60 V 68 L 50 58 L 40 68 L 30 58 L 20 68 L 10 58 L 0 68 Z M 30 20 L 42 32 L 30 44 L 18 32 Z M 15 16 L 19 20 L 15 24 L 11 20 Z M 45 16 L 49 20 L 45 24 L 41 20 Z M 15 42 L 19 46 L 15 50 L 11 46 Z M 45 42 L 49 46 L 45 50 L 41 46 Z"
+                      fillRule="evenodd"
+                    />
+                  </svg>
+                );
+              })}
+            </div>
+
+            {/* Listón inferior "CORCHOLATAS Y FRIJOLITOS" (Bottom Border) */}
+            <div
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 pointer-events-none select-none"
+              style={{
+                animation: "bannerFloat 2.2s ease-in-out infinite alternate",
+              }}
+            >
+              <svg width="460" height="80" viewBox="0 0 460 80" className="drop-shadow-md">
+                {/* Left tail */}
+                <path d="M 60 20 L 15 20 L 35 38 L 15 56 L 60 56 Z" fill="#e04a7a" stroke="#4a2e12" strokeWidth="2.5" strokeLinejoin="round" />
+                {/* Left fold shadow */}
+                <path d="M 60 56 L 70 54 L 70 64 Z" fill="#b02c54" stroke="#4a2e12" strokeWidth="2.5" strokeLinejoin="round" />
+                
+                {/* Right tail */}
+                <path d="M 400 20 L 445 20 L 425 38 L 445 56 L 400 56 Z" fill="#e04a7a" stroke="#4a2e12" strokeWidth="2.5" strokeLinejoin="round" />
+                {/* Right fold shadow */}
+                <path d="M 400 56 L 390 54 L 390 64 Z" fill="#b02c54" stroke="#4a2e12" strokeWidth="2.5" strokeLinejoin="round" />
+                
+                {/* Main banner body */}
+                <rect x="70" y="12" width="320" height="42" rx="4" fill="#f2e4c8" stroke="#4a2e12" strokeWidth="2.5" strokeLinejoin="round" />
+                
+                {/* Inner border for paper look */}
+                <rect x="75" y="17" width="310" height="32" rx="2" fill="none" stroke="#4a2e12" strokeWidth="1" strokeDasharray="3,3" />
+
+                {/* Text */}
+                <text x="230" y="39" fontFamily="Georgia, serif" fontWeight="900" fontSize="14" fill="#4a2e12" textAnchor="middle" letterSpacing="1.5">
+                  CORCHOLATAS Y FRIJOLITOS
+                </text>
+              </svg>
+            </div>
+
           </div>
         )}
         <PaperCurtain ref={curtainRef} />

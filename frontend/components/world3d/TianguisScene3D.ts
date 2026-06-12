@@ -492,6 +492,28 @@ export function buildTianguisScene3D(
     roof.position.y = 1.16;
     roof.castShadow = true;
     g.add(roof);
+
+    // Copete (arco frontal mexicano) en la proa (x = 1.4)
+    const archShape = new THREE.Shape();
+    archShape.moveTo(-0.28, 0);
+    archShape.lineTo(-0.28, 0.25);
+    archShape.quadraticCurveTo(-0.28, 0.45, -0.14, 0.45);
+    archShape.lineTo(0.14, 0.45);
+    archShape.quadraticCurveTo(0.28, 0.45, 0.28, 0.25);
+    archShape.lineTo(0.28, 0);
+    archShape.lineTo(-0.28, 0);
+
+    const copete = paper(archShape, 0.02, PAL.naranja, 0.008);
+    copete.rotation.x = 0;
+    copete.rotation.y = Math.PI / 2;
+    copete.position.set(1.4, 0.46, 0);
+    g.add(copete);
+
+    const txt = textPlane("P2P", 0.32, "#e04a7a");
+    txt.rotation.y = Math.PI / 2;
+    txt.position.set(1.415, 0.68, 0);
+    g.add(txt);
+
     g.position.set(x, TOP, z);
     g.rotation.y = ry;
     g.userData.phase = rand(0, 6);

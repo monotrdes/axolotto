@@ -136,3 +136,4 @@
 | 2026-06-12 | (este) | Checkpoint creado; flag WORLD3D agregado a .env.local del usuario; pendientes P1-P5 definidos |
 | 2026-06-12 | 6a8cea8 | P1 completo: grano de papel por tier, fondo atardecer, colinas con más contraste, ondas+espuma de agua, troquelado real del picado, letreros serif, piedras orgánicas, hover+rebote de hotspots, viñeta en GameCanvas. Harness de captura de la escena TS real (esbuild+Playwright) |
 | 2026-06-12 | (este) | P2 base: AxolotitoBillboard (Canvas2D, frente A/B + parpadeo + espalda), tenderos en los 5 puestos, transeúntes del usuario deambulando con espalda al alejarse, sombras de contacto, yaw de billboards en el motor |
+| 2026-06-12 | (este) | Tianguis 3D pulido visual: copetes tradicionales en trajineras y overlays HTML/CSS en GameCanvas (guirnaldas animadas y listón inferior de papel) |
