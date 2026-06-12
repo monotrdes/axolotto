@@ -47,8 +47,8 @@ export class AxolotitoPuppet extends Container {
     const ctx: PartCtx = { tint, accent: gillAccent(tint) };
 
     const parts: BipedPartSet = {
-      body: () => drawBody(tint),
-      head: () => drawHead(tint),
+      body: () => drawBody(tint, data.bodyType),
+      head: () => drawHead(tint, data.headType),
       shadow: () => drawShadow(),
       gill: () => buildPart("gill", data.gillType, ctx) ?? new Container(),
       tail: () => buildPart("tail", data.tailType, ctx) ?? new Container(),

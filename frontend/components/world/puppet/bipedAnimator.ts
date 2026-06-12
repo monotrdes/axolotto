@@ -10,11 +10,14 @@ import type { MotionProfile } from "./motionProfiles";
 export function applyBipedPose(rig: BipedRigRefs, p: MotionProfile, elapsed: number): void {
   const phase = elapsed * p.stepRate * Math.PI * 2;
 
+  const legOff = p.legOffset ?? 0;
+  const armOff = p.armOffset ?? 0;
+
   // Piernas alternadas; brazos contralaterales (frontal con pierna trasera).
-  rig.legFront.rotation = Math.sin(phase) * p.legSwing;
-  rig.legBack.rotation = Math.sin(phase + Math.PI) * p.legSwing;
-  rig.armFront.rotation = Math.sin(phase + Math.PI) * p.armSwing;
-  rig.armBack.rotation = Math.sin(phase) * p.armSwing;
+  rig.legFront.rotation = legOff + Math.sin(phase) * p.legSwing;
+  rig.legBack.rotation = legOff + Math.sin(phase + Math.PI) * p.legSwing;
+  rig.armFront.rotation = armOff + Math.sin(phase + Math.PI) * p.armSwing;
+  rig.armBack.rotation = armOff + Math.sin(phase) * p.armSwing;
 
   // Bob: 2 apoyos por ciclo de paso → |cos| duplica la frecuencia.
   const bob = -Math.abs(Math.cos(phase)) * p.bobAmp;

@@ -11,7 +11,7 @@ export interface AxolotitoData {
   level: number;
   energy: number;
   stats: AxolotitoStats;
-  state: "idle" | "walking" | "swimming" | "sleeping" | "playing";
+  state: "idle" | "walking" | "swimming" | "sleeping" | "playing" | "sitting";
   caveIndex: number;
   isEgg: boolean;
   eggProgress?: number;
@@ -23,4 +23,6 @@ export interface AxolotitoData {
   tailType?: string;
   foreheadType?: string;
   limbType?: string;
+  bodyType?: string;
+  headType?: string;
 }

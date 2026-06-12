@@ -11,11 +11,11 @@ import { Container } from "pixi.js";
  * El rig mira a la izquierda por defecto (cara en -x, cola en +x).
  */
 
-export const RIG_CENTER_Y = -72; // pivote de rigRoot: centro del torso
-const HIP_Y = -36;
-const SHOULDER_Y = -94;
-export const LEG_LENGTH = 36;
-export const ARM_LENGTH = 26;
+export const RIG_CENTER_Y = -84; // pivote de rigRoot: centro del torso
+const HIP_Y = -48;
+const SHOULDER_Y = -106;
+export const LEG_LENGTH = 48;
+export const ARM_LENGTH = 36;
 
 /** Fábrica de piezas que cada puppet inyecta (papel u hojalata). */
 export interface BipedPartSet {
@@ -69,7 +69,7 @@ export function buildBipedRig(root: Container, parts: BipedPartSet): BipedRigRef
   legBack.position.set(10, HIP_Y);
 
   const tail = parts.tail();
-  tail.position.set(16, -48);
+  tail.position.set(16, -60);
 
   // El torso pivota en las caderas: la respiración estira hacia arriba
   // y los pies no patinan.

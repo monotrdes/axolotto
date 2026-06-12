@@ -46,8 +46,9 @@ export function getTextureOrFallback(
 }
 
 /** Torso bípedo: elipse vertical centrada en el pecho. */
-export function drawBody(tint: number): Container {
-  const sprite = getTextureOrFallback("body", 0.5, 0.5, tint);
+export function drawBody(tint: number, variant?: string): Container {
+  const key = variant && variant !== "normal" ? `body_${variant}` : "body";
+  const sprite = getTextureOrFallback(key, 0.5, 0.5, tint);
   if (sprite) return sprite;
   return new Graphics()
     .ellipse(0, 0, 30, 42)
@@ -55,8 +56,9 @@ export function drawBody(tint: number): Container {
     .stroke({ color: PAPER_EDGE, width: EDGE_W });
 }
 
-export function drawHead(tint: number): Container {
-  const sprite = getTextureOrFallback("head", 0.5, 0.5, tint);
+export function drawHead(tint: number, variant?: string): Container {
+  const key = variant && variant !== "normal" ? `head_${variant}` : "head";
+  const sprite = getTextureOrFallback(key, 0.5, 0.5, tint);
   if (sprite) return sprite;
   return new Graphics()
     .circle(0, 0, 30)

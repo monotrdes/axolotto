@@ -122,6 +122,7 @@ export class TianguisScene extends Container {
     if (this.engine.quality === "alta") {
       this.addNpc(new RoboAxolotePuppet(randomNpcData(99)), minX, maxX);
     }
+    this.spawnSittingNpcs();
   }
 
   private addNpc(puppet: AxolotitoPuppet | RoboAxolotePuppet, minX: number, maxX: number): void {
@@ -133,6 +134,72 @@ export class TianguisScene extends Container {
       puppet,
       wander: new WanderController(puppet, { minX, maxX, speed: NPC_WALK_SPEED }),
       dustTimer: 1 + Math.random(),
+    });
+  }
+
+  private spawnSittingNpcs(): void {
+    // Spawn 2 sitting NPCs around a wooden table on the wooden dock
+    const tableX = PX + PW - 260; // Place towards the right side of the dock
+    const tableY = 1410;
+    const PAPER_EDGE = 0xfff7ec;
+
+    const group = new Container();
+    group.position.set(tableX, tableY);
+    group.zIndex = tableY;
+
+    // Stool Left
+    const stoolL = new Graphics()
+      .ellipse(0, 0, 18, 8).fill(0x5c3a21)
+      .rect(-10, 0, 4, 18).fill(0x422817)
+      .rect(6, 0, 4, 18).fill(0x422817)
+      .stroke({ color: PAPER_EDGE, width: 2 });
+    stoolL.position.set(-45, 10);
+
+    // Stool Right
+    const stoolR = new Graphics()
+      .ellipse(0, 0, 18, 8).fill(0x5c3a21)
+      .rect(-10, 0, 4, 18).fill(0x422817)
+      .rect(6, 0, 4, 18).fill(0x422817)
+      .stroke({ color: PAPER_EDGE, width: 2 });
+    stoolR.position.set(45, 10);
+
+    // Table
+    const tableGraphics = new Graphics()
+      .ellipse(0, 0, 52, 20).fill(0x5c3a21)
+      .rect(-38, 0, 6, 28).fill(0x422817)
+      .rect(32, 0, 6, 28).fill(0x422817)
+      .stroke({ color: PAPER_EDGE, width: 2.5 });
+    tableGraphics.position.set(0, 12);
+
+    group.addChild(stoolL, stoolR, tableGraphics);
+    this.npcLayer.addChild(group);
+
+    // Sitting NPC left
+    const npcDataL = randomNpcData(10);
+    npcDataL.state = "sitting";
+    const puppetL = new AxolotitoPuppet(npcDataL);
+    puppetL.position.set(tableX - 45, tableY + 5);
+    puppetL.scale.x = -1; // Faces right (towards table)
+    puppetL.zIndex = tableY + 5;
+    this.npcLayer.addChild(puppetL);
+    this.npcs.push({
+      puppet: puppetL,
+      wander: null as any,
+      dustTimer: 999999,
+    });
+
+    // Sitting NPC right
+    const npcDataR = randomNpcData(11);
+    npcDataR.state = "sitting";
+    const puppetR = new AxolotitoPuppet(npcDataR);
+    puppetR.position.set(tableX + 45, tableY + 5);
+    puppetR.scale.x = 1; // Faces left (towards table)
+    puppetR.zIndex = tableY + 5;
+    this.npcLayer.addChild(puppetR);
+    this.npcs.push({
+      puppet: puppetR,
+      wander: null as any,
+      dustTimer: 999999,
     });
   }
 
@@ -150,7 +217,7 @@ export class TianguisScene extends Container {
     // NPCs paseando por el muelle con polvito en los pasos.
     for (const npc of this.npcs) {
       npc.puppet.update(dt);
-      npc.wander.update(dt);
+      npc.wander?.update(dt);
       npc.dustTimer -= dt;
       if (npc.dustTimer <= 0) {
         if (npc.puppet.state === "walking") {
