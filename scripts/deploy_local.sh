@@ -137,7 +137,7 @@ update_or_add_env "PLASMA_RPC_URL"        "http://anvil_axolotto:8545" "$BACKEND
 echo "   ✅ Variables de entorno actualizadas"
 
 # ── 6. Actualizar variables de entorno del frontend ───────────────────────────
-FRONTEND_ENV="frontend/.env.local"
+FRONTEND_ENV="$ROOT/frontend/.env.local"
 if [ -f "$FRONTEND_ENV" ]; then
     echo ""
     echo "⚙️  Actualizando $FRONTEND_ENV con direcciones de contratos locales..."
