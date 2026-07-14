@@ -82,8 +82,8 @@ def upgrade():
     _migrate_column("gameroom", "entry_fee_gal", FRJ_FACTOR)
 
     # ── User ─────────────────────────────────────────────────────────────
-    _migrate_column('"user"', "f2p_daily_gal_earned", FRJ_FACTOR)
-    _migrate_column('"user"', "vip_pending_gal", FRJ_FACTOR)
+    _migrate_column("user", "f2p_daily_gal_earned", FRJ_FACTOR)
+    _migrate_column("user", "vip_pending_gal", FRJ_FACTOR)
 
     # ── CryptoPurchaseOrder ──────────────────────────────────────────────
     _migrate_column("cryptopurchaseorder", "usdc_amount", 1)  # ya en mínima unidad
