@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="drawio" version="26.0.0">
+  <diagram name="Axolotto Service Layers">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1654" pageHeight="1169" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- CLIENT LAYER -->
+        <mxCell id="10" value="Client Layer" style="swimlane;startSize=30;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="1350" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="20" value="Next.js 16&#xa;Frontend :3000" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="10">
+          <mxGeometry x="30" y="40" width="200" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="21" value="Privy&#xa;(JWT Auth)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="10">
+          <mxGeometry x="260" y="40" width="160" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="22" value="MoonPay&#xa;(USDC Onramp)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" vertex="1" parent="10">
+          <mxGeometry x="450" y="40" width="160" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="23" value="Viem 2.47&#xa;(Web3 Client)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="10">
+          <mxGeometry x="640" y="40" width="160" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- PROXY LAYER -->
+        <mxCell id="11" value="Proxy / Gateway" style="swimlane;startSize=30;fillColor=#ffe6cc;strokeColor=#d79b00;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="0" y="150" width="1350" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="30" value="Nginx&#xa;api.axolot.to &#x2192; :8001" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="11">
+          <mxGeometry x="30" y="25" width="280" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- BACKEND API LAYER -->
+        <mxCell id="12" value="Backend API (FastAPI :8001 — Python 3.12 async)" style="swimlane;startSize=30;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="0" y="270" width="1350" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="40" value="bank.py&#xa;Wallet/Dual-Currency" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="12">
+          <mxGeometry x="20" y="40" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="41" value="game.py&#xa;Lifecycle/Rewards" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="12">
+          <mxGeometry x="185" y="40" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="42" value="multiplayer.py&#xa;Rooms/Lobby" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="12">
+          <mxGeometry x="350" y="40" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="43" value="shop.py&#xa;Store/Boosters" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="12">
+          <mxGeometry x="515" y="40" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="44" value="checkout.py&#xa;Crypto Onramp" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="12">
+          <mxGeometry x="680" y="40" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="45" value="market.py&#xa;P2P Marketplace" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="12">
+          <mxGeometry x="845" y="40" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="46" value="incubation.py&#xa;Axolotito Breeding" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="12">
+          <mxGeometry x="1010" y="40" width="150" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="47" value="codes.py&#xa;Promo Codes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="12">
+          <mxGeometry x="1175" y="40" width="150" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- SERVICES LAYER -->
+        <mxCell id="13" value="Services Layer" style="swimlane;startSize=30;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="0" y="440" width="1350" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="50" value="bank_service.py&#xa;Wallet / Dual-Currency Logic" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="13">
+          <mxGeometry x="20" y="35" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="51" value="game_logic.py&#xa;Core Rules Engine" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="13">
+          <mxGeometry x="285" y="35" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="52" value="web3_service.py&#xa;Blockchain RPC / Contracts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="13">
+          <mxGeometry x="550" y="35" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="53" value="vip_scheduler.py&#xa;VIP Tier Management" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="13">
+          <mxGeometry x="815" y="35" width="240" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- DATA LAYER -->
+        <mxCell id="14" value="Data Layer" style="swimlane;startSize=30;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="0" y="580" width="1350" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="60" value="PostgreSQL 16&#xa;Docker :5433" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;fontSize=10;" vertex="1" parent="14">
+          <mxGeometry x="20" y="25" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="61" value="Wallet + Inventory&#xa;SELECT FOR UPDATE" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="14">
+          <mxGeometry x="250" y="35" width="220" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="62" value="ProcessedTransaction&#xa;(Replay Protection UNIQUE)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=10;" vertex="1" parent="14">
+          <mxGeometry x="500" y="35" width="240" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="63" value="TransactionLedger&#xa;Economy Models" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=10;" vertex="1" parent="14">
+          <mxGeometry x="770" y="35" width="220" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- BLOCKCHAIN LAYER -->
+        <mxCell id="15" value="Blockchain Layer (Anvil :8545 / Plasma Testnet chain 9746 — Solidity + Foundry)" style="swimlane;startSize=30;fillColor=#e1d5e7;strokeColor=#9673a6;fontStyle=1;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="0" y="730" width="1350" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="70" value="Axoficha.sol&#xa;AXF Token (ERC-20)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="15">
+          <mxGeometry x="20" y="35" width="190" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="71" value="Frijolito.sol&#xa;FRJ Token (ERC-20)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="15">
+          <mxGeometry x="230" y="35" width="190" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="72" value="Axolotitos.sol + Webitos.sol&#xa;NFTs (ERC-721) + DNA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="15">
+          <mxGeometry x="440" y="35" width="220" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="73" value="CartasLoteria.sol&#xa;TablasLoteria.sol + Sobrecito.sol" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="15">
+          <mxGeometry x="680" y="35" width="240" height="75" as="geometry" />
+        </mxCell>
+        <mxCell id="74" value="GameController.sol&#xa;Central Orchestrator" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#9673a6;strokeColor=#6d4e8b;fontColor=#ffffff;fontSize=10;fontStyle=1;" vertex="1" parent="15">
+          <mxGeometry x="940" y="35" width="220" height="75" as="geometry" />
+        </mxCell>
+
+        <!-- TASKBOARD (standalone) -->
+        <mxCell id="80" value="Taskboard&#xa;tools/taskboard/&#xa;:8181 (Kanban)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1390" y="440" width="190" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- ARROWS -->
+        <!-- Frontend -> Nginx -->
+        <mxCell id="90" value="HTTP" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="20" target="30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Privy -> Nginx (JWT) -->
+        <mxCell id="91" value="JWT verify" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="21" target="30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Nginx -> Backend -->
+        <mxCell id="92" value="proxy" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="30" target="12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- API -> Services -->
+        <mxCell id="93" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="40" target="50">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="94" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="41" target="51">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Services -> Data -->
+        <mxCell id="95" value="SQLModel ORM" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="50" target="60">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- web3_service -> Blockchain -->
+        <mxCell id="96" value="Web3.py / RPC" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="52" target="74">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <!-- Viem -> Blockchain (direct, dashed) -->
+        <mxCell id="97" value="on-chain events" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="23" target="70">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

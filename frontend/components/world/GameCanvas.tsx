@@ -23,6 +23,8 @@ export interface GameCanvasHandle {
   setDecoraciones?(data: DecoracionesData): void;
   setLunarPhase?(phase: number): void;
   playMeltAnimation?(): void;
+  setStoreItems?(items: any[]): void;
+  setShopActive?(stallId: string, active: boolean): void;
 }
 
 interface GameCanvasProps {
@@ -65,6 +67,7 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
   const decoracionesRef = useRef<DecoracionesData | null>(null);
   const onStallClickRef = useRef(onStallClick);
   onStallClickRef.current = onStallClick;
+  const storeItemsRef = useRef<any[]>([]);
 
   useImperativeHandle(ref, () => ({
     setAxolotitos(data: AxolotitoData[]) {
@@ -113,6 +116,17 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
     playMeltAnimation() {
       scene3dRef.current?.playMelt?.();
     },
+    setStoreItems(items: any[]) {
+      storeItemsRef.current = items;
+      if (scene3dRef.current && "setStoreItems" in scene3dRef.current) {
+        (scene3dRef.current as any).setStoreItems(items);
+      }
+    },
+    setShopActive(stallId: string, active: boolean) {
+      if (scene3dRef.current && scene3dRef.current.setShopActive) {
+        scene3dRef.current.setShopActive(stallId, active);
+      }
+    },
   }));
 
   // Legacy contract — page.tsx espera onReady para setCanvasReady(true).
@@ -136,6 +150,9 @@ const GameCanvas = forwardRef<GameCanvasHandle, GameCanvasProps>(function GameCa
         }));
       const scene3d = buildTianguisScene3D({ visitantes });
       scene3d.group.userData = { macro: "tianguis" };
+      if (storeItemsRef.current.length > 0 && scene3d.setStoreItems) {
+        scene3d.setStoreItems(storeItemsRef.current);
+      }
       return scene3d;
     }
 

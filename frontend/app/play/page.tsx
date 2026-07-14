@@ -32,6 +32,8 @@ import TutorialResetButton from "@/components/dev/TutorialResetButton";
 import VipChip from "@/components/play/VipChip";
 import WorldOrbs from "@/components/play/WorldOrbs";
 import ZoneDockMacro from "@/components/play/ZoneDockMacro";
+import SobrecitosStallPanel from "@/components/store/SobrecitosStallPanel";
+import * as storeService from "@/services/storeService";
 import { fetchAxolotitos, fetchIncubaciones, fetchCaveStatus } from "@/services/santuarioService";
 import {
   mapBackendAxolotito,
@@ -56,11 +58,13 @@ export default function Home() {
   const [accessToken, setAccessToken]     = useState<string | null>(null);
   const [tabActiva, setTabActiva]         = useState<TabId>('tienda');
   // Mundo papel picado: los paneles HTML viven ocultos y se abren como overlay
-  // (hotspots del diorama o botón 📜). Sin flag siempre visibles (legacy).
-  const [panelVisible, setPanelVisible]   = useState(true);
+  // (hotspots del diorama o botón 📜).
+  const [panelVisible, setPanelVisible]   = useState(false);
   // Sección del Store a abrir según el puesto tocado en el Tianguis
   const [storeSection, setStoreSection]   = useState<'official' | 'reciclon' | 'market' | undefined>(undefined);
   const [storeSectionNonce, setStoreSectionNonce] = useState(0);
+  // Panel in-game del puesto de sobrecitos (no abre el tab tienda)
+  const [sobrecitosStallOpen, setSobrecitosStallOpen] = useState(false);
   const [mochilaInitialTab, setMochilaInitialTab] = useState<MochilaTab>('cartas');
   // Burbuja 👁 del embarcadero: amigo cuya cueva se abre al entrar a AmigosPage
   const [visitaAmigoId, setVisitaAmigoId] = useState<string | null>(null);
@@ -244,11 +248,77 @@ export default function Home() {
     };
   }, [accessToken, canvasReady]);
 
+  // Mundo papel picado: cargar sobrecitos y huevos de la tienda para el diorama
+  useEffect(() => {
+    if (!canvasReady || !accessToken || !user?.id) return;
+    let cancelled = false;
+    storeService.fetchShopItems(user.id)
+      .then((data: any[]) => {
+        if (cancelled) return;
+        const shopItems = data.filter((i: any) => {
+          const type = i.item_type?.toLowerCase();
+          return type === "booster" || type === "egg";
+        });
+        gameCanvasRef.current?.setStoreItems?.(shopItems);
+      })
+      .catch((e) => console.error("PaperWorld: error cargando tienda 3D", e));
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, user?.id, canvasReady]);
+
+  const [comprandoBooster, setComprandoBooster] = useState<number | null>(null);
+  const [comprandoWebito, setComprandoWebito] = useState<number | null>(null);
+
+  const comprarBoosterDirecto = async (itemId: number, moneda: string) => {
+    if (!user?.id || !accessToken) return;
+    if (comprandoBooster !== null) return;
+    setComprandoBooster(itemId);
+    try {
+      await storeService.buyItem(user.id, itemId, moneda, accessToken);
+      toast.ok("¡Sobrecito comprado! Revisa tu mochila 📦");
+      await actualizarSaldosSilencioso();
+      const data = await storeService.fetchShopItems(user.id);
+      const shopItems = data.filter((i: any) => {
+        const type = i.item_type?.toLowerCase();
+        return type === "booster" || type === "egg";
+      });
+      gameCanvasRef.current?.setStoreItems?.(shopItems);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || "Error al comprar");
+    } finally {
+      setComprandoBooster(null);
+    }
+  };
+
+  const comprarWebitoDirecto = async (itemId: number, moneda: string) => {
+    if (!user?.id || !accessToken) return;
+    if (comprandoWebito !== null) return;
+    setComprandoWebito(itemId);
+    try {
+      await storeService.buyItem(user.id, itemId, moneda, accessToken);
+      toast.ok("¡Huevo adoptado! Revisa tus nidos en el Santuario 🥚");
+      await actualizarSaldosSilencioso();
+      const data = await storeService.fetchShopItems(user.id);
+      const shopItems = data.filter((i: any) => {
+        const type = i.item_type?.toLowerCase();
+        return type === "booster" || type === "egg";
+      });
+      gameCanvasRef.current?.setStoreItems?.(shopItems);
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || "Error al adoptar");
+    } finally {
+      setComprandoWebito(null);
+    }
+  };
+
   // Mundo papel picado: resetear zoom/enfoque de cámara al cerrar los paneles overlay (Fase 2).
   useEffect(() => {
     if (!canvasReady) return;
     if (!panelVisible) {
       gameCanvasRef.current?.resetFocus?.();
+      gameCanvasRef.current?.setShopActive?.("booster", false);
+      gameCanvasRef.current?.setShopActive?.("adopcion", false);
     }
   }, [panelVisible, canvasReady]);
 
@@ -695,6 +765,14 @@ export default function Home() {
                 }
                 return;
               }
+              // Close any active 3D shop unless we are selecting/clicking within it!
+              if (stallType !== "booster" && !stallType.startsWith("buy-booster:")) {
+                gameCanvasRef.current?.setShopActive?.("booster", false);
+              }
+              if (stallType !== "adopcion" && !stallType.startsWith("buy-egg:")) {
+                gameCanvasRef.current?.setShopActive?.("adopcion", false);
+              }
+
               if (stallType === "mesa-amigos") {
                 void abrirHostingMundo(null);
                 return;
@@ -730,6 +808,28 @@ export default function Home() {
                 setTabActiva("tienda");
                 setOpenBancoCount((c) => c + 1);
                 gameCanvasRef.current?.focusStall?.("fountain");
+              } else if (stallType === "booster") {
+                gameCanvasRef.current?.focusStall?.("booster");
+                gameCanvasRef.current?.setShopActive?.("booster", true);
+                return;
+              } else if (stallType === "adopcion") {
+                gameCanvasRef.current?.focusStall?.("adopcion");
+                gameCanvasRef.current?.setShopActive?.("adopcion", true);
+                return;
+              } else if (stallType === "reset-focus") {
+                return;
+              } else if (stallType.startsWith("buy-booster:")) {
+                const parts = stallType.split(":");
+                const itemId = Number(parts[1]);
+                const currency = parts[2];
+                void comprarBoosterDirecto(itemId, currency);
+                return;
+              } else if (stallType.startsWith("buy-egg:")) {
+                const parts = stallType.split(":");
+                const itemId = Number(parts[1]);
+                const currency = parts[2];
+                void comprarWebitoDirecto(itemId, currency);
+                return;
               } else {
                 const seccion =
                   stallType === "forja" ? "reciclon" : stallType === "p2p" ? "market" : "official";
@@ -847,6 +947,18 @@ export default function Home() {
               setDecorNonce((n) => n + 1); // re-fetch /cave/decorations → diorama
               actualizarSaldosSilencioso(); // la compra gasta FRJ
             }}
+          />
+
+          {/* Panel in-game: Venta de Sobrecitos */}
+          <SobrecitosStallPanel
+            open={sobrecitosStallOpen}
+            onClose={() => {
+              setSobrecitosStallOpen(false);
+              gameCanvasRef.current?.resetFocus?.();
+            }}
+            userId={user?.id || ""}
+            token={accessToken}
+            recargarSaldos={actualizarSaldosSilencioso}
           />
 
           {/* VIP Modal */}

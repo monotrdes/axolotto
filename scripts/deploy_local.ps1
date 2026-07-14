@@ -124,20 +124,20 @@ Write-Host $global:DeployOutput
 
 # -- 4. Extraer direcciones -------------------------------------------------
 
-$GAL        = Extract-Addr "GAL"
-$AXG        = Extract-Addr "AXG"
+$GAL        = Extract-Addr "FRJ"
+$AXG        = Extract-Addr "AXF"
 $WEBITOS    = Extract-Addr "WEBITOS"
 $AXOLOTITOS = Extract-Addr "AXOLOTITOS"
 $CARTAS     = Extract-Addr "CARTAS"
-$BOOSTERS   = Extract-Addr "BOOSTERS"
+$BOOSTERS   = Extract-Addr "SOBRECITOS"
 $TABLAS     = Extract-Addr "TABLAS"
 $CONSUMABLES = Extract-Addr "CONSUMABLES"
 $CONTROLLER = Extract-Addr "GAME_CONTROLLER"
 
 Write-Host ""
 Write-Host "[addrs] Contratos desplegados:"
-Write-Host "   GAL (ERC-20):          $GAL"
-Write-Host "   AXG (ERC-20):          $AXG"
+Write-Host "   FRJ (ERC-20):          $GAL"
+Write-Host "   AXF (ERC-20):          $AXG"
 Write-Host "   Webitos (ERC-721):     $WEBITOS"
 Write-Host "   Axolotitos (ERC-721):  $AXOLOTITOS"
 Write-Host "   Cartas (ERC-1155):     $CARTAS"

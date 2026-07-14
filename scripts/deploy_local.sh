@@ -93,20 +93,20 @@ extract_addr() {
     echo "$DEPLOY_OUTPUT" | grep "DEPLOYED_$1=" | sed "s/.*DEPLOYED_$1=\(0x[a-fA-F0-9]*\).*/\1/"
 }
 
-GAL_ADDR=$(extract_addr "GAL")
-AXG_ADDR=$(extract_addr "AXG")
+GAL_ADDR=$(extract_addr "FRJ")
+AXG_ADDR=$(extract_addr "AXF")
 WEBITOS_ADDR=$(extract_addr "WEBITOS")
 AXOLOTITOS_ADDR=$(extract_addr "AXOLOTITOS")
 CARTAS_ADDR=$(extract_addr "CARTAS")
-BOOSTERS_ADDR=$(extract_addr "BOOSTERS")
+BOOSTERS_ADDR=$(extract_addr "SOBRECITOS")
 TABLAS_ADDR=$(extract_addr "TABLAS")
 CONSUMABLES_ADDR=$(extract_addr "CONSUMABLES")
 CONTROLLER_ADDR=$(extract_addr "GAME_CONTROLLER")
 
 echo ""
 echo "📋 Contratos desplegados:"
-echo "   GAL (ERC-20):          $GAL_ADDR"
-echo "   AXG (ERC-20):          $AXG_ADDR"
+echo "   FRJ (ERC-20):          $GAL_ADDR"
+echo "   AXF (ERC-20):          $AXG_ADDR"
 echo "   Webitos (ERC-721):     $WEBITOS_ADDR"
 echo "   Axolotitos (ERC-721):  $AXOLOTITOS_ADDR"
 echo "   Cartas (ERC-1155):     $CARTAS_ADDR"

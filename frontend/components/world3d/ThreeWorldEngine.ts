@@ -36,6 +36,8 @@ export interface World3DScene {
   billboards?: THREE.Object3D[];
   /** Animación de fundido (equivalente 3D de playMeltAnimation del Tianguis Pixi). */
   playMelt?(): void;
+  setStoreItems?(items: any[]): void;
+  setShopActive?(stallId: string, active: boolean): void;
   dispose(): void;
 }
 
@@ -131,6 +133,11 @@ export class ThreeWorldEngine {
     if (root) {
       this.bounce(root);
       this.onHotspot?.(root.userData.stallId as string);
+    } else {
+      if (this.zoomGoal !== 1) {
+        this.resetFocus();
+        this.onHotspot?.("reset-focus");
+      }
     }
   };
 

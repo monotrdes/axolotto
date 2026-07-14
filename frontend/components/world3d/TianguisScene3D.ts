@@ -212,6 +212,22 @@ export function buildTianguisScene3D(
   const quality = detectQualityTier();
   const glowingMeshes: THREE.Mesh[] = [];
 
+  let boosterShopActive = false;
+  let adopcionShopActive = false;
+  let currentStoreItems: any[] = [];
+  const dynamicHotspots: THREE.Object3D[] = [];
+  const dynamicPackAnimations: Array<{ mesh: THREE.Mesh; baseHeight: number; phase: number }> = [];
+  const dynamicEggAnimations: Array<{ mesh: THREE.Mesh; baseHeight: number; phase: number }> = [];
+
+  let staticPacksRef: THREE.Group | null = null;
+  let dynamicPacksRef: THREE.Group | null = null;
+  let staticEggsRef: THREE.Group | null = null;
+  let dynamicEggsRef: THREE.Group | null = null;
+  let boosterAttendantPos: THREE.Vector3 | null = null;
+  let adopcionAttendantPos: THREE.Vector3 | null = null;
+  let speechBubbleMesh: THREE.Group | null = null;
+  let adopcionSpeechBubbleMesh: THREE.Group | null = null;
+
   const markStall = (g: THREE.Object3D, stallId: string) => {
     g.userData.stallId = stallId;
     hotspots.push(g);
@@ -529,15 +545,23 @@ export function buildTianguisScene3D(
     displayBox.position.set(0, 0.88, 0.1);
     sobrecitos.add(displayBox);
 
+    const staticPacksGroup = new THREE.Group();
     const packCols = [PAL.magenta, PAL.teal, PAL.amarillo, PAL.limon, PAL.rosa, PAL.naranja, PAL.verde];
     for (let row = 0; row < 2; row++) {
       for (let i = 0; i < 7; i++) {
         const pk = box(0.24, 0.34, 0.05, packCols[(i + row * 3) % packCols.length], 0.15);
         pk.position.set(-0.92 + i * 0.31, 1.0 + row * 0.06, -0.15 + row * 0.34);
         pk.rotation.x = -0.18;
-        sobrecitos.add(pk);
+        staticPacksGroup.add(pk);
       }
     }
+    sobrecitos.add(staticPacksGroup);
+    staticPacksRef = staticPacksGroup;
+
+    const dynamicPacksGroup = new THREE.Group();
+    dynamicPacksGroup.visible = false;
+    sobrecitos.add(dynamicPacksGroup);
+    dynamicPacksRef = dynamicPacksGroup;
     const s = sign("VENTA DE\nSOBRECITOS", 0.78, PAL.maderaClara, "#4a2e12");
     s.position.set(0, 3.1, 0.15);
     s.rotation.x = -0.1;
@@ -571,6 +595,7 @@ export function buildTianguisScene3D(
       [-0.15, -0.35, "tazon"],
     ];
     let eggIdx = 0;
+    const staticEggsGroup = new THREE.Group();
     for (const [ex, ez, kind] of spots) {
       if (kind === "nido") {
         const nest = new THREE.Mesh(
@@ -580,11 +605,11 @@ export function buildTianguisScene3D(
         nest.rotation.x = -Math.PI / 2;
         nest.position.set(ex, 0.84, ez);
         nest.castShadow = true;
-        webitos.add(nest);
+        staticEggsGroup.add(nest);
       } else {
         const bowl = cyl(0.34, 0.24, 0.2, 0xcfd6de);
         bowl.position.set(ex, 0.9, ez);
-        webitos.add(bowl);
+        staticEggsGroup.add(bowl);
       }
       for (let i = 0; i < 4; i++) {
         const egg = new THREE.Mesh(
@@ -598,9 +623,17 @@ export function buildTianguisScene3D(
         egg.scale.y = 1.25;
         egg.castShadow = true;
         egg.position.set(ex + rand(-0.14, 0.14), 0.98, ez + rand(-0.12, 0.12));
-        webitos.add(egg);
+        staticEggsGroup.add(egg);
       }
     }
+    webitos.add(staticEggsGroup);
+    staticEggsRef = staticEggsGroup;
+
+    const dynamicEggsGroup = new THREE.Group();
+    dynamicEggsGroup.visible = false;
+    webitos.add(dynamicEggsGroup);
+    dynamicEggsRef = dynamicEggsGroup;
+
     const s = sign("WEBITOS\nADOPCIÓN", 0.7, PAL.maderaClara, "#4a2e12");
     s.position.set(0.55, 0.45, 0.75);
     s.rotation.x = -0.25;
@@ -808,7 +841,7 @@ export function buildTianguisScene3D(
     adopcion: { skinColor: "astral", seed: 41 },
     p2p: { skinColor: "gray_dark", seed: 53 },
   };
-  const billboards: AxolotitoBillboard[] = [];
+  const billboards: THREE.Object3D[] = [];
   world.updateMatrixWorld(true);
   const anchorPos = new THREE.Vector3();
   world.traverse((obj) => {
@@ -819,6 +852,12 @@ export function buildTianguisScene3D(
     obj.getWorldPosition(anchorPos);
     const b = new AxolotitoBillboard(dna, 1.25);
     b.position.copy(anchorPos);
+    if (id === "booster") {
+      boosterAttendantPos = anchorPos.clone();
+    }
+    if (id === "adopcion") {
+      adopcionAttendantPos = anchorPos.clone();
+    }
     // el tendero hereda el hotspot de su puesto (tocarlo = tocar el puesto)
     b.userData.stallId = id;
     hotspots.push(b);
@@ -847,7 +886,11 @@ export function buildTianguisScene3D(
     visitors.push({ b, target: wanderTarget(), speed: rand(0.45, 0.7), pause: rand(0, 3) });
   }
   animations.push((t, dt) => {
-    for (const b of billboards) b.update(t, dt);
+    for (const b of billboards) {
+      if (b instanceof AxolotitoBillboard) {
+        b.update(t, dt);
+      }
+    }
     for (const v of visitors) {
       if (v.pause > 0) {
         v.pause -= dt;
@@ -968,9 +1011,321 @@ export function buildTianguisScene3D(
   const stallFocus: Record<string, StallFocus> = {
     fountain: { x: 0.25, z: -3.6, zoom: 0.62 },
     forja: { x: 2.2, z: -1.9, zoom: 0.62 },
-    booster: { x: -2.0, z: -0.9, zoom: 0.62 },
-    adopcion: { x: -1.8, z: 3.6, zoom: 0.62 },
+    booster: { x: -1.7, z: -1.5, zoom: 0.42 },
+    adopcion: { x: -1.9, z: 2.4, zoom: 0.42 },
     p2p: { x: 1.3, z: 5.2, zoom: 0.66 },
+  };
+
+  // Animation loop logic for dynamic packages
+  animations.push((t) => {
+    if (boosterShopActive) {
+      for (const item of dynamicPackAnimations) {
+        const floatOffset = Math.sin(t * 2.2 + item.phase) * 0.035;
+        item.mesh.position.y = item.baseHeight + floatOffset;
+        item.mesh.rotation.z = Math.sin(t * 1.5 + item.phase) * 0.025;
+      }
+    }
+    if (adopcionShopActive) {
+      for (const item of dynamicEggAnimations) {
+        const floatOffset = Math.sin(t * 1.8 + item.phase) * 0.02;
+        item.mesh.position.y = item.baseHeight + floatOffset;
+        item.mesh.rotation.z = Math.sin(t * 3.0 + item.phase) * 0.05;
+      }
+    }
+  });
+
+  const rebuildDynamicPacks = () => {
+    if (!dynamicPacksRef) return;
+    clearGroup(dynamicPacksRef);
+    for (const dh of dynamicHotspots) {
+      const idx = hotspots.indexOf(dh);
+      if (idx !== -1) hotspots.splice(idx, 1);
+    }
+    dynamicHotspots.length = 0;
+    dynamicPackAnimations.length = 0;
+
+    const boosters = currentStoreItems.filter(
+      (item) => item.item_type?.toLowerCase() === "booster"
+    );
+
+    if (boosters.length === 0) return;
+
+    const spacing = 0.62;
+    boosters.forEach((booster, i) => {
+      const x = (i - (boosters.length - 1) / 2) * spacing;
+      const theme = (booster.item_metadata?.pack_theme as string) || "pure";
+      const colors = packTheme3DColor(theme);
+
+      // Main envelope box
+      const packMesh = box(0.26, 0.36, 0.05, colors.mainColor, 0.15);
+      packMesh.position.set(x, 1.05, 0.46);
+      packMesh.rotation.x = -0.18;
+      packMesh.userData.stallId = `buy-booster:${booster.id}:axoficha`;
+
+      hotspots.push(packMesh);
+      dynamicHotspots.push(packMesh);
+
+      // Stripe
+      const stripe = box(0.18, 0.08, 0.012, colors.accentColor);
+      stripe.position.set(0, 0, 0.026);
+      packMesh.add(stripe);
+
+      // Name label
+      const nameTag = textPlane(booster.name.toUpperCase(), 0.05, "#ffffff");
+      nameTag.position.set(0, 0.1, 0.028);
+      packMesh.add(nameTag);
+
+      // Price Badges
+      const hasAxf = booster.price_axg != null;
+      const hasFrj = booster.price_gal != null && booster.price_gal > 0;
+
+      if (hasAxf && hasFrj) {
+        // Render two price badges (AXF left, FRJ right)
+        const axfBadge = sign(`💎 ${booster.price_axg}`, 0.10, 0x1c1c35, "#e4007c");
+        axfBadge.position.set(-0.16, -0.22, 0.04);
+        axfBadge.userData.stallId = `buy-booster:${booster.id}:axoficha`;
+        packMesh.add(axfBadge);
+        hotspots.push(axfBadge);
+        dynamicHotspots.push(axfBadge);
+
+        const frjBadge = sign(`🪙 ${booster.price_gal}`, 0.10, 0x1c1910, "#d97706");
+        frjBadge.position.set(0.16, -0.22, 0.04);
+        frjBadge.userData.stallId = `buy-booster:${booster.id}:frijolito`;
+        packMesh.add(frjBadge);
+        hotspots.push(frjBadge);
+        dynamicHotspots.push(frjBadge);
+      } else if (hasAxf) {
+        const axfBadge = sign(`💎 ${booster.price_axg}`, 0.10, 0x1c1c35, "#e4007c");
+        axfBadge.position.set(0, -0.22, 0.04);
+        axfBadge.userData.stallId = `buy-booster:${booster.id}:axoficha`;
+        packMesh.add(axfBadge);
+        hotspots.push(axfBadge);
+        dynamicHotspots.push(axfBadge);
+      } else if (hasFrj) {
+        const frjBadge = sign(`🪙 ${booster.price_gal}`, 0.10, 0x1c1910, "#d97706");
+        frjBadge.position.set(0, -0.22, 0.04);
+        frjBadge.userData.stallId = `buy-booster:${booster.id}:frijolito`;
+        packMesh.add(frjBadge);
+        hotspots.push(frjBadge);
+        dynamicHotspots.push(frjBadge);
+      }
+
+      dynamicPacksRef!.add(packMesh);
+
+      dynamicPackAnimations.push({
+        mesh: packMesh,
+        baseHeight: 1.05,
+        phase: i * 1.2,
+      });
+    });
+  };
+
+  const rebuildDynamicEggs = () => {
+    if (!dynamicEggsRef) return;
+    clearGroup(dynamicEggsRef);
+    
+    // Clean dynamic egg hotspots from hotspots array
+    const eggHotspotsPrefix = "buy-egg:";
+    for (let i = hotspots.length - 1; i >= 0; i--) {
+      const h = hotspots[i];
+      if (h.userData?.stallId?.startsWith(eggHotspotsPrefix)) {
+        hotspots.splice(i, 1);
+      }
+    }
+    dynamicEggAnimations.length = 0;
+
+    const eggs = currentStoreItems.filter(
+      (item) => item.item_type?.toLowerCase() === "egg"
+    );
+
+    if (eggs.length === 0) return;
+
+    const spacing = 0.52;
+    eggs.forEach((egg, i) => {
+      const x = (i - (eggs.length - 1) / 2) * spacing;
+      const isAstral = egg.item_metadata?.is_astral;
+      const color = isAstral ? 0xf59e0b : 0xe4007c; // gold/amber for astral, pink/magenta for normal
+
+      const eggGeometry = new THREE.SphereGeometry(0.11, 16, 12);
+      const eggMaterial = new THREE.MeshStandardMaterial({
+        color,
+        roughness: 0.95,
+        emissive: new THREE.Color(color).multiplyScalar(0.25),
+      });
+      const eggMesh = new THREE.Mesh(eggGeometry, eggMaterial);
+      eggMesh.scale.set(1.0, 1.35, 1.0);
+      eggMesh.castShadow = true;
+      eggMesh.position.set(x, 0.88, 0.35);
+      eggMesh.userData.stallId = `buy-egg:${egg.id}:axoficha`;
+
+      hotspots.push(eggMesh);
+
+      // Name label
+      const labelText = isAstral ? "ASTRAL" : "COMÚN";
+      const nameTag = textPlane(labelText, 0.042, "#ffffff");
+      nameTag.position.set(0, 0.18, 0.12);
+      eggMesh.add(nameTag);
+
+      // Prices
+      const hasAxf = egg.price_axg != null;
+      const hasFrj = egg.price_gal != null && egg.price_gal > 0;
+
+      if (hasAxf && hasFrj) {
+        const axfBadge = sign(`💎 ${egg.price_axg}`, 0.095, 0x1c1c35, "#e4007c");
+        axfBadge.position.set(-0.14, -0.20, 0.12);
+        axfBadge.userData.stallId = `buy-egg:${egg.id}:axoficha`;
+        eggMesh.add(axfBadge);
+        hotspots.push(axfBadge);
+
+        const frjBadge = sign(`🪙 ${egg.price_gal}`, 0.095, 0x1c1910, "#d97706");
+        frjBadge.position.set(0.16, -0.20, 0.12);
+        frjBadge.userData.stallId = `buy-egg:${egg.id}:frijolito`;
+        eggMesh.add(frjBadge);
+        hotspots.push(frjBadge);
+      } else if (hasAxf) {
+        const axfBadge = sign(`💎 ${egg.price_axg}`, 0.095, 0x1c1c35, "#e4007c");
+        axfBadge.position.set(0, -0.20, 0.12);
+        axfBadge.userData.stallId = `buy-egg:${egg.id}:axoficha`;
+        eggMesh.add(axfBadge);
+        hotspots.push(axfBadge);
+      } else if (hasFrj) {
+        const frjBadge = sign(`🪙 ${egg.price_gal}`, 0.095, 0x1c1910, "#d97706");
+        frjBadge.position.set(0, -0.20, 0.12);
+        frjBadge.userData.stallId = `buy-egg:${egg.id}:frijolito`;
+        eggMesh.add(frjBadge);
+        hotspots.push(frjBadge);
+      }
+
+      dynamicEggsRef!.add(eggMesh);
+
+      dynamicEggAnimations.push({
+        mesh: eggMesh,
+        baseHeight: 0.88,
+        phase: i * 1.5,
+      });
+    });
+  };
+
+  const setBoosterShopActive = (active: boolean) => {
+    boosterShopActive = active;
+    
+    // Dim static packs to 35% opacity on active to push them to the background
+    if (staticPacksRef) {
+      staticPacksRef.traverse((child) => {
+        const mesh = child as THREE.Mesh;
+        if (mesh.material) {
+          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          for (const m of mats) {
+            const mat = m as THREE.MeshStandardMaterial;
+            mat.transparent = true;
+            mat.opacity = active ? 0.35 : 1.0;
+          }
+        }
+      });
+    }
+
+    if (dynamicPacksRef) dynamicPacksRef.visible = active;
+
+    if (active) {
+      if (!speechBubbleMesh && boosterAttendantPos) {
+        const greetings = [
+          "¡Órale marchante!\n¿Qué sobre te llevas?",
+          "¡Pásale! Cartas\nfresquecitas recién\nllegadas.",
+          "¡Bienvenido! Tengo los\nmejores sobrecitos.",
+          "¿Buscas cartas raras?\n¡Es tu día de suerte!",
+          "¡Hola! Echa un ojo a\nnuestros sobrecitos ✨"
+        ];
+        const greeting = greetings[Math.floor(Math.random() * greetings.length)];
+        const bubble = sign(greeting, 0.38, 0xffffff, "#1a102f");
+        // Center bubble slightly above the Axolotito salesman head
+        bubble.position.set(
+          boosterAttendantPos.x,
+          boosterAttendantPos.y + 1.25 + 0.3,
+          boosterAttendantPos.z + 0.2
+        );
+        world.add(bubble);
+        billboards.push(bubble);
+        speechBubbleMesh = bubble;
+      }
+    } else {
+      if (speechBubbleMesh) {
+        world.remove(speechBubbleMesh);
+        const idx = billboards.indexOf(speechBubbleMesh);
+        if (idx !== -1) billboards.splice(idx, 1);
+        speechBubbleMesh.traverse((child) => {
+          const mesh = child as THREE.Mesh;
+          if (mesh.geometry) mesh.geometry.dispose();
+          if (mesh.material) {
+            const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+            for (const m of mats) {
+              if ((m as any).map) (m as any).map.dispose();
+              m.dispose();
+            }
+          }
+        });
+        speechBubbleMesh = null;
+      }
+    }
+  };
+
+  const setAdopcionShopActive = (active: boolean) => {
+    adopcionShopActive = active;
+    
+    // Dim static eggs to 35% opacity on active
+    if (staticEggsRef) {
+      staticEggsRef.traverse((child) => {
+        const mesh = child as THREE.Mesh;
+        if (mesh.material) {
+          const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          for (const m of mats) {
+            const mat = m as THREE.MeshStandardMaterial;
+            mat.transparent = true;
+            mat.opacity = active ? 0.35 : 1.0;
+          }
+        }
+      });
+    }
+
+    if (dynamicEggsRef) dynamicEggsRef.visible = active;
+
+    if (active) {
+      if (!adopcionSpeechBubbleMesh && adopcionAttendantPos) {
+        const greetings = [
+          "¡Adopta un Axolotito!\nCuida bien de su huevo.",
+          "¡Qué emoción!\nElige el huevo que te guste.",
+          "¡Hola! Estos webitos\nestán listos para nacer."
+        ];
+        const greeting = greetings[Math.floor(Math.random() * greetings.length)];
+        const bubble = sign(greeting, 0.38, 0xffffff, "#1a102f");
+        // Center bubble slightly above the Axolotito salesman head
+        bubble.position.set(
+          adopcionAttendantPos.x,
+          adopcionAttendantPos.y + 1.25 + 0.3,
+          adopcionAttendantPos.z + 0.2
+        );
+        world.add(bubble);
+        billboards.push(bubble);
+        adopcionSpeechBubbleMesh = bubble;
+      }
+    } else {
+      if (adopcionSpeechBubbleMesh) {
+        world.remove(adopcionSpeechBubbleMesh);
+        const idx = billboards.indexOf(adopcionSpeechBubbleMesh);
+        if (idx !== -1) billboards.splice(idx, 1);
+        adopcionSpeechBubbleMesh.traverse((child) => {
+          const mesh = child as THREE.Mesh;
+          if (mesh.geometry) mesh.geometry.dispose();
+          if (mesh.material) {
+            const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+            for (const m of mats) {
+              if ((m as any).map) (m as any).map.dispose();
+              m.dispose();
+            }
+          }
+        });
+        adopcionSpeechBubbleMesh = null;
+      }
+    }
   };
 
   return {
@@ -982,7 +1337,44 @@ export function buildTianguisScene3D(
     playMelt(): void {
       (reciclon.userData.melt as (() => void) | undefined)?.();
     },
+    setStoreItems(items: any[]): void {
+      currentStoreItems = items;
+      rebuildDynamicPacks();
+      rebuildDynamicEggs();
+    },
+    setShopActive(stallId: string, active: boolean): void {
+      if (stallId === "booster") {
+        setBoosterShopActive(active);
+      } else if (stallId === "adopcion") {
+        setAdopcionShopActive(active);
+      }
+    },
     dispose(): void {
+      if (dynamicPacksRef) clearGroup(dynamicPacksRef);
+      if (dynamicEggsRef) clearGroup(dynamicEggsRef);
+      
+      const cleanBubble = (b: THREE.Group | null) => {
+        if (!b) return;
+        world.remove(b);
+        const idx = billboards.indexOf(b);
+        if (idx !== -1) billboards.splice(idx, 1);
+        b.traverse((child) => {
+          const mesh = child as THREE.Mesh;
+          if (mesh.geometry) mesh.geometry.dispose();
+          if (mesh.material) {
+            const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+            for (const m of mats) {
+              if ((m as any).map) (m as any).map.dispose();
+              m.dispose();
+            }
+          }
+        });
+      };
+      cleanBubble(speechBubbleMesh);
+      speechBubbleMesh = null;
+      cleanBubble(adopcionSpeechBubbleMesh);
+      adopcionSpeechBubbleMesh = null;
+
       world.traverse((obj) => {
         const mesh = obj as THREE.Mesh;
         if (mesh.geometry) mesh.geometry.dispose();
@@ -994,4 +1386,38 @@ export function buildTianguisScene3D(
       });
     },
   };
+}
+
+function clearGroup(group: THREE.Group): void {
+  while (group.children.length > 0) {
+    const child = group.children[0];
+    group.remove(child);
+    if ((child as THREE.Mesh).geometry) {
+      (child as THREE.Mesh).geometry.dispose();
+    }
+    const mats = Array.isArray((child as THREE.Mesh).material)
+      ? ((child as THREE.Mesh).material as THREE.Material[])
+      : (child as THREE.Mesh).material
+      ? [(child as THREE.Mesh).material as THREE.Material]
+      : [];
+    for (const m of mats) {
+      if ((m as any).map) (m as any).map.dispose();
+      m.dispose();
+    }
+  }
+}
+
+function packTheme3DColor(theme: string) {
+  switch (theme) {
+    case "fiesta":
+      return { mainColor: 0xE4007C, accentColor: 0x9b6df0 };
+    case "nido":
+      return { mainColor: 0x10B981, accentColor: 0x047857 };
+    case "cosmos":
+      return { mainColor: 0x6366F1, accentColor: 0x312E81 };
+    case "foil":
+      return { mainColor: 0xF59E0B, accentColor: 0xD97706 };
+    default:
+      return { mainColor: 0x8B5CF6, accentColor: 0x5B21B6 };
+  }
 }
