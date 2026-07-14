@@ -33,7 +33,7 @@ if not os.path.exists("/.dockerenv"):
         if "@db_axolotto:5432" in db_url:
             os.environ["DATABASE_URL"] = db_url.replace("@db_axolotto:5432", "@127.0.0.1:5433")
 
-from sqlalchemy import text
+from sqlalchemy import text, inspect
 from sqlmodel import Session, select, func
 from app.database import engine
 from app.models.user import User
@@ -51,14 +51,15 @@ _rng = random.SystemRandom()
 
 def _ensure_columns() -> None:
     """Add NPC board columns if they don't exist yet (standalone migration)."""
+    inspector = inspect(engine)
+    cols = {col["name"] for col in inspector.get_columns("playerboard")}
+    migrations = [
+        ("is_npc_pool",  "ALTER TABLE playerboard ADD COLUMN is_npc_pool BOOLEAN NOT NULL DEFAULT FALSE"),
+        ("npc_room",     "ALTER TABLE playerboard ADD COLUMN npc_room VARCHAR(50) NULL"),
+        ("npc_retired",  "ALTER TABLE playerboard ADD COLUMN npc_retired BOOLEAN NOT NULL DEFAULT FALSE"),
+        ("origin_story", "ALTER TABLE playerboard ADD COLUMN origin_story TEXT NULL"),
+    ]
     with engine.connect() as conn:
-        cols = {row[1] for row in conn.execute(text("PRAGMA table_info(playerboard)"))}
-        migrations = [
-            ("is_npc_pool",  "ALTER TABLE playerboard ADD COLUMN is_npc_pool BOOLEAN NOT NULL DEFAULT FALSE"),
-            ("npc_room",     "ALTER TABLE playerboard ADD COLUMN npc_room VARCHAR(50) NULL"),
-            ("npc_retired",  "ALTER TABLE playerboard ADD COLUMN npc_retired BOOLEAN NOT NULL DEFAULT FALSE"),
-            ("origin_story", "ALTER TABLE playerboard ADD COLUMN origin_story TEXT NULL"),
-        ]
         for col, sql in migrations:
             if col not in cols:
                 conn.execute(text(sql))
