@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Optional, Dict
 from sqlmodel import SQLModel, Field, JSON
 from datetime import datetime, timedelta
+from sqlalchemy import Column, BigInteger
 
 class ItemType(str, Enum):
     EGG = "EGG"
@@ -27,8 +28,8 @@ class ItemCatalog(SQLModel, table=True):
     rarity: Rarity = Field(default=Rarity.COMMON)
     
     # --- NUEVA ECONOMÍA (VULN-06: montos en unidad mínima entera) ---
-    price_axg: Optional[int] = Field(default=None) # Precio en AXF (6 decimales)
-    price_gal: Optional[int] = Field(default=None) # Precio en FRJ (4 decimales)
+    price_axg: Optional[int] = Field(default=None, sa_column=Column(BigInteger, nullable=True)) # Precio en AXF (6 decimales)
+    price_gal: Optional[int] = Field(default=None, sa_column=Column(BigInteger, nullable=True)) # Precio en FRJ (4 decimales)
     is_active: bool = Field(default=True)            # Para ocultar ítems agotados de la tienda visual
     # -----------------------------------------------------------------
     

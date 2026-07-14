@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional
 from sqlmodel import SQLModel, Field, Relationship
-from sqlalchemy import CheckConstraint
+from sqlalchemy import CheckConstraint, Column, BigInteger
 import uuid
 
 class CurrencyType(str, Enum):
@@ -52,8 +52,8 @@ class Wallet(SQLModel, table=True):
 
     # Saldos actuales en unidad mínima entera (VULN-06: sin float)
     # 1 AXF = 10**6 unidades mínimas, 1 FRJ = 10**4 unidades mínimas
-    axofichas: int = Field(default=0)
-    frijolitos: int = Field(default=0)
+    axofichas: int = Field(default=0, sa_column=Column(BigInteger, default=0, nullable=False))
+    frijolitos: int = Field(default=0, sa_column=Column(BigInteger, default=0, nullable=False))
 
     @property
     def axogemas(self) -> float:
@@ -101,7 +101,7 @@ class TransactionLedger(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: str = Field(foreign_key="user.privy_did", index=True)
     
-    amount: int
+    amount: int = Field(sa_column=Column(BigInteger, nullable=False))
     currency: CurrencyType
     tx_type: TransactionType
 
@@ -112,7 +112,7 @@ class TransactionLedger(SQLModel, table=True):
     item_id: Optional[int] = Field(default=None, foreign_key="itemcatalog.id", index=True)
 
     # Para auditoría: ¿cuánta comisión se quedó la casa? (unidad mínima)
-    fee_applied: int = Field(default=0)
+    fee_applied: int = Field(default=0, sa_column=Column(BigInteger, default=0, nullable=False))
     
     description: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -135,8 +135,8 @@ class CryptoPurchaseOrder(SQLModel, table=True):
     user_id: str = Field(foreign_key="user.privy_did", index=True)
     pack_id: str                          # "huevito" | "axolotito" | "cenote" | "jackpot"
     usd_amount: float                     # USD fiat (referencia, 2 decimales)
-    usdc_amount: int                      # USDC en unidad mínima (6 decimales)
-    axg_amount: int                       # AXF en unidad mínima (6 decimales)
+    usdc_amount: int = Field(sa_column=Column(BigInteger, nullable=False))                      # USDC en unidad mínima (6 decimales)
+    axg_amount: int = Field(sa_column=Column(BigInteger, nullable=False))                       # AXF en unidad mínima (6 decimales)
     payment_token: str = "USDC"
     treasury_address: str                 # dirección donde el jugador debe enviar
     tx_hash_payment: Optional[str] = Field(default=None, unique=True)  # anti double-mint
@@ -208,7 +208,7 @@ class AxfPurchaseRecord(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     user_id: str = Field(foreign_key="user.privy_did", index=True)
-    axf_amount: int                       # AXF en unidad mínima (6 decimales)
+    axf_amount: int = Field(sa_column=Column(BigInteger, nullable=False))                       # AXF en unidad mínima (6 decimales)
     mxn_amount: float                     # MXN fiat (referencia)
     pack_name: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
