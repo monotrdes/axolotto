@@ -87,7 +87,7 @@ def upgrade():
 
     # ── CryptoPurchaseOrder ──────────────────────────────────────────────
     _migrate_column("cryptopurchaseorder", "usdc_amount", 1)  # ya en mínima unidad
-    _migrate_column("cryptopurchaseorder", "axg_amount", AXF_FACTOR)
+    _migrate_column("cryptopurchaseorder", "axf_amount", AXF_FACTOR)
 
     # Nota: TransactionLedger.amount migra 1:1 porque es un registro histórico.
     # Las nuevas escrituras ya usan montos en unidad mínima entera.
@@ -166,8 +166,8 @@ def downgrade():
 
     # ── CryptoPurchaseOrder ──────────────────────────────────────────────
     op.execute(
-        f'ALTER TABLE "cryptopurchaseorder" ALTER COLUMN "axg_amount" '
-        f'TYPE DOUBLE PRECISION USING "axg_amount"::double precision / {AXF_FACTOR}'
+        f'ALTER TABLE "cryptopurchaseorder" ALTER COLUMN "axf_amount" '
+        f'TYPE DOUBLE PRECISION USING "axf_amount"::double precision / {AXF_FACTOR}'
     )
     op.execute(
         f'ALTER TABLE "cryptopurchaseorder" ALTER COLUMN "usdc_amount" '
