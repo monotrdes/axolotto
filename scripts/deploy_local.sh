@@ -136,6 +136,18 @@ update_or_add_env "PLASMA_RPC_URL"        "http://anvil_axolotto:8545" "$BACKEND
 
 echo "   ✅ Variables de entorno actualizadas"
 
+# ── 6. Actualizar variables de entorno del frontend ───────────────────────────
+FRONTEND_ENV="frontend/.env.local"
+if [ -f "$FRONTEND_ENV" ]; then
+    echo ""
+    echo "⚙️  Actualizando $FRONTEND_ENV con direcciones de contratos locales..."
+    update_or_add_env "NEXT_PUBLIC_GEMA_ALGA_ADDRESS" "$GAL_ADDR" "$FRONTEND_ENV"
+    update_or_add_env "NEXT_PUBLIC_AXOGEMA_ADDRESS" "$AXG_ADDR" "$FRONTEND_ENV"
+    update_or_add_env "NEXT_PUBLIC_WEBITOS_ADDRESS" "$WEBITOS_ADDR" "$FRONTEND_ENV"
+    update_or_add_env "NEXT_PUBLIC_GAME_CONTROLLER_ADDRESS" "$CONTROLLER_ADDR" "$FRONTEND_ENV"
+    echo "   ✅ Variables de entorno del frontend actualizadas"
+fi
+
 echo ""
 echo "══════════════════════════════════════════════════════════════"
 echo "  ✅ ¡Deploy completo! Anvil corriendo (PID: $ANVIL_PID)"
