@@ -28,21 +28,21 @@ FRJ_FACTOR = 10 ** 4   # 1 FRJ = 10,000 unidades mínimas
 
 
 def _migrate_column(table: str, column: str, factor: int):
-    """Convierte una columna float a integer multiplicando por factor y redondeando."""
+    """Convierte una columna float a bigint multiplicando por factor y redondeando."""
     # Usamos ROUND para evitar polvo (dust) en la conversión
     op.execute(
         f'ALTER TABLE "{table}" ALTER COLUMN "{column}" '
-        f'TYPE INTEGER USING ROUND("{column}"::numeric * {factor})::integer'
+        f'TYPE BIGINT USING ROUND("{column}"::numeric * {factor})::bigint'
     )
 
 
 def _migrate_nullable_column(table: str, column: str, factor: int):
-    """Convierte columna float nullable a integer nullable."""
+    """Convierte columna float nullable a bigint nullable."""
     op.execute(
         f'ALTER TABLE "{table}" ALTER COLUMN "{column}" '
-        f'TYPE INTEGER USING '
+        f'TYPE BIGINT USING '
         f'CASE WHEN "{column}" IS NULL THEN NULL '
-        f'ELSE ROUND("{column}"::numeric * {factor})::integer END'
+        f'ELSE ROUND("{column}"::numeric * {factor})::bigint END'
     )
 
 
