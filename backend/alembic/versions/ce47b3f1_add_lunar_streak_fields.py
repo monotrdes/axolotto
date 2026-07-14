@@ -16,14 +16,14 @@ depends_on: Union[Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('users', sa.Column('lunar_streak_day', sa.Integer(), nullable=False, server_default='0'))
-    op.add_column('users', sa.Column('lunar_week', sa.Integer(), nullable=False, server_default='1'))
-    op.add_column('users', sa.Column('lunar_last_claim_at', sa.DateTime(), nullable=True))
-    op.add_column('users', sa.Column('lunar_cycles_completed', sa.Integer(), nullable=False, server_default='0'))
+    op.add_column('user', sa.Column('lunar_streak_day', sa.Integer(), nullable=False, server_default='0'))
+    op.add_column('user', sa.Column('lunar_week', sa.Integer(), nullable=False, server_default='1'))
+    op.add_column('user', sa.Column('lunar_last_claim_at', sa.DateTime(), nullable=True))
+    op.add_column('user', sa.Column('lunar_cycles_completed', sa.Integer(), nullable=False, server_default='0'))
 
 
 def downgrade() -> None:
-    op.drop_column('users', 'lunar_cycles_completed')
-    op.drop_column('users', 'lunar_last_claim_at')
-    op.drop_column('users', 'lunar_week')
-    op.drop_column('users', 'lunar_streak_day')
+    op.drop_column('user', 'lunar_cycles_completed')
+    op.drop_column('user', 'lunar_last_claim_at')
+    op.drop_column('user', 'lunar_week')
+    op.drop_column('user', 'lunar_streak_day')
