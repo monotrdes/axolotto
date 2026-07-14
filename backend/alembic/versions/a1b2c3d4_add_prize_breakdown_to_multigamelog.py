@@ -26,30 +26,30 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column('multigamelog', sa.Column(
+    op.add_column('multiplayergamelog', sa.Column(
         'prize_breakdown_json', sa.Text(), nullable=True
     ))
-    op.add_column('multigamelog', sa.Column(
+    op.add_column('multiplayergamelog', sa.Column(
         'won_premio_1', sa.Boolean(), nullable=False, server_default=sa.text('0')
     ))
-    op.add_column('multigamelog', sa.Column(
+    op.add_column('multiplayergamelog', sa.Column(
         'won_premio_2', sa.Boolean(), nullable=False, server_default=sa.text('0')
     ))
-    op.add_column('multigamelog', sa.Column(
+    op.add_column('multiplayergamelog', sa.Column(
         'won_jackpot', sa.Boolean(), nullable=False, server_default=sa.text('0')
     ))
-    op.add_column('multigamelog', sa.Column(
+    op.add_column('multiplayergamelog', sa.Column(
         'entry_fee_paid', sa.Float(), nullable=False, server_default=sa.text('0')
     ))
-    op.add_column('multigamelog', sa.Column(
+    op.add_column('multiplayergamelog', sa.Column(
         'gross_prize_gal', sa.Float(), nullable=False, server_default=sa.text('0')
     ))
 
 
 def downgrade() -> None:
-    op.drop_column('multigamelog', 'gross_prize_gal')
-    op.drop_column('multigamelog', 'entry_fee_paid')
-    op.drop_column('multigamelog', 'won_jackpot')
-    op.drop_column('multigamelog', 'won_premio_2')
-    op.drop_column('multigamelog', 'won_premio_1')
-    op.drop_column('multigamelog', 'prize_breakdown_json')
+    op.drop_column('multiplayergamelog', 'gross_prize_gal')
+    op.drop_column('multiplayergamelog', 'entry_fee_paid')
+    op.drop_column('multiplayergamelog', 'won_jackpot')
+    op.drop_column('multiplayergamelog', 'won_premio_2')
+    op.drop_column('multiplayergamelog', 'won_premio_1')
+    op.drop_column('multiplayergamelog', 'prize_breakdown_json')
