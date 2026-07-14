@@ -30,13 +30,13 @@ def upgrade() -> None:
         'prize_breakdown_json', sa.Text(), nullable=True
     ))
     op.add_column('multiplayergamelog', sa.Column(
-        'won_premio_1', sa.Boolean(), nullable=False, server_default=sa.text('0')
+        'won_premio_1', sa.Boolean(), nullable=False, server_default=sa.text('false')
     ))
     op.add_column('multiplayergamelog', sa.Column(
-        'won_premio_2', sa.Boolean(), nullable=False, server_default=sa.text('0')
+        'won_premio_2', sa.Boolean(), nullable=False, server_default=sa.text('false')
     ))
     op.add_column('multiplayergamelog', sa.Column(
-        'won_jackpot', sa.Boolean(), nullable=False, server_default=sa.text('0')
+        'won_jackpot', sa.Boolean(), nullable=False, server_default=sa.text('false')
     ))
     op.add_column('multiplayergamelog', sa.Column(
         'entry_fee_paid', sa.Float(), nullable=False, server_default=sa.text('0')
