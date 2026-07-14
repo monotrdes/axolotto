@@ -404,6 +404,28 @@ class Web3Service:
         )
         return Web3Service._send_tx(contract.functions.updateStats(token_id, s), w3)
 
+    @staticmethod
+    def _map_catalog_to_contract_ids(card_ids: list[int]) -> list[int]:
+        """Maps catalog card IDs (db auto-increment IDs) to contract IDs (1-54) using database metadata."""
+        if not card_ids:
+            return []
+        try:
+            from sqlmodel import Session, select
+            from app.database import engine
+            from app.models.items import ItemCatalog
+            with Session(engine) as session:
+                items = session.exec(select(ItemCatalog).where(ItemCatalog.id.in_(card_ids))).all()
+                id_to_num = {}
+                for item in items:
+                    num = item.item_metadata.get("numero_loteria") if item.item_metadata else None
+                    if num is not None:
+                        id_to_num[item.id] = num
+                return [id_to_num.get(cid, cid - 11) for cid in card_ids]
+        except Exception as e:
+            # Fallback to cid - 11 on any database query exception
+            print(f"Error mapping catalog IDs to contract IDs: {e}. Falling back to default offset.")
+            return [cid - 11 for cid in card_ids]
+
     # ── Cartas Lotería (ERC-1155) ─────────────────────────────────────────────
 
     @staticmethod
@@ -411,8 +433,8 @@ class Web3Service:
         """Acuña múltiples cartas (al abrir un sobre)."""
         w3 = Web3Service._get_w3()
         player = Web3.to_checksum_address(player_address)
-        # Convertir IDs del catálogo (12-65) a IDs del contrato (1-54)
-        contract_ids = [cid - 11 for cid in card_ids]
+        # Convertir IDs del catálogo a IDs del contrato (1-54)
+        contract_ids = Web3Service._map_catalog_to_contract_ids(card_ids)
         abi = _load_abi("CartasLoteria") or _CARTAS_ABI_MINIMAL
         contract = w3.eth.contract(address=Web3.to_checksum_address(settings.CARDS_ADDRESS), abi=abi)
         return Web3Service._send_tx(contract.functions.mintCards(player, contract_ids, amounts), w3)
@@ -502,8 +524,8 @@ class Web3Service:
         player = Web3.to_checksum_address(player_address)
         assert len(card_ids) == 16, "Se necesitan exactamente 16 cartas"
         
-        # Convertir IDs del catálogo (12-65) a IDs del contrato (1-54)
-        contract_ids = [cid - 11 for cid in card_ids]
+        # Convertir IDs del catálogo a IDs del contrato (1-54)
+        contract_ids = Web3Service._map_catalog_to_contract_ids(card_ids)
         abi = _load_abi("TablasLoteria") or _TABLAS_ABI_MINIMAL
         contract = w3.eth.contract(address=Web3.to_checksum_address(settings.TABLAS_ADDRESS), abi=abi)
         # Convertir lista de 16 a tuple para Solidity uint256[16]
@@ -587,8 +609,8 @@ class Web3Service:
         w3 = Web3Service._get_w3()
         npc_wallet = Web3.to_checksum_address(settings.NPC_WALLET_ADDRESS)
 
-        # Convert catalog IDs (12-65) to contract IDs (1-54)
-        contract_ids = tuple(cid - 11 for cid in card_ids[:16])
+        # Convert catalog IDs to contract IDs (1-54)
+        contract_ids = tuple(Web3Service._map_catalog_to_contract_ids(card_ids[:16]))
 
         abi = _load_abi("TablasLoteria") or _TABLAS_ABI_MINIMAL
         contract = w3.eth.contract(
