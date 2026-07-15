@@ -6,12 +6,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title Frijolito (FRJ)
- * @notice Moneda principal del juego Axolotto.
- *         Se gana jugando, se gasta en la tienda, tablas, comida y cuotas de entrada.
- *         Solo el GameController puede hacer mint/burn.
+ * @notice Crédito cerrado de utilidad de Axolotto. No es transferible entre
+ *         jugadores ni redimible. El sistema sólo puede emitirlo o consumirlo
+ *         mediante mint/burn autorizados.
  */
 contract Frijolito is ERC20, Ownable {
     address public gameController;
+    error PlayerTransfersDisabled();
 
     event GameControllerUpdated(address indexed oldController, address indexed newController);
 
@@ -36,5 +37,12 @@ contract Frijolito is ERC20, Ownable {
     /// @notice Quema FRJ desde una dirección (usado al gastar en la tienda/cuotas)
     function burn(address from, uint256 amount) external onlyController {
         _burn(from, amount);
+    }
+
+    function _update(address from, address to, uint256 amount) internal override {
+        if (from != address(0) && to != address(0)) {
+            revert PlayerTransfersDisabled();
+        }
+        super._update(from, to, amount);
     }
 }

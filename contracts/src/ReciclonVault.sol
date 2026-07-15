@@ -2,129 +2,130 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+
+interface ICartasLoteriaVaultBurn {
+    function burnVaultCards(uint256 id, uint256 amount) external;
+}
 
 /**
  * @title ReciclonVault
  * @notice Custodia de cartas recicladas de El Reciclon.
- *         Las cartas ERC-1155 se transfieren aqui via CartasLoteria.transferCard()
- *         y quedan en custodia permanente. El controller puede ejecutar batchBurn
- *         para destruirlas definitivamente en lote.
+ *         Solo acepta el ERC-1155 CartasLoteria configurado. Los callbacks del
+ *         estandar registran cada recepcion real y el owner puede ejecutar
+ *         batchBurn para destruir definitivamente cartas de este mismo vault.
  *
  *         Flujo:
- *         1. Jugador recicla → backend llama CartasLoteria.transferCard(jugador, vault, id, amount)
+ *         1. Jugador recicla y transfiere CartasLoteria al vault
  *         2. Cartas quedan en este contrato
- *         3. (Opcional) Controller llama batchBurn(ids, amounts) → CartasLoteria.burnCard(vault, id, amount)
+ *         3. El owner operativo llama batchBurn(ids, amounts)
+ *
+ *         La propiedad debe transferirse a un Safe antes de produccion. No se
+ *         conserva un operador fijo adicional: Ownable ya permite rotar el
+ *         control sin redeploy y evita una segunda llave privilegiada.
  */
-contract ReciclonVault is Ownable {
+contract ReciclonVault is ERC1155Holder, Ownable {
     /// @notice Contrato CartasLoteria (ERC-1155) autorizado para burn
-    address public cartasLoteria;
+    address public immutable cartasLoteria;
 
-    /// @notice Direccion del GameController autorizada para operar
-    address public controller;
-
-    /// @notice Total de cartas recibidas (acumulativo, solo lectura)
+    /// @notice Totales acumulativos y saldo actualmente custodiado.
     uint256 public totalCardsReceived;
+    uint256 public totalCardsBurned;
+    uint256 public totalCardsHeld;
 
     event CardsReceived(address indexed from, uint256[] ids, uint256[] amounts);
     event CardsBurned(uint256[] ids, uint256[] amounts);
 
-    modifier onlyController() {
-        require(
-            msg.sender == controller || msg.sender == owner(),
-            "ReciclonVault: No autorizado"
-        );
-        _;
-    }
+    error UnauthorizedToken(address token);
+    error DeclarativeAccountingDisabled();
 
-    constructor(address _cartasLoteria, address _controller) Ownable(msg.sender) {
-        require(_cartasLoteria != address(0), "ReciclonVault: cartasLoteria es cero");
-        require(_controller != address(0), "ReciclonVault: controller es cero");
-        cartasLoteria = _cartasLoteria;
-        controller = _controller;
-    }
-
-    function setController(address _controller) external onlyOwner {
-        require(_controller != address(0), "ReciclonVault: controller es cero");
-        controller = _controller;
-    }
-
-    function setCartasLoteria(address _cartasLoteria) external onlyOwner {
+    constructor(address _cartasLoteria) Ownable(msg.sender) {
         require(_cartasLoteria != address(0), "ReciclonVault: cartasLoteria es cero");
         cartasLoteria = _cartasLoteria;
+    }
+
+    /// @dev Registra una recepcion simple confirmada por el callback ERC-1155.
+    function onERC1155Received(address, address from, uint256 id, uint256 amount, bytes memory)
+        public
+        override
+        returns (bytes4)
+    {
+        if (msg.sender != cartasLoteria) revert UnauthorizedToken(msg.sender);
+
+        uint256[] memory ids = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+        ids[0] = id;
+        amounts[0] = amount;
+        _recordReceipt(from, ids, amounts);
+
+        return this.onERC1155Received.selector;
+    }
+
+    /// @dev Registra una recepcion batch confirmada por el callback ERC-1155.
+    function onERC1155BatchReceived(address, address from, uint256[] memory ids, uint256[] memory amounts, bytes memory)
+        public
+        override
+        returns (bytes4)
+    {
+        if (msg.sender != cartasLoteria) revert UnauthorizedToken(msg.sender);
+        _recordReceipt(from, ids, amounts);
+        return this.onERC1155BatchReceived.selector;
     }
 
     /// @notice Quema en lote las cartas custodiadas en este contrato.
-    ///         Llama a CartasLoteria.burnCard(vault, id, amount) por cada entrada.
-    ///         Solo el controller o el owner pueden ejecutarlo.
-    function batchBurn(uint256[] calldata ids, uint256[] calldata amounts) external onlyController {
+    ///         Llama a CartasLoteria.burnVaultCards(id, amount) por cada entrada.
+    ///         Solo el owner rotatable puede ejecutarlo.
+    function batchBurn(uint256[] calldata ids, uint256[] calldata amounts) external onlyOwner {
         require(ids.length == amounts.length, "ReciclonVault: arrays no coinciden");
         require(ids.length > 0, "ReciclonVault: arrays vacios");
 
-        // Interface minima para burnCard
-        (bool success, ) = cartasLoteria.call(
-            abi.encodeWithSignature(
-                "burnCard(address,uint256,uint256)",
-                address(this),
-                0,  // placeholder, se itera abajo
-                0
-            )
-        );
-        // Nota: el call de arriba es solo para verificacion temprana.
-        // Hacemos las llamadas reales en el loop.
-
+        uint256 totalToBurn = 0;
         for (uint256 i = 0; i < ids.length; i++) {
             require(ids[i] >= 1 && ids[i] <= 54, "ReciclonVault: ID invalido");
             require(amounts[i] > 0, "ReciclonVault: amount cero");
-
-            (bool ok, bytes memory data) = cartasLoteria.call(
-                abi.encodeWithSignature(
-                    "burnCard(address,uint256,uint256)",
-                    address(this),
-                    ids[i],
-                    amounts[i]
-                )
+            require(
+                IERC1155(cartasLoteria).balanceOf(address(this), ids[i]) >= amounts[i],
+                "ReciclonVault: saldo insuficiente"
             );
-            require(ok, string(abi.encodePacked("ReciclonVault: burnCard fallo para id=", toString(ids[i]))));
+            totalToBurn += amounts[i];
         }
 
-        totalCardsReceived -= _sum(amounts);
+        require(totalToBurn <= totalCardsHeld, "ReciclonVault: custodia insuficiente");
+        totalCardsHeld -= totalToBurn;
+        totalCardsBurned += totalToBurn;
+
+        for (uint256 i = 0; i < ids.length; i++) {
+            ICartasLoteriaVaultBurn(cartasLoteria).burnVaultCards(ids[i], amounts[i]);
+        }
+
+        _assertAccounting();
         emit CardsBurned(ids, amounts);
     }
 
-    /// @notice Registra recepcion de cartas (llamado externamente o via evento).
-    ///         Como las cartas llegan via CartasLoteria.transferCard(), el backend
-    ///         debe llamar esta funcion para mantener el contador actualizado.
-    function registerReceipt(uint256[] calldata ids, uint256[] calldata amounts) external onlyController {
+    /// @notice ABI legacy neutralizada: la contabilidad solo cambia por callbacks reales.
+    function registerReceipt(uint256[] calldata, uint256[] calldata) external pure {
+        revert DeclarativeAccountingDisabled();
+    }
+
+    function _recordReceipt(address from, uint256[] memory ids, uint256[] memory amounts) internal {
         require(ids.length == amounts.length, "ReciclonVault: arrays no coinciden");
-        uint256 total = _sum(amounts);
-        totalCardsReceived += total;
-        emit CardsReceived(msg.sender, ids, amounts);
+        require(ids.length > 0, "ReciclonVault: arrays vacios");
+
+        uint256 totalReceived = 0;
+        for (uint256 i = 0; i < ids.length; i++) {
+            require(ids[i] >= 1 && ids[i] <= 54, "ReciclonVault: ID invalido");
+            require(amounts[i] > 0, "ReciclonVault: amount cero");
+            totalReceived += amounts[i];
+        }
+
+        totalCardsReceived += totalReceived;
+        totalCardsHeld += totalReceived;
+        _assertAccounting();
+        emit CardsReceived(from, ids, amounts);
     }
 
-    // ── Helpers ──
-
-    function _sum(uint256[] memory arr) internal pure returns (uint256) {
-        uint256 s = 0;
-        for (uint256 i = 0; i < arr.length; i++) {
-            s += arr[i];
-        }
-        return s;
-    }
-
-    function toString(uint256 value) internal pure returns (string memory) {
-        if (value == 0) return "0";
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 10;
-        }
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
-            value /= 10;
-        }
-        return string(buffer);
+    function _assertAccounting() internal view {
+        assert(totalCardsReceived == totalCardsBurned + totalCardsHeld);
     }
 }

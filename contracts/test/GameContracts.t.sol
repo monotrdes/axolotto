@@ -79,7 +79,7 @@ contract GameContractsTest is Test {
         frj.mint(player, 1000 ether);
     }
 
-    function testFuzz_TransferGAL(address to, uint256 amount) public {
+    function testFuzz_TransferFRJIsDisabled(address to, uint256 amount) public {
         vm.assume(to != address(0));
         vm.assume(to != address(frj));
         vm.assume(to != address(controller));
@@ -94,14 +94,15 @@ contract GameContractsTest is Test {
         
         assertEq(frj.balanceOf(player), amount);
         
+        vm.expectRevert(Frijolito.PlayerTransfersDisabled.selector);
         vm.prank(player);
         frj.transfer(to, amount);
         
-        assertEq(frj.balanceOf(to), amount);
-        assertEq(frj.balanceOf(player), 0);
+        assertEq(frj.balanceOf(to), 0);
+        assertEq(frj.balanceOf(player), amount);
     }
 
-    function testFuzz_TransferAXG(address to, uint256 amount) public {
+    function testFuzz_TransferAXFIsDisabled(address to, uint256 amount) public {
         vm.assume(to != address(0));
         vm.assume(to != address(axf));
         vm.assume(to != address(controller));
@@ -115,11 +116,12 @@ contract GameContractsTest is Test {
         
         assertEq(axf.balanceOf(player), amount);
         
+        vm.expectRevert(Axoficha.PlayerTransfersDisabled.selector);
         vm.prank(player);
         axf.transfer(to, amount);
         
-        assertEq(axf.balanceOf(to), amount);
-        assertEq(axf.balanceOf(player), 0);
+        assertEq(axf.balanceOf(to), 0);
+        assertEq(axf.balanceOf(player), amount);
     }
 
     // ── Tests de Webitos ──────────────────────────────────────────────────────
@@ -249,6 +251,9 @@ contract GameContractsTest is Test {
         for (uint256 i = 0; i < 16; i++) layout[i] = i + 1;
         uint256 tableId = controller.crearTabla(player, layout, 25 ether);
 
+        // Sembrar progresión para verificar que no quede estado huérfano.
+        tablasC.updateTableStats(tableId, true, 15);
+
         // Disolver tabla — destruir carta índice 0 (carta ID 1)
         tablasC.dissolveBoard(tableId, 0);
         vm.stopPrank();
@@ -261,6 +266,23 @@ contract GameContractsTest is Test {
         assertEq(cartasC.balanceOf(player, 1), 0); // destruida
         assertEq(cartasC.balanceOf(player, 2), 1); // devuelta
         assertEq(cartasC.balanceOf(player, 16), 1); // devuelta
+
+        // La carta seleccionada se quemó realmente: no queda en escrow y baja el supply.
+        assertEq(cartasC.balanceOf(address(tablasC), 1), 0);
+        assertEq(cartasC.totalSupplyOf(1), 0);
+        assertEq(cartasC.totalSupplyOf(2), 1);
+
+        // Ninguna carta ni estado de progresión queda asociado a la tabla destruida.
+        for (uint256 i = 1; i <= 16; i++) {
+            assertEq(cartasC.balanceOf(address(tablasC), i), 0);
+        }
+        uint256[16] memory clearedLayout = tablasC.getLayout(tableId);
+        for (uint256 i = 0; i < 16; i++) {
+            assertEq(clearedLayout[i], 0);
+        }
+        assertEq(tablasC.gamesPlayed(tableId), 0);
+        assertEq(tablasC.gamesWon(tableId), 0);
+        assertEq(tablasC.xpOf(tableId), 0);
     }
 
     function test_DisolverTablaSegura() public {
@@ -282,6 +304,9 @@ contract GameContractsTest is Test {
         for (uint256 i = 0; i < 16; i++) layout[i] = i + 1;
         uint256 tableId = controller.crearTabla(player, layout, 25 ether);
 
+        // La ruta segura también debe limpiar toda la progresión al quemar el NFT.
+        tablasC.updateTableStats(tableId, true, 25);
+
         // Disolver tabla de manera segura (con solvente) — todas las 16 cartas devueltas
         tablasC.dissolveBoardSafe(tableId);
         vm.stopPrank();
@@ -293,7 +318,17 @@ contract GameContractsTest is Test {
         // Las 16 cartas devueltas intactas
         for (uint256 i = 0; i < 16; i++) {
             assertEq(cartasC.balanceOf(player, i + 1), 1);
+            assertEq(cartasC.balanceOf(address(tablasC), i + 1), 0);
+            assertEq(cartasC.totalSupplyOf(i + 1), 1);
         }
+
+        uint256[16] memory clearedLayout = tablasC.getLayout(tableId);
+        for (uint256 i = 0; i < 16; i++) {
+            assertEq(clearedLayout[i], 0);
+        }
+        assertEq(tablasC.gamesPlayed(tableId), 0);
+        assertEq(tablasC.gamesWon(tableId), 0);
+        assertEq(tablasC.xpOf(tableId), 0);
     }
 
 

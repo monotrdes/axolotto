@@ -11,6 +11,7 @@ import "../src/Sobrecito.sol";
 import "../src/TablasLoteria.sol";
 import "../src/Consumables.sol";
 import "../src/GameController.sol";
+import "../src/ReciclonVault.sol";
 
 /**
  * @title Deploy
@@ -59,6 +60,7 @@ contract Deploy is Script {
 
         // ── 5. GameController ─────────────────────────────────────────────────
         GameController controller = new GameController(deployer);
+        ReciclonVault reciclonVault = new ReciclonVault(address(cartasContract));
 
         controller.configurar(
             address(frj),
@@ -78,9 +80,16 @@ contract Deploy is Script {
         axolotitoContract.setGameController(address(controller));
         cartasContract.setGameController(address(controller));
         cartasContract.setTablasContract(address(tablasContract));
+        cartasContract.setReciclonVault(address(reciclonVault));
         sobrecitosContract.setGameController(address(controller));
         tablasContract.setGameController(address(controller));
         consumablesContract.setGameController(address(controller));
+
+        require(
+            cartasContract.reciclonVault() == address(reciclonVault) &&
+                reciclonVault.cartasLoteria() == address(cartasContract),
+            "Deploy: wiring Reciclon invalido"
+        );
 
         vm.stopBroadcast();
 
@@ -94,6 +103,7 @@ contract Deploy is Script {
         console.log("DEPLOYED_TABLAS=%s", address(tablasContract));
         console.log("DEPLOYED_CONSUMABLES=%s", address(consumablesContract));
         console.log("DEPLOYED_GAME_CONTROLLER=%s", address(controller));
+        console.log("DEPLOYED_RECICLON_VAULT=%s", address(reciclonVault));
         console.log("DEPLOYER_ADDRESS=%s", deployer);
     }
 }

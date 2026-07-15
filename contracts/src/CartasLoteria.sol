@@ -14,11 +14,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract CartasLoteria is ERC1155, Ownable {
     address public gameController;
     address public tablasContract; // Contrato de tablas autorizado para escrow
+    address public reciclonVault; // Vault autorizado para quemar solo su propia custodia
 
     // Supply actual por carta
     mapping(uint256 => uint256) public totalSupplyOf;
 
     event CartasMinted(address indexed to, uint256[] ids, uint256[] amounts);
+    event ReciclonVaultConfigured(address indexed vault);
 
     modifier onlyController() {
         require(
@@ -43,6 +45,14 @@ contract CartasLoteria is ERC1155, Ownable {
         tablasContract = _tablas;
     }
 
+    /// @notice Configura una sola vez el vault de reciclaje.
+    function setReciclonVault(address _vault) external onlyOwner {
+        require(_vault != address(0), "CartasLoteria: vault es cero");
+        require(reciclonVault == address(0), "CartasLoteria: vault ya configurado");
+        reciclonVault = _vault;
+        emit ReciclonVaultConfigured(_vault);
+    }
+
     function setURI(string memory uri_) external onlyOwner {
         _setURI(uri_);
     }
@@ -63,17 +73,29 @@ contract CartasLoteria is ERC1155, Ownable {
 
     /// @notice Quema cartas (al destruir una carta en el desmontaje de tabla)
     function burnCard(address from, uint256 id, uint256 amount) external onlyController {
+        require(from != reciclonVault, "CartasLoteria: usar burnVaultCards");
         totalSupplyOf[id] -= amount;
         _burn(from, id, amount);
     }
 
+    /// @notice Permite al ReciclonVault quemar exclusivamente cartas de su propio saldo.
+    function burnVaultCards(uint256 id, uint256 amount) external {
+        require(msg.sender == reciclonVault && reciclonVault != address(0), "CartasLoteria: vault no autorizado");
+        require(id >= 1 && id <= 54, "CartasLoteria: ID de carta invalido");
+        require(amount > 0, "CartasLoteria: amount cero");
+        totalSupplyOf[id] -= amount;
+        _burn(msg.sender, id, amount);
+    }
+
     /// @notice Aprueba al contrato de Tablas para mover cartas (para escrow)
     function setApprovalForTablas(address owner_, bool approved) external onlyController {
+        require(owner_ != reciclonVault, "CartasLoteria: vault no aprobable");
         _setApprovalForAll(owner_, tablasContract, approved);
     }
 
     /// @notice Transfiere cartas de una dirección a otra (usado por GameController)
     function transferCard(address from, address to, uint256 id, uint256 amount) external onlyController {
+        require(from != reciclonVault, "CartasLoteria: vault no transferible");
         _safeTransferFrom(from, to, id, amount, "");
     }
 }

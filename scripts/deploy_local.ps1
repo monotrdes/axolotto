@@ -17,7 +17,7 @@ $ScriptDir = $PSScriptRoot
 $Root = Split-Path $ScriptDir -Parent
 $ContractsDir = Join-Path $Root "contracts"
 $BackendEnv = Join-Path $Root "backend\.env"
-$FrontendEnv = Join-Path $Root "frontend\env.local"
+$FrontendEnv = Join-Path $Root "frontend\.env.local"
 $DeployerKey = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 $DeployerAddr = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 $FoundryImage = "ghcr.io/foundry-rs/foundry:latest"
@@ -133,6 +133,7 @@ $BOOSTERS   = Extract-Addr "SOBRECITOS"
 $TABLAS     = Extract-Addr "TABLAS"
 $CONSUMABLES = Extract-Addr "CONSUMABLES"
 $CONTROLLER = Extract-Addr "GAME_CONTROLLER"
+$RECICLON_VAULT = Extract-Addr "RECICLON_VAULT"
 
 Write-Host ""
 Write-Host "[addrs] Contratos desplegados:"
@@ -145,6 +146,7 @@ Write-Host "   Boosters (ERC-1155):   $BOOSTERS"
 Write-Host "   Tablas (ERC-721):      $TABLAS"
 Write-Host "   Consumables (ERC-1155):$CONSUMABLES"
 Write-Host "   GameController:        $CONTROLLER"
+Write-Host "   ReciclonVault:         $RECICLON_VAULT"
 
 # -- 5. Actualizar backend/.env --------------------------------------------
 
@@ -163,6 +165,7 @@ Update-OrAddEnv "BOOSTERS_ADDRESS"         $BOOSTERS                     $Backen
 Update-OrAddEnv "TABLAS_ADDRESS"           $TABLAS                       $BackendEnv
 Update-OrAddEnv "CONSUMABLES_ADDRESS"      $CONSUMABLES                  $BackendEnv
 Update-OrAddEnv "GAME_CONTROLLER_ADDRESS"  $CONTROLLER                   $BackendEnv
+Update-OrAddEnv "RECICLON_VAULT_ADDRESS"   $RECICLON_VAULT              $BackendEnv
 Update-OrAddEnv "PLASMA_RPC_URL"           "http://anvil_axolotto:8545"  $BackendEnv
 
 Write-Host "   [OK] Backend .env actualizado"

@@ -6,6 +6,10 @@ import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
+interface ICartasLoteriaBurnable {
+    function burnCard(address from, uint256 id, uint256 amount) external;
+}
+
 /**
  * @title TablasLoteria
  * @notice Tablas de juego como NFTs ERC-721 con las 16 cartas en ESCROW.
@@ -133,6 +137,16 @@ contract TablasLoteria is ERC721, ERC1155Holder, Ownable {
         // Quemar el NFT de tabla
         _burn(tableId);
 
+        // Limpiar todo el estado asociado antes de interactuar con contratos externos.
+        delete layoutOf[tableId];
+        delete gamesPlayed[tableId];
+        delete gamesWon[tableId];
+        delete xpOf[tableId];
+
+        // Destruir realmente la carta seleccionada que permanece en el escrow.
+        // CartasLoteria autoriza a este contrato para quemar cartas custodiadas.
+        ICartasLoteriaBurnable(address(cartasContract)).burnCard(address(this), cards[destroyCardIndex], 1);
+
         // Devolver 15 cartas al dueño
         cartasContract.safeBatchTransferFrom(address(this), tableOwner, returnIds, returnAmounts, "");
 
@@ -159,6 +173,12 @@ contract TablasLoteria is ERC721, ERC1155Holder, Ownable {
 
         // Quemar el NFT de tabla
         _burn(tableId);
+
+        // La tabla ya no existe: eliminar layout y progresión residual.
+        delete layoutOf[tableId];
+        delete gamesPlayed[tableId];
+        delete gamesWon[tableId];
+        delete xpOf[tableId];
 
         // Devolver 16 cartas al dueño
         cartasContract.safeBatchTransferFrom(address(this), tableOwner, returnIds, returnAmounts, "");

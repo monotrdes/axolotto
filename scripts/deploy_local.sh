@@ -102,6 +102,7 @@ BOOSTERS_ADDR=$(extract_addr "SOBRECITOS")
 TABLAS_ADDR=$(extract_addr "TABLAS")
 CONSUMABLES_ADDR=$(extract_addr "CONSUMABLES")
 CONTROLLER_ADDR=$(extract_addr "GAME_CONTROLLER")
+RECICLON_VAULT_ADDR=$(extract_addr "RECICLON_VAULT")
 
 echo ""
 echo "📋 Contratos desplegados:"
@@ -114,6 +115,7 @@ echo "   Boosters (ERC-1155):   $BOOSTERS_ADDR"
 echo "   Tablas (ERC-721):      $TABLAS_ADDR"
 echo "   Consumables (ERC-1155):$CONSUMABLES_ADDR"
 echo "   GameController:        $CONTROLLER_ADDR"
+echo "   ReciclonVault:         $RECICLON_VAULT_ADDR"
 
 # ── 5. Actualizar variables de entorno del backend ────────────────────────────
 echo ""
@@ -132,6 +134,7 @@ update_or_add_env "BOOSTERS_ADDRESS"      "$BOOSTERS_ADDR"     "$BACKEND_ENV"
 update_or_add_env "TABLAS_ADDRESS"        "$TABLAS_ADDR"       "$BACKEND_ENV"
 update_or_add_env "CONSUMABLES_ADDRESS"   "$CONSUMABLES_ADDR"  "$BACKEND_ENV"
 update_or_add_env "GAME_CONTROLLER_ADDRESS" "$CONTROLLER_ADDR" "$BACKEND_ENV"
+update_or_add_env "RECICLON_VAULT_ADDRESS" "$RECICLON_VAULT_ADDR" "$BACKEND_ENV"
 update_or_add_env "PLASMA_RPC_URL"        "http://anvil_axolotto:8545" "$BACKEND_ENV"
 
 echo "   ✅ Variables de entorno actualizadas"

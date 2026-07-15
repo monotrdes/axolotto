@@ -6,12 +6,13 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title Axoficha (AXF)
- * @notice Moneda premium de Axolotto. Se adquiere con dinero real (SPEI/crypto).
- *         Se usa para comprar Webitos y Boosters en la tienda.
- *         Solo el GameController puede hacer mint/burn.
+ * @notice Crédito premium cerrado de Axolotto. No es transferible entre
+ *         jugadores ni redimible. El sistema sólo puede emitirlo o consumirlo
+ *         mediante mint/burn autorizados.
  */
 contract Axoficha is ERC20, Ownable {
     address public gameController;
+    error PlayerTransfersDisabled();
 
     modifier onlyController() {
         require(msg.sender == gameController || msg.sender == owner(), "Axoficha: No autorizado");
@@ -30,5 +31,12 @@ contract Axoficha is ERC20, Ownable {
 
     function burn(address from, uint256 amount) external onlyController {
         _burn(from, amount);
+    }
+
+    function _update(address from, address to, uint256 amount) internal override {
+        if (from != address(0) && to != address(0)) {
+            revert PlayerTransfersDisabled();
+        }
+        super._update(from, to, amount);
     }
 }
