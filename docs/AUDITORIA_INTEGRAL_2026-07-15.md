@@ -719,6 +719,8 @@ No lanzar hasta que **todos** sean demostrables:
 
 ### Dos rutas realistas de producto
 
+> **Decisión posterior:** el fundador descartó la ruta de juego monetizado/regulado. Desde el 15 de julio de 2026 rige `ADR-001-NON_GAMBLING_PRODUCT_MODEL.md`; la Ruta B se conserva únicamente como contexto histórico de la auditoría original.
+
 **Ruta A — Demo cerrada de bajo riesgo:** sin compra, retiro, transferibilidad ni premios con valor; monedas de prueba reseteables; acceso limitado; copy claro. Permite validar diversión/UX mientras se repara arquitectura. Requiere aun privacidad, consumo e IP.
 
 **Ruta B — Producto monetizado/regulado:** mantener apuesta/jackpot/mercado solo con permiso, controles 18+/AML/fiscal, capital operativo, auditorías, transparencia de reglas y operación madura. Es materialmente más costosa y lenta.
@@ -756,3 +758,38 @@ El orden correcto es:
 6. recién entonces monetizar y escalar.
 
 Mientras permanezcan abiertos los P0 REG-01, LEG-01/02/03, SEC-01/02, W3-01, DATA-01, SC-01/03/04, FE-01, GAME-01/02 y OPS-01 —y mientras los P1 económicos/operativos no tengan baseline verde—, el dictamen se mantiene **NO-GO**.
+
+---
+
+## 15. Actualización verificada tras decidir el modelo sin apuestas
+
+Esta sección es un addendum de implementación posterior al snapshot `e12f5b1` auditado originalmente. Su base documental fue comprometida en `e69f02c`; las correcciones descritas debajo pertenecen al worktree de remediación posterior y deben evaluarse con su commit final, no atribuirse al snapshot inicial.
+
+La decisión del fundador del 15 de julio de 2026 elimina como objetivo de producto las entradas pagadas, premios financiados por jugadores, jackpot, cashout de recompensas, P2P libre y artículos aleatorios comprados con valor de reventa. El modelo objetivo pasa a ser juego gratuito, venta de contenido digital conocido y un futuro programa de creadores adultos con saldo fiat separado. La decisión completa se registra en `ADR-001-NON_GAMBLING_PRODUCT_MODEL.md`.
+
+Se implementó una primera contención P0:
+
+- política de producto fail-closed y endpoint público de capacidades;
+- CPU gratuito sin entrada, premio, wallet, ledger ni mint; multiplicadores/autoplay/presupuestos rechazados;
+- tutorial gratuito con starter DB-only no transferible y sin token/NFT, para cerrar onboarding sin fingir propiedad on-chain;
+- pagos, marketplace, payouts, VIP, jackpot, juego pagado, recompensas reportadas por cliente, transferencias y mutaciones de activos riesgosas desactivados por defecto;
+- bandas de edad y estados separados de comercio, creador y KYC;
+- vinculación de wallet cerrada hasta implementar challenge firmado; menores sin comercio/payout/wallet en el MVP;
+- UI y landing sin promesas de premios, rendimiento, retiro o ingresos por jugar;
+- correcciones a la disolución de tablas y a la custodia/contabilidad de `ReciclonVault`;
+- AXF/FRJ no transferibles por contrato; NFTs/cartas todavía requieren restricción on-chain;
+- puertos de Anvil, backend y taskboard ligados a loopback en Compose;
+- guía legal mexicana y separación de menores/adultos.
+
+Evidencia del corte de remediación: 120 pruebas backend focales pasan; Foundry pasa 39/39 (incluido fuzz); la simulación de despliegue pasa; TypeScript y `docker compose config` pasan. Esto no sustituye el baseline histórico completo ni las auditorías externas. El detalle reproducible se conserva en `IMPLEMENTATION_STATUS_2026-07-15.md`.
+
+### Hallazgos de verificación que siguen bloqueando producción
+
+1. **Migraciones desde cero:** `alembic upgrade head` sobre PostgreSQL vacío falla en la migración histórica `37751e240bf6`, que intenta alterar `playerboard` antes de que el historial de Alembic haya creado esa tabla. La migración nueva de edad/comercio sí fue probada desde el head anterior, pero eso no corrige el bootstrap limpio. Se requiere consolidar o reparar la historia y validarla desde una base vacía antes de cualquier despliegue.
+2. **Baseline de pruebas:** los grupos focales afectados por esta intervención pasan, pero distintos subconjuntos históricos todavía exhiben fallos en unidades raw/display, fixtures lunares, gashapon y jackpot. Los conteos observados pertenecen a comandos parciales, no a un baseline global reproducible. Debe guardarse comando, imagen/runtime y JUnit por commit hasta lograr una suite completa verde.
+3. **Economía pública:** las funciones anteriores permanecen en el repositorio para migración/desmantelamiento, pero no constituyen un producto monetizable seguro. Cambiar un flag no sustituye entidad, opinión legal, PSP real, KYC/fiscal, ledger fiat, reconciliación, contratos restringidos y aprobación de lanzamiento.
+4. **Autoridad de cadena:** `CHAIN_ECONOMY_AUTHORITATIVE` expresa el objetivo, no el estado conseguido. Se cerraron fallbacks peligrosos en rutas de activos, pero wallets DB/outbox siguen siendo legado y aún falta el ciclo completo `intent → broadcast → mined → finalized`, indexador reproducible, reconciliación y modo económico read-only automatizado.
+5. **Compliance de edad:** existen campos y guards, no un sistema completo. Faltan proveedor/método de age assurance, consentimiento parental verificable, KYC, procedencia de wallet y flujos de soporte/borrado.
+6. **Comercio objetivo:** la tienda y marketplace actuales son legacy y permanecen prohibidos en `non_gambling`. El catálogo fijo, ledger MXN de creadores, reservas, refunds y payouts se deben construir como una ruta nueva.
+
+Por tanto, el dictamen actualizado es: **GO para desarrollo y pruebas gratuitas cerradas; NO-GO para cobrar, pagar a creadores, ofrecer mercado público, mainnet o habilitar cualquier mecánica de valor.**
