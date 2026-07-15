@@ -198,6 +198,7 @@ export default function ActGame({
         {game.ready && (
           <GameScreen
             mode="manual"
+            nonEconomicTutorial
             phase={game.phase === "loading" ? "loading" : game.phase === "result" ? "result" : "playing"}
             axoName="Webito"
             playerBoards={[

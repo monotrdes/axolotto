@@ -7,6 +7,7 @@ import ModeA from "@/components/vip/ModeA";
 import ModeB from "@/components/vip/ModeB";
 import TierBadge from "@/components/vip/TierBadge";
 import { PAPER_WORLD } from "@/lib/paperWorld";
+import { useProductPolicy } from "@/hooks/useProductPolicy";
 
 // Re-export for backward compatibility (used by app/play/page.tsx and ToastContext.tsx)
 export type { VipNotification };
@@ -30,6 +31,7 @@ export default function VipModal({
   recargarSaldos,
   onVipSuccess,
 }: VipModalProps) {
+  const { capabilities } = useProductPolicy();
   const vip = useVip({
     isOpen,
     token,
@@ -38,7 +40,7 @@ export default function VipModal({
     onVipSuccess,
   });
 
-  if (!isOpen) return null;
+  if (!isOpen || !capabilities.commerce.vip_sales) return null;
 
   // ── Datos derivados ──
   const activeTier = vip.vipStatus?.is_vip

@@ -14,6 +14,7 @@ import { LOTERIA_EMOJI, CARD_IMAGE } from "../ui/LoteriaCard";
 import Image from "next/image";
 import CenoteRoom from "../multiplayer/CenoteRoom";
 import LoteriaBoard from "../ui/LoteriaBoard";
+import { useProductPolicy } from "@/hooks/useProductPolicy";
 
 // ── Win-line definitions ──────────────────────────────────────────────────────
 
@@ -61,6 +62,8 @@ export interface GameScreenProps {
   // ── Core ────────────────────────────────────────────────────────────────
   mode: GameMode;
   phase: "loading" | "countdown" | "playing" | "result";
+  /** Tutorial interactivo sin entrada, premio ni llamadas al multijugador. */
+  nonEconomicTutorial?: boolean;
 
   // ── Player ──────────────────────────────────────────────────────────────
   axoName: string;
@@ -184,6 +187,7 @@ export default function GameScreen(props: GameScreenProps) {
   const {
     mode,
     phase,
+    nonEconomicTutorial = false,
     axoName,
     playerBoards,
     salinityFogCells = [],
@@ -221,6 +225,15 @@ export default function GameScreen(props: GameScreenProps) {
     chatCollapsed = true,
     onToggleChat,
   } = props;
+  const { capabilities, loading: policyLoading } = useProductPolicy();
+  const paidEntriesEnabled = capabilities.gameplay.paid_entries;
+  const freePlayEnabled = capabilities.gameplay.free_play;
+  const modeAllowed = nonEconomicTutorial || (
+    mode === "cpu"
+      ? freePlayEnabled || paidEntriesEnabled
+      : paidEntriesEnabled
+  );
+  const showFrjPrize = paidEntriesEnabled && capabilities.gameplay.token_rewards;
 
   const patternHintCells = useMemo(() => getPatternHintCells(winPatterns), [winPatterns]);
 
@@ -409,6 +422,33 @@ export default function GameScreen(props: GameScreenProps) {
     };
   }, [mode, handleSpeedHoldStart, handleSpeedHoldEnd]);
 
+  if (!modeAllowed) {
+    return (
+      <div className="flex flex-col items-center justify-center py-16 px-6 text-center rounded-3xl border border-amber-500/20 bg-amber-950/20">
+        <div className="text-4xl mb-3">🛟</div>
+        <h3 className="text-sm font-black text-amber-200 uppercase tracking-widest">
+          {mode === "cpu" ? "Partida en pausa segura" : "Modo pagado no disponible"}
+        </h3>
+        <p className="mt-2 text-xs text-slate-400 max-w-md">
+          {policyLoading
+            ? "Verificando el modo seguro del juego…"
+            : mode === "cpu"
+              ? "El servidor todavía no confirmó una partida gratuita. No se realizó ningún cargo."
+              : "Las partidas automáticas y manuales con presupuesto están deshabilitadas."}
+        </p>
+        {onChangeAll && (
+          <button
+            type="button"
+            onClick={onChangeAll}
+            className="mt-5 px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 text-xs font-black uppercase tracking-wider hover:border-slate-500 hover:text-white transition-all"
+          >
+            Volver
+          </button>
+        )}
+      </div>
+    );
+  }
+
   // ── Loading ──────────────────────────────────────────────────────────────
   if (phase === "loading") {
     return (
@@ -476,11 +516,17 @@ export default function GameScreen(props: GameScreenProps) {
                   <h3 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
                     ✨ ¡VICTORIA!
                   </h3>
-                  <p className="text-3xl font-black text-white mt-1">
-                    +{result.prize_gal?.toFixed(1) ?? "?"}{" "}
-                    <span className="text-lg text-emerald-300">FRJ</span>
-                  </p>
-                  {(result.streak_bonus_pct ?? 0) > 0 && (
+                  {showFrjPrize ? (
+                    <p className="text-3xl font-black text-white mt-1">
+                      +{result.prize_gal?.toFixed(1) ?? "?"}{" "}
+                      <span className="text-lg text-emerald-300">FRJ</span>
+                    </p>
+                  ) : (
+                    <p className="text-xs font-black text-emerald-300 mt-2 uppercase tracking-wider">
+                      Partida gratuita · Sin premio FRJ
+                    </p>
+                  )}
+                  {showFrjPrize && (result.streak_bonus_pct ?? 0) > 0 && (
                     <p className="text-[10px] text-amber-400 font-black mt-1">
                       🔥 Racha +{result.streak_bonus_pct}% bonus
                     </p>
@@ -701,7 +747,7 @@ export default function GameScreen(props: GameScreenProps) {
 
               {/* Escrow info / Stats */}
               <div className="flex flex-col gap-1.5 items-end">
-                {mode === "auto" && escrowBalance != null && (
+                {paidEntriesEnabled && mode === "auto" && escrowBalance != null && (
                   <div className="bg-slate-950/80 border border-purple-500/35 rounded-xl px-3 py-1.5 shadow-lg flex flex-col items-end">
                     <p className="text-[7px] text-purple-400 uppercase tracking-widest font-black">En custodia</p>
                     <p className="text-xs font-black text-purple-200">{escrowBalance.toFixed(1)} FRJ</p>

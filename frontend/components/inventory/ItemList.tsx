@@ -8,6 +8,8 @@ interface ItemListProps {
   setSobrecitosSheetOpen: (open: boolean) => void;
   onStartUnboxing: (booster: any) => void;
   onOpenSellModal: (item: any, name?: string) => void;
+  marketplaceEnabled: boolean;
+  randomRewardsEnabled: boolean;
   getBoosterStyles: (name: string) => {
     gradient: string;
     borderColor: string;
@@ -19,7 +21,7 @@ interface ItemListProps {
 
 export default function ItemList({
   sealedSobrecitos, sobrecitosSheetOpen, setSobrecitosSheetOpen,
-  onStartUnboxing, onOpenSellModal, getBoosterStyles,
+  onStartUnboxing, onOpenSellModal, marketplaceEnabled, randomRewardsEnabled, getBoosterStyles,
 }: ItemListProps) {
   if (sealedSobrecitos.length === 0) return null;
 
@@ -74,16 +76,18 @@ export default function ItemList({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onStartUnboxing(booster)}
-                      className="px-4 py-2 bg-gradient-to-r from-[#E4007C] to-purple-600 hover:from-[#FF1493] hover:to-purple-500 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 cursor-pointer"
+                      disabled={!randomRewardsEnabled}
+                      title={!randomRewardsEnabled ? 'Apertura aleatoria en revisión' : undefined}
+                      className="px-4 py-2 bg-gradient-to-r from-[#E4007C] to-purple-600 hover:from-[#FF1493] hover:to-purple-500 text-white text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      Abrir ahora ⚡
+                      {randomRewardsEnabled ? 'Abrir ahora ⚡' : 'Apertura en revisión'}
                     </button>
-                    <button
+                    {marketplaceEnabled && <button
                       onClick={() => onOpenSellModal(booster)}
                       className="px-3 py-2 border border-emerald-500/30 bg-emerald-950/20 text-emerald-300 hover:bg-emerald-950/40 text-[10px] font-black uppercase tracking-wider rounded-xl transition-all active:scale-95 cursor-pointer"
                     >
                       Vender
-                    </button>
+                    </button>}
                   </div>
                 </div>
               );

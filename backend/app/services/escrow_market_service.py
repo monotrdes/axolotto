@@ -18,6 +18,8 @@ from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from app.core.config import settings, VIP_CONFIG, AXF_MXN_CENTS, AXF_DECIMALS_BACKEND
+from app.core.product_policy import require_feature
+from app.core.account_policy import require_account_capability
 from app.models.axolotito import Axolotito
 from app.models.board import PlayerBoard
 from app.models.economy import ChainOutbox
@@ -63,12 +65,14 @@ class EscrowMarketService:
         asset_id: int,
         price_axf: int,
     ) -> EscrowListing:
+        require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
         if price_axf <= 0:
             raise HTTPException(status_code=400, detail="El precio debe ser mayor a 0 AXF.")
 
         seller = session.exec(select(User).where(User.privy_did == seller_id)).first()
         if not seller or not seller.wallet_address:
             raise HTTPException(status_code=400, detail="Necesitas una wallet vinculada para vender en el Tianguis.")
+        require_account_capability(seller, "can_publish_for_sale")
 
         # Validar propiedad y disponibilidad del activo artesanal
         if asset_type == EscrowAssetType.AXOLOTITO:
@@ -182,6 +186,13 @@ class EscrowMarketService:
 
     @staticmethod
     def create_checkout(session: Session, buyer_id: str, listing_id: str) -> dict:
+        require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
+        require_feature(settings.ENABLE_FIAT_PAYMENTS, "fiat_payments")
+        buyer = session.exec(select(User).where(User.privy_did == buyer_id)).first()
+        if not buyer:
+            raise HTTPException(status_code=404, detail="Comprador no encontrado.")
+        require_account_capability(buyer, "can_purchase")
+        require_account_capability(buyer, "can_use_marketplace")
         listing = session.exec(
             select(EscrowListing).where(EscrowListing.id == listing_id).with_for_update()
         ).first()

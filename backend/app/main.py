@@ -6,7 +6,7 @@ from app.core.limiter import limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi import _rate_limit_exceeded_handler
 
-from app.api.v1.endpoints import bank, user, shop, incubation, metadata, legacy, board, game, ranking, multiplayer, checkout, market, market_escrow, payments, leonardo, admin, codes, f2p, tutorial, cave_expansion, cave_decor, admin_events, events, dev, rewards, staking, social, referrals
+from app.api.v1.endpoints import bank, user, shop, incubation, metadata, legacy, board, game, ranking, multiplayer, checkout, market, market_escrow, payments, leonardo, admin, codes, f2p, tutorial, cave_expansion, cave_decor, admin_events, events, dev, rewards, staking, social, referrals, product
 from app.api.v1.ws import game_ws
 from app.core.config import settings
 
@@ -352,10 +352,11 @@ async def on_startup():
         treasury = session.exec(select(TreasuryVault)).first()
         if not treasury:
             session.add(TreasuryVault(balance=0.0))
-        # Check Jackpot
-        jackpot = session.exec(select(JackpotVault)).first()
-        if not jackpot:
-            session.add(JackpotVault(current_amount=1000.0, seed_amount=1000.0))
+        # Never create a jackpot as a startup side effect in safe mode.
+        if settings.ENABLE_JACKPOT:
+            jackpot = session.exec(select(JackpotVault)).first()
+            if not jackpot:
+                session.add(JackpotVault(current_amount=1000.0, seed_amount=1000.0))
         session.commit()
 
     # --- MIGRACIONES VIP ---
@@ -480,14 +481,17 @@ async def on_startup():
             ), {"num": numero, "name": nombre})
         conn.commit()
 
-    # --- INICIAR SCHEDULER MULTIJUGADOR ---
     import asyncio
-    from app.services.multiplayer_service import MultiplayerService
-    asyncio.create_task(MultiplayerService.start_scheduler_loop())
 
-    # --- INICIAR SCHEDULER VIP ---
-    from app.services.vip_scheduler import vip_scheduler_loop
-    asyncio.create_task(vip_scheduler_loop())
+    # Economic schedulers stay off in the non-gambling baseline. This prevents
+    # legacy rooms/VIP rewards from mutating balances behind disabled routes.
+    if settings.ENABLE_PAID_GAMEPLAY:
+        from app.services.multiplayer_service import MultiplayerService
+        asyncio.create_task(MultiplayerService.start_scheduler_loop())
+
+    if settings.ENABLE_VIP_SALES:
+        from app.services.vip_scheduler import vip_scheduler_loop
+        asyncio.create_task(vip_scheduler_loop())
 
 # CORS super importante para que tu frontend Next.js no sea bloqueado
 app.add_middleware(
@@ -501,7 +505,13 @@ app.add_middleware(
 @app.get("/api/v1/health")
 async def health_check():
     """Health check endpoint for monitoring and restart polling."""
-    return {"status": "ok", "service": "axolotto-backend"}
+    return {
+        "status": "ok",
+        "service": "axolotto-backend",
+        "product_mode": settings.PRODUCT_MODE,
+    }
+
+app.include_router(product.router, prefix="/api/v1/product", tags=["Product Policy"])
 
 app.include_router(bank.router, prefix="/api/v1/bank", tags=["Economy"])
 app.include_router(user.router, prefix="/api/v1/auth", tags=["Auth & Users"])
@@ -514,10 +524,13 @@ app.include_router(game.router, prefix="/api/v1/game", tags=["Partidas de Loter�
 app.include_router(ranking.router, prefix="/api/v1/ranking", tags=["Rankings y Salón de la Gloria"])
 app.include_router(multiplayer.router, prefix="/api/v1/multiplayer", tags=["Lotería Multijugador"])
 app.include_router(game_ws.router, prefix="/api/v1/ws", tags=["WebSocket — Juego Manual"])
-app.include_router(checkout.router, prefix="/api/v1/bank/checkout", tags=["Checkout Cripto"])
-app.include_router(market.router, prefix="/api/v1/market", tags=["Marketplace P2P Inventario"])
-app.include_router(market_escrow.router, prefix="/api/v1/market/escrow", tags=["Tianguis P2P Escrow"])
-app.include_router(payments.router, prefix="/api/v1/payments", tags=["Pagos Fiat (Webhooks)"])
+if settings.ENABLE_CRYPTO_CHECKOUT:
+    app.include_router(checkout.router, prefix="/api/v1/bank/checkout", tags=["Checkout Cripto"])
+if settings.ENABLE_PLAYER_MARKETPLACE:
+    app.include_router(market.router, prefix="/api/v1/market", tags=["Marketplace P2P Inventario"])
+    app.include_router(market_escrow.router, prefix="/api/v1/market/escrow", tags=["Tianguis P2P Escrow"])
+if settings.ENABLE_FIAT_PAYMENTS:
+    app.include_router(payments.router, prefix="/api/v1/payments", tags=["Pagos Fiat (Webhooks)"])
 app.include_router(leonardo.router, prefix="/api/v1/leonardo", tags=["Leonardo.ai Cards"])
 app.include_router(admin.router, prefix="/api/v1/admin", tags=["Admin"])
 app.include_router(codes.router, prefix="/api/v1/codes", tags=["Promo Codes"])
@@ -526,7 +539,10 @@ app.include_router(tutorial.router, prefix="/api/v1/tutorial", tags=["Tutorial d
 app.include_router(cave_expansion.router, prefix="/api/v1/cave", tags=["Cenote — Expansión"])
 app.include_router(cave_decor.router, prefix="/api/v1/cave", tags=["Cenote — Decoración"])
 app.include_router(admin_events.router, prefix="/api/v1/admin/events", tags=["admin-events"])
-if settings.BLOCKCHAIN_MODE == "local":
+if (
+    settings.PRODUCT_MODE == "legacy_simulation"
+    and settings.BLOCKCHAIN_MODE == "local"
+):
     app.include_router(dev.router, prefix="/api/v1/dev", tags=["Dev Tools"])
 app.include_router(events.router, prefix="/api/v1/events", tags=["events"])
 app.include_router(rewards.router, prefix="/api/v1/rewards", tags=["Rewards"])

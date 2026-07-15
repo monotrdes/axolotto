@@ -514,6 +514,30 @@ class TestSearchPlayers:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class TestProcessLike:
+    def test_like_without_rewards_keeps_social_action_but_creates_no_wallets(
+        self, session, engine, monkeypatch
+    ):
+        from app.core.config import settings
+
+        u1 = _make_user_with_nick(session, "did:privy:safe_like_a", "SafeLikeA")
+        u2 = _make_user_with_nick(session, "did:privy:safe_like_b", "SafeLikeB")
+        session.add(FriendRelation(
+            user_a=u1.privy_did,
+            user_b=u2.privy_did,
+            status=FriendStatus.ACTIVE,
+            friends_since=datetime.utcnow(),
+        ))
+        session.commit()
+        monkeypatch.setattr(settings, "ENABLE_GAMEPLAY_TOKEN_REWARDS", False)
+
+        result = SocialService.process_like(session, u1.privy_did, u2.privy_did)
+
+        assert result["message"] == "Like enviado."
+        assert result["rewarded"] is False
+        assert session.exec(
+            select(Wallet).where(Wallet.user_id.in_([u1.privy_did, u2.privy_did]))
+        ).all() == []
+
     def test_like_between_friends_awards_frj(self, session, engine):
         u1 = _make_user_with_nick(session, "did:privy:like_a", "LikeA")
         u2 = _make_user_with_nick(session, "did:privy:like_b", "LikeB")

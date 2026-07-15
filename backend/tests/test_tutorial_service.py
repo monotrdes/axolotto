@@ -35,6 +35,7 @@ from app.models.board import PlayerBoard  # noqa: F401
 from app.models.promo import PromoCode, PendingReward  # noqa: F401
 
 from app.services.tutorial_service import TutorialService, LUCKY_GAL_BONUS
+from app.core.config import settings
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -144,12 +145,57 @@ class TestStartTutorial:
         result = TutorialService.start_tutorial(session, user.privy_did, inc)
         assert "Cenote" in result["egg_intro_dialogue"] or len(result["egg_intro_dialogue"]) > 10
 
+    def test_completed_user_cannot_start_another_tutorial(self, session):
+        from app.api.v1.endpoints.tutorial import start_tutorial as start_endpoint
+        from fastapi import HTTPException
+
+        user = _make_user(session, "did:privy:tutorial_loop_closed")
+        user.tutorial_completed = True
+        session.add(user)
+        session.commit()
+        before = len(session.exec(
+            select(WebitoIncubation).where(WebitoIncubation.user_id == user.privy_did)
+        ).all())
+
+        with pytest.raises(HTTPException) as exc:
+            start_endpoint(session=session, verified_user_id=user.privy_did)
+
+        assert exc.value.status_code == 409
+        after = len(session.exec(
+            select(WebitoIncubation).where(WebitoIncubation.user_id == user.privy_did)
+        ).all())
+        assert after == before
+
 
 # ---------------------------------------------------------------------------
 # advance_phase
 # ---------------------------------------------------------------------------
 
 class TestAdvancePhase:
+    def test_preflight_blocks_bonus_without_any_mutation(self, session, monkeypatch):
+        from fastapi import HTTPException
+
+        user = _make_user(session, "did:privy:tutorial_preflight")
+        inc = _make_incubation(session, user.privy_did, tutorial_phase=4)
+        inc.tutorial_karma = "lucky"
+        session.add(inc)
+        session.commit()
+        monkeypatch.setattr(settings, "ENABLE_HATCHING", False)
+
+        with pytest.raises(HTTPException) as exc:
+            TutorialService.advance_phase(session, user.privy_did, inc)
+
+        assert exc.value.status_code == 503
+        assert exc.value.detail["feature"] == "hatching"
+        session.refresh(inc)
+        assert inc.tutorial_phase == 4
+        assert session.exec(
+            select(Wallet).where(Wallet.user_id == user.privy_did)
+        ).first() is None
+        assert session.exec(
+            select(TransactionLedger).where(TransactionLedger.user_id == user.privy_did)
+        ).all() == []
+
     def test_phase_not_started_raises_400(self, session):
         user = _make_user(session, "did:privy:adv_0")
         inc = _make_incubation(session, user.privy_did, tutorial_phase=0)

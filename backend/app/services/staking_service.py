@@ -10,6 +10,8 @@ from typing import Dict, List
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
+from app.core.config import settings
+from app.core.product_policy import require_feature
 from app.models.axolotito import Axolotito
 from app.models.economy import (
     CurrencyType,
@@ -230,6 +232,10 @@ class StakingService:
           4. Write TransactionLedger row.
           5. Reset last_staking_claim / accrued_unclaimed.
         """
+        require_feature(
+            settings.ENABLE_PASSIVE_TOKEN_REWARDS,
+            "passive_token_rewards",
+        )
         from app.core.auth import require_tutorial
         require_tutorial(user)
         axolotito = session.exec(
@@ -319,6 +325,10 @@ class StakingService:
         user: User,
     ) -> Dict:
         """Claim staking rewards for Axolotitos within the user's active staking slots."""
+        require_feature(
+            settings.ENABLE_PASSIVE_TOKEN_REWARDS,
+            "passive_token_rewards",
+        )
         from app.core.auth import require_tutorial
         require_tutorial(user)
         slots = StakingService.get_staking_slots(user)
@@ -350,6 +360,46 @@ class StakingService:
             "axolotitos": per_axolotito,
         }
 
+    @staticmethod
+    def unstake_without_reward(
+        session: Session,
+        axolotito_id: int,
+        user: User,
+    ) -> Dict:
+        """Release a staking position while forfeiting disabled token yield."""
+        axolotito = session.exec(
+            select(Axolotito)
+            .where(Axolotito.id == axolotito_id)
+            .with_for_update()
+        ).first()
+        if not axolotito:
+            raise HTTPException(status_code=404, detail="Axolotito no encontrado.")
+        if axolotito.user_id != user.privy_did:
+            raise HTTPException(status_code=403, detail="Este Axolotito no te pertenece.")
+        if axolotito.status not in {"studying", "resting"}:
+            raise HTTPException(status_code=400, detail="Este Axolotito no está en staking.")
+
+        axolotito.status = "idle"
+        axolotito.accrued_unclaimed = 0
+        axolotito.last_staking_claim = None
+        session.add(axolotito)
+        session.commit()
+        session.refresh(axolotito)
+
+        return {
+            "message": (
+                f"Axolotito #{axolotito_id} liberado de staking sin "
+                "recompensa porque la emisión pasiva está deshabilitada."
+            ),
+            "claimed_frj": 0.0,
+            "rewards_enabled": False,
+            "axolotito": {
+                "id": axolotito.id,
+                "name": axolotito.name,
+                "status": axolotito.status,
+            },
+        }
+
     # ------------------------------------------------------------------
     # Status query
     # ------------------------------------------------------------------
@@ -362,15 +412,20 @@ class StakingService:
         from app.core.auth import require_tutorial
         require_tutorial(user)
         slots = StakingService.get_staking_slots(user)
-        staking_active = StakingService.is_staking_active(user)
+        rewards_enabled = settings.ENABLE_PASSIVE_TOKEN_REWARDS
+        staking_active = rewards_enabled and StakingService.is_staking_active(user)
 
         axo_statuses = []
         for axo in axolotitos:
-            hourly_rate = StakingService.calculate_axolotito_hourly_rate(axo)
+            hourly_rate = (
+                StakingService.calculate_axolotito_hourly_rate(axo)
+                if rewards_enabled
+                else 0.0
+            )
             max_cap = round(MAX_ACCUMULATION_HOURS * hourly_rate, 6)
 
             # Calculate current accrued
-            current_accrued = axo.accrued_unclaimed
+            current_accrued = axo.accrued_unclaimed if rewards_enabled else 0.0
             if staking_active and axo.last_staking_claim is not None:
                 # Fresh accrual since last claim (read-only, don't persist)
                 now = datetime.utcnow()
@@ -386,10 +441,9 @@ class StakingService:
                 )
 
             # Calculate lock remaining seconds
-            from app.core.config import settings
             lock_minutes = 2 if settings.BLOCKCHAIN_MODE == "local" else 60
             lock_remaining = 0
-            if axo.last_staking_claim:
+            if rewards_enabled and axo.last_staking_claim:
                 elapsed = (datetime.utcnow() - axo.last_staking_claim).total_seconds()
                 if elapsed < (lock_minutes * 60):
                     lock_remaining = int((lock_minutes * 60) - elapsed)
@@ -416,6 +470,7 @@ class StakingService:
 
         return {
             "user_id": user.privy_did,
+            "rewards_enabled": rewards_enabled,
             "staking_active": staking_active,
             "slots_total": slots,
             "slots_used": len([a for a in axolotitos if a.status in ["studying", "resting"]]),

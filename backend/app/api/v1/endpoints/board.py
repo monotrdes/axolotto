@@ -6,6 +6,8 @@ from pydantic import BaseModel
 
 from app.database import get_session
 from app.core.auth import get_verified_user_id
+from app.core.config import settings
+from app.core.product_policy import require_feature
 from app.services.board_service import (
     get_user_boards_data,
     create_random_board_operation,
@@ -69,6 +71,11 @@ def create_random_board(
     verified_user_id: str = Depends(get_verified_user_id)
 ):
     """Crea un tablero de Lotería al azar cobrando 25 FRJ de comisión."""
+    require_feature(settings.ENABLE_BOARD_ASSET_MUTATIONS, "board_asset_mutations")
+    require_feature(
+        settings.ENABLE_PURCHASED_RANDOM_REWARDS,
+        "purchased_random_rewards",
+    )
     return create_random_board_operation(verified_user_id, payload.name, session)
 
 
@@ -79,6 +86,7 @@ def create_manual_board(
     verified_user_id: str = Depends(get_verified_user_id)
 ):
     """Crea un tablero de Lotería manualmente validando las cartas y cobrando 50 FRJ."""
+    require_feature(settings.ENABLE_BOARD_ASSET_MUTATIONS, "board_asset_mutations")
     card_first_editions = payload.card_first_editions
     if not card_first_editions:
         card_first_editions = [False] * 16
@@ -114,6 +122,7 @@ def delete_board(
     verified_user_id: str = Depends(get_verified_user_id)
 ):
     """Desarma y marca como inactiva (dead) la tabla, perdiendo una carta al azar, liberando las otras 15 y cobrando el staking."""
+    require_feature(settings.ENABLE_BOARD_ASSET_MUTATIONS, "board_asset_mutations")
     return delete_board_operation(board_id, verified_user_id, session)
 
 
@@ -124,6 +133,7 @@ def claim_board_staking(
     verified_user_id: str = Depends(get_verified_user_id)
 ):
     """Reclama las Gemas Alga acumuladas por el staking de las cartas de esta tabla."""
+    require_feature(settings.ENABLE_GAMEPLAY_TOKEN_REWARDS, "gameplay_token_rewards")
     return claim_staking_operation(board_id, verified_user_id, session)
 
 
@@ -133,6 +143,7 @@ def claim_all_boards_staking(
     verified_user_id: str = Depends(get_verified_user_id)
 ):
     """Reclama las Gemas Alga acumuladas por el staking de TODAS las tablas del usuario a la vez."""
+    require_feature(settings.ENABLE_GAMEPLAY_TOKEN_REWARDS, "gameplay_token_rewards")
     return claim_all_staking_operation(verified_user_id, session)
 
 
@@ -145,6 +156,7 @@ def get_rental_market_boards(
     session: Session = Depends(get_session)
 ):
     """Obtiene el listado de tablas publicadas en el mercado que están listas para ser rentadas."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     return get_rental_market_data(skip, limit, session)
 
 
@@ -156,6 +168,7 @@ def list_board_for_rent(
     verified_user_id: str = Depends(get_verified_user_id)
 ):
     """Lista un tablero en el mercado de rentas fijando fee y win split."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     return list_board_for_rent_operation(
         board_id,
         verified_user_id,
@@ -182,6 +195,7 @@ def rent_board(
     verified_user_id: str = Depends(get_verified_user_id)
 ):
     """Alquila una tabla del mercado de rentas por 24 horas pagando la fee de FRJ por adelantado."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     return rent_board_operation(board_id, verified_user_id, session)
 
 
@@ -212,6 +226,7 @@ def get_sale_market_boards(
     session: Session = Depends(get_session)
 ):
     """Obtiene el listado de tablas publicadas en el mercado que están en venta."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     return get_sale_market_data(skip, limit, session)
 
 
@@ -223,6 +238,7 @@ def list_board_for_sale(
     verified_user_id: str = Depends(get_verified_user_id)
 ):
     """Publica un tablero en el mercado de venta definitiva."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     return list_board_for_sale_operation(
         board_id, verified_user_id, payload.sale_price_gal, session
     )
@@ -245,4 +261,5 @@ def buy_board(
     verified_user_id: str = Depends(get_verified_user_id)
 ):
     """Compra un tablero en venta definitiva, realizando la transferencia de FRJ y el NFT on-chain."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     return buy_board_operation(board_id, verified_user_id, session)

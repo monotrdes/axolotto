@@ -114,6 +114,47 @@ class Settings(BaseSettings):
     IS_MOCK_WEB3: bool = False
     DATABASE_URL: str
 
+    # ── Product policy: non-gambling by default ──────────────────────────
+    # `legacy_simulation` exists only so local balance/test tooling can inspect
+    # the previous economy. It is rejected outside BLOCKCHAIN_MODE=local.
+    PRODUCT_MODE: str = "non_gambling"  # non_gambling | legacy_simulation
+
+    # Every value-bearing feature is fail-closed. Enabling commerce later also
+    # requires legal identity, versioned terms/privacy and adult gating.
+    ENABLE_FIAT_PAYMENTS: bool = False
+    ENABLE_CRYPTO_CHECKOUT: bool = False
+    ENABLE_PLAYER_MARKETPLACE: bool = False
+    ENABLE_CREATOR_PAYOUTS: bool = False
+    ENABLE_VIP_SALES: bool = False
+    ENABLE_FREE_GAMEPLAY: bool = True
+    ENABLE_PAID_GAMEPLAY: bool = False
+    ENABLE_GAMEPLAY_TOKEN_REWARDS: bool = False
+    ENABLE_JACKPOT: bool = False
+    ENABLE_PURCHASED_RANDOM_REWARDS: bool = False
+    ENABLE_TOKEN_CASHOUT: bool = False
+    ENABLE_PLAYER_TOKEN_TRANSFERS: bool = False
+    ENABLE_CLIENT_REPORTED_REWARDS: bool = False
+    ENABLE_PROMOTIONAL_TOKEN_REWARDS: bool = False
+    ENABLE_ADMIN_TOKEN_MINTS: bool = False
+    ENABLE_ADMIN_BALANCE_ADJUSTMENTS: bool = False
+    ENABLE_PASSIVE_TOKEN_REWARDS: bool = False
+    ENABLE_LEGACY_ASSET_CLAIMS: bool = False
+    ENABLE_FIXED_ITEM_SHOP: bool = False
+    ENABLE_FIXED_GAMEPLAY_SPENDING: bool = False
+    ENABLE_CARD_CRAFTING: bool = False
+    ENABLE_BOARD_ASSET_MUTATIONS: bool = False
+    ENABLE_HATCHING: bool = False
+    ENABLE_RECICLON: bool = False
+
+    REQUIRE_ADULT_FOR_COMMERCE: bool = True
+    CHAIN_ECONOMY_AUTHORITATIVE: bool = True
+
+    PAYMENT_GATEWAY_PROVIDER: str = "mock"
+    KYC_PROVIDER: str = ""
+    LEGAL_ENTITY_NAME: str = ""
+    TERMS_VERSION: str = ""
+    PRIVACY_NOTICE_VERSION: str = ""
+
     # ── Modo de Blockchain ────────────────────────────────────────────────────
     # "local"        = Anvil local (simulaciones / desarrollo)
     # "polygon_amoy" = Polygon Amoy Testnet (staging / pre-producción)
@@ -216,8 +257,127 @@ class Settings(BaseSettings):
     #   from app.api.v1.endpoints.dev import DEV_AUTO_REWARD_AXF, DEV_AUTO_REWARD_FRJ
 
     @model_validator(mode="after")
+    def _enforce_product_policy(self) -> 'Settings':
+        mode = self.PRODUCT_MODE.strip().lower()
+        if mode not in {"non_gambling", "legacy_simulation"}:
+            raise ValueError(
+                "PRODUCT_MODE debe ser 'non_gambling' o 'legacy_simulation'."
+            )
+        self.PRODUCT_MODE = mode
+
+        if self.ALLOW_DEV_PAYMENTS and not (
+            mode == "legacy_simulation" and self.BLOCKCHAIN_MODE == "local"
+        ):
+            raise ValueError(
+                "ALLOW_DEV_PAYMENTS=True requiere "
+                "PRODUCT_MODE=legacy_simulation y BLOCKCHAIN_MODE=local."
+            )
+
+        if mode == "legacy_simulation":
+            if self.BLOCKCHAIN_MODE != "local":
+                raise ValueError(
+                    "PRODUCT_MODE=legacy_simulation está prohibido fuera de local."
+                )
+            return self
+
+        prohibited = {
+            "ENABLE_PAID_GAMEPLAY": self.ENABLE_PAID_GAMEPLAY,
+            "ENABLE_JACKPOT": self.ENABLE_JACKPOT,
+            "ENABLE_PURCHASED_RANDOM_REWARDS": self.ENABLE_PURCHASED_RANDOM_REWARDS,
+            "ENABLE_TOKEN_CASHOUT": self.ENABLE_TOKEN_CASHOUT,
+            "ENABLE_PLAYER_TOKEN_TRANSFERS": self.ENABLE_PLAYER_TOKEN_TRANSFERS,
+            "ENABLE_CLIENT_REPORTED_REWARDS": self.ENABLE_CLIENT_REPORTED_REWARDS,
+            "ENABLE_ADMIN_TOKEN_MINTS": self.ENABLE_ADMIN_TOKEN_MINTS,
+            "ENABLE_ADMIN_BALANCE_ADJUSTMENTS": self.ENABLE_ADMIN_BALANCE_ADJUSTMENTS,
+            "ENABLE_PASSIVE_TOKEN_REWARDS": self.ENABLE_PASSIVE_TOKEN_REWARDS,
+            "ENABLE_LEGACY_ASSET_CLAIMS": self.ENABLE_LEGACY_ASSET_CLAIMS,
+            "ENABLE_FIXED_ITEM_SHOP": self.ENABLE_FIXED_ITEM_SHOP,
+            "ENABLE_FIXED_GAMEPLAY_SPENDING": self.ENABLE_FIXED_GAMEPLAY_SPENDING,
+            "ENABLE_CARD_CRAFTING": self.ENABLE_CARD_CRAFTING,
+            # Current marketplace routes exchange player inventory for FRJ and
+            # are not the future MXN creator-sales ledger.
+            "ENABLE_PLAYER_MARKETPLACE": self.ENABLE_PLAYER_MARKETPLACE,
+            "ENABLE_CREATOR_PAYOUTS": self.ENABLE_CREATOR_PAYOUTS,
+            # Current VIP accrues token yield and jackpot advantages.
+            "ENABLE_VIP_SALES": self.ENABLE_VIP_SALES,
+            # These contracts still rely on controller-forced approvals or
+            # delivery authority. Keep public writes off until user-signed
+            # intents and finalized-event projections replace those paths.
+            "ENABLE_BOARD_ASSET_MUTATIONS": self.ENABLE_BOARD_ASSET_MUTATIONS,
+            "ENABLE_HATCHING": self.ENABLE_HATCHING,
+            # The current backend credits tickets before final chain receipt.
+            # Keep this impossible in the public mode until the projection is
+            # driven by finalized vault events and user-signed transfers.
+            "ENABLE_RECICLON": self.ENABLE_RECICLON,
+        }
+        enabled_prohibited = [name for name, enabled in prohibited.items() if enabled]
+        if enabled_prohibited:
+            raise ValueError(
+                "PRODUCT_MODE=non_gambling prohíbe: "
+                + ", ".join(enabled_prohibited)
+            )
+
+        if self.ENABLE_GAMEPLAY_TOKEN_REWARDS and (
+            self.ENABLE_TOKEN_CASHOUT or self.ENABLE_PLAYER_TOKEN_TRANSFERS
+        ):
+            raise ValueError(
+                "Las recompensas de juego no pueden ser transferibles o canjeables."
+            )
+
+        commercial_features = {
+            "ENABLE_FIAT_PAYMENTS": self.ENABLE_FIAT_PAYMENTS,
+            "ENABLE_CRYPTO_CHECKOUT": self.ENABLE_CRYPTO_CHECKOUT,
+            "ENABLE_PLAYER_MARKETPLACE": self.ENABLE_PLAYER_MARKETPLACE,
+            "ENABLE_CREATOR_PAYOUTS": self.ENABLE_CREATOR_PAYOUTS,
+            "ENABLE_VIP_SALES": self.ENABLE_VIP_SALES,
+        }
+        enabled_commerce = [name for name, enabled in commercial_features.items() if enabled]
+        if enabled_commerce:
+            missing = []
+            if not self.REQUIRE_ADULT_FOR_COMMERCE:
+                missing.append("REQUIRE_ADULT_FOR_COMMERCE")
+            if not self.LEGAL_ENTITY_NAME.strip():
+                missing.append("LEGAL_ENTITY_NAME")
+            if not self.TERMS_VERSION.strip():
+                missing.append("TERMS_VERSION")
+            if not self.PRIVACY_NOTICE_VERSION.strip():
+                missing.append("PRIVACY_NOTICE_VERSION")
+            if missing:
+                raise ValueError(
+                    "No se puede habilitar comercio sin: " + ", ".join(missing)
+                )
+
+        if self.ENABLE_FIAT_PAYMENTS and self.PAYMENT_GATEWAY_PROVIDER.lower() == "mock":
+            raise ValueError(
+                "ENABLE_FIAT_PAYMENTS requiere una pasarela real, no mock."
+            )
+
+        if self.ENABLE_CREATOR_PAYOUTS:
+            if not self.ENABLE_PLAYER_MARKETPLACE:
+                raise ValueError(
+                    "Creator payouts requieren ENABLE_PLAYER_MARKETPLACE."
+                )
+            if not self.KYC_PROVIDER.strip():
+                raise ValueError("Creator payouts requieren KYC_PROVIDER.")
+
+        if (
+            self.CHAIN_ECONOMY_AUTHORITATIVE
+            and self.BLOCKCHAIN_MODE != "local"
+            and self.IS_MOCK_WEB3
+        ):
+            raise ValueError(
+                "La economía chain-authoritative no permite IS_MOCK_WEB3 fuera de local."
+            )
+
+        return self
+
+    @model_validator(mode="after")
     def validate_usdc_address(self) -> 'Settings':
-        if self.BLOCKCHAIN_MODE != "local" and not self.USDC_ADDRESS:
+        if (
+            self.BLOCKCHAIN_MODE != "local"
+            and self.ENABLE_CRYPTO_CHECKOUT
+            and not self.USDC_ADDRESS
+        ):
             raise ValueError("USDC_ADDRESS must be set in non-local environments")
         return self
 
@@ -233,7 +393,11 @@ class Settings(BaseSettings):
                 "ALLOW_DEV_AUTH=True está prohibido fuera de modo local. "
                 "Elimínalo del .env de producción."
             )
-        if self.BLOCKCHAIN_MODE != "local" and self.PAYMENT_WEBHOOK_SECRET == "axolotto_dev_webhook_secret":
+        if (
+            self.BLOCKCHAIN_MODE != "local"
+            and self.ENABLE_FIAT_PAYMENTS
+            and self.PAYMENT_WEBHOOK_SECRET == "axolotto_dev_webhook_secret"
+        ):
             raise ValueError(
                 "PAYMENT_WEBHOOK_SECRET debe configurarse con un valor propio "
                 "fuera de modo local (firma HMAC de webhooks de pago)."

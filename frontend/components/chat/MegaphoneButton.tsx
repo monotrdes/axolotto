@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Send, Megaphone } from "lucide-react";
+import { useProductPolicy } from "@/hooks/useProductPolicy";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -20,13 +21,16 @@ export default function MegaphoneButton({
   onSendMegaphone,
   disabled = false,
 }: MegaphoneButtonProps) {
+  const { capabilities } = useProductPolicy();
+  const fixedSpendingEnabled = capabilities.gameplay.fixed_spending;
   const [showInput, setShowInput] = useState(false);
   const [text, setText] = useState("");
 
   const canAfford = frjBalance >= MEGAPHONE_COST;
-  const isDisabled = disabled || !canAfford;
+  const isDisabled = disabled || !fixedSpendingEnabled || !canAfford;
 
   const handleSend = () => {
+    if (!fixedSpendingEnabled) return;
     const trimmed = text.trim();
     if (!trimmed) return;
     onSendMegaphone(trimmed);
@@ -41,7 +45,7 @@ export default function MegaphoneButton({
     }
   };
 
-  if (showInput) {
+  if (showInput && fixedSpendingEnabled) {
     return (
       <div className="flex items-center gap-1.5 bg-amber-950/40 border border-amber-500/30 rounded-lg px-2 py-1.5">
         <input
@@ -67,17 +71,23 @@ export default function MegaphoneButton({
 
   return (
     <button
-      onClick={() => !isDisabled && setShowInput(true)}
+      onClick={() => !isDisabled && fixedSpendingEnabled && setShowInput(true)}
       disabled={isDisabled}
       className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider
                  transition-all duration-200
                  bg-amber-950/40 border border-amber-500/30 text-amber-400
                  hover:bg-amber-900/60 hover:border-amber-400/50 hover:text-amber-200
                  disabled:bg-slate-800/40 disabled:border-slate-700/30 disabled:text-slate-600 disabled:cursor-not-allowed"
-      title={!canAfford ? `Necesitas ${MEGAPHONE_COST} FRJ para usar el megáfono` : "Megáfono (10 FRJ)"}
+      title={
+        !fixedSpendingEnabled
+          ? "Megáfono en revisión"
+          : !canAfford
+            ? `Necesitas ${MEGAPHONE_COST} FRJ para usar el megáfono`
+            : "Megáfono (10 FRJ)"
+      }
     >
       <Megaphone size={10} />
-      <span>📢 {MEGAPHONE_COST} FRJ</span>
+      <span>{fixedSpendingEnabled ? `📢 ${MEGAPHONE_COST} FRJ` : "📢 En revisión"}</span>
     </button>
   );
 }

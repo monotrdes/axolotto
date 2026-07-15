@@ -101,6 +101,13 @@ async def manual_game_ws(
         {"type": "game_start", ...}
         {"type": "game_end", ...}
     """
+    if not settings.ENABLE_PAID_GAMEPLAY:
+        await websocket.close(
+            code=1008,
+            reason="Modo multijugador economico desactivado.",
+        )
+        return
+
     # 1. Handshake — validar token
     try:
         user_id = _verify_token_local(token)

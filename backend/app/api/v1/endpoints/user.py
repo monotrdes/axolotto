@@ -5,7 +5,9 @@ from typing import Optional
 
 from app.database import get_session
 from app.core.auth import get_verified_user_id
+from app.core.config import settings
 from app.core.limiter import limiter
+from app.core.product_policy import require_feature
 
 from app.services.user_service import (
     sync_user as _sync_user,
@@ -114,6 +116,7 @@ def update_axolotito_bot_config(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id),
 ):
+    require_feature(settings.ENABLE_PAID_GAMEPLAY, "paid_gameplay")
     return _update_bot_config(
         session,
         axolotito_id=axolotito_id,
@@ -133,6 +136,7 @@ def get_sale_market_axolotitos(
     limit: int = 20,
     session: Session = Depends(get_session),
 ):
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     return _get_sale_market(session, skip=skip, limit=limit)
 
 
@@ -142,6 +146,7 @@ def get_rent_market_axolotitos(
     limit: int = 20,
     session: Session = Depends(get_session),
 ):
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     return _get_rent_market(session, skip=skip, limit=limit)
 
 
@@ -152,6 +157,7 @@ def list_axolotito_for_sale(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id),
 ):
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     return _list_for_sale(
         session,
         axolotito_id=axolotito_id,
@@ -176,6 +182,7 @@ def list_axolotito_for_rent(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id),
 ):
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     return _list_for_rent(
         session,
         axolotito_id=axolotito_id,
@@ -207,6 +214,7 @@ def claim_vip_frj(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id),
 ):
+    require_feature(settings.ENABLE_GAMEPLAY_TOKEN_REWARDS, "gameplay_token_rewards")
     return _claim_vip_frj(session, verified_user_id)
 
 
@@ -216,6 +224,7 @@ def set_vip_auto_renew(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id),
 ):
+    require_feature(settings.ENABLE_VIP_SALES, "vip_sales")
     return _set_vip_auto_renew(session, enabled=req.enabled, verified_user_id=verified_user_id)
 
 
@@ -225,6 +234,7 @@ def rent_axolotito(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id),
 ):
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     return _rent_axolotito(session, axolotito_id=axolotito_id, verified_user_id=verified_user_id)
 
 
@@ -234,6 +244,7 @@ def buy_axolotito(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id),
 ):
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     return _buy_axolotito(session, axolotito_id=axolotito_id, verified_user_id=verified_user_id)
 
 

@@ -11,6 +11,7 @@ _rng = random.SystemRandom()
 from sqlmodel import Session, select
 
 from app.core.config import VIP_CONFIG, settings, FRJ_DECIMALS_BACKEND, frj_to_internal
+from app.core.product_policy import require_feature
 from app.core.prices import MULTIPLAYER_ROOMS
 from app.services.sal_service import sal_slip_chance, room_entropy
 from app.database import engine
@@ -188,7 +189,10 @@ class MultiplayerService:
 
     @staticmethod
     async def start_scheduler_loop():
-        """Bucle asíncrono periódico que corre en segundo plano procesando los lobbies en espera."""
+        """Bucle asíncrono periódico que procesa los lobbies en espera."""
+        if not settings.ENABLE_PAID_GAMEPLAY:
+            print("[Multiplayer Scheduler] Disabled by product policy.")
+            return
         print("🚀 [Multiplayer Scheduler] Iniciando bucle de matchmaking...")
         while True:
             try:
@@ -201,6 +205,7 @@ class MultiplayerService:
     async def process_waiting_rooms():
         """Busca salas en estado 'waiting' y evalúa si deben comenzar por tiempo o capacidad.
         También gestiona timeouts del lobby: ready-check de 2 min y disolución por host AFK de 5 min."""
+        require_feature(settings.ENABLE_PAID_GAMEPLAY, "paid_gameplay")
         with Session(engine) as session:
             rooms = session.exec(select(GameRoom).where(GameRoom.status == "waiting")).all()
             for room in rooms:
@@ -785,6 +790,7 @@ class MultiplayerService:
     @staticmethod
     def simulate_multiplayer_match(room_id: int):
         """Simula una partida de Lotería completa para una sala específica."""
+        require_feature(settings.ENABLE_PAID_GAMEPLAY, "paid_gameplay")
         with Session(engine) as session:
             room = session.get(GameRoom, room_id)
             if not room:
@@ -1055,6 +1061,7 @@ class MultiplayerService:
         Calcula las recompensas reales usando las marcas reales, cobra entradas,
         actualiza la base de datos y marca la sala como finalizada.
         """
+        require_feature(settings.ENABLE_PAID_GAMEPLAY, "paid_gameplay")
         with Session(engine) as session:
             room = session.get(GameRoom, room_id)
             if not room or room.status == "finished":

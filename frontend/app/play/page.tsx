@@ -46,6 +46,7 @@ import {
 } from "@/services/mapBackendAxolotito";
 import type { TabId, OnboardingPhase, SyncData } from '@/types/play';
 import type { MochilaTab } from '@/types/inventory';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 // Legacy tab IDs 'criadero'/'axolotitos' kept for backwards compat — redirect to santuario
 
@@ -53,6 +54,12 @@ import type { MochilaTab } from '@/types/inventory';
 
 export default function Home() {
   const { ready, authenticated, user, login, logout, getAccessToken } = usePrivy();
+  const { capabilities } = useProductPolicy();
+  const paidEntriesEnabled = capabilities.gameplay.paid_entries;
+  const passiveRewardsEnabled = capabilities.gameplay.passive_token_rewards;
+  const vipSalesEnabled = capabilities.commerce.vip_sales;
+  const fixedItemShopEnabled = capabilities.commerce.fixed_item_shop;
+  const randomRewardsEnabled = capabilities.commerce.purchased_random_rewards;
   const [datosBanco, setDatosBanco]       = useState<any>(null);
   const [mensajeBackend, setMensajeBackend] = useState("Sincronizando con la red de Axolotto...");
   const [accessToken, setAccessToken]     = useState<string | null>(null);
@@ -81,7 +88,7 @@ export default function Home() {
   const [tabBlocked, setTabBlocked] = useState(false);
 
   // Combined lock: activeGame (multiplayer from /active-check) OR gameSessionActive (CPU/animation)
-  const isGameLocked = !!(activeGame?.active) || gameSessionActive;
+  const isGameLocked = !!activeGame?.active || gameSessionActive;
 
   // Force tab to 'jugar' when game becomes active
   useEffect(() => {
@@ -166,7 +173,10 @@ export default function Home() {
 
   // Poll global capsule feed for ticker
   useEffect(() => {
-    if (!accessToken || !authenticated) return;
+    if (!randomRewardsEnabled || !accessToken || !authenticated) {
+      setTickerFeed([]);
+      return;
+    }
     const fetchFeed = async () => {
       try {
         const res = await axios.get(`${API_BASE}/shop/capsule/feed`, {
@@ -180,13 +190,16 @@ export default function Home() {
     fetchFeed();
     const interval = setInterval(fetchFeed, 30000);
     return () => clearInterval(interval);
-  }, [accessToken, authenticated]);
+  }, [accessToken, authenticated, randomRewardsEnabled]);
 
   // Punto rojo en dock Cápsulas cuando hay recompensa lunar disponible.
   // Se refresca al cambiar de tab (cubre reclamar dentro de Gashapon → salir del tab).
   // También sincroniza la fase lunar al canvas del mundo papel picado (plan task-84 §4).
   useEffect(() => {
-    if (!accessToken || !authenticated) { setDailyClaimAvailable(false); return; }
+    if (!passiveRewardsEnabled || !accessToken || !authenticated) {
+      setDailyClaimAvailable(false);
+      return;
+    }
     axios.get(`${API_BASE}/rewards/lunar/status`, {
       headers: { Authorization: `Bearer ${accessToken}` }
     })
@@ -197,7 +210,7 @@ export default function Home() {
         }
       })
       .catch(() => {});
-  }, [accessToken, authenticated, tabActiva]);
+  }, [passiveRewardsEnabled, accessToken, authenticated, tabActiva]);
 
   // Floating rewards states & tracking
   const [floatingGal, setFloatingGal] = useState<{ id: string; amount: string; x: number }[]>([]);
@@ -251,13 +264,17 @@ export default function Home() {
   // Mundo papel picado: cargar sobrecitos y huevos de la tienda para el diorama
   useEffect(() => {
     if (!canvasReady || !accessToken || !user?.id) return;
+    if (!fixedItemShopEnabled && !randomRewardsEnabled) {
+      gameCanvasRef.current?.setStoreItems?.([]);
+      return;
+    }
     let cancelled = false;
     storeService.fetchShopItems(user.id)
       .then((data: any[]) => {
         if (cancelled) return;
         const shopItems = data.filter((i: any) => {
           const type = i.item_type?.toLowerCase();
-          return type === "booster" || type === "egg";
+          return (randomRewardsEnabled && type === "booster") || (fixedItemShopEnabled && type === "egg");
         });
         gameCanvasRef.current?.setStoreItems?.(shopItems);
       })
@@ -265,12 +282,16 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, user?.id, canvasReady]);
+  }, [fixedItemShopEnabled, randomRewardsEnabled, accessToken, user?.id, canvasReady]);
 
   const [comprandoBooster, setComprandoBooster] = useState<number | null>(null);
   const [comprandoWebito, setComprandoWebito] = useState<number | null>(null);
 
   const comprarBoosterDirecto = async (itemId: number, moneda: string) => {
+    if (!randomRewardsEnabled) {
+      toast.info('Las recompensas aleatorias compradas están deshabilitadas.');
+      return;
+    }
     if (!user?.id || !accessToken) return;
     if (comprandoBooster !== null) return;
     setComprandoBooster(itemId);
@@ -281,7 +302,7 @@ export default function Home() {
       const data = await storeService.fetchShopItems(user.id);
       const shopItems = data.filter((i: any) => {
         const type = i.item_type?.toLowerCase();
-        return type === "booster" || type === "egg";
+        return (randomRewardsEnabled && type === "booster") || (fixedItemShopEnabled && type === "egg");
       });
       gameCanvasRef.current?.setStoreItems?.(shopItems);
     } catch (e: any) {
@@ -292,6 +313,10 @@ export default function Home() {
   };
 
   const comprarWebitoDirecto = async (itemId: number, moneda: string) => {
+    if (!fixedItemShopEnabled) {
+      toast.info('La tienda de artículos de precio fijo está deshabilitada.');
+      return;
+    }
     if (!user?.id || !accessToken) return;
     if (comprandoWebito !== null) return;
     setComprandoWebito(itemId);
@@ -302,7 +327,7 @@ export default function Home() {
       const data = await storeService.fetchShopItems(user.id);
       const shopItems = data.filter((i: any) => {
         const type = i.item_type?.toLowerCase();
-        return type === "booster" || type === "egg";
+        return (randomRewardsEnabled && type === "booster") || (fixedItemShopEnabled && type === "egg");
       });
       gameCanvasRef.current?.setStoreItems?.(shopItems);
     } catch (e: any) {
@@ -452,6 +477,10 @@ export default function Home() {
   // Mesa de amigos / burbuja 🎲 del embarcadero: hostear sala desde el mundo.
   // Requiere mesa de juego en la cueva (cave status, cacheado por sesión).
   const abrirHostingMundo = async (inviteNickname: string | null) => {
+    if (!paidEntriesEnabled) {
+      toast.info('Las salas económicas están deshabilitadas.');
+      return;
+    }
     if (caveSeatsRef.current === null && user?.id) {
       try {
         const d = await fetchCaveStatus(user.id, accessToken);
@@ -480,9 +509,14 @@ export default function Home() {
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${accessToken}` },
         body: JSON.stringify({
           privy_did: user.id,
-          wallet_address: user.wallet?.address,
+          ...(capabilities.product_mode === "legacy_simulation" && user.wallet?.address
+            ? { wallet_address: user.wallet.address }
+            : {}),
         }),
       });
+      if (!respuesta.ok) {
+        throw new Error(`No se pudo sincronizar la cuenta (${respuesta.status}).`);
+      }
       const datos = await respuesta.json();
       setDatosBanco(datos.wallet);
     } catch (e) {
@@ -497,7 +531,11 @@ export default function Home() {
     return (linked as any)?.address as string | undefined;
   })();
 
-  useBlockchainEvents(walletAddress, {
+  const eventWalletAddress = capabilities.product_mode === "legacy_simulation"
+    ? walletAddress
+    : undefined;
+
+  useBlockchainEvents(eventWalletAddress, {
     onBalanceChange: useCallback((diff: number) => {
       actualizarSaldosSilencioso();
       setEarningsQueue(prev => [...prev, diff]);
@@ -512,7 +550,7 @@ export default function Home() {
 
   // Poll for multiplayer game results with exponential backoff and visibility guard
   useEffect(() => {
-    if (!accessToken || !authenticated || !enablePolling) return;
+    if ((!paidEntriesEnabled && !activeGame?.active) || !accessToken || !authenticated || !enablePolling) return;
     let backoff = 4_000; // start at 4 seconds
     let cancelled = false;
     const pollLogs = async () => {
@@ -563,7 +601,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [accessToken, authenticated, enablePolling]);
+  }, [paidEntriesEnabled, activeGame?.active, accessToken, authenticated, enablePolling]);
 
   useEffect(() => {
     const sincronizarConBackend = async () => {
@@ -596,8 +634,17 @@ export default function Home() {
               "Content-Type": "application/json",
               "Authorization": `Bearer ${token}`,
             },
-            body: JSON.stringify({ privy_did: user.id, email, wallet_address: walletAddress }),
+            body: JSON.stringify({
+              privy_did: user.id,
+              email,
+              ...(capabilities.product_mode === "legacy_simulation" && walletAddress
+                ? { wallet_address: walletAddress }
+                : {}),
+            }),
           });
+          if (!respuesta.ok) {
+            throw new Error(`No se pudo sincronizar la cuenta (${respuesta.status}).`);
+          }
           const datos = await respuesta.json();
           setMensajeBackend(datos.mensaje);
           setDatosBanco(datos.wallet);
@@ -631,7 +678,7 @@ export default function Home() {
       }
     };
     sincronizarConBackend();
-  }, [authenticated, user, getAccessToken, syncTrigger]);
+  }, [authenticated, user, getAccessToken, syncTrigger, capabilities.product_mode]);
 
   // ─── Privy not ready yet ───────────────────────────────────────────────────
   if (!ready) {
@@ -809,10 +856,18 @@ export default function Home() {
                 setOpenBancoCount((c) => c + 1);
                 gameCanvasRef.current?.focusStall?.("fountain");
               } else if (stallType === "booster") {
+                if (!randomRewardsEnabled) {
+                  toast.info('Las recompensas aleatorias compradas están deshabilitadas.');
+                  return;
+                }
                 gameCanvasRef.current?.focusStall?.("booster");
                 gameCanvasRef.current?.setShopActive?.("booster", true);
                 return;
               } else if (stallType === "adopcion") {
+                if (!fixedItemShopEnabled) {
+                  toast.info('La tienda de artículos de precio fijo está deshabilitada.');
+                  return;
+                }
                 gameCanvasRef.current?.focusStall?.("adopcion");
                 gameCanvasRef.current?.setShopActive?.("adopcion", true);
                 return;
@@ -906,7 +961,7 @@ export default function Home() {
               </button>
  
               {/* VIP Chip */}
-              <VipChip
+              {vipSalesEnabled && <VipChip
                 vipTier={datosBanco.vip_tier}
                 daysRemaining={datosBanco.vip_days_remaining}
                 pendingGal={datosBanco.vip_pending_gal}
@@ -917,7 +972,7 @@ export default function Home() {
                   }
                   setVipModalOpen(true);
                 }}
-              />
+              />}
  
               {/* Settings */}
               <button
@@ -950,7 +1005,7 @@ export default function Home() {
           />
 
           {/* Panel in-game: Venta de Sobrecitos */}
-          <SobrecitosStallPanel
+          {randomRewardsEnabled && <SobrecitosStallPanel
             open={sobrecitosStallOpen}
             onClose={() => {
               setSobrecitosStallOpen(false);
@@ -959,10 +1014,10 @@ export default function Home() {
             userId={user?.id || ""}
             token={accessToken}
             recargarSaldos={actualizarSaldosSilencioso}
-          />
+          />}
 
           {/* VIP Modal */}
-          <VipModal
+          {vipSalesEnabled && <VipModal
             isOpen={vipModalOpen}
             onClose={() => setVipModalOpen(false)}
             token={accessToken}
@@ -970,12 +1025,12 @@ export default function Home() {
             balances={datosBanco}
             recargarSaldos={actualizarSaldosSilencioso}
             onVipSuccess={toast.vip}
-          />
+          />}
 
           {/* Hostear sala desde el mundo (mesa de amigos / burbuja 🎲).
               Montaje condicional: cada apertura remonta el modal para que
               tome la visibilidad/invitado preconfigurados. */}
-          {hostingOpen && (
+          {paidEntriesEnabled && hostingOpen && (
             <HostingSetupModal
               token={accessToken}
               isOpen
@@ -1138,7 +1193,7 @@ export default function Home() {
           />
 
           {/* Lunar claim floating button — only visible when reward available */}
-          {!activeGame?.active && (
+          {passiveRewardsEnabled && !activeGame?.active && (
             <LunarFloating
               token={accessToken}
               onSuccess={actualizarSaldosSilencioso}

@@ -15,6 +15,8 @@ _rng = random.SystemRandom()
 import sqlalchemy as sa
 from app.models.axolotito import Axolotito
 from app.services.web3_service import Web3Service
+from app.core.config import settings
+from app.core.product_policy import require_feature
 
 from app.core.auth import get_verified_user_id, verify_no_active_game
 from app.services.imprinting_service import (
@@ -222,6 +224,7 @@ def hatch_webito(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(verify_no_active_game)
 ):
+    require_feature(settings.ENABLE_HATCHING, "hatching")
     # 1. Buscar la incubación con lock pesimista para prevenir double-hatch
     incubation = session.exec(
         select(WebitoIncubation)
@@ -284,6 +287,7 @@ def _perform_hatch(
     crea el registro Axolotito y limpia la incubación. Los callers validan las
     precondiciones (tiempo, imprinting). Reutilizado por el endpoint /hatch y por
     el cierre del tutorial (auto-eclosión)."""
+    require_feature(settings.ENABLE_HATCHING, "hatching")
     user_id = incubation.user_id
     sys_rand = secrets.SystemRandom()
 
@@ -363,6 +367,11 @@ def _perform_hatch(
     )
 
     # 8. Acuñar NFT en Blockchain
+    if settings.PRODUCT_MODE != "legacy_simulation" and not user.wallet_address:
+        raise HTTPException(
+            status_code=409,
+            detail="Se requiere una wallet verificada para eclosionar on-chain.",
+        )
     target_wallet = user.wallet_address if user.wallet_address else "0x0000000000000000000000000000000000000000"
     
     # 9. Calcular next_token_id local como fallback
@@ -406,10 +415,27 @@ def _perform_hatch(
                 select(Axolotito).where(Axolotito.blockchain_token_id == real_token_id)
             ).first()
             if existing:
+                if settings.PRODUCT_MODE != "legacy_simulation":
+                    raise HTTPException(
+                        status_code=409,
+                        detail="El tokenId on-chain ya está proyectado en otra cuenta.",
+                    )
                 print(f"⚠️ Token ID on-chain {real_token_id} ya existe en DB (axo #{existing.id}), usando fallback {next_token_id}")
             else:
                 blockchain_token_id = real_token_id
+        elif settings.PRODUCT_MODE != "legacy_simulation":
+            raise HTTPException(
+                status_code=503,
+                detail="La cadena no devolvió un tokenId confirmado.",
+            )
     except Exception as e:
+        if settings.PRODUCT_MODE != "legacy_simulation":
+            if isinstance(e, HTTPException):
+                raise
+            raise HTTPException(
+                status_code=503,
+                detail="La cadena no confirmó la eclosión; no se creó estado local.",
+            ) from e
         print(f"⚠️ Error al acuñar NFT de Axolotito en Blockchain: {e}")
         tx_hash = f"0x_error_fallback_{secrets.token_hex(32)}"
 

@@ -11,6 +11,8 @@ from sqlmodel import Session, select
 
 from app.database import get_session
 from app.core.auth import get_verified_user_id
+from app.core.config import settings
+from app.core.product_policy import require_feature
 from app.services.referral_service import ReferralService
 
 router = APIRouter()
@@ -50,6 +52,10 @@ def claim_referral(
     verified_user_id: str = Depends(get_verified_user_id),
 ) -> dict:
     """Claim a referral code after registration. Grants rewards + auto-friends."""
+    require_feature(
+        settings.ENABLE_CLIENT_REPORTED_REWARDS,
+        "client_reported_rewards",
+    )
     return ReferralService.claim_referral(session, req.code, verified_user_id)
 
 
@@ -64,6 +70,10 @@ def report_milestone(
     Called by the frontend when the user completes tutorial, plays first game, etc.
     Also callable by backend cron jobs.
     """
+    require_feature(
+        settings.ENABLE_CLIENT_REPORTED_REWARDS,
+        "client_reported_rewards",
+    )
     valid = {"tutorial_done", "first_game", "d7_retained", "converted", "vip_coral"}
     if req.milestone not in valid:
         raise HTTPException(status_code=400, detail=f"Hito inválido. Válidos: {valid}")

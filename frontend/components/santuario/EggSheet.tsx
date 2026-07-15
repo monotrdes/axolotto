@@ -5,6 +5,7 @@ import BottomSheet from '@/components/ui/BottomSheet';
 import { obtenerEstiloHuevo, obtenerFaseHuevo } from '@/utils/santuario';
 import { ImprintingProgress } from '../ImprintingProgress';
 import PadrinoSelectSheet from './PadrinoSelectSheet';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 interface EggSheetProps {
   inc: any;
@@ -23,6 +24,8 @@ export default function EggSheet({
   onStartImprinting,
   hatchingId,
 }: EggSheetProps) {
+  const { capabilities } = useProductPolicy();
+  const hatchingEnabled = capabilities.assets.hatching;
   const estilos  = obtenerEstiloHuevo(inc.name);
   const faseInfo = obtenerFaseHuevo(inc);
   const purity   = inc.genetic_purity ?? 100.0;
@@ -60,8 +63,9 @@ export default function EggSheet({
             {/* Egg */}
             <div className="relative flex justify-center mb-5">
               <button
-                onClick={() => { if (isReady) onHatch(inc.id); }}
-                disabled={isReady && hatchingId === inc.id}
+                onClick={() => { if (hatchingEnabled && isReady) onHatch(inc.id); }}
+                disabled={isReady && (!hatchingEnabled || hatchingId === inc.id)}
+                title={!hatchingEnabled ? 'Eclosión en revisión' : undefined}
                 className={`relative text-7xl leading-none select-none transition-transform active:scale-90 ${faseInfo.clase}`}
                 style={{
                   '--egg-shadow': estilos.shadow,
@@ -75,7 +79,9 @@ export default function EggSheet({
             {/* Hint */}
             <p className="text-center text-[9px] text-slate-600 font-bold uppercase tracking-widest mb-4">
               {isReady
-                ? '¡Toca el huevo para eclosionar!'
+                ? hatchingEnabled
+                  ? '¡Toca el huevo para eclosionar!'
+                  : 'La eclosión está en revisión.'
                 : isTutorial
                   ? 'El webito eclosionará solo al cumplir su tiempo de incubación.'
                   : inc.imprinting_padrino_id
@@ -118,8 +124,10 @@ export default function EggSheet({
               <div className="mb-5">
                 <button
                   type="button"
-                  onClick={() => setShowPadrinoSelect(true)}
-                  className="w-full p-4 rounded-2xl bg-gradient-to-br from-purple-950/30 to-slate-950/40 border border-purple-500/20 hover:border-purple-500/50 transition-all group text-left"
+                  onClick={() => hatchingEnabled && setShowPadrinoSelect(true)}
+                  disabled={!hatchingEnabled}
+                  title={!hatchingEnabled ? 'Imprinting en revisión' : undefined}
+                  className="w-full p-4 rounded-2xl bg-gradient-to-br from-purple-950/30 to-slate-950/40 border border-purple-500/20 hover:border-purple-500/50 transition-all group text-left disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-purple-900/30 border border-purple-500/30 flex items-center justify-center text-xl shrink-0 group-hover:scale-110 transition-transform">
@@ -127,7 +135,7 @@ export default function EggSheet({
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="text-xs font-black text-purple-300 group-hover:text-purple-200 transition-colors">
-                        Seleccionar Padrino
+                        {hatchingEnabled ? 'Seleccionar Padrino' : 'Imprinting en revisión'}
                       </div>
                       <div className="text-[9px] text-slate-500 font-bold mt-0.5">
                         Elige un Axolotito para guiar el imprinting
@@ -165,11 +173,16 @@ export default function EggSheet({
             {/* Action */}
             {isReady ? (
               <button
-                onClick={() => onHatch(inc.id)}
-                disabled={hatchingId === inc.id}
+                onClick={() => hatchingEnabled && onHatch(inc.id)}
+                disabled={!hatchingEnabled || hatchingId === inc.id}
+                title={!hatchingEnabled ? 'Eclosión en revisión' : undefined}
                 className="w-full py-3.5 rounded-2xl font-black uppercase text-sm tracking-widest bg-gradient-to-r from-[#E4007C] to-amber-500 hover:from-[#FF1493] hover:to-amber-400 text-white border-none animate-pulse shadow-lg shadow-pink-500/30 active:scale-95 transition-all disabled:opacity-60"
               >
-                {hatchingId === inc.id ? 'Eclosionando…' : '✨ ¡Eclosionar! ✨'}
+                {!hatchingEnabled
+                  ? 'Eclosión en revisión'
+                  : hatchingId === inc.id
+                    ? 'Eclosionando…'
+                    : '✨ ¡Eclosionar! ✨'}
               </button>
             ) : (
               <div className="text-center text-[10px] text-slate-500 font-bold py-2">
@@ -184,7 +197,7 @@ export default function EggSheet({
     </BottomSheet>
 
     {/* ── Padrino Selection Sheet ── */}
-    {showPadrinoSelect && (
+    {hatchingEnabled && showPadrinoSelect && (
       <PadrinoSelectSheet
         inc={inc}
         axolotitos={axolotitos}

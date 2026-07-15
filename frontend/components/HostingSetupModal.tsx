@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { X, Lock, Users, Zap, Gamepad2, Hash } from 'lucide-react';
 import { API_BASE } from '@/lib/api';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 const API = `${API_BASE}`;
 
@@ -29,6 +30,8 @@ export default function HostingSetupModal({
   initialVisibility,
   inviteNickname,
 }: HostingSetupModalProps) {
+  const { capabilities, loading: policyLoading } = useProductPolicy();
+  const paidEntriesEnabled = capabilities.gameplay.paid_entries;
   const [name, setName] = useState(
     inviteNickname ? `Mesa con ${inviteNickname}`.slice(0, 30) : 'Mi Sala'
   );
@@ -43,6 +46,33 @@ export default function HostingSetupModal({
 
   if (!isOpen) return null;
 
+  if (!paidEntriesEnabled) {
+    return (
+      <div className="fixed inset-0 z-[130] flex items-end justify-center bg-black/70" onClick={onClose}>
+        <div
+          className="bg-slate-900 rounded-t-3xl w-full max-w-md p-6 text-center"
+          onClick={event => event.stopPropagation()}
+        >
+          <button
+            type="button"
+            onClick={onClose}
+            className="ml-auto p-2 rounded-full bg-slate-800 text-slate-400 hover:text-white"
+            aria-label="Cerrar"
+          >
+            <X size={16} />
+          </button>
+          <div className="text-4xl mb-3">🛟</div>
+          <h3 className="text-lg font-black text-amber-200">Salas pagadas deshabilitadas</h3>
+          <p className="mt-2 text-xs text-slate-400 leading-relaxed">
+            {policyLoading
+              ? 'Verificando la política de producto…'
+              : 'No se pueden crear salas económicas ni con premios. No se realizó ningún cargo.'}
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const togglePattern = (p: string) => {
     setWinPatterns(prev =>
       prev.includes(p) ? prev.filter(x => x !== p) : [...prev, p]
@@ -50,6 +80,10 @@ export default function HostingSetupModal({
   };
 
   const handleCreate = async () => {
+    if (!paidEntriesEnabled) {
+      setError('La creación de salas pagadas está deshabilitada.');
+      return;
+    }
     if (!name.trim() || name.trim().length < 2) {
       setError('El nombre debe tener al menos 2 caracteres.');
       return;

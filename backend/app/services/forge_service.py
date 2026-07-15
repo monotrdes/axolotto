@@ -16,12 +16,18 @@ logger = logging.getLogger("forge_service")
 from app.services.bank_service import BankService
 from app.services.web3_service import Web3Service
 from app.core.config import settings, frj_to_internal, frj_to_display
+from app.core.product_policy import require_feature
 
 _rng = random.SystemRandom()
 
 
 def melt_card(session: Session, user_id: str, card_id: int, is_first_edition: bool = False) -> dict:
     """Fundir 5 copias de una carta de rareza común, rara o épica para obtener fragmentos y una carta aleatoria superior."""
+    require_feature(settings.ENABLE_CARD_CRAFTING, "card_crafting")
+    require_feature(
+        settings.ENABLE_PURCHASED_RANDOM_REWARDS,
+        "purchased_random_rewards",
+    )
     # 0. Verificar tutorial completado
     user = session.exec(select(User).where(User.privy_did == user_id)).first()
     if user:
@@ -169,6 +175,7 @@ def melt_card(session: Session, user_id: str, card_id: int, is_first_edition: bo
 
 def forge_card(session: Session, user_id: str, target_card_id: int) -> dict:
     """Forjar una carta específica consumiendo fragmentos de su rareza y GAL."""
+    require_feature(settings.ENABLE_CARD_CRAFTING, "card_crafting")
     # 0. Verificar tutorial completado
     user = session.exec(select(User).where(User.privy_did == user_id)).first()
     if user:

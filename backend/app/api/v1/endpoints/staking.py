@@ -8,7 +8,9 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlmodel import Session, select
 
 from app.core.auth import get_verified_user_id
+from app.core.config import settings
 from app.core.limiter import limiter
+from app.core.product_policy import require_feature
 from app.database import get_session
 from app.models.axolotito import Axolotito
 from app.models.user import User
@@ -40,6 +42,7 @@ def get_staking_status(
     if not axolotitos:
         return {
             "user_id": verified_user_id,
+            "rewards_enabled": settings.ENABLE_PASSIVE_TOKEN_REWARDS,
             "staking_active": False,
             "slots_total": StakingService.get_staking_slots(user),
             "slots_used": 0,
@@ -59,6 +62,10 @@ def claim_staking(
     verified_user_id: str = Depends(get_verified_user_id),
 ):
     """Claim staking reward for a single Axolotito."""
+    require_feature(
+        settings.ENABLE_PASSIVE_TOKEN_REWARDS,
+        "passive_token_rewards",
+    )
     user = session.exec(
         select(User).where(User.privy_did == verified_user_id)
     ).first()
@@ -76,6 +83,10 @@ def claim_all_staking(
     verified_user_id: str = Depends(get_verified_user_id),
 ):
     """Claim staking rewards for ALL of the user's Axolotitos at once."""
+    require_feature(
+        settings.ENABLE_PASSIVE_TOKEN_REWARDS,
+        "passive_token_rewards",
+    )
     user = session.exec(
         select(User).where(User.privy_did == verified_user_id)
     ).first()
@@ -95,6 +106,10 @@ def stake_axolotito(
     verified_user_id: str = Depends(get_verified_user_id),
 ):
     """Pone a un Axolotito en staking (studying o resting)."""
+    require_feature(
+        settings.ENABLE_PASSIVE_TOKEN_REWARDS,
+        "passive_token_rewards",
+    )
     if status not in ["studying", "resting"]:
         raise HTTPException(
             status_code=400,
@@ -188,8 +203,15 @@ def unstake_axolotito(
             detail="Este Axolotito no está en staking."
         )
 
+    # Feature shutdown must never trap a user's asset behind the normal lock.
+    if not settings.ENABLE_PASSIVE_TOKEN_REWARDS:
+        return StakingService.unstake_without_reward(
+            session,
+            axolotito_id,
+            user,
+        )
+
     # Check minimum lock duration (2 mins in dev, 60 mins in prod)
-    from app.core.config import settings
     lock_minutes = 2 if settings.BLOCKCHAIN_MODE == "local" else 60
     if axolotito.last_staking_claim:
         elapsed_seconds = (datetime.utcnow() - axolotito.last_staking_claim).total_seconds()

@@ -33,14 +33,28 @@ class TestVuln07PaymentBypass:
     def test_empty_hash_allowed_when_dev_payments_on(self):
         with patch("app.services.web3_service.settings") as mock_cfg:
             mock_cfg.ALLOW_DEV_PAYMENTS = True
+            mock_cfg.PRODUCT_MODE = "legacy_simulation"
+            mock_cfg.BLOCKCHAIN_MODE = "local"
             result = Web3Service.verify_usdc_payment("", "0xRECIPIENT", 10.0)
         assert result is True
 
     def test_mock_hash_allowed_when_dev_payments_on(self):
         with patch("app.services.web3_service.settings") as mock_cfg:
             mock_cfg.ALLOW_DEV_PAYMENTS = True
+            mock_cfg.PRODUCT_MODE = "legacy_simulation"
+            mock_cfg.BLOCKCHAIN_MODE = "local"
             result = Web3Service.verify_usdc_payment("0x_mock_whatever", "0xRECIPIENT", 10.0)
         assert result is True
+
+    def test_mock_hash_rejected_outside_legacy_even_if_flag_is_on(self):
+        with patch("app.services.web3_service.settings") as mock_cfg:
+            mock_cfg.ALLOW_DEV_PAYMENTS = True
+            mock_cfg.PRODUCT_MODE = "non_gambling"
+            mock_cfg.BLOCKCHAIN_MODE = "local"
+            result = Web3Service.verify_usdc_payment(
+                "0x_mock_whatever", "0xRECIPIENT", 10.0
+            )
+        assert result is False
 
     def test_invalid_format_always_rejected(self):
         """Malformed hashes are rejected regardless of ALLOW_DEV_PAYMENTS."""

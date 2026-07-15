@@ -16,11 +16,13 @@ from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from app.core.auth import get_verified_user_id
+from app.core.config import settings
+from app.core.product_policy import require_feature
 from app.database import get_session
 from app.models.items import ItemCatalog, ItemType, WebitoIncubation
 from app.models.user import User
 from app.services.dialogue_engine import DialogueEngine
-from app.services.tutorial_service import TutorialService
+from app.services.tutorial_service import TutorialService, require_tutorial_features
 
 
 def _stats_from_user_id(user_id: str) -> dict:
@@ -74,8 +76,17 @@ def _board_from_user_id(user_id: str, session: Session) -> list:
         select(ItemCatalog).where(ItemCatalog.item_type == ItemType.CARD)
     ).all()
 
-    # Fallback: IDs secuenciales si no hay catálogo
+    # El starter público debe apuntar a cartas reales; nunca crear una tabla
+    # aparentemente utilizable con IDs inventados.
     if not all_cards:
+        if settings.ENABLE_FREE_GAMEPLAY and not settings.ENABLE_PAID_GAMEPLAY:
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "code": "FREE_STARTER_CATALOG_NOT_READY",
+                    "message": "El catálogo de cartas aún no está preparado.",
+                },
+            )
         return list(range(1, 17))
 
     num_to_cid: dict[int, int] = {}
@@ -99,6 +110,18 @@ def _board_from_user_id(user_id: str, session: Session) -> list:
 
     # Tomar primeros 16 y mapear a card IDs del catálogo
     selected = nums[:16]
+    if (
+        settings.ENABLE_FREE_GAMEPLAY
+        and not settings.ENABLE_PAID_GAMEPLAY
+        and any(n not in num_to_cid for n in selected)
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "code": "FREE_STARTER_CATALOG_NOT_READY",
+                "message": "Faltan cartas numeradas para la tabla de práctica.",
+            },
+        )
     return [num_to_cid.get(n, n) for n in selected]
 
 
@@ -112,7 +135,11 @@ def _get_active_incubation(
     session: Session,
 ) -> WebitoIncubation:
     """Busca la incubación y verifica que pertenezca al usuario autenticado."""
-    incubation = session.get(WebitoIncubation, incubation_id)
+    incubation = session.exec(
+        select(WebitoIncubation)
+        .where(WebitoIncubation.id == incubation_id)
+        .with_for_update()
+    ).first()
     if not incubation:
         raise HTTPException(status_code=404, detail="Incubación no encontrada.")
     if incubation.user_id != user_id:
@@ -134,13 +161,35 @@ def start_tutorial(
     No requiere incubation_id — el backend lo gestiona.
     Devuelve: {id: int, phase: 1, dialogue: str, egg_intro_dialogue: str}
     """
-    # Buscar incubación de tutorial en curso (phase 0–4)
-    incubation = session.exec(
+    require_tutorial_features()
+
+    user = session.exec(
+        select(User)
+        .where(User.privy_did == verified_user_id)
+        .with_for_update()
+    ).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    if user.tutorial_completed:
+        raise HTTPException(
+            status_code=409,
+            detail="El tutorial ya fue completado para esta cuenta.",
+        )
+
+    free_tutorial = settings.ENABLE_FREE_GAMEPLAY and not settings.ENABLE_PAID_GAMEPLAY
+
+    # En modo público, un tutorial nunca adopta ni elimina una incubación
+    # real: las incubaciones de práctica usan el sentinel item_id=0.
+    incubation_query = (
         select(WebitoIncubation)
         .where(WebitoIncubation.user_id == verified_user_id)
         .where(WebitoIncubation.tutorial_phase < 5)
         .order_by(WebitoIncubation.id)
-    ).first()
+    )
+    if free_tutorial:
+        incubation_query = incubation_query.where(WebitoIncubation.item_id == 0)
+    incubation_query = incubation_query.with_for_update()
+    incubation = session.exec(incubation_query).first()
 
     stats = _stats_from_user_id(verified_user_id)
 
@@ -149,14 +198,14 @@ def start_tutorial(
         egg_item = session.exec(
             select(ItemCatalog).where(ItemCatalog.item_type == ItemType.EGG)
         ).first()
-        if not egg_item:
+        if not egg_item and not free_tutorial:
             raise HTTPException(
                 status_code=500,
                 detail="Sin huevos en el catálogo. Contacta al administrador.",
             )
         incubation = WebitoIncubation(
             user_id=verified_user_id,
-            item_id=egg_item.id,
+            item_id=0 if free_tutorial else egg_item.id,
             fecha_eclosion_estimada=datetime.utcnow() + timedelta(days=1),
             bonus_focus=stats["bonus_focus"],
             bonus_luck=stats["bonus_luck"],

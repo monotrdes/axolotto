@@ -23,6 +23,8 @@ from app.models.user import User
 from app.services.bank_service import BankService
 from app.services.web3_service import Web3Service
 from app.core.config import settings
+from app.core.product_policy import require_feature
+from app.core.account_policy import require_account_capability
 
 # ── Catálogo de packs ─────────────────────────────────────────────────────────
 
@@ -37,6 +39,14 @@ FIRST_PURCHASE_BONUS = 0.10   # +10% AXF en la primera compra
 FLASH_SALE_BONUS     = 0.25   # +25% AXF en el pack del día
 ORDER_TTL_MINUTES    = 30
 MAX_ACTIVE_ORDERS    = 3      # máximo de órdenes simultáneas por usuario
+
+
+def _dev_payment_mock_allowed() -> bool:
+    return (
+        settings.PRODUCT_MODE == "legacy_simulation"
+        and settings.BLOCKCHAIN_MODE == "local"
+        and settings.ALLOW_DEV_PAYMENTS
+    )
 
 
 def get_flash_sale_pack() -> str:
@@ -90,12 +100,14 @@ class CheckoutService:
         pack_id: str,
     ) -> CryptoPurchaseOrder:
         """Crea una orden de compra. Devuelve la orden con la dirección de pago."""
+        require_feature(settings.ENABLE_CRYPTO_CHECKOUT, "crypto_checkout")
         if pack_id not in AXF_PACKS:
             raise HTTPException(status_code=400, detail=f"Pack '{pack_id}' no existe.")
 
         user = session.exec(select(User).where(User.privy_did == user_id)).first()
         if not user:
             raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+        require_account_capability(user, "can_purchase")
         if not user.wallet_address:
             raise HTTPException(
                 status_code=400,
@@ -135,8 +147,11 @@ class CheckoutService:
 
         try:
             treasury_address = Web3Service.get_treasury_address()
-        except Exception:
-            treasury_address = "0x0000000000000000000000000000000000000000"
+        except Exception as exc:
+            raise HTTPException(
+                status_code=503,
+                detail="Tesoreria on-chain no disponible; no se creo ninguna orden.",
+            ) from exc
 
         order = CryptoPurchaseOrder(
             user_id=user_id,
@@ -164,8 +179,10 @@ class CheckoutService:
         """
         El frontend informa el tx_hash tras enviar USDC.
         """
+        require_feature(settings.ENABLE_CRYPTO_CHECKOUT, "crypto_checkout")
+
         # Validar formato tx_hash (siempre, salvo que dev-payments esté explícitamente habilitado)
-        if not settings.ALLOW_DEV_PAYMENTS:
+        if not _dev_payment_mock_allowed():
             if not tx_hash or not re.fullmatch(r"0x[0-9a-fA-F]{64}", tx_hash):
                 raise HTTPException(
                     status_code=400,
@@ -179,6 +196,11 @@ class CheckoutService:
             raise HTTPException(status_code=404, detail="Orden no encontrada.")
         if order.user_id != user_id:
             raise HTTPException(status_code=403, detail="Esta orden no es tuya.")
+
+        user = session.exec(select(User).where(User.privy_did == user_id)).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+        require_account_capability(user, "can_purchase")
         if order.status == OrderStatus.COMPLETED:
             raise HTTPException(status_code=409, detail="Esta orden ya fue completada.")
         if order.status == OrderStatus.FAILED:

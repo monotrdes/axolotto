@@ -14,7 +14,8 @@ from app.models.items import (
 )
 from app.models.economy import TransactionLedger, TransactionType, CurrencyType, Wallet
 from app.services.bank_service import BankService
-from app.core.config import frj_to_internal
+from app.core.config import frj_to_internal, settings
+from app.core.product_policy import require_feature
 from app.services.drop_service import (
     _try_legendary_drop,
     _try_tabla_forjada_drop,
@@ -83,6 +84,11 @@ def _roll_capsule(tier: str, user_id: str, session: Session) -> dict:
       3. Pool normal según tier.
       4. Para outcome "sobre": check secundario de Foil.
     """
+    require_feature(
+        settings.ENABLE_PURCHASED_RANDOM_REWARDS,
+        "purchased_random_rewards",
+    )
+
     from app.models.user import User
     user = session.exec(select(User).where(User.privy_did == user_id)).first()
     from app.core.auth import require_tutorial

@@ -6,6 +6,8 @@ from sqlmodel import Session
 
 from app.database import get_session
 from app.core.auth import get_verified_user_id, require_admin
+from app.core.config import settings
+from app.core.product_policy import require_feature, require_legacy_local
 from app.services.admin_service import (
     SimRunParams,
     ChaosRunParams,
@@ -22,6 +24,7 @@ from app.services.admin_service import (
     run_chaos_simulation,
     get_card_distribution,
     adjust_player_balance,
+    require_admin_balance_policy,
     grant_player_vip,
     override_player_tutorial,
     toggle_player_status,
@@ -94,6 +97,7 @@ def admin_run_simulation(
     background_tasks: BackgroundTasks,
     _: str = Depends(require_admin),
 ):
+    require_legacy_local("admin_simulation")
     return run_simulation(params, background_tasks)
 
 
@@ -115,6 +119,7 @@ def admin_run_chaos_simulation(
     background_tasks: BackgroundTasks,
     _: str = Depends(require_admin),
 ):
+    require_legacy_local("admin_chaos_simulation")
     return run_chaos_simulation(params, background_tasks)
 
 
@@ -152,6 +157,7 @@ def admin_adjust_balance(
     _: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
+    require_admin_balance_policy(payload.currency, payload.amount)
     return adjust_player_balance(session, player_did, payload.currency, payload.amount, payload.reason)
 
 
@@ -162,6 +168,8 @@ def admin_grant_vip(
     _: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
+    if payload.tier != "none":
+        require_feature(settings.ENABLE_VIP_SALES, "vip_sales")
     return grant_player_vip(session, player_did, payload.tier, payload.duration_days)
 
 
@@ -172,6 +180,15 @@ def admin_tutorial_override(
     _: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
+    require_feature(
+        settings.ENABLE_GAMEPLAY_TOKEN_REWARDS,
+        "gameplay_token_rewards",
+    )
+    require_feature(settings.ENABLE_HATCHING, "hatching")
+    require_feature(
+        settings.ENABLE_BOARD_ASSET_MUTATIONS,
+        "board_asset_mutations",
+    )
     return override_player_tutorial(session, player_did, payload.action)
 
 
@@ -198,6 +215,10 @@ def admin_create_promo_batch(
     _: str = Depends(require_admin),
     session: Session = Depends(get_session),
 ):
+    require_feature(
+        settings.ENABLE_PROMOTIONAL_TOKEN_REWARDS,
+        "promotional_token_rewards",
+    )
     return create_promo_batch(session, payload)
 
 

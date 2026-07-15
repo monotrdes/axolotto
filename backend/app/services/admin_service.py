@@ -20,6 +20,7 @@ from sqlmodel import Session, select, func
 from sqlalchemy import text, case as sa_case
 
 from app.core.config import settings
+from app.core.product_policy import require_feature, require_legacy_local
 from app.models.user import User
 from app.models.economy import (
     Wallet,
@@ -947,6 +948,7 @@ def get_simulation_status() -> dict:
 
 def run_simulation(params: SimRunParams, background_tasks) -> dict:
     """Start a new simulation in the background."""
+    require_legacy_local("admin_simulation")
     from fastapi import HTTPException
 
     if params.include_user:
@@ -1144,6 +1146,7 @@ def get_chaos_simulation_report() -> dict:
 
 def run_chaos_simulation(params: ChaosRunParams, background_tasks) -> dict:
     """Start a new chaos simulation in the background."""
+    require_legacy_local("admin_chaos_simulation")
     from fastapi import HTTPException
 
     # Validate
@@ -1351,7 +1354,19 @@ def get_card_distribution(session: Session) -> dict:
     }
 
 
+def require_admin_balance_policy(currency: str, amount: float) -> None:
+    """Apply the correct admin feature gate before any wallet/resource write."""
+    if currency in {"axf", "frj"} and amount > 0:
+        require_feature(settings.ENABLE_ADMIN_TOKEN_MINTS, "admin_token_mints")
+    else:
+        require_feature(
+            settings.ENABLE_ADMIN_BALANCE_ADJUSTMENTS,
+            "admin_balance_adjustments",
+        )
+
+
 def adjust_player_balance(session: Session, player_did: str, currency: str, amount: float, reason: str) -> dict:
+    require_admin_balance_policy(currency, amount)
     from app.core.config import axf_to_internal, frj_to_internal
     from app.models.economy import CurrencyType, TransactionType, TransactionLedger
     from fastapi import HTTPException
@@ -1427,6 +1442,9 @@ def adjust_player_balance(session: Session, player_did: str, currency: str, amou
 
 def grant_player_vip(session: Session, player_did: str, tier: str, duration_days: int) -> dict:
     from fastapi import HTTPException
+
+    if tier != "none":
+        require_feature(settings.ENABLE_VIP_SALES, "vip_sales")
     
     user = session.exec(
         select(User).where(User.privy_did == player_did).with_for_update()
@@ -1468,6 +1486,16 @@ def override_player_tutorial(session: Session, player_did: str, action: str) -> 
     from app.api.v1.endpoints.tutorial import _board_from_user_id
     import random
     _rng = random.SystemRandom()
+
+    require_feature(
+        settings.ENABLE_GAMEPLAY_TOKEN_REWARDS,
+        "gameplay_token_rewards",
+    )
+    require_feature(settings.ENABLE_HATCHING, "hatching")
+    require_feature(
+        settings.ENABLE_BOARD_ASSET_MUTATIONS,
+        "board_asset_mutations",
+    )
 
     user = session.exec(select(User).where(User.privy_did == player_did).with_for_update()).first()
     if not user:
@@ -1652,6 +1680,10 @@ class PromoBatchCreate(BaseModel):
 
 
 def create_promo_batch(session: Session, payload: PromoBatchCreate) -> dict:
+    require_feature(
+        settings.ENABLE_PROMOTIONAL_TOKEN_REWARDS,
+        "promotional_token_rewards",
+    )
     from app.models.promo import PromoCode
     from app.models.items import ItemCatalog
     from fastapi import HTTPException

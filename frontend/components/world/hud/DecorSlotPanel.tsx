@@ -4,6 +4,7 @@ import axios from "axios";
 import { API_BASE } from "@/lib/api";
 import { useToast } from "@/context/ToastContext";
 import type { DecoracionesData } from "@/components/world/zones/santuario/santuarioTypes";
+import { useProductPolicy } from "@/hooks/useProductPolicy";
 
 /**
  * Panel de decoración del mundo papel picado (plan task-84): se abre al tocar
@@ -80,6 +81,9 @@ const DecorSlotPanelInner: React.FC<DecorSlotPanelProps> = ({
   onChanged,
 }) => {
   const { toast } = useToast();
+  const { capabilities } = useProductPolicy();
+  const fixedItemShopEnabled = capabilities.commerce.fixed_item_shop;
+  const passiveRewardsEnabled = capabilities.gameplay.passive_token_rewards;
   const subcat = (slotId ?? "").split("_")[0];
   const info = SUBCAT_INFO[subcat] ?? { label: subcat, icon: "🏺" };
 
@@ -98,7 +102,9 @@ const DecorSlotPanelInner: React.FC<DecorSlotPanelProps> = ({
       const [decorRes, invRes, shopRes] = await Promise.all([
         axios.get(`${API_BASE}/cave/decorations`, { headers }),
         axios.get(`${API_BASE}/cave/decorations/inventory`, { headers }),
-        axios.get(`${API_BASE}/shop/items`, { params: { user_id: userId } }),
+        fixedItemShopEnabled
+          ? axios.get(`${API_BASE}/shop/items`, { params: { user_id: userId } })
+          : Promise.resolve({ data: [] }),
       ]);
       setDecor(decorRes.data);
       setInventario(invRes.data?.items_by_category?.[subcat] ?? []);
@@ -114,13 +120,12 @@ const DecorSlotPanelInner: React.FC<DecorSlotPanelProps> = ({
       toast.error("No se pudo cargar la decoración");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token, userId, subcat]);
+  }, [fixedItemShopEnabled, token, userId, subcat]);
 
   // Carga inicial: el panel se remonta por slot (key=slotId), loading parte
   // en true y se apaga cuando responde el backend (sistema externo).
   useEffect(() => {
     let active = true;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetch inicial: el setState ocurre tras la respuesta de red, no síncrono
     cargar().finally(() => {
       if (active) setLoading(false);
     });
@@ -155,7 +160,7 @@ const DecorSlotPanelInner: React.FC<DecorSlotPanelProps> = ({
   };
 
   const comprar = async (item: CatalogItem) => {
-    if (!token || busy) return;
+    if (!fixedItemShopEnabled || !token || busy) return;
     setBusy(true);
     try {
       await axios.post(
@@ -207,7 +212,7 @@ const DecorSlotPanelInner: React.FC<DecorSlotPanelProps> = ({
           {(
             [
               { id: "equipar", label: "🎒 Equipar" },
-              { id: "comprar", label: "🛒 Comprar" },
+              ...(fixedItemShopEnabled ? [{ id: "comprar" as const, label: "🛒 Comprar" }] : []),
             ] as const
           ).map((t) => (
             <button
@@ -228,7 +233,7 @@ const DecorSlotPanelInner: React.FC<DecorSlotPanelProps> = ({
           <p className="text-center text-gray-500 text-sm py-8 animate-pulse">
             🪸 Cargando…
           </p>
-        ) : tab === "equipar" ? (
+        ) : tab === "equipar" || !fixedItemShopEnabled ? (
           <>
             {equippedItemId !== null && (
               <button
@@ -246,12 +251,12 @@ const DecorSlotPanelInner: React.FC<DecorSlotPanelProps> = ({
                 <p className="text-gray-500 text-sm mt-1">
                   No tienes decoraciones de {info.label.toLowerCase()}.
                 </p>
-                <button
+                {fixedItemShopEnabled && <button
                   onClick={() => setTab("comprar")}
                   className="mt-2 px-4 py-1.5 rounded-full bg-[#E4007C] text-white text-xs font-bold hover:bg-[#ff1a8c]"
                 >
                   Ver el catálogo →
-                </button>
+                </button>}
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-2">
@@ -355,12 +360,12 @@ const DecorSlotPanelInner: React.FC<DecorSlotPanelProps> = ({
                       +{Math.round((b.focus_recovery_boost ?? 0) * 100)}%
                     </p>
                   </div>
-                  <div>
+                  {passiveRewardsEnabled && <div>
                     <p className="text-[9px] text-gray-500 font-bold uppercase">💰 Staking</p>
                     <p className="text-xs font-black text-amber-400">
                       +{Math.round((b.frj_staking_multiplier ?? 0) * 100)}%
                     </p>
-                  </div>
+                  </div>}
                   <div>
                     <p className="text-[9px] text-gray-500 font-bold uppercase">🥚 Incubación</p>
                     <p className="text-xs font-black text-sky-400">

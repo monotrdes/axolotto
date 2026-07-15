@@ -21,7 +21,8 @@ from sqlmodel import Session, func, select
 
 from app.core.auth import get_verified_user_id
 from app.database import get_session
-from app.core.config import frj_to_internal, frj_to_display, axf_to_internal, axf_to_display
+from app.core.config import frj_to_internal, frj_to_display, axf_to_internal, axf_to_display, settings
+from app.core.product_policy import require_feature
 from app.models.axolotito import Axolotito
 from app.models.economy import (
     CurrencyType,
@@ -327,6 +328,8 @@ def _get_next_level_info(current_level: int, user=None, wallet=None, stats=None)
 
 def _grant_egg_reward(session: Session, user_id: str, reward_type: str | None) -> dict | None:
     """Otorga un huevo de recompensa al expandir la cueva."""
+    if not settings.ENABLE_HATCHING:
+        return None
     if not reward_type:
         return None
 
@@ -553,6 +556,10 @@ def start_expansion(
     La expansión tiene un timer de excavación (2h a 72h según nivel).
     Se puede acelerar con AXF vía POST /expand/accelerate.
     """
+    require_feature(
+        settings.ENABLE_FIXED_GAMEPLAY_SPENDING,
+        "fixed_gameplay_spending",
+    )
     user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
@@ -684,6 +691,10 @@ def accelerate_expansion(
     Ratio: 4 AXF por hora restante (1 AXF cada 15 minutos), redondeado arriba.
     Si el timer llega a 0, la expansión se completa instantáneamente.
     """
+    require_feature(
+        settings.ENABLE_FIXED_GAMEPLAY_SPENDING,
+        "fixed_gameplay_spending",
+    )
     user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")

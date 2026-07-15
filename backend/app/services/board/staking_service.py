@@ -6,6 +6,8 @@ from sqlmodel import Session, select
 from app.models.board import PlayerBoard
 from app.models.items import ItemCatalog, PlayerInventory, ItemType, Rarity
 from app.models.user import User
+from app.core.config import settings
+from app.core.product_policy import require_feature
 
 logger = logging.getLogger("board_service")
 
@@ -164,6 +166,7 @@ def return_staked_cards(
 
 def claim_staking_operation(board_id: int, user_id: str, session: Session) -> dict:
     """Reclama las Gemas Alga acumuladas por el staking de las cartas de esta tabla."""
+    require_feature(settings.ENABLE_GAMEPLAY_TOKEN_REWARDS, "gameplay_token_rewards")
     from fastapi import HTTPException
     from app.models.economy import Wallet, CurrencyType, TransactionType, TransactionLedger
     from app.services.bank_service import BankService
@@ -215,6 +218,7 @@ def claim_staking_operation(board_id: int, user_id: str, session: Session) -> di
 
 def claim_all_staking_operation(user_id: str, session: Session) -> dict:
     """Reclama las Gemas Alga acumuladas por el staking de TODAS las tablas del usuario a la vez."""
+    require_feature(settings.ENABLE_GAMEPLAY_TOKEN_REWARDS, "gameplay_token_rewards")
     from fastapi import HTTPException
     from app.models.economy import Wallet, CurrencyType, TransactionType, TransactionLedger
     from app.services.bank_service import BankService

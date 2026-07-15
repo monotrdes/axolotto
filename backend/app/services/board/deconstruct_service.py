@@ -10,7 +10,9 @@ from app.models.lobby_models import TreasuryVault
 from app.services.bank_service import BankService
 from app.services.web3_service import Web3Service
 from app.services.board.staking_service import get_board_csr
-from app.core.config import FRJ_DECIMALS_BACKEND, frj_to_internal
+from app.core.config import FRJ_DECIMALS_BACKEND, frj_to_internal, settings
+from app.core.product_policy import require_feature
+from app.core.account_policy import require_account_capability
 
 
 # ─── Rental market ───────────────────────────────────────────────────────
@@ -58,6 +60,7 @@ def _build_rental_board_response(
 
 def get_rental_market_data(skip: int, limit: int, session: Session) -> list:
     """Obtiene el listado de tablas publicadas en el mercado que están listas para ser rentadas."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     now = datetime.utcnow()
 
     boards = session.exec(
@@ -85,7 +88,11 @@ def list_board_for_rent_operation(
     session: Session,
 ) -> dict:
     """Lista un tablero en el mercado de rentas fijando fee y win split."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    require_account_capability(user, "can_use_marketplace")
     from app.core.auth import require_tutorial
     if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
@@ -170,7 +177,11 @@ def rent_board_operation(
     board_id: int, user_id: str, session: Session
 ) -> dict:
     """Alquila una tabla del mercado de rentas por 24 horas pagando la fee de GAL por adelantado."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    require_account_capability(user, "can_use_marketplace")
     from app.core.auth import require_tutorial
     if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
@@ -310,6 +321,7 @@ def _build_sale_board_response(
 
 def get_sale_market_data(skip: int, limit: int, session: Session) -> list:
     """Obtiene el listado de tablas publicadas en el mercado que están en venta."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     boards = session.exec(
         select(PlayerBoard)
         .where(PlayerBoard.is_listed_for_sale == True)
@@ -329,7 +341,11 @@ def list_board_for_sale_operation(
     session: Session,
 ) -> dict:
     """Publica un tablero en el mercado de venta definitiva."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    require_account_capability(user, "can_publish_for_sale")
     from app.core.auth import require_tutorial
     if user: require_tutorial(user)
     board = session.get(PlayerBoard, board_id)
@@ -407,6 +423,11 @@ def buy_board_operation(
     board_id: int, user_id: str, session: Session
 ) -> dict:
     """Compra un tablero en venta definitiva, realizando la transferencia de GAL y el NFT on-chain."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
+    buyer = session.exec(select(User).where(User.privy_did == user_id)).first()
+    if not buyer:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    require_account_capability(buyer, "can_use_marketplace")
     board = session.get(PlayerBoard, board_id)
     if not board:
         raise HTTPException(status_code=404, detail="Tabla no encontrada.")

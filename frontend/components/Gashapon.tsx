@@ -13,6 +13,7 @@ import { TIER_CONFIG, TRIPLE_COST } from './gashapon/tierConfig';
 import { mapResultToRarity } from './gashapon/rarityConfig';
 import LegendaryOverlay from './gashapon/LegendaryOverlay';
 import RevealSequence from './gashapon/RevealSequence';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 const API = `${API_BASE}`;
 
@@ -293,6 +294,9 @@ function ResultOverlay({ results, isTriple, onClose }: { results: RollResult[]; 
 
 // ── Main component ──────────────────────────────────────────────────────────
 export default function Gashapon({ userId, token, recargarSaldos, balances }: GashaponProps) {
+  const { capabilities, loading: policyLoading } = useProductPolicy();
+  const randomRewardsEnabled = capabilities.commerce.purchased_random_rewards;
+  const passiveRewardsEnabled = capabilities.gameplay.passive_token_rewards;
   const [results,        setResults]        = useState<RollResult[] | null>(null);
   const [error,          setError]          = useState<string | null>(null);
   const [pityData,       setPityData]       = useState<{ bronce: number; plata: number; oro: number }>({ bronce: 0, plata: 0, oro: 0 });
@@ -303,11 +307,23 @@ export default function Gashapon({ userId, token, recargarSaldos, balances }: Ga
   const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
   const loadStatus = useCallback(async () => {
+    if (!randomRewardsEnabled && !passiveRewardsEnabled) {
+      setPityData({ bronce: 0, plata: 0, oro: 0 });
+      setFeed([]);
+      setLunarStatus(null);
+      return;
+    }
     try {
       const [resPity, resFeed, resLunar] = await Promise.allSettled([
-        axios.get(`${API}/shop/capsule/pity`, { headers: token ? { Authorization: `Bearer ${token}` } : {} }),
-        axios.get(`${API}/shop/capsule/feed`),
-        token ? fetchLunarStatus(token).catch(() => null) : Promise.resolve(null),
+        randomRewardsEnabled
+          ? axios.get(`${API}/shop/capsule/pity`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
+          : Promise.resolve({ data: { pity: { bronce: 0, plata: 0, oro: 0 } } }),
+        randomRewardsEnabled
+          ? axios.get(`${API}/shop/capsule/feed`)
+          : Promise.resolve({ data: [] }),
+        passiveRewardsEnabled && token
+          ? fetchLunarStatus(token).catch(() => null)
+          : Promise.resolve(null),
       ]);
       if (resPity.status === 'fulfilled') {
         setPityData(resPity.value.data?.pity || { bronce: 0, plata: 0, oro: 0 });
@@ -320,7 +336,7 @@ export default function Gashapon({ userId, token, recargarSaldos, balances }: Ga
       }
       if (resLunar.status === 'fulfilled' && resLunar.value) {
         setLunarStatus(resLunar.value as LunarStatus);
-      } else if (token) {
+      } else if (passiveRewardsEnabled && token) {
         // Fallback: direct axios call if fetchLunarStatus didn't work
         try {
           const lr = await axios.get(`${API}/rewards/lunar/status`, { headers });
@@ -328,11 +344,15 @@ export default function Gashapon({ userId, token, recargarSaldos, balances }: Ga
         } catch { /* ignore */ }
       }
     } catch { /* ignore */ }
-  }, [token]);
+  }, [randomRewardsEnabled, passiveRewardsEnabled, token]);
 
   useEffect(() => { loadStatus(); }, [loadStatus]);
 
   const handleTriple = async () => {
+    if (!randomRewardsEnabled) {
+      setError('Las recompensas aleatorias compradas están deshabilitadas.');
+      return;
+    }
     if (!token) { setError('Inicia sesión para lanzar.'); return; }
     if ((balances?.frijolitos || 0) < TRIPLE_COST) {
       setError(`Necesitas ${TRIPLE_COST} FRJ para Triple Suerte.`); return;
@@ -360,6 +380,20 @@ export default function Gashapon({ userId, token, recargarSaldos, balances }: Ga
   const lunarCanClaim = lunarStatus?.can_claim || false;
   const lunarDay7Label = lunarStatus?.day7_reward?.label || '';
   const lunarEmoji = ['', '🌑', '🌒', '🌓', '🌔', '🌕', '🌟'][lunarWeek] || '🌙';
+
+  if (!randomRewardsEnabled) {
+    return (
+      <div className="w-full max-w-2xl mx-auto py-14 px-6 text-center rounded-3xl border border-amber-500/20 bg-amber-950/20">
+        <div className="text-5xl mb-3">🛟</div>
+        <h2 className="text-xl font-black text-amber-200 uppercase tracking-tight">Cápsulas en pausa</h2>
+        <p className="mt-2 text-xs text-slate-400 max-w-md mx-auto">
+          {policyLoading
+            ? 'Verificando la política de producto…'
+            : 'No vendemos recompensas aleatorias. No se realizará ningún cargo ni lanzamiento.'}
+        </p>
+      </div>
+    );
+  }
 
   // ── Result overlay ─────────────────────────────────────────────────────
   if (results) {
@@ -406,7 +440,7 @@ export default function Gashapon({ userId, token, recargarSaldos, balances }: Ga
       </div>
 
       {/* ── Ciclo Lunar banner ── */}
-      {lunarWeek > 0 && (
+      {passiveRewardsEnabled && lunarWeek > 0 && (
         <div
           className={`rounded-2xl border px-4 py-3 transition-all cursor-pointer ${
             lunarCanClaim

@@ -5,7 +5,8 @@ from sqlmodel import Session, select, func
 from pydantic import BaseModel
 from typing import List, Optional
 from app.database import get_session
-from app.core.config import FRJ_DECIMALS_BACKEND, frj_to_internal, frj_to_display, axf_to_internal, axf_to_display
+from app.core.config import FRJ_DECIMALS_BACKEND, frj_to_internal, frj_to_display, axf_to_internal, axf_to_display, settings
+from app.core.product_policy import require_feature
 from app.models.economy import CurrencyType, TransactionType
 from app.services.shop_service import ShopService
 from app.services.bank_service import BankService
@@ -197,6 +198,7 @@ def buy_item(
     verified_user_id: str = Depends(verify_no_active_game)
 ):
     """Compra un ítem usando Gemas de Alga o Axogemas."""
+    require_feature(settings.ENABLE_FIXED_ITEM_SHOP, "fixed_item_shop")
     return ShopService.buy_item(
         session=session,
         user_id=verified_user_id,
@@ -273,6 +275,10 @@ def roll_gashapon(
     verified_user_id: str = Depends(verify_no_active_game)
 ):
     """Lanza el Gashapón de Axolotto consumiendo FRJ para obtener un accesorio o comida premium."""
+    require_feature(
+        settings.ENABLE_PURCHASED_RANDOM_REWARDS,
+        "purchased_random_rewards",
+    )
     wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
 
     cost = 1000 * (10 ** FRJ_DECIMALS_BACKEND) if request.roll_type == "common" else 2500 * (10 ** FRJ_DECIMALS_BACKEND)
@@ -417,6 +423,10 @@ def roll_capsule(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(verify_no_active_game),
 ):
+    require_feature(
+        settings.ENABLE_PURCHASED_RANDOM_REWARDS,
+        "purchased_random_rewards",
+    )
     tier = request.tier.lower()
     if tier not in TIER_COSTS:
         raise HTTPException(status_code=400, detail=f"Tier inválido. Usa: {list(TIER_COSTS.keys())}")
@@ -475,6 +485,10 @@ def roll_triple_suerte(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(verify_no_active_game),
 ):
+    require_feature(
+        settings.ENABLE_PURCHASED_RANDOM_REWARDS,
+        "purchased_random_rewards",
+    )
     wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
 
     triple_cost_internal = frj_to_internal(TRIPLE_COST)
@@ -574,6 +588,10 @@ def open_booster(
     verified_user_id: str = Depends(verify_no_active_game),
 ):
     """Abre un sobre sellado de manera diferida en la mochila del usuario."""
+    require_feature(
+        settings.ENABLE_PURCHASED_RANDOM_REWARDS,
+        "purchased_random_rewards",
+    )
     return ShopService.open_booster(session, verified_user_id, request.item_id)
 
 
@@ -593,6 +611,11 @@ def melt_card_endpoint(
     verified_user_id: str = Depends(verify_no_active_game),
 ):
     """Fundir 5 copias de una carta de rareza común, rara o épica para obtener fragmentos y una carta aleatoria superior."""
+    require_feature(settings.ENABLE_CARD_CRAFTING, "card_crafting")
+    require_feature(
+        settings.ENABLE_PURCHASED_RANDOM_REWARDS,
+        "purchased_random_rewards",
+    )
     return melt_card(session, verified_user_id, request.card_id, request.is_first_edition)
 
 
@@ -603,6 +626,7 @@ def forge_card_endpoint(
     verified_user_id: str = Depends(verify_no_active_game),
 ):
     """Forjar una carta específica consumiendo fragmentos de su rareza y FRJ."""
+    require_feature(settings.ENABLE_CARD_CRAFTING, "card_crafting")
     return forge_card(session, verified_user_id, request.target_card_id)
 
 
@@ -630,6 +654,7 @@ def recycle_cards_endpoint(
     verified_user_id: str = Depends(verify_no_active_game),
 ):
     """Recicla cartas duplicadas para obtener Tickets de Reciclon. Sin costo de FRJ."""
+    require_feature(settings.ENABLE_RECICLON, "reciclon")
     from app.services.reciclon_service import recycle_cards
     items = [item.model_dump() for item in request.items]
     return recycle_cards(session, verified_user_id, items)
@@ -642,5 +667,6 @@ def redeem_tickets_endpoint(
     verified_user_id: str = Depends(verify_no_active_game),
 ):
     """Canjea Tickets de Reciclon por una carta especifica del catalogo."""
+    require_feature(settings.ENABLE_RECICLON, "reciclon")
     from app.services.reciclon_service import redeem_ticket
     return redeem_ticket(session, verified_user_id, request.target_card_id)

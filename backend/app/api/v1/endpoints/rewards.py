@@ -17,7 +17,8 @@ from app.models.promo import PendingReward
 from app.models.user import User
 from app.services.bank_service import BankService
 from app.core.limiter import limiter
-from app.core.config import axf_to_internal, frj_to_internal, axf_to_display, frj_to_display
+from app.core.config import axf_to_internal, frj_to_internal, axf_to_display, frj_to_display, settings
+from app.core.product_policy import require_feature
 
 router = APIRouter()
 
@@ -30,6 +31,10 @@ def claim_pending_reward(
     verified_user_id: str = Depends(get_verified_user_id),
 ):
     """Reclama el premio Corcholata pendiente después del tutorial."""
+    require_feature(
+        settings.ENABLE_PROMOTIONAL_TOKEN_REWARDS,
+        "promotional_token_rewards",
+    )
 
     pending = session.exec(
         select(PendingReward).where(
@@ -147,6 +152,10 @@ def get_lunar_status(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id),
 ):
+    require_feature(
+        settings.ENABLE_GAMEPLAY_TOKEN_REWARDS,
+        "gameplay_token_rewards",
+    )
     user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
@@ -165,6 +174,10 @@ def claim_lunar_day(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(get_verified_user_id),
 ):
+    require_feature(
+        settings.ENABLE_GAMEPLAY_TOKEN_REWARDS,
+        "gameplay_token_rewards",
+    )
     user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")

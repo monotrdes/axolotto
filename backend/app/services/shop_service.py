@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from sqlmodel import Session, select, func
 from fastapi import HTTPException
 from app.core.config import settings, VIP_CONFIG, axf_to_display, frj_to_display, axf_to_internal, frj_to_internal
+from app.core.product_policy import require_feature
+from app.core.account_policy import require_account_capability
 from app.models.items import ItemCatalog, PlayerInventory, ItemType
 from app.models.economy import Wallet, CurrencyType, TransactionType, TransactionLedger
 from app.services.bank_service import BankService
@@ -39,10 +41,14 @@ class ShopService:
 
     @staticmethod
     def buy_item(session: Session, user_id: str, item_id: int, payment_currency: CurrencyType):
+        require_feature(settings.ENABLE_FIXED_ITEM_SHOP, "fixed_item_shop")
         # 1. Buscar al usuario
         user = session.exec(select(User).where(User.privy_did == user_id)).first()
         if not user:
             raise HTTPException(status_code=400, detail="Usuario no encontrado.")
+
+        if payment_currency in (CurrencyType.AXOGEMA, CurrencyType.AXOFICHA):
+            require_account_capability(user, "can_purchase")
 
         # 1b. Verificar tutorial completado
         from app.core.auth import require_tutorial
@@ -64,8 +70,15 @@ class ShopService:
         # 3a. Desvío especial: compra de Pase VIP (no requiere wallet Web3)
         _meta = item.item_metadata or {}
         if _meta.get("is_vip") and _meta.get("vip_tier"):
+            require_feature(settings.ENABLE_VIP_SALES, "vip_sales")
             wallet = BankService.get_or_create_wallet(session, user_id, for_update=True)
             return ShopService._handle_vip_purchase(session, user, wallet, item)
+
+        if item.item_type in (ItemType.BOOSTER, ItemType.EGG):
+            require_feature(
+                settings.ENABLE_PURCHASED_RANDOM_REWARDS,
+                "purchased_random_rewards",
+            )
 
         # Para el resto de items sí se requiere wallet Web3 (NFTs).
         # Las decoraciones de cueva no son NFT: viven solo en PlayerInventory.
@@ -654,6 +667,10 @@ class ShopService:
 
     @staticmethod
     def open_booster(session: Session, user_id: str, item_id: int):
+        require_feature(
+            settings.ENABLE_PURCHASED_RANDOM_REWARDS,
+            "purchased_random_rewards",
+        )
         # 1. Buscar al usuario
         user = session.exec(select(User).where(User.privy_did == user_id)).first()
         if not user:

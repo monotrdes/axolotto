@@ -2,6 +2,7 @@ import { API_BASE } from "@/lib/api";
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import BoardCardGrid from '@/components/ui/BoardCardGrid';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 interface RankingsProps {
   userId: string;
@@ -15,6 +16,8 @@ const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>, size
 };
 
 export default function Rankings({ userId, token, cambiarTab }: RankingsProps) {
+  const { capabilities } = useProductPolicy();
+  const playerMarketplaceEnabled = capabilities.commerce.player_marketplace;
   const [activeTab, setActiveTab] = useState<'axolotitos' | 'boards' | 'forjadas'>('axolotitos');
   const [forjadas, setForjadas] = useState<any[]>([]);
   const [loadingForjadas, setLoadingForjadas] = useState(false);
@@ -70,7 +73,7 @@ export default function Rankings({ userId, token, cambiarTab }: RankingsProps) {
 
   // Procesar renta directa de tabla
   const handleRentarDirecto = async () => {
-    if (!showRentModal || !token) return;
+    if (!playerMarketplaceEnabled || !showRentModal || !token) return;
     const board = showRentModal;
     setRentingId(board.id);
     setError(null);
@@ -658,6 +661,8 @@ export default function Rankings({ userId, token, cambiarTab }: RankingsProps) {
                                 <span className="text-[9px] text-slate-500 font-bold uppercase tracking-wider">Alquilada 🤝</span>
                               ) : esPropio ? (
                                 <span className="text-[9px] text-teal-400 font-bold uppercase tracking-wider">Publicada</span>
+                              ) : !playerMarketplaceEnabled ? (
+                                <span className="text-[9px] text-slate-600 uppercase font-bold tracking-wider">Rentas en pausa</span>
                               ) : (
                                 <button
                                   onClick={() => setShowRentModal(item)}
@@ -705,7 +710,7 @@ export default function Rankings({ userId, token, cambiarTab }: RankingsProps) {
       )}
 
       {/* MODAL DE CONFIRMACIÓN DE RENTA RÁPIDA */}
-      {showRentModal && (
+      {playerMarketplaceEnabled && showRentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full animate-in zoom-in duration-200">
             <div className="flex justify-between items-start mb-4">

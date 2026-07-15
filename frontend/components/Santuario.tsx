@@ -17,6 +17,7 @@ import EggSheet from '@/components/santuario/EggSheet';
 import AxoSheet from '@/components/santuario/AxoSheet';
 import CaveRoomModal from '@/components/santuario/CaveRoomModal';
 import HatchSheet from '@/components/santuario/HatchSheet';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 // ═══════════════════════════════════════════════════════
 // MAIN: SANTUARIO
@@ -37,6 +38,12 @@ export default function Santuario({
   onClearSelectedSlot?: () => void;
 }) {
   const { toast } = useToast();
+  const { capabilities } = useProductPolicy();
+  const passiveRewardsEnabled = capabilities.gameplay.passive_token_rewards;
+  const paidEntriesEnabled = capabilities.gameplay.paid_entries;
+  const fixedSpendingEnabled = capabilities.gameplay.fixed_spending;
+  const hatchingEnabled = capabilities.assets.hatching;
+  const legacyClaimsEnabled = capabilities.assets.legacy_asset_claims;
   // ── Data states ──────────────────────────────────────
   const [incubaciones, setIncubaciones] = useState<any[]>([]);
   const [axolotitos,   setAxolotitos]   = useState<any[]>([]);
@@ -113,7 +120,7 @@ export default function Santuario({
 
   // ── Cave expand handler ──────────────────────────────
   const handleExpandCave = async () => {
-    if (!token || expandingCave) return;
+    if (!fixedSpendingEnabled || !token || expandingCave) return;
     setExpandingCave(true);
     try {
       const res = await expandCave(token);
@@ -131,7 +138,7 @@ export default function Santuario({
 
   // ── Cave accelerate handler ──────────────────────────
   const handleAccelerateCave = async () => {
-    if (!token || acceleratingCave) return;
+    if (!fixedSpendingEnabled || !token || acceleratingCave) return;
     setAcceleratingCave(true);
     try {
       const res = await accelerateCave(token);
@@ -220,7 +227,10 @@ export default function Santuario({
 
   // ── Fetch staking status ──────────────────────────────
   useEffect(() => {
-    if (!userId) return;
+    if (!passiveRewardsEnabled || !userId) {
+      setStakingData(null);
+      return;
+    }
     const load = async () => {
       try {
         const data = await fetchStakingStatus(userId, token);
@@ -228,11 +238,14 @@ export default function Santuario({
       } catch (e) { console.error('Error cargando staking:', e); }
     };
     load();
-  }, [userId, token, recargaTrigger]);
+  }, [passiveRewardsEnabled, userId, token, recargaTrigger]);
 
   // ── Fetch legacy status ─────────────────────────────
   useEffect(() => {
-    if (!userId) return;
+    if (!legacyClaimsEnabled || !userId) {
+      setLegacyStatus(null);
+      return;
+    }
     const load = async () => {
       try {
         const legacyData = await fetchLegacyStatus(userId, token);
@@ -240,7 +253,7 @@ export default function Santuario({
       } catch (e) { console.error('Error en datos legacy:', e); }
     };
     load();
-  }, [userId, token, recargaTrigger]);
+  }, [legacyClaimsEnabled, userId, token, recargaTrigger]);
 
   // ── Cooldown UI tick (30s) ───────────────────────────
   useEffect(() => {
@@ -250,6 +263,7 @@ export default function Santuario({
 
   // ── ACTIONS ──────────────────────────────────────────
   const handleHatchEgg = async (incId: number) => {
+    if (!hatchingEnabled) return;
     setHatchingId(incId);
     try {
       const res = await hatchEggApi(incId, token);
@@ -264,6 +278,7 @@ export default function Santuario({
   };
 
   const handleStartImprinting = async (incId: number, padrinoId: number) => {
+    if (!hatchingEnabled) return;
     try {
       const res = await startImprinting(incId, padrinoId, token);
       toast.ok(res.message || '🐾 ¡Apadrinamiento iniciado!');
@@ -275,6 +290,7 @@ export default function Santuario({
   };
 
   const reclamarLegacy = async () => {
+    if (!legacyClaimsEnabled) return;
     setReclamando(true);
     try {
       const res = await claimLegacy(userId, token);
@@ -292,7 +308,7 @@ export default function Santuario({
   };
 
   const handleClaimAllStaking = async () => {
-    if (!token || claimingAll || !stakingData || stakingData.total_accrued < 0.01) return;
+    if (!passiveRewardsEnabled || !token || claimingAll || !stakingData || stakingData.total_accrued < 0.01) return;
     setClaimingAll(true);
     try {
       const res = await claimAllStaking(token);
@@ -358,7 +374,7 @@ export default function Santuario({
       </button>
 
       {/* Staking chip — flotando bottom-left cuando activo */}
-      {stakingData && stakingData.total_accrued > 0 && (
+      {passiveRewardsEnabled && stakingData && stakingData.total_accrued > 0 && (
         <div className="absolute bottom-3 left-3 z-[90] flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-950/90 border border-amber-500/30 backdrop-blur-sm shadow-lg pointer-events-auto">
           <span className="text-[9px] font-black text-amber-300">
             🪙 +{stakingData.total_accrued.toFixed(2)} FRJ
@@ -403,7 +419,7 @@ export default function Santuario({
       {caveMuddy && <div className="cave-muddy-overlay fixed inset-0 pointer-events-none z-[200]" />}
 
       {/* ── LEGACY BACKERS BANNER — fixed overlay ── */}
-      {legacyStatus?.is_legacy_backer && legacyStatus?.eggs_pending > 0 && (
+      {legacyClaimsEnabled && legacyStatus?.is_legacy_backer && legacyStatus?.eggs_pending > 0 && (
         <div className="fixed inset-0 z-[115] flex items-end justify-center bg-black/60 pointer-events-auto">
           <div className="w-full max-w-[430px] bg-gradient-to-r from-amber-950/90 via-yellow-900/80 to-amber-950/90 border-2 border-amber-500/60 rounded-t-3xl p-5 shadow-[0_0_30px_rgba(245,158,11,0.2)] flex flex-col items-center gap-2 text-center">
             <div className="text-xl">🥚✨</div>
@@ -449,7 +465,9 @@ export default function Santuario({
             onSetMain={() => setRecargaTrigger(prev => prev + 1)}
             onOpenCave={(axo) => setActiveCaveAxo(axo)}
             stakingInfo={
-              stakingData?.axolotitos?.find((s) => s.id === selectedSlot.data.id) ?? null
+              passiveRewardsEnabled
+                ? stakingData?.axolotitos?.find((s) => s.id === selectedSlot.data.id) ?? null
+                : null
             }
             onStakingClaimed={() => setRecargaTrigger(p => p + 1)}
           />
@@ -569,7 +587,7 @@ export default function Santuario({
                     <div className="text-[8px] text-slate-500 font-bold mt-0.5">🪺 {nestSlots} nido{nestSlots !== 1 ? 's' : ''} · 🛏️ {axoBedrooms} dormitorio{axoBedrooms !== 1 ? 's' : ''} · 🪸 {caveLevel > 1 ? caveLevel * 2 : 2} decor · {hasTable ? `🎴 ${tableSeats}p` : 'Sin mesa'}</div>
                   </div>
                 </div>
-                {Object.keys(passiveBonuses).length > 0 && (
+                {passiveRewardsEnabled && Object.keys(passiveBonuses).length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-teal-500/10">
                     {passiveBonuses.frj_multiplier > 1 && <span className="text-[7px] font-black text-emerald-400 bg-emerald-950/50 px-1.5 py-0.5 rounded-full border border-emerald-500/20">+{Math.round((passiveBonuses.frj_multiplier-1)*100)}% FRJ</span>}
                     {passiveBonuses.extra_starting_card && <span className="text-[7px] font-black text-indigo-400 bg-indigo-950/50 px-1.5 py-0.5 rounded-full border border-indigo-500/20">+1 Carta</span>}
@@ -603,11 +621,14 @@ export default function Santuario({
                   {/* Botón acelerar */}
                   {caveExpansion.can_accelerate && (
                     <button
-                      disabled={acceleratingCave}
+                      disabled={!fixedSpendingEnabled || acceleratingCave}
                       onClick={handleAccelerateCave}
+                      title={!fixedSpendingEnabled ? 'Aceleración en revisión' : undefined}
                       className="w-full mt-2 py-1.5 rounded-lg bg-gradient-to-r from-amber-700 to-yellow-700 hover:from-amber-600 hover:to-yellow-600 disabled:opacity-50 text-white font-black text-[9px] uppercase tracking-wider transition-all active:scale-95"
                     >
-                      {acceleratingCave
+                      {!fixedSpendingEnabled
+                        ? '⚡ Acelerar · En revisión'
+                        : acceleratingCave
                         ? '⚡ Acelerando...'
                         : `⚡ Acelerar (${axfCost} AXF)`}
                     </button>
@@ -703,11 +724,16 @@ export default function Santuario({
                                 </div>
                               </div>
                               <button
-                                disabled={expandingCave || (wal.frijolitos || 0) < (nextLevel.cost_frj_effective ?? nextLevel.cost_frj ?? 0)}
+                                disabled={!fixedSpendingEnabled || expandingCave || (wal.frijolitos || 0) < (nextLevel.cost_frj_effective ?? nextLevel.cost_frj ?? 0)}
                                 onClick={() => handleExpandCave()}
+                                title={!fixedSpendingEnabled ? 'Expansión en revisión' : undefined}
                                 className="w-full py-1.5 rounded-lg bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 disabled:opacity-50 text-white font-black text-[9px] uppercase tracking-wider transition-all"
                               >
-                                {expandingCave ? '⛏️ Iniciando…' : '⛏️ Iniciar Excavación'}
+                                {!fixedSpendingEnabled
+                                  ? '⛏️ Expansión · En revisión'
+                                  : expandingCave
+                                    ? '⛏️ Iniciando…'
+                                    : '⛏️ Iniciar Excavación'}
                               </button>
                             </>
                           )}
@@ -720,7 +746,7 @@ export default function Santuario({
                       ⏱️ {nextLevel.excavation_hours_effective && nextLevel.excavation_hours_effective < nextLevel.excavation_hours
                         ? <><span className="line-through mr-1">{nextLevel.excavation_hours}h</span><span className="text-amber-400">{nextLevel.excavation_hours_effective}h VIP</span></>
                         : `${nextLevel.excavation_hours}h`
-                      } · acelera con AXF (4 AXF/h)
+                      } · {fixedSpendingEnabled ? 'acelera con AXF (4 AXF/h)' : 'aceleración en revisión'}
                     </div>
                   )}
                 </div>
@@ -771,7 +797,7 @@ export default function Santuario({
       )})()}
 
       {/* ── HOSTING SETUP MODAL ── */}
-      <HostingSetupModal
+      {paidEntriesEnabled && <HostingSetupModal
         token={token}
         isOpen={hostingModalOpen}
         onClose={() => setHostingModalOpen(false)}
@@ -780,7 +806,7 @@ export default function Santuario({
           setRecargaTrigger(p => p + 1);
         }}
         tableSeats={tableSeats}
-      />
+      />}
     </div>
   );
 }

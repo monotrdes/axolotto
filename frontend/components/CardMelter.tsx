@@ -8,6 +8,7 @@ import axios from 'axios';
 import { Hammer, Sparkles, Coins, Flame, Info, Search, X, Loader2, ArrowRight, ChevronLeft } from 'lucide-react';
 import LoteriaCard from '@/components/ui/LoteriaCard';
 import { useToast } from '@/context/ToastContext';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 
 
@@ -33,6 +34,8 @@ export default function CardMelter({
   onMeltSuccess,
 }: CardMelterProps) {
   const { toast } = useToast();
+  const { capabilities } = useProductPolicy();
+  const cardCraftingEnabled = capabilities.assets.card_crafting;
   const [subTab, setSubTab] = useState<'melt' | 'forge'>('melt');
   const [wallet, setWallet] = useState<any>(null);
   const [inventory, setInventory] = useState<any[]>([]);
@@ -77,6 +80,10 @@ export default function CardMelter({
     loadData();
   }, [loadData]);
 
+  useEffect(() => {
+    if (!cardCraftingEnabled && subTab === 'forge') setSubTab('melt');
+  }, [cardCraftingEnabled, subTab]);
+
   // Candidates for melting (Quantity >= 5 of the same card catalog id & first_edition status)
   const meltCandidates = React.useMemo(() => {
     // Filter inventory items that are cards and have quantity >= 5
@@ -115,7 +122,7 @@ export default function CardMelter({
   };
 
   const handleForge = async (cardId: number) => {
-    if (!token) return;
+    if (!cardCraftingEnabled || !token) return;
     setForging(true);
     try {
       const headers = { Authorization: `Bearer ${token}` };
@@ -258,7 +265,7 @@ export default function CardMelter({
           <Flame size={14} className={subTab === 'melt' ? 'animate-pulse' : ''} />
           Fundidor de Cartas
         </button>
-        <button
+        {cardCraftingEnabled && <button
           onClick={() => { setSubTab('forge'); setSelectedMeltCard(null); }}
           className={`px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
             subTab === 'forge'
@@ -268,7 +275,7 @@ export default function CardMelter({
         >
           <Hammer size={14} />
           Forjar Cartas
-        </button>
+        </button>}
       </div>
 
       {/* ──────────────────────────────────────────────────────── */}
@@ -464,7 +471,7 @@ export default function CardMelter({
       {/* ──────────────────────────────────────────────────────── */}
       {/* SUBTAB: FORGE (FORJA) */}
       {/* ──────────────────────────────────────────────────────── */}
-      {subTab === 'forge' && (
+      {cardCraftingEnabled && subTab === 'forge' && (
         <div className="flex flex-col gap-5">
           {/* Search & Filter Bar */}
           <div className="flex flex-col sm:flex-row gap-3 bg-slate-950/40 border border-white/5 rounded-3xl p-4 shadow-sm items-center">

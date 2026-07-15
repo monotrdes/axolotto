@@ -4,6 +4,7 @@ import { useToast } from '@/context/ToastContext';
 import BottomSheet from '@/components/ui/BottomSheet';
 import { fetchLunarStatus, claimLunarDay } from '@/services/rewardsService';
 import type { LunarStatus, LunarClaimResult } from '@/types/economy';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 interface DailyClaimProps {
   token: string | null;
@@ -31,6 +32,8 @@ const DAILY_FRJ = [50, 65, 80, 95, 110, 130];
 
 export default function DailyClaim({ token, onSuccess }: DailyClaimProps) {
   const { toast } = useToast();
+  const { capabilities } = useProductPolicy();
+  const passiveRewardsEnabled = capabilities.gameplay.passive_token_rewards;
   const [status, setStatus] = useState<LunarStatus | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -39,14 +42,17 @@ export default function DailyClaim({ token, onSuccess }: DailyClaimProps) {
 
   // ── Load status ─────────────────────────────────────────────────
   const loadStatus = useCallback(async () => {
-    if (!token) return;
+    if (!passiveRewardsEnabled || !token) {
+      setStatus(null);
+      return;
+    }
     try {
       const data = await fetchLunarStatus(token);
       setStatus(data);
     } catch {
       // Silently fail — lunar endpoint may not be deployed yet
     }
-  }, [token]);
+  }, [passiveRewardsEnabled, token]);
 
   useEffect(() => {
     loadStatus();
@@ -54,10 +60,12 @@ export default function DailyClaim({ token, onSuccess }: DailyClaimProps) {
 
   // ── Listen for open-lunar-sheet event from other components (e.g. Gashapon banner) ──
   useEffect(() => {
-    const handler = () => setSheetOpen(true);
+    const handler = () => {
+      if (passiveRewardsEnabled) setSheetOpen(true);
+    };
     window.addEventListener('open-lunar-sheet', handler);
     return () => window.removeEventListener('open-lunar-sheet', handler);
-  }, []);
+  }, [passiveRewardsEnabled]);
 
   // ── Countdown to next claim ─────────────────────────────────────
   useEffect(() => {
@@ -87,7 +95,7 @@ export default function DailyClaim({ token, onSuccess }: DailyClaimProps) {
 
   // ── Claim action ────────────────────────────────────────────────
   const handleClaim = async () => {
-    if (!token || claiming || !status?.can_claim) return;
+    if (!passiveRewardsEnabled || !token || claiming || !status?.can_claim) return;
     setClaiming(true);
     try {
       const res: LunarClaimResult = await claimLunarDay(token);
@@ -111,7 +119,7 @@ export default function DailyClaim({ token, onSuccess }: DailyClaimProps) {
   };
 
   // ── Nothing to show if no token or no status ────────────────────
-  if (!token || !status) return null;
+  if (!passiveRewardsEnabled || !token || !status) return null;
 
   const { lunar_week, streak_day, can_claim, today_reward, day7_reward, luna_track, cycles_completed } = status;
   const lunaEmoji = LUNA_EMOJI[lunar_week] || '🌑';

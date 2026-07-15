@@ -597,6 +597,10 @@ class GameWSManager:
             return
 
         # 3. Megaphone: validate FRJ balance (deferred — handled on broadcast)
+        from app.core.config import settings as product_settings
+        if megaphone and not product_settings.ENABLE_FIXED_GAMEPLAY_SPENDING:
+            megaphone = False
+
         if megaphone:
             try:
                 from app.database import engine

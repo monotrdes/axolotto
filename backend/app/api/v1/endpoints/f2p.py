@@ -21,7 +21,8 @@ from app.models.economy import (
 )
 from app.models.user import User
 from app.services.bank_service import BankService
-from app.core.config import frj_to_internal, frj_to_display
+from app.core.config import frj_to_internal, frj_to_display, settings
+from app.core.product_policy import require_feature
 from app.services.f2p_service import F2PService
 
 router = APIRouter()
@@ -75,6 +76,11 @@ def watch_reward(
     Aplica el tope diario de FRJ (10 FRJ/día). Los fragmentos siempre se acumulan.
     Resetea el contador diario cada 24 h a partir del último reset.
     """
+    require_feature(
+        settings.ENABLE_CLIENT_REPORTED_REWARDS,
+        "client_reported_rewards",
+    )
+
     # --- Cargar usuario con lock pesimista para evitar race en contadores diarios ---
     user = session.exec(
         select(User).where(User.privy_did == verified_user_id).with_for_update()

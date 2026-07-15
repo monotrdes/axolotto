@@ -17,6 +17,8 @@ from app.models.axolotito import Axolotito
 from app.models.board import PlayerBoard
 from app.models.promo import PendingReward, PromoCode
 from app.core.config import VIP_CONFIG, settings, frj_to_internal, frj_to_display, axf_to_display
+from app.core.product_policy import require_feature
+from app.core.account_policy import account_capabilities, require_account_capability
 from app.services.bank_service import BankService
 from app.services.web3_service import Web3Service
 from app.services.rarity_service import get_card_dynamic_rarities
@@ -42,6 +44,18 @@ def _lookup_or_404(model, id_value: Any, session: Session, detail: str = "Recurs
     return obj
 
 
+def _require_user_capability(
+    session: Session,
+    user_id: str,
+    capability: str,
+) -> User:
+    user = session.exec(select(User).where(User.privy_did == user_id)).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+    require_account_capability(user, capability)
+    return user
+
+
 # ---------------------------------------------------------------------------
 # Sync / Profile
 # ---------------------------------------------------------------------------
@@ -63,6 +77,15 @@ def sync_user(
     db_user = session.exec(
         select(User).where(User.privy_did == privy_did)
     ).first()
+
+    # A client-provided address may only create a new wallet link after age
+    # assurance and current legal consent. Existing identical links remain a
+    # no-op so legacy/imported users are not locked out of ordinary sync.
+    if wallet_address is not None and (
+        db_user is None or not db_user.wallet_address
+    ):
+        policy_user = db_user or User(privy_did=privy_did, email=email)
+        require_account_capability(policy_user, "can_use_embedded_wallet")
 
     if not db_user:
         # Registro nuevo
@@ -120,7 +143,12 @@ def sync_user(
 
     # ── Dev mode: auto corcholata reward ──────────────────────────────────
     is_new_user = mensaje.startswith("¡Bienvenido!")
-    if settings.BLOCKCHAIN_MODE == "local" and is_new_user:
+    if (
+        settings.PRODUCT_MODE == "legacy_simulation"
+        and settings.BLOCKCHAIN_MODE == "local"
+        and settings.ENABLE_PROMOTIONAL_TOKEN_REWARDS
+        and is_new_user
+    ):
         existing_pending = session.exec(
             select(PendingReward).where(PendingReward.user_id == verified_user_id)
         ).first()
@@ -187,6 +215,7 @@ def sync_user(
         "cave_level": db_user.cave_level,
         "cave_name": db_user.cave_name,
         "has_pending_corcholata_reward": has_pending,
+        "account_capabilities": account_capabilities(db_user),
     }
 
 
@@ -268,6 +297,7 @@ def update_axolotito_bot_config(
     user_id_from_body: Optional[str] = None,
 ) -> dict:
     """Update auto-play bot configuration for an axolotito."""
+    require_feature(settings.ENABLE_PAID_GAMEPLAY, "paid_gameplay")
     axolotito = _lookup_or_404(
         Axolotito, axolotito_id, session, detail="Axolotito no encontrado."
     )
@@ -347,6 +377,7 @@ def get_sale_market_axolotitos(
     session: Session, skip: int = 0, limit: int = 20
 ) -> list:
     """Return axolotitos listed for sale (excludes VIP-frozen)."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     axos = session.exec(
         select(Axolotito)
         .where(Axolotito.is_listed_for_sale == True)
@@ -372,6 +403,7 @@ def get_rent_market_axolotitos(
     session: Session, skip: int = 0, limit: int = 20
 ) -> list:
     """Return axolotitos listed for rent (excludes VIP-frozen)."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
     now = datetime.utcnow()
     axos = session.exec(
         select(Axolotito)
@@ -405,6 +437,8 @@ def list_axolotito_for_sale(
     verified_user_id: str,
 ) -> dict:
     """List an axolotito for sale on the marketplace."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
+    _require_user_capability(session, verified_user_id, "can_publish_for_sale")
     axo = _lookup_or_404(
         Axolotito, axolotito_id, session, detail="Axolotito no encontrado."
     )
@@ -482,6 +516,8 @@ def list_axolotito_for_rent(
     verified_user_id: str,
 ) -> dict:
     """List an axolotito for rent on the marketplace."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
+    _require_user_capability(session, verified_user_id, "can_use_marketplace")
     axo = _lookup_or_404(
         Axolotito, axolotito_id, session, detail="Axolotito no encontrado."
     )
@@ -629,6 +665,7 @@ def claim_vip_frj(
     session: Session, verified_user_id: str
 ) -> dict:
     """Claim accumulated VIP FRJ into the user's wallet."""
+    require_feature(settings.ENABLE_GAMEPLAY_TOKEN_REWARDS, "gameplay_token_rewards")
     user = session.exec(
         select(User).where(User.privy_did == verified_user_id)
     ).first()
@@ -680,6 +717,7 @@ def set_vip_auto_renew(
     session: Session, enabled: bool, verified_user_id: str
 ) -> dict:
     """Enable or disable VIP auto-renewal."""
+    require_feature(settings.ENABLE_VIP_SALES, "vip_sales")
     user = session.exec(
         select(User).where(User.privy_did == verified_user_id)
     ).first()
@@ -711,6 +749,8 @@ def rent_axolotito(
     session: Session, axolotito_id: int, verified_user_id: str
 ) -> dict:
     """Rent an axolotito from the marketplace (24h)."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
+    _require_user_capability(session, verified_user_id, "can_use_marketplace")
     axo = session.exec(
         select(Axolotito)
         .where(Axolotito.id == axolotito_id)
@@ -826,6 +866,8 @@ def buy_axolotito(
     session: Session, axolotito_id: int, verified_user_id: str
 ) -> dict:
     """Buy an axolotito from the marketplace."""
+    require_feature(settings.ENABLE_PLAYER_MARKETPLACE, "player_marketplace")
+    _require_user_capability(session, verified_user_id, "can_use_marketplace")
     axo = session.exec(
         select(Axolotito)
         .where(Axolotito.id == axolotito_id)

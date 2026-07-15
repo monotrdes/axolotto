@@ -21,6 +21,7 @@ interface CardGridProps {
   setCardShinyFilter: (f: CardShinyFilter) => void;
   setCardOwnedFilter: (f: CardOwnedFilter) => void;
   onOpenSellModal: (item: any, name?: string) => void;
+  marketplaceEnabled: boolean;
   cambiarTab?: (tab: string) => void;
 }
 
@@ -28,7 +29,7 @@ export default function CardGrid({
   allCards, ownedItems, catalogItems,
   cardRarityFilter, cardShinyFilter, cardOwnedFilter,
   setCardRarityFilter, setCardShinyFilter, setCardOwnedFilter,
-  onOpenSellModal, cambiarTab,
+  onOpenSellModal, marketplaceEnabled, cambiarTab,
 }: CardGridProps) {
   // ── Internal UI States ──
   const [hoveredCard, setHoveredCard] = useState<any | null>(null);
@@ -386,12 +387,12 @@ export default function CardGrid({
                                 Fundir
                               </button>
                             )}
-                            <button
+                            {marketplaceEnabled && <button
                               onClick={() => onOpenSellModal(copy, selectedCardForAction.name)}
                               className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-[9px] font-black uppercase text-white tracking-wider transition-all active:scale-95 shadow-md"
                             >
                               Vender
-                            </button>
+                            </button>}
                           </div>
                         </div>
                       );

@@ -30,6 +30,7 @@ import ActTreasureChest from "./acts/ActTreasureChest";
 import ActWorldIntro    from "./acts/ActWorldIntro";
 
 import { API_BASE } from "@/lib/api";
+import { useProductPolicy } from "@/hooks/useProductPolicy";
 
 export interface TutorialFlowProps {
   userId: string;
@@ -98,6 +99,8 @@ function injectExtraStyles() {
 
 export function TutorialFlow({ userId, token, hasPendingReward, onComplete }: TutorialFlowProps) {
   const { getAccessToken, authenticated } = usePrivy();
+  const { capabilities } = useProductPolicy();
+  const effectivePendingReward = capabilities.safety.promotional_token_rewards && !!hasPendingReward;
 
   const [actIndex, setActIndex] = useState<number | null>(null); // null = loading
   const [webito, setWebito]     = useState<WebitoData | null>(null);
@@ -117,14 +120,14 @@ export function TutorialFlow({ userId, token, hasPendingReward, onComplete }: Tu
 
   // ── Banner auto-collapse: full message → small badge after 5 seconds ──────
   useEffect(() => {
-    if (!hasPendingReward) return;
+    if (!effectivePendingReward) return;
     bannerTimerRef.current = setTimeout(() => {
       setBannerCollapsed(true);
     }, 5000);
     return () => {
       if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
     };
-  }, [hasPendingReward]);
+  }, [effectivePendingReward]);
 
   // Expand banner again on hover/click, auto-collapse after 3s
   const expandBanner = useCallback(() => {
@@ -261,7 +264,7 @@ export function TutorialFlow({ userId, token, hasPendingReward, onComplete }: Tu
   // Auto-skip acts whose condition returns false
   useEffect(() => {
     if (actIndex === null || !webito || completedRef.current) return;
-    const ctx = { hasPendingReward: hasPendingReward ?? false };
+    const ctx = { hasPendingReward: effectivePendingReward };
     let idx = actIndex;
     while (idx < TUTORIAL_SCRIPT.length) {
       const act = TUTORIAL_SCRIPT[idx];
@@ -279,7 +282,7 @@ export function TutorialFlow({ userId, token, hasPendingReward, onComplete }: Tu
       setActIndex(idx);
       saveActIndex(idx);
     }
-  }, [actIndex, webito, hasPendingReward, onComplete, saveActIndex]);
+  }, [actIndex, webito, effectivePendingReward, onComplete, saveActIndex]);
 
   // ── finalize trigger: when advance pushes past end ─────────────────────────────
   useEffect(() => {
@@ -336,7 +339,7 @@ export function TutorialFlow({ userId, token, hasPendingReward, onComplete }: Tu
   return (
     <div className="w-full">
       {/* 🎁 Corcholata prize indicator — full banner → shrinks to badge */}
-      {hasPendingReward && !rewardClaimed && (
+      {effectivePendingReward && !rewardClaimed && (
         <>
           {/* Full banner — fades out when collapsed */}
           <div
@@ -440,7 +443,7 @@ export function TutorialFlow({ userId, token, hasPendingReward, onComplete }: Tu
 
       {currentAct.type === "treasure-chest" && (
         <ActTreasureChest
-          hasPendingReward={hasPendingReward ?? false}
+          hasPendingReward={effectivePendingReward}
           token={webito.token}
           onRewardClaimed={() => setRewardClaimed(true)}
           onComplete={() => advance()}

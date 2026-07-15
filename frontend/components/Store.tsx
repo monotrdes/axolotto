@@ -10,10 +10,10 @@ import StoreHeader from '@/components/store/StoreHeader';
 import StoreHelpModal from '@/components/store/StoreHelpModal';
 import type { StoreProps } from '@/types/store';
 import { PAPER_WORLD } from '@/lib/paperWorld';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 export default function AxolottoStore({
   userId,
-  balances,
   token,
   cambiarTab,
   recargarSaldos,
@@ -21,6 +21,7 @@ export default function AxolottoStore({
   sectionNonce,
 }: StoreProps) {
   const store = useStore({ userId, token, recargarSaldos, cambiarTab });
+  const { capabilities } = useProductPolicy();
 
   // Mundo papel picado: el puesto tocado en el diorama abre su sección
   // (forja→reciclon, trajineras→market, puestos→official).
@@ -79,17 +80,33 @@ export default function AxolottoStore({
 
       {store.storeTab === 'reciclon' && (
         <div className="animate-in fade-in duration-300">
-          <ReciclonPanel
-            userId={userId}
-            token={token}
-            recargarSaldos={recargarSaldos}
-            onBack={() => store.setStoreTab('official')}
-          />
+          {capabilities.assets.reciclon ? (
+            <ReciclonPanel
+              userId={userId}
+              token={token}
+              recargarSaldos={recargarSaldos}
+              onBack={() => store.setStoreTab('official')}
+            />
+          ) : (
+            <UnavailableFeature
+              title="El Reciclón está en pausa"
+              description="Volverá cuando la custodia y el canje estén verificados en cadena."
+              onBack={() => store.setStoreTab('official')}
+            />
+          )}
         </div>
       )}
 
       {store.storeTab === 'market' && (
-        <MarketTab userId={userId} token={token} recargarSaldos={recargarSaldos} />
+        capabilities.commerce.player_marketplace ? (
+          <MarketTab userId={userId} token={token} recargarSaldos={recargarSaldos} />
+        ) : (
+          <UnavailableFeature
+            title="Marketplace aún no disponible"
+            description="Se habilitará para adultos verificados cuando estén listos pagos, protección al comprador y retiros."
+            onBack={() => store.setStoreTab('official')}
+          />
+        )
       )}
 
       <UnboxingModal
@@ -126,6 +143,30 @@ export default function AxolottoStore({
       />
 
       <StoreHelpModal open={store.helpOpen} onClose={() => store.setHelpOpen(false)} />
+    </div>
+  );
+}
+
+function UnavailableFeature({
+  title,
+  description,
+  onBack,
+}: {
+  title: string;
+  description: string;
+  onBack: () => void;
+}) {
+  return (
+    <div className="mx-auto max-w-xl rounded-3xl border border-white/10 bg-slate-950/70 p-8 text-center">
+      <h3 className="text-xl font-black text-white">{title}</h3>
+      <p className="mt-3 text-sm leading-relaxed text-slate-400">{description}</p>
+      <button
+        type="button"
+        onClick={onBack}
+        className="mt-6 rounded-xl border border-white/15 px-5 py-2 text-sm font-bold text-white hover:bg-white/10"
+      >
+        Volver a la tienda
+      </button>
     </div>
   );
 }

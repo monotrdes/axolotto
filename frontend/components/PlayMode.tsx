@@ -18,6 +18,7 @@ import CpuGameWrapper      from './CpuGameWrapper';
 import AutoGameWrapper     from './multiplayer/AutoGameWrapper';
 import SettlingScreen      from './screens/SettlingScreen';
 import ManualGameWrapper   from './multiplayer/ManualGameWrapper';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -76,6 +77,12 @@ export default function PlayMode({
   onEarningsSeen?: () => void;
   onGameSessionChange?: (active: boolean) => void;
 }) {
+  const { capabilities } = useProductPolicy();
+  const paidEntriesEnabled = capabilities.gameplay.paid_entries;
+  const freePlayEnabled = capabilities.gameplay.free_play;
+  const fixedSpendingEnabled = capabilities.gameplay.fixed_spending;
+  const cpuGameplayEnabled = paidEntriesEnabled || freePlayEnabled;
+
   // ── Data state ──────────────────────────────────────────────────────────────
   const [axolotitos,   setAxolotitos]   = useState<any[]>([]);
   const [playerBoards, setPlayerBoards] = useState<any[]>([]);
@@ -190,18 +197,18 @@ export default function PlayMode({
     } finally {
       setCargando(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, token]);
 
-  useEffect(() => { loadData(); }, [userId]);
+  useEffect(() => { loadData(); }, [loadData]);
 
   // Load last game mode preference from localStorage
   useEffect(() => {
     try {
       const saved = localStorage.getItem('axolotto_last_game_mode') as GameMode | null;
-      if (saved === 'cpu' || saved === 'multi') setGameMode(saved);
+      if (saved === 'multi' && paidEntriesEnabled) setGameMode('multi');
+      else if (saved === 'cpu') setGameMode('cpu');
     } catch { /* ignore */ }
-  }, []);
+  }, [paidEntriesEnabled]);
 
   // Blockchain events
   useEffect(() => {
@@ -297,7 +304,7 @@ export default function PlayMode({
   }, [selectedAxo?.status]);
 
   const checkActiveGame = useCallback(async () => {
-    if (!userId || !token) return;
+    if (!paidEntriesEnabled || !userId || !token) return;
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
       const res = await axios.get(`${API_BASE}/multiplayer/active-check`, { headers });
@@ -311,20 +318,21 @@ export default function PlayMode({
     } catch (err) {
       console.error("Error running active-check:", err);
     }
-  }, [userId, token, axolotitos]);
+  }, [paidEntriesEnabled, userId, token, axolotitos]);
 
   useEffect(() => {
+    if (!paidEntriesEnabled) return;
     checkActiveGame();
     const id = setInterval(checkActiveGame, 5000);
     return () => clearInterval(id);
-  }, [checkActiveGame]);
+  }, [paidEntriesEnabled, checkActiveGame]);
 
   // Navigate to playing if active game is detected
   useEffect(() => {
-    if (activeGame?.active && gameView !== 'playing' && gameView !== 'settling') {
+    if (paidEntriesEnabled && activeGame?.active && gameView !== 'playing' && gameView !== 'settling') {
       navigate('playing');
     }
-  }, [activeGame, gameView]);
+  }, [paidEntriesEnabled, activeGame, gameView]);
 
   // ── Action handlers ────────────────────────────────────────────────────────
 
@@ -335,6 +343,10 @@ export default function PlayMode({
   };
 
   const handleFeed = (type: 'pellet' | 'shrimp') => withError(async () => {
+    if (!fixedSpendingEnabled) {
+      setErrorMsg('La alimentación con saldo está en revisión y no está disponible.');
+      return;
+    }
     if (!selectedAxo) return;
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     const res = await axios.post(
@@ -369,6 +381,10 @@ export default function PlayMode({
   };
 
   const handleRegisterMultiplayer = async () => {
+    if (!paidEntriesEnabled) {
+      setErrorMsg('Las salas con presupuesto están deshabilitadas por la política de producto.');
+      return;
+    }
     if (!selectedAxo || multiBoards.length === 0) {
       setErrorMsg('Selecciona al menos una tabla.');
       return;
@@ -449,13 +465,13 @@ export default function PlayMode({
     }
   };
 
-  const handleRecall = async () => {
-    if (!selectedAxo) return;
+  const handleRecallAxo = async (axo: any) => {
     setRecalling(true);
     setErrorMsg(null);
     try {
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
-      await axios.post(`${API_BASE}/multiplayer/recall?axolotito_id=${selectedAxo.id}`, {}, { headers });
+      await axios.post(`${API_BASE}/multiplayer/recall?axolotito_id=${axo.id}`, {}, { headers });
+      setSelectedAxo(axo);
       setRecallRequested(true);
     } catch (err: any) {
       setErrorMsg(err.response?.data?.detail ?? 'Error al llamar.');
@@ -464,7 +480,16 @@ export default function PlayMode({
     }
   };
 
+  const handleRecall = async () => {
+    if (!selectedAxo) return;
+    await handleRecallAxo(selectedAxo);
+  };
+
   const handleToggleMultiBoard = (id: number) => {
+    if (!paidEntriesEnabled) {
+      setErrorMsg('El multijugador pagado no está disponible.');
+      return;
+    }
     if (multiBoards.includes(id)) {
       setMultiBoards(multiBoards.filter(x => x !== id));
     } else {
@@ -507,6 +532,9 @@ export default function PlayMode({
 
   // Show AxoStatusBar from mode-select onwards (axo already selected by then)
   const showAxoStatusBar = selectedAxo !== null && !['axo-select', 'game', 'playing', 'settling'].includes(gameView);
+  const recoverablePaidAxo = !paidEntriesEnabled
+    ? axolotitos.find((axo) => axo.status === 'playing' || axo.status === 'waiting_settlement') ?? null
+    : null;
 
   // ── Animation class ────────────────────────────────────────────────────────
   const animClass = directionRef.current === 'back' ? 'animate-slide-step-back' : 'animate-slide-step';
@@ -561,6 +589,32 @@ export default function PlayMode({
 
         {/* ── axo-select ────────────────────────────────────────────────────── */}
         {/* Entry point: choose your axolotito before anything else             */}
+        {gameView === 'axo-select' && recoverablePaidAxo && (
+          <div className="mb-4 rounded-2xl border border-amber-500/30 bg-amber-950/30 p-4 text-center">
+            <p className="text-xs font-black text-amber-200 uppercase tracking-wider">
+              Sesión anterior pendiente
+            </p>
+            <p className="mt-1 text-[10px] text-slate-400">
+              Puedes cerrarla sin iniciar nuevas rondas.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                if (recoverablePaidAxo.status === 'waiting_settlement') {
+                  void handleSettleInline(recoverablePaidAxo);
+                } else {
+                  void handleRecallAxo(recoverablePaidAxo);
+                }
+              }}
+              disabled={recalling || settlingAxoId === recoverablePaidAxo.id}
+              className="mt-3 px-5 py-2 rounded-xl bg-amber-700 hover:bg-amber-600 text-white text-[10px] font-black uppercase tracking-wider disabled:opacity-50"
+            >
+              {recoverablePaidAxo.status === 'waiting_settlement'
+                ? settlingAxoId === recoverablePaidAxo.id ? 'Cerrando…' : 'Cerrar y devolver saldo'
+                : recalling ? 'Solicitando…' : 'Solicitar cierre'}
+            </button>
+          </div>
+        )}
         {gameView === 'axo-select' && (
           <AxoSelectScreen
             axolotitos={axolotitos}
@@ -591,6 +645,10 @@ export default function PlayMode({
           <ModeSelectScreen
             selectedAxo={selectedAxo}
             onSelect={(mode) => {
+              if (mode === 'multi' && !paidEntriesEnabled) {
+                setErrorMsg('El multijugador pagado no está disponible.');
+                return;
+              }
               setGameMode(mode);
               setSingleBoardId(null);
               setMultiBoards([]);
@@ -616,16 +674,31 @@ export default function PlayMode({
             selectedRoom={selectedRoom}
             onRoomChange={setSelectedRoom}
             multiplier={multiplier}
-            onMultiplierChange={setMultiplier}
-            onPlay={() => navigate('game')}
-            onContinue={() => navigate('budget')}
+            onMultiplierChange={(nextMultiplier) => {
+              if (paidEntriesEnabled) setMultiplier(nextMultiplier);
+            }}
+            onPlay={() => {
+              if (!cpuGameplayEnabled) {
+                setErrorMsg('El servidor todavía no confirmó una partida gratuita.');
+                return;
+              }
+              if (!paidEntriesEnabled) setMultiplier(1);
+              navigate('game');
+            }}
+            onContinue={() => {
+              if (!paidEntriesEnabled) {
+                setErrorMsg('Las salas con presupuesto están deshabilitadas.');
+                return;
+              }
+              navigate('budget');
+            }}
             error={errorMsg}
             onClearError={() => setErrorMsg(null)}
           />
         )}
 
         {/* ── budget ────────────────────────────────────────────────────────── */}
-        {gameView === 'budget' && (
+        {gameView === 'budget' && paidEntriesEnabled && (
           <BudgetScreen
             balances={balances}
             budget={budget}
@@ -643,7 +716,7 @@ export default function PlayMode({
         )}
 
         {/* ── sala-select ───────────────────────────────────────────────────── */}
-        {gameView === 'sala-select' && (
+        {gameView === 'sala-select' && paidEntriesEnabled && (
           <SalaSelectScreen
             token={token}
             selectedRoom={selectedRoom}
@@ -661,7 +734,7 @@ export default function PlayMode({
         {/* ── game (CPU) ────────────────────────────────────────────────────── */}
         {/* key={cpuSimKey} causes a clean remount when "Jugar Otra Vez" is     */}
         {/* pressed — same axo/board/room, phase resets to 'loading'             */}
-        {gameView === 'game' && selectedAxo && singleBoardId && (
+        {gameView === 'game' && cpuGameplayEnabled && selectedAxo && singleBoardId && (
           <CpuGameWrapper
             key={cpuSimKey}
             userId={userId}
@@ -671,7 +744,9 @@ export default function PlayMode({
             playerBoards={playerBoards}
             allCards={allCards}
             selectedRoom={selectedRoom}
-            multiplier={multiplier}
+            multiplier={paidEntriesEnabled ? multiplier : 1}
+            paidEntriesEnabled={paidEntriesEnabled}
+            freePlayEnabled={freePlayEnabled}
             onDone={() => { recargarSaldos(); loadData(); }}
             onPlayAgainInPlace={() => {
               setCpuGameActive(true);
@@ -693,9 +768,55 @@ export default function PlayMode({
           />
         )}
 
+        {gameView === 'game' && !cpuGameplayEnabled && (
+          <div className="py-12 px-6 text-center rounded-3xl border border-amber-500/20 bg-amber-950/20">
+            <div className="text-4xl mb-3">🛟</div>
+            <h3 className="text-sm font-black text-amber-200 uppercase tracking-widest">Partida detenida</h3>
+            <p className="mt-2 text-xs text-slate-400">No se realizó ningún cargo ni se inició una ronda.</p>
+            <button
+              type="button"
+              onClick={() => navigate('mode-select', 'back')}
+              className="mt-5 px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 text-xs font-black uppercase tracking-wider hover:border-slate-500"
+            >
+              Volver
+            </button>
+          </div>
+        )}
+
         {/* ── playing ───────────────────────────────────────────────────────── */}
         {gameView === 'playing' && selectedAxo && (
-          activeGame?.active && activeGame?.play_mode === "manual" ? (
+          !paidEntriesEnabled ? (
+            <div className="py-12 px-6 text-center rounded-3xl border border-amber-500/20 bg-amber-950/20">
+              <div className="text-4xl mb-3">🛟</div>
+              <h3 className="text-sm font-black text-amber-200 uppercase tracking-widest">
+                Sesión anterior detenida
+              </h3>
+              <p className="mt-2 text-xs text-slate-400 max-w-md mx-auto">
+                No se iniciarán más rondas automáticas o manuales. Puedes solicitar el cierre de esta sesión y recuperar cualquier saldo retenido.
+              </p>
+              <div className="mt-5 flex flex-col sm:flex-row gap-2 justify-center">
+                {selectedAxo.status === 'waiting_settlement' ? (
+                  <button
+                    type="button"
+                    onClick={handleSettle}
+                    disabled={settling}
+                    className="px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-black uppercase tracking-wider disabled:opacity-50"
+                  >
+                    {settling ? 'Cerrando…' : 'Cerrar y devolver saldo'}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleRecall}
+                    disabled={recalling || recallRequested}
+                    className="px-5 py-2.5 rounded-xl bg-amber-700 hover:bg-amber-600 text-white text-xs font-black uppercase tracking-wider disabled:opacity-50"
+                  >
+                    {recalling ? 'Solicitando…' : recallRequested ? 'Cierre solicitado' : 'Solicitar cierre'}
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : activeGame?.active && activeGame?.play_mode === "manual" ? (
             <ManualGameWrapper
               roomId={activeGame.room_id}
               axolotitoId={activeGame.axolotito_id}
@@ -729,6 +850,30 @@ export default function PlayMode({
           )
         )}
 
+        {!paidEntriesEnabled && (gameView === 'budget' || gameView === 'sala-select') && (
+          <div className="py-10 px-6 text-center rounded-3xl border border-amber-500/20 bg-amber-950/20">
+            <div className="text-4xl mb-3">🛟</div>
+            <h3 className="text-sm font-black text-amber-200 uppercase tracking-widest">
+              Presupuestos deshabilitados
+            </h3>
+            <p className="mt-2 text-xs text-slate-400">
+              El modo gratuito no usa créditos ni entrega premios FRJ.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setGameMode('cpu');
+                setMultiBoards([]);
+                setMultiplier(1);
+                navigate('mode-select', 'back');
+              }}
+              className="mt-5 px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 text-xs font-black uppercase tracking-wider hover:border-slate-500"
+            >
+              Volver al modo gratuito
+            </button>
+          </div>
+        )}
+
         {/* ── settling ──────────────────────────────────────────────────────── */}
         {gameView === 'settling' && selectedAxo && (
           <SettlingScreen
@@ -754,7 +899,7 @@ export default function PlayMode({
             </button>
             <div className="text-center mb-5 relative z-10">
               <span className="text-[10px] font-black px-4 py-1.5 rounded-full border bg-emerald-950/80 border-emerald-500/30 text-emerald-300 uppercase tracking-widest">
-                Liquidación Completada
+                {paidEntriesEnabled ? 'Liquidación completada' : 'Sesión cerrada'}
               </span>
               <h3 className="text-2xl font-black italic mt-3 text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-300">
                 ❤️ ¡Gracias por el esfuerzo!
@@ -763,19 +908,19 @@ export default function PlayMode({
                 <p className="text-xs text-slate-400 mt-1">{settlementReport.mensaje}</p>
               )}
             </div>
-            <div className="grid grid-cols-2 gap-3 relative z-10">
+            <div className={`grid gap-3 relative z-10 ${paidEntriesEnabled ? 'grid-cols-2' : 'grid-cols-1'}`}>
               <div className="bg-slate-950/80 border border-white/5 rounded-2xl p-3 text-center">
                 <p className="text-[9px] text-slate-500 uppercase tracking-widest font-black mb-1">FRJ Devueltas</p>
                 <p className="text-lg font-black text-amber-400 flex items-center justify-center gap-1">
                   <Coins size={13} /> {settlementReport.refunded_gal ?? '—'}
                 </p>
               </div>
-              <div className="bg-slate-950/80 border border-white/5 rounded-2xl p-3 text-center">
+              {paidEntriesEnabled && <div className="bg-slate-950/80 border border-white/5 rounded-2xl p-3 text-center">
                 <p className="text-[9px] text-slate-500 uppercase tracking-widest font-black mb-1">Rendimiento</p>
                 <p className={`text-lg font-black ${(settlementReport.net_performance ?? 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                   {(settlementReport.net_performance ?? 0) >= 0 ? '+' : ''}{settlementReport.net_performance ?? '—'}
                 </p>
-              </div>
+              </div>}
               {settlementReport.loyalty_points_gained != null && (
                 <div className="col-span-2 bg-indigo-950/40 border border-indigo-500/20 rounded-2xl p-3 text-center">
                   <p className="text-[9px] text-indigo-400 uppercase tracking-widest font-black mb-1">Puntos de Lealtad</p>

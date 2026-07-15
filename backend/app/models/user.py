@@ -17,6 +17,19 @@ class User(SQLModel, table=True):
     first_crypto_purchase_at: Optional[datetime] = None  # para bonus +10% primera compra
     promo_code_attempts: int = Field(default=0)  # intentos fallidos de canjear corcholatas (máx 3)
 
+    # --- Age assurance, consent and commerce eligibility ---
+    # Unknown is deliberately fail-closed: the account may play, but cannot
+    # buy, sell, publish commercially or receive payouts.
+    age_band: str = Field(default="unknown", max_length=16)
+    age_assured_at: Optional[datetime] = Field(default=None)
+    guardian_consent_at: Optional[datetime] = Field(default=None)
+    guardian_consent_version: Optional[str] = Field(default=None, max_length=64)
+    commerce_status: str = Field(default="disabled", max_length=24)
+    creator_status: str = Field(default="ineligible", max_length=24)
+    kyc_status: str = Field(default="not_started", max_length=24)
+    terms_accepted_version: Optional[str] = Field(default=None, max_length=64)
+    privacy_accepted_version: Optional[str] = Field(default=None, max_length=64)
+
     # --- Tutorial & F2P ---
     tutorial_completed: bool = Field(default=False)
     cave_level: int = Field(default=1)                                 # Nivel de expansión del Cenote (1-8). Reemplaza webito_slots_unlocked.

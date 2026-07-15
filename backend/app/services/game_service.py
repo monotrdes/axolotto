@@ -14,6 +14,7 @@ from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from app.core.config import settings, FRJ_DECIMALS_BACKEND, frj_to_internal, frj_to_display
+from app.core.product_policy import require_feature
 from app.core.prices import CONSUMABLE_PRICES
 from app.models.axolotito import Axolotito
 from app.models.board import PlayerBoard
@@ -82,9 +83,39 @@ class GameService:
         session: Session,
         verified_user_id: str,
     ) -> dict:
-        """Simulates a Lotería match, consuming Axolotito energy and charging entry fee."""
+        """Simulate a CPU match under either free or explicit legacy economics."""
+        economic_mode = settings.ENABLE_PAID_GAMEPLAY
+        free_mode = settings.ENABLE_FREE_GAMEPLAY and not economic_mode
+        require_feature(economic_mode or free_mode, "cpu_gameplay")
+
+        if economic_mode:
+            require_feature(
+                settings.ENABLE_GAMEPLAY_TOKEN_REWARDS,
+                "gameplay_token_rewards",
+            )
+        elif (
+            multiplier != 1
+            or bot_enabled
+            or bot_budget_gal != 0
+            or bot_loss_limit_pct != 0
+            or bot_profit_limit_pct != 0
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail={
+                    "code": "FREE_PLAY_ECONOMIC_PARAMETERS_FORBIDDEN",
+                    "message": (
+                        "El modo gratuito no acepta multiplicadores, autoplay "
+                        "ni presupuestos o límites económicos."
+                    ),
+                },
+            )
         # 1. Fetch Axolotito and validate ownership
-        axo = session.get(Axolotito, axolotito_id)
+        axo = session.exec(
+            select(Axolotito)
+            .where(Axolotito.id == axolotito_id)
+            .with_for_update()
+        ).first()
         if not axo:
             raise HTTPException(status_code=404, detail="Axolotito no encontrado.")
         if axo.user_id != verified_user_id:
@@ -107,9 +138,52 @@ class GameService:
         if not axo.assigned_board_id:
             raise HTTPException(status_code=400, detail="Este Axolotito no tiene ninguna tabla asignada para jugar.")
 
-        board = session.get(PlayerBoard, axo.assigned_board_id)
+        board = session.exec(
+            select(PlayerBoard)
+            .where(PlayerBoard.id == axo.assigned_board_id)
+            .with_for_update()
+        ).first()
         if not board or board.is_dead:
             raise HTTPException(status_code=400, detail="La tabla asignada no existe o está desarmada.")
+        if board.user_id != verified_user_id:
+            raise HTTPException(
+                status_code=403,
+                detail="La tabla asignada no pertenece a este usuario.",
+            )
+        if free_mode and (
+            not axo.is_tutorial
+            or axo.blockchain_token_id is not None
+            or not board.is_tutorial
+            or board.blockchain_token_id is not None
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "FREE_PLAY_REQUIRES_PRACTICE_ASSETS",
+                    "message": (
+                        "El modo gratuito sólo modifica starters de práctica "
+                        "sin representación on-chain."
+                    ),
+                },
+            )
+
+        board_card_ids = list(board.card_ids or [])
+        catalog_card_ids = session.exec(
+            select(ItemCatalog.id).where(ItemCatalog.item_type == ItemType.CARD)
+        ).all()
+        if (
+            len(board_card_ids) != 16
+            or len(set(board_card_ids)) != 16
+            or len(catalog_card_ids) < 16
+            or not set(board_card_ids).issubset(set(catalog_card_ids))
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "GAME_BOARD_CATALOG_INVALID",
+                    "message": "La tabla no corresponde al catálogo activo de cartas.",
+                },
+            )
 
         # 4. Set Room details from centralised ROOM_CONFIG and apply multiplier
         if room_name not in ROOM_CONFIG:
@@ -120,9 +194,17 @@ class GameService:
         room = ROOM_CONFIG[room_name]
         # VULN-06: ROOM_CONFIG almacena montos en FRJ human-readable.
         # Convertir a unidad mínima entera para operar contra wallet (que usa internal).
-        entry_fee        = frj_to_internal(room["fee"] * multiplier)
-        win_prize        = frj_to_internal(room["prize"] * multiplier)
-        loss_consolation = frj_to_internal(room["consolation"] * multiplier)
+        entry_fee = (
+            frj_to_internal(room["fee"] * multiplier) if economic_mode else 0
+        )
+        win_prize = (
+            frj_to_internal(room["prize"] * multiplier) if economic_mode else 0
+        )
+        loss_consolation = (
+            frj_to_internal(room["consolation"] * multiplier)
+            if economic_mode
+            else 0
+        )
         difficulty_label = room["difficulty_label"]
         
         # Sub-linear XP scaling (using square root) to prevent excessive level-ups at high stakes
@@ -137,37 +219,44 @@ class GameService:
         bot_focus       = room["bot_focus"]
 
         # 5. Check user wallet balance
-        wallet = BankService.get_or_create_wallet(session, verified_user_id, for_update=True)
-        if wallet.frijolitos < entry_fee:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Saldo insuficiente. Entrar a {room_title} ({multiplier}x) cuesta {frj_to_display(entry_fee):.1f} FRJ."
+        wallet = None
+        if economic_mode:
+            wallet = BankService.get_or_create_wallet(
+                session, verified_user_id, for_update=True
             )
+            if wallet.frijolitos < entry_fee:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Saldo insuficiente. Entrar a {room_title} ({multiplier}x) cuesta {frj_to_display(entry_fee):.1f} FRJ."
+                )
 
         # --- DEDUCT COST AND ENERGY ---
-        wallet.frijolitos -= entry_fee
         user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
-        if user and user.wallet_address and settings.GEMA_ALGA_ADDRESS:
-            _enqueue_chain_op(session, verified_user_id, "burn_frj", {
-                "from_address": user.wallet_address,
-                "amount": entry_fee,
-            })
+        if economic_mode:
+            assert wallet is not None
+            wallet.frijolitos -= entry_fee
+            if user and user.wallet_address and settings.GEMA_ALGA_ADDRESS:
+                _enqueue_chain_op(session, verified_user_id, "burn_frj", {
+                    "from_address": user.wallet_address,
+                    "amount": entry_fee,
+                })
 
         axo.energy_current -= 10
         axo.status = "playing"
 
-        ledger_fee = TransactionLedger(
-            user_id=verified_user_id,
-            amount=entry_fee,
-            currency=CurrencyType.FRIJOLITO,
-            tx_type=TransactionType.MARKET_BUY,
-            description=f"Entrada a sala {room_title} con Axolotito {axo.name} ({multiplier}x)"
-        )
-        session.add(ledger_fee)
+        if economic_mode:
+            ledger_fee = TransactionLedger(
+                user_id=verified_user_id,
+                amount=entry_fee,
+                currency=CurrencyType.FRIJOLITO,
+                tx_type=TransactionType.MARKET_BUY,
+                description=f"Entrada a sala {room_title} con Axolotito {axo.name} ({multiplier}x)"
+            )
+            session.add(ledger_fee)
 
         # --- SIMULATION ---
         # Retrieve player cards
-        player_card_ids = board.card_ids
+        player_card_ids = board_card_ids
         # Resolve card details for UX logging
         all_cards = session.exec(select(ItemCatalog).where(ItemCatalog.item_type == ItemType.CARD)).all()
         card_map = {c.id: c.name for c in all_cards}
@@ -297,7 +386,7 @@ class GameService:
         # --- REWARDS & STATS UPDATE ---
         is_win = winner_name == "player"
         prize_awarded = 0
-        streak = axo.cpu_win_streak   # streak BEFORE this game
+        streak = axo.cpu_win_streak if economic_mode else 0
         streak_bonus_pct = 0          # will be set in win block if applicable
         streak_broken    = False      # will be set in loss block if applicable
 
@@ -308,29 +397,32 @@ class GameService:
             prize_awarded = win_prize + luck_bonus
 
             # Win Streak bonus: +15% per previous consecutive win, capped at +50%
-            if streak >= 1:
+            if economic_mode and streak >= 1:
                 streak_bonus_pct = min(50, streak * 15)
                 prize_awarded = prize_awarded * (100 + streak_bonus_pct) // 100
             # Hard cap: luck + streak combined cannot exceed MAX_WIN_MULTIPLIER of base prize
             prize_awarded = min(prize_awarded, win_prize * MAX_WIN_MULTIPLIER_BPS // 100)
             streak_broken         = False
-            axo.cpu_win_streak    = streak + 1
+            if economic_mode:
+                axo.cpu_win_streak = streak + 1
 
             # Add prize to wallet
-            wallet.frijolitos += prize_awarded
+            if economic_mode:
+                assert wallet is not None
+                wallet.frijolitos += prize_awarded
 
-            # Ledger entry for win
-            streak_note = f" (🔥 racha x{streak}, +{streak_bonus_pct}%)" if streak_bonus_pct > 0 else ""
-            from app.core.config import FRJ_DECIMALS_BACKEND
-            _prize_display = prize_awarded / (10 ** FRJ_DECIMALS_BACKEND)
-            ledger_win = TransactionLedger(
-                user_id=verified_user_id,
-                amount=prize_awarded,
-                currency=CurrencyType.FRIJOLITO,
-                tx_type=TransactionType.REWARD,
-                description=f"🏆 ¡Victoria en sala {room_title}! Premio: {_prize_display:.2f} FRJ{streak_note}"
-            )
-            session.add(ledger_win)
+                # Ledger entry for win
+                streak_note = f" (🔥 racha x{streak}, +{streak_bonus_pct}%)" if streak_bonus_pct > 0 else ""
+                from app.core.config import FRJ_DECIMALS_BACKEND
+                _prize_display = prize_awarded / (10 ** FRJ_DECIMALS_BACKEND)
+                ledger_win = TransactionLedger(
+                    user_id=verified_user_id,
+                    amount=prize_awarded,
+                    currency=CurrencyType.FRIJOLITO,
+                    tx_type=TransactionType.REWARD,
+                    description=f"🏆 ¡Victoria en sala {room_title}! Premio: {_prize_display:.2f} FRJ{streak_note}"
+                )
+                session.add(ledger_win)
 
             # Accrue XP and levels
             board.xp += win_xp_board
@@ -338,22 +430,25 @@ class GameService:
             board.games_won += 1
         else:
             # Loss: reset streak
-            streak_broken      = streak >= 1
-            axo.cpu_win_streak = 0
+            streak_broken = economic_mode and streak >= 1
+            if economic_mode:
+                axo.cpu_win_streak = 0
             # Loss: consolation prize
             prize_awarded = loss_consolation
-            wallet.frijolitos += prize_awarded
+            if economic_mode:
+                assert wallet is not None
+                wallet.frijolitos += prize_awarded
 
-            from app.core.config import FRJ_DECIMALS_BACKEND
-            _prize_display = prize_awarded / (10 ** FRJ_DECIMALS_BACKEND)
-            ledger_loss = TransactionLedger(
-                user_id=verified_user_id,
-                amount=prize_awarded,
-                currency=CurrencyType.FRIJOLITO,
-                tx_type=TransactionType.REWARD,
-                description=f"Consolación en sala {room_title}. Premio: {_prize_display:.2f} FRJ"
-            )
-            session.add(ledger_loss)
+                from app.core.config import FRJ_DECIMALS_BACKEND
+                _prize_display = prize_awarded / (10 ** FRJ_DECIMALS_BACKEND)
+                ledger_loss = TransactionLedger(
+                    user_id=verified_user_id,
+                    amount=prize_awarded,
+                    currency=CurrencyType.FRIJOLITO,
+                    tx_type=TransactionType.REWARD,
+                    description=f"Consolación en sala {room_title}. Premio: {_prize_display:.2f} FRJ"
+                )
+                session.add(ledger_loss)
 
             board.xp += loss_xp_board
             axo.experience += loss_xp_axo
@@ -399,13 +494,22 @@ class GameService:
             session.add(user)
 
         # --- ON-CHAIN REWARDS & STATS UPDATE ---
-        if user and user.wallet_address and settings.GEMA_ALGA_ADDRESS:
+        if (
+            economic_mode
+            and prize_awarded > 0
+            and user
+            and user.wallet_address
+            and settings.GEMA_ALGA_ADDRESS
+        ):
             _enqueue_chain_op(session, verified_user_id, "mint_frj", {
                 "to_address": user.wallet_address,
                 "amount": prize_awarded,
             })
 
-        if board.blockchain_token_id is not None:
+        if (
+            board.blockchain_token_id is not None
+            and settings.ENABLE_BOARD_ASSET_MUTATIONS
+        ):
             xp_gained = win_xp_board if is_win else loss_xp_board
             _enqueue_chain_op(session, verified_user_id, "update_board_stats", {
                 "board_token_id": board.blockchain_token_id,
@@ -456,23 +560,27 @@ class GameService:
         # --- IMPRINTING: aplicar si este axo es padrino de un Webito ---
         _miss_rate = _miss_chance(axo.stat_focus)
         _mark_accuracy = max(0.0, 1.0 - _miss_rate)
-        try:
-            _imprinting_info = _apply_imprinting_if_needed(
-                axo=axo,
-                is_win=is_win,
-                had_jackpot=prize_awarded > win_prize * 1.5,
-                mark_accuracy=_mark_accuracy,
-                session=session,
-            )
-        except Exception as exc:
-            print(f"⚠️ [imprinting] error no-fatal al aplicar deltas: {exc}")
+        if settings.ENABLE_HATCHING:
+            try:
+                _imprinting_info = _apply_imprinting_if_needed(
+                    axo=axo,
+                    is_win=is_win,
+                    had_jackpot=prize_awarded > win_prize * 1.5,
+                    mark_accuracy=_mark_accuracy,
+                    session=session,
+                )
+            except Exception as exc:
+                print(f"⚠️ [imprinting] error no-fatal al aplicar deltas: {exc}")
+                _imprinting_info = None
+        else:
             _imprinting_info = None
 
         # Increment card called stats
         drawn_card_ids = deck[:turns]
         ItemCatalog.increment_called_counts(session, drawn_card_ids)
 
-        session.add(wallet)
+        if wallet is not None:
+            session.add(wallet)
         session.add(board)
         session.add(axo)
         session.commit()
@@ -487,6 +595,9 @@ class GameService:
             "room_title": room_title,
             "winner": winner_label,
             "turns": turns,
+            "play_mode": "legacy_paid" if economic_mode else "free",
+            "economic_reward": economic_mode and prize_awarded > 0,
+            "entry_fee_gal": frj_to_display(entry_fee),
             "prize_gal": frj_to_display(prize_awarded),
             "board_xp_gained": win_xp_board if is_win else loss_xp_board,
             "board_level_current": board.level,
@@ -500,7 +611,7 @@ class GameService:
             "player_miss_chance_pct": round(player_miss_chance * 100, 1),
             "lucky_save_occurred": lucky_save_used,
             "lucky_save_turn": lucky_save_turn,
-            "win_streak_after":  axo.cpu_win_streak,
+            "win_streak_after": axo.cpu_win_streak if economic_mode else 0,
             "streak_bonus_pct":  streak_bonus_pct,
             "streak_broken":     streak_broken,
             "bot_board_nums":    bot_board_nums,
@@ -519,6 +630,10 @@ class GameService:
         verified_user_id: str,
     ) -> dict:
         """Feeds an Axolotito, deducting GAL from wallet and restoring energy."""
+        require_feature(
+            settings.ENABLE_FIXED_GAMEPLAY_SPENDING,
+            "fixed_gameplay_spending",
+        )
         axo = session.get(Axolotito, axo_id)
         if not axo:
             raise HTTPException(status_code=404, detail="Axolotito no encontrado.")

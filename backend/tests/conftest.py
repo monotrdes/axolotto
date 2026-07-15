@@ -12,6 +12,34 @@ import pytest
 from sqlalchemy import text
 from sqlmodel import SQLModel, Session, create_engine
 
+# The existing suite exercises the legacy value-bearing economy deliberately.
+# Production/default settings remain fail-closed; tests must opt in explicitly.
+os.environ.setdefault("PRODUCT_MODE", "legacy_simulation")
+os.environ.setdefault("ENABLE_FIAT_PAYMENTS", "true")
+os.environ.setdefault("ENABLE_CRYPTO_CHECKOUT", "true")
+os.environ.setdefault("ENABLE_PLAYER_MARKETPLACE", "true")
+os.environ.setdefault("ENABLE_CREATOR_PAYOUTS", "false")
+os.environ.setdefault("ENABLE_VIP_SALES", "true")
+os.environ.setdefault("ENABLE_FREE_GAMEPLAY", "true")
+os.environ.setdefault("ENABLE_PAID_GAMEPLAY", "true")
+os.environ.setdefault("ENABLE_GAMEPLAY_TOKEN_REWARDS", "true")
+os.environ.setdefault("ENABLE_JACKPOT", "true")
+os.environ.setdefault("ENABLE_PURCHASED_RANDOM_REWARDS", "true")
+os.environ.setdefault("ENABLE_PLAYER_TOKEN_TRANSFERS", "true")
+os.environ.setdefault("ENABLE_CLIENT_REPORTED_REWARDS", "true")
+os.environ.setdefault("ENABLE_PROMOTIONAL_TOKEN_REWARDS", "true")
+os.environ.setdefault("ENABLE_ADMIN_TOKEN_MINTS", "true")
+os.environ.setdefault("ENABLE_ADMIN_BALANCE_ADJUSTMENTS", "true")
+os.environ.setdefault("ENABLE_PASSIVE_TOKEN_REWARDS", "true")
+os.environ.setdefault("ENABLE_LEGACY_ASSET_CLAIMS", "true")
+os.environ.setdefault("ENABLE_FIXED_ITEM_SHOP", "true")
+os.environ.setdefault("ENABLE_FIXED_GAMEPLAY_SPENDING", "true")
+os.environ.setdefault("ENABLE_CARD_CRAFTING", "true")
+os.environ.setdefault("ENABLE_BOARD_ASSET_MUTATIONS", "true")
+os.environ.setdefault("ENABLE_HATCHING", "true")
+os.environ.setdefault("ENABLE_RECICLON", "true")
+os.environ.setdefault("ALLOW_DEV_PAYMENTS", "true")
+
 # Asegurar que los módulos de app sean importables desde tests/
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 

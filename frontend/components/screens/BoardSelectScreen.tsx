@@ -4,6 +4,7 @@ import React from 'react';
 import { Play, Coins } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import BoardCardGrid from '../ui/BoardCardGrid';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 interface BoardSelectScreenProps {
   mode: 'cpu' | 'multi';
@@ -33,12 +34,7 @@ interface BoardSelectScreenProps {
 // ── CpuStatsPanel ─────────────────────────────────────────────────────────────
 // Shows per-axo combat stats for the selected CPU room. Pure frontend math.
 
-const ROOM_DATA: Record<'rookie' | 'champion', { prize: number; bot_focus: number }> = {
-  rookie:   { prize: 160,  bot_focus: 40 },
-  champion: { prize: 2900, bot_focus: 80 },
-};
-
-function CpuStatsPanel({ axo, room }: { axo: any; room: 'rookie' | 'champion' }) {
+function CpuStatsPanel({ axo, showEconomicBonuses }: { axo: any; showEconomicBonuses: boolean }) {
   const [expanded, setExpanded] = React.useState(false);
 
   // Core formulas (mirror game.py)
@@ -85,8 +81,12 @@ function CpuStatsPanel({ axo, room }: { axo: any; room: 'rookie' | 'champion' })
           {/* Luck bonus */}
           <div className="bg-slate-900/60 rounded-xl p-2">
             <p className="text-[8px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">✨ SUERTE</p>
-            <p className="text-sm font-black leading-none text-emerald-400">+{luckBonusPct}%</p>
-            <p className="text-[7px] text-slate-600 mt-0.5">sobre el premio</p>
+            <p className="text-sm font-black leading-none text-emerald-400">
+              {showEconomicBonuses ? `+${luckBonusPct}%` : (axo?.stat_luck ?? 0)}
+            </p>
+            <p className="text-[7px] text-slate-600 mt-0.5">
+              {showEconomicBonuses ? 'sobre el premio' : 'atributo de juego'}
+            </p>
           </div>
 
           {/* SAL */}
@@ -102,7 +102,9 @@ function CpuStatsPanel({ axo, room }: { axo: any; room: 'rookie' | 'champion' })
             {streak >= 1 ? (
               <>
                 <p className="text-sm font-black leading-none text-amber-400">×{streak}</p>
-                <p className="text-[7px] text-slate-600 mt-0.5">+{streakBonus}% si ganas</p>
+                <p className="text-[7px] text-slate-600 mt-0.5">
+                  {showEconomicBonuses ? `+${streakBonus}% si ganas` : 'victorias seguidas'}
+                </p>
               </>
             ) : (
               <>
@@ -148,6 +150,30 @@ export default function BoardSelectScreen({
 }: BoardSelectScreenProps) {
   const [hoveredBoard, setHoveredBoard] = React.useState<any | null>(null);
   const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 });
+  const { capabilities, loading } = useProductPolicy();
+  const paidEntriesEnabled = capabilities.gameplay.paid_entries;
+  const freePlayEnabled = capabilities.gameplay.free_play;
+  const modeAllowed = mode === 'multi'
+    ? paidEntriesEnabled
+    : paidEntriesEnabled || freePlayEnabled;
+
+  if (!modeAllowed) {
+    return (
+      <div className="py-10 text-center rounded-3xl border border-amber-500/20 bg-amber-950/20 px-6">
+        <div className="text-4xl mb-3">🛟</div>
+        <h3 className="text-sm font-black text-amber-200 uppercase tracking-widest">
+          {mode === 'multi' ? 'Multijugador no disponible' : 'Juego en pausa segura'}
+        </h3>
+        <p className="mt-2 text-xs text-slate-400">
+          {loading
+            ? 'Verificando la política de producto…'
+            : mode === 'multi'
+              ? 'Las salas con presupuesto, cuotas o premios están deshabilitadas.'
+              : 'El servidor todavía no confirmó una partida gratuita.'}
+        </p>
+      </div>
+    );
+  }
 
   // Map boards occupied by OTHER axolotitos
   const occupiedMap = new Map<number, string>();
@@ -163,6 +189,7 @@ export default function BoardSelectScreen({
     mode === 'cpu' ? singleBoardId === id : multiBoards.includes(id);
 
   const handleClick = (board: any) => {
+    if (!modeAllowed) return;
     if (occupiedMap.has(board.id)) return;
     if (mode === 'cpu') {
       onSelectSingle(singleBoardId === board.id ? null : board.id);
@@ -301,10 +328,16 @@ export default function BoardSelectScreen({
                 ⚔️ 1v1 · 1 bot
               </div>
               <div className="flex items-center justify-between gap-1 mt-1.5">
-                <span className="flex items-center gap-1 text-[9px] text-amber-400 font-black">
-                  <Coins size={9} /> {100 * multiplier} FRJ
-                </span>
-                <span className="text-[9px] text-emerald-400 font-black">🏆 +{160 * multiplier}</span>
+                {paidEntriesEnabled ? (
+                  <>
+                    <span className="flex items-center gap-1 text-[9px] text-amber-400 font-black">
+                      <Coins size={9} /> {100 * multiplier} FRJ
+                    </span>
+                    <span className="text-[9px] text-emerald-400 font-black">🏆 +{160 * multiplier}</span>
+                  </>
+                ) : (
+                  <span className="text-[9px] text-emerald-400 font-black">✓ Gratis · Sin premio FRJ</span>
+                )}
               </div>
             </button>
 
@@ -324,16 +357,22 @@ export default function BoardSelectScreen({
                 ⚔️ 1v5 · 5 bots
               </div>
               <div className="flex items-center justify-between gap-1 mt-1.5">
-                <span className="flex items-center gap-1 text-[9px] text-amber-400 font-black">
-                  <Coins size={9} /> {500 * multiplier} FRJ
-                </span>
-                <span className="text-[9px] text-emerald-400 font-black">🏆 +{2900 * multiplier}</span>
+                {paidEntriesEnabled ? (
+                  <>
+                    <span className="flex items-center gap-1 text-[9px] text-amber-400 font-black">
+                      <Coins size={9} /> {500 * multiplier} FRJ
+                    </span>
+                    <span className="text-[9px] text-emerald-400 font-black">🏆 +{2900 * multiplier}</span>
+                  </>
+                ) : (
+                  <span className="text-[9px] text-emerald-400 font-black">✓ Gratis · Sin premio FRJ</span>
+                )}
               </div>
             </button>
           </div>
 
           {/* ── Multiplier / Stakes Selector ── */}
-          <div className="space-y-2 mt-4 animate-fade-in">
+          {paidEntriesEnabled && <div className="space-y-2 mt-4 animate-fade-in">
             <div className="flex justify-between items-center mt-3">
               <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Multiplicador de Apuesta (Stakes)</p>
               <span className="text-[9px] font-black text-indigo-300 bg-indigo-950/60 border border-indigo-500/20 px-2 py-0.5 rounded-full">
@@ -356,13 +395,13 @@ export default function BoardSelectScreen({
                 </button>
               ))}
             </div>
-          </div>
+          </div>}
         </div>
       )}
 
       {/* Stats panel — CPU mode only, below room selector */}
       {mode === 'cpu' && selectedAxo && (
-        <CpuStatsPanel axo={selectedAxo} room={selectedRoom} />
+        <CpuStatsPanel axo={selectedAxo} showEconomicBonuses={paidEntriesEnabled} />
       )}
 
       {/* CTA footer */}
@@ -376,7 +415,7 @@ export default function BoardSelectScreen({
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 40px var(--brand-glow)'; }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 30px var(--brand-glow)'; }}
             >
-              <Play size={20} fill="currentColor" /> JUGAR
+              <Play size={20} fill="currentColor" /> {paidEntriesEnabled ? 'JUGAR' : 'JUGAR GRATIS'}
             </button>
           ) : (
             <button

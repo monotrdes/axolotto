@@ -13,6 +13,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlmodel import Session, select
 
 from app.core.config import settings
+from app.core.product_policy import require_feature
 from app.database import get_session
 from app.models.market_escrow import FiatPaymentIntent
 from app.services.payment_gateway.mock_gateway import MockPaymentGateway
@@ -35,6 +36,7 @@ async def payment_webhook(
 
     La firma HMAC-SHA256 viaja en X-Webhook-Signature sobre el body crudo.
     """
+    require_feature(settings.ENABLE_FIAT_PAYMENTS, "fiat_payments")
     raw_body = await request.body()
     return ReconciliationService.reconcile(session, raw_body, x_webhook_signature)
 
@@ -50,7 +52,11 @@ def mock_pay(
     Construye el webhook firmado y lo concilia — mismo código que la
     pasarela real ejercitaría. outcome: success|failed|wrong_amount|wrong_listing.
     """
-    if settings.BLOCKCHAIN_MODE != "local" and not settings.ALLOW_DEV_PAYMENTS:
+    if not (
+        settings.PRODUCT_MODE == "legacy_simulation"
+        and settings.BLOCKCHAIN_MODE == "local"
+        and settings.ALLOW_DEV_PAYMENTS
+    ):
         raise HTTPException(status_code=403, detail="Solo disponible en modo local/dev.")
     if outcome not in MOCK_PAY_OUTCOMES:
         raise HTTPException(status_code=400, detail=f"outcome inválido: {outcome}")

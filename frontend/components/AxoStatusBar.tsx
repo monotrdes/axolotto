@@ -4,6 +4,7 @@ import { API_BASE } from "@/lib/api";
 import React, { useState } from 'react';
 import { Zap } from 'lucide-react';
 import BottomSheet from './ui/BottomSheet';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 interface AxoStatusBarProps {
   axo: any;
@@ -20,6 +21,8 @@ const RARITY_COLOR: Record<string, string> = {
 };
 
 export default function AxoStatusBar({ axo, getSleepTimeLeft, onAction }: AxoStatusBarProps) {
+  const { capabilities } = useProductPolicy();
+  const fixedSpendingEnabled = capabilities.gameplay.fixed_spending;
   const [open, setOpen] = useState(false);
 
   const sleepLeft   = getSleepTimeLeft(axo.sleep_expires_at ?? '');
@@ -47,7 +50,7 @@ export default function AxoStatusBar({ axo, getSleepTimeLeft, onAction }: AxoSta
         🎮 En cancha
       </span>
     );
-  } else if (isLowEnergy) {
+  } else if (isLowEnergy && fixedSpendingEnabled) {
     badge = (
       <span className="text-[9px] font-black text-red-300 bg-red-950/40 border border-red-500/20 px-1.5 py-0.5 rounded-full animate-pulse shrink-0">
         ⚠️ Alimentar
@@ -166,20 +169,34 @@ export default function AxoStatusBar({ axo, getSleepTimeLeft, onAction }: AxoSta
           {!isPlaying && !isSettling ? (
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => { onAction('feed-pellet'); setOpen(false); }}
-                disabled={isSleeping}
+                onClick={() => {
+                  if (!fixedSpendingEnabled) return;
+                  onAction('feed-pellet');
+                  setOpen(false);
+                }}
+                disabled={isSleeping || !fixedSpendingEnabled}
+                title={!fixedSpendingEnabled ? 'Alimentación en revisión' : undefined}
                 className="py-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-green-300 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all disabled:opacity-40 disabled:cursor-not-allowed text-center"
               >
                 🌿 Alga Pellet<br />
-                <span className="text-[9px] text-slate-500 font-bold">2 FRJ · +15 E</span>
+                <span className="text-[9px] text-slate-500 font-bold">
+                  {fixedSpendingEnabled ? '2 FRJ · +15 E' : 'En revisión'}
+                </span>
               </button>
               <button
-                onClick={() => { onAction('feed-shrimp'); setOpen(false); }}
-                disabled={isSleeping}
+                onClick={() => {
+                  if (!fixedSpendingEnabled) return;
+                  onAction('feed-shrimp');
+                  setOpen(false);
+                }}
+                disabled={isSleeping || !fixedSpendingEnabled}
+                title={!fixedSpendingEnabled ? 'Alimentación en revisión' : undefined}
                 className="py-3 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-emerald-300 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all disabled:opacity-40 disabled:cursor-not-allowed text-center"
               >
                 🦐 Camarón<br />
-                <span className="text-[9px] text-slate-500 font-bold">10 FRJ · +60 E</span>
+                <span className="text-[9px] text-slate-500 font-bold">
+                  {fixedSpendingEnabled ? '10 FRJ · +60 E' : 'En revisión'}
+                </span>
               </button>
               {isSleeping ? (
                 <button

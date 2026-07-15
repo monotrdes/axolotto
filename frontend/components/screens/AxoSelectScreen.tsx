@@ -3,6 +3,7 @@ import { API_BASE } from "@/lib/api";
 
 import React from 'react';
 import { Clock, Play, Coins, CheckCircle } from 'lucide-react';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 interface AxoSelectScreenProps {
   axolotitos: any[];
@@ -31,6 +32,9 @@ export default function AxoSelectScreen({
   onSettleInline,
   settlingAxoId,
 }: AxoSelectScreenProps) {
+  const { capabilities } = useProductPolicy();
+  const fixedSpendingEnabled = capabilities.gameplay.fixed_spending;
+  const tokenRewardsEnabled = capabilities.gameplay.token_rewards;
 
   const header = (
     <div className="text-center pt-2 pb-2">
@@ -254,7 +258,7 @@ export default function AxoSelectScreen({
                             <span className="text-[10px] font-black text-amber-300">
                               Racha ×{axo.cpu_win_streak}
                             </span>
-                            {(axo.cpu_win_streak ?? 0) >= 2 && (
+                            {tokenRewardsEnabled && (axo.cpu_win_streak ?? 0) >= 2 && (
                               <span className="text-[9px] text-slate-400 ml-1.5">
                                 (+{Math.min(50, axo.cpu_win_streak * 15)}% próximo premio)
                               </span>
@@ -266,18 +270,20 @@ export default function AxoSelectScreen({
                       {/* Feed/sleep buttons */}
                       <div className="flex flex-wrap gap-1.5 mt-2.5">
                         <button
-                          onClick={() => onFeed('pellet')}
-                          disabled={isSleeping}
+                          onClick={() => fixedSpendingEnabled && onFeed('pellet')}
+                          disabled={isSleeping || !fixedSpendingEnabled}
+                          title={!fixedSpendingEnabled ? 'Alimentación en revisión' : undefined}
                           className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-green-300 text-[9px] font-black uppercase tracking-widest rounded-xl border border-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          🌿 Alga (2 FRJ)
+                          {fixedSpendingEnabled ? '🌿 Alga (2 FRJ)' : '🌿 Alga · En revisión'}
                         </button>
                         <button
-                          onClick={() => onFeed('shrimp')}
-                          disabled={isSleeping}
+                          onClick={() => fixedSpendingEnabled && onFeed('shrimp')}
+                          disabled={isSleeping || !fixedSpendingEnabled}
+                          title={!fixedSpendingEnabled ? 'Alimentación en revisión' : undefined}
                           className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-emerald-300 text-[9px] font-black uppercase tracking-widest rounded-xl border border-slate-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          🦐 Camarón (10 FRJ)
+                          {fixedSpendingEnabled ? '🦐 Camarón (10 FRJ)' : '🦐 Camarón · En revisión'}
                         </button>
                         {isSleeping ? (
                           <button

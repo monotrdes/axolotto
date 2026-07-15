@@ -3,12 +3,18 @@ from typing import Optional
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
+from app.core.config import settings
+from app.core.product_policy import require_feature
 from app.models.promo import PendingReward, PromoCode
 from app.models.items import ItemCatalog, WhitelistEntry
 from app.models.user import User
 
 
 def redeem_promo_code(session: Session, user_id: str, code: str, email: Optional[str] = None) -> dict:
+    require_feature(
+        settings.ENABLE_PROMOTIONAL_TOKEN_REWARDS,
+        "promotional_token_rewards",
+    )
     normalized = code.strip().upper()
 
     user = session.exec(select(User).where(User.privy_did == user_id)).first()

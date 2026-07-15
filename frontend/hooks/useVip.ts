@@ -11,6 +11,7 @@ import {
   purchaseVIPAPI,
   claimDailyFrjAPI,
 } from "@/services/vipService";
+import { useProductPolicy } from "@/hooks/useProductPolicy";
 
 // ═══════════════════════════════════════════════════════
 // HOOK — useVip
@@ -65,6 +66,8 @@ export function useVip({
   recargarSaldos,
   onVipSuccess,
 }: UseVipParams): UseVipReturn {
+  const { capabilities } = useProductPolicy();
+  const vipEnabled = capabilities.commerce.vip_sales;
   // ── Estado de tiers ──
   const [tiers, setTiers] = useState<VipTier[]>([]);
   const [tiersLoading, setTiersLoading] = useState(false);
@@ -101,6 +104,7 @@ export function useVip({
   // ── Fetchers ──
 
   const loadTiers = useCallback(async () => {
+    if (!vipEnabled) return;
     setTiersLoading(true);
     setTiersError(false);
     try {
@@ -113,33 +117,34 @@ export function useVip({
     } finally {
       setTiersLoading(false);
     }
-  }, []);
+  }, [vipEnabled]);
 
   const loadStats = useCallback(async () => {
+    if (!vipEnabled) return;
     try {
       const stats = await fetchVipStats();
       setActiveVipCount(stats.active_vip_count > 0 ? stats.active_vip_count : null);
     } catch {
       setActiveVipCount(null);
     }
-  }, []);
+  }, [vipEnabled]);
 
   const fetchVipStatus = useCallback(async () => {
-    if (!token) return;
+    if (!vipEnabled || !token) return;
     const status = await fetchVipStatusAPI(token);
     if (status) setVipStatus(status);
-  }, [token]);
+  }, [vipEnabled, token]);
 
   const fetchMain = useCallback(async () => {
-    if (!token || !userId) return;
+    if (!vipEnabled || !token || !userId) return;
     const main = await fetchMainAxolotitoAPI(token, userId);
     if (main) setMainAxolotito(main);
-  }, [token, userId]);
+  }, [vipEnabled, token, userId]);
 
   // ── Effects ──
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && vipEnabled) {
       loadTiers();
       loadStats();
       fetchVipStatus();
@@ -149,7 +154,7 @@ export function useVip({
       setClaimSuccess(false);
       setExpandedUpgradeTier(null);
     }
-  }, [isOpen, loadTiers, loadStats, fetchVipStatus, fetchMain]);
+  }, [isOpen, vipEnabled, loadTiers, loadStats, fetchVipStatus, fetchMain]);
 
   useEffect(() => {
     if (vipStatus) {
@@ -160,6 +165,7 @@ export function useVip({
   // ── Handlers ──
 
   const handleToggleAutoRenew = useCallback(async () => {
+    if (!vipEnabled) return;
     setTogglingAutoRenew(true);
     try {
       const ok = await toggleAutoRenewAPI(token, !autoRenew);
@@ -167,10 +173,14 @@ export function useVip({
     } finally {
       setTogglingAutoRenew(false);
     }
-  }, [token, autoRenew]);
+  }, [vipEnabled, token, autoRenew]);
 
   const handlePurchase = useCallback(
     async (tierId: string) => {
+      if (!vipEnabled) {
+        setError("Las ventas VIP están deshabilitadas.");
+        return;
+      }
       setPurchasing(true);
       setError(null);
       try {
@@ -196,10 +206,14 @@ export function useVip({
         setPurchasing(false);
       }
     },
-    [token, userId, recargarSaldos, fetchVipStatus, onVipSuccess]
+    [vipEnabled, token, userId, recargarSaldos, fetchVipStatus, onVipSuccess]
   );
 
   const handleClaimFrj = useCallback(async () => {
+    if (!vipEnabled) {
+      setError("Los reclamos VIP están deshabilitados.");
+      return;
+    }
     setClaiming(true);
     setError(null);
     try {
@@ -223,7 +237,7 @@ export function useVip({
     } finally {
       setClaiming(false);
     }
-  }, [token, vipStatus, recargarSaldos, fetchVipStatus, onVipSuccess]);
+  }, [vipEnabled, token, vipStatus, recargarSaldos, fetchVipStatus, onVipSuccess]);
 
   return {
     tiers,

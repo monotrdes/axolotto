@@ -5,7 +5,8 @@ from sqlmodel import Session
 
 from app.database import get_session
 from app.core.auth import get_verified_user_id, verify_no_active_game
-from app.core.config import frj_to_internal
+from app.core.config import frj_to_internal, settings
+from app.core.product_policy import require_feature
 from app.services.game_service import GameService
 from app.services.cave_service import get_cave, equip_cave_item, unequip_cave_item
 
@@ -37,7 +38,11 @@ def play_match(
     session: Session = Depends(get_session),
     verified_user_id: str = Depends(verify_no_active_game)
 ):
-    """Simulates a Lotería match, consuming Axolotito energy and charging entry fee."""
+    """Simulates a CPU match under the active free or legacy paid policy."""
+    require_feature(
+        settings.ENABLE_FREE_GAMEPLAY or settings.ENABLE_PAID_GAMEPLAY,
+        "cpu_gameplay",
+    )
     return GameService.play_match(
         axolotito_id=req.axolotito_id,
         room_name=req.room_name,

@@ -17,6 +17,8 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 from sqlmodel import Session
 
+from app.core.config import settings
+from app.core.product_policy import require_feature
 from app.models.economy import CurrencyType, TransactionLedger, TransactionType, Wallet
 from app.models.user import User
 from app.services.bank_service import BankService
@@ -82,6 +84,10 @@ def _can_claim_today(user: User) -> bool:
 
 
 def get_status(user: User) -> dict:
+    require_feature(
+        settings.ENABLE_GAMEPLAY_TOKEN_REWARDS,
+        "gameplay_token_rewards",
+    )
     # Compute effective state for display — read-only, no mutation
     effective_day = user.lunar_streak_day
     effective_week = user.lunar_week
@@ -152,6 +158,10 @@ def get_status(user: User) -> dict:
 
 
 def claim(db: Session, user: User) -> dict:
+    require_feature(
+        settings.ENABLE_GAMEPLAY_TOKEN_REWARDS,
+        "gameplay_token_rewards",
+    )
     from app.core.auth import require_tutorial
     require_tutorial(user)
 

@@ -22,7 +22,8 @@ from app.services.board.staking_service import (
     _apply_preserved_xp_to_board,
     _level_from_total_xp,
 )
-from app.core.config import FRJ_DECIMALS_BACKEND, frj_to_internal, frj_to_display
+from app.core.config import FRJ_DECIMALS_BACKEND, frj_to_internal, frj_to_display, settings
+from app.core.product_policy import require_feature
 from app.core.prices import BOARD_SLOT_COSTS, CONSUMABLE_PRICES
 
 logger = logging.getLogger("board_service")
@@ -139,9 +140,22 @@ def create_random_board_operation(
     user_id: str, name: str, session: Session
 ) -> dict:
     """Crea un tablero de Lotería al azar cobrando 25 GAL de comisión."""
+    require_feature(settings.ENABLE_BOARD_ASSET_MUTATIONS, "board_asset_mutations")
+    require_feature(
+        settings.ENABLE_PURCHASED_RANDOM_REWARDS,
+        "purchased_random_rewards",
+    )
     user_record = session.exec(
         select(User).where(User.privy_did == user_id)
     ).first()
+    if (
+        settings.PRODUCT_MODE != "legacy_simulation"
+        and (not user_record or not user_record.wallet_address)
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="Se requiere una wallet verificada para crear una tabla on-chain.",
+        )
     from app.core.auth import require_tutorial
     if user_record: require_tutorial(user_record)
     max_slots = (
@@ -227,8 +241,19 @@ def create_random_board_operation(
             blockchain_token_id = Web3Service.get_token_id_from_tx(tx_blockchain)
         except Exception as e:
             logger.error("Error al crear tabla en Blockchain (random): %s", e)
+            if settings.PRODUCT_MODE != "legacy_simulation":
+                raise HTTPException(
+                    status_code=503,
+                    detail="La cadena no confirmó la tabla; no se guardó estado local.",
+                ) from e
             import secrets
             tx_blockchain = f"0x_error_fallback_{secrets.token_hex(32)}"
+
+    if settings.PRODUCT_MODE != "legacy_simulation" and blockchain_token_id is None:
+        raise HTTPException(
+            status_code=503,
+            detail="No se obtuvo un tokenId confirmado para la tabla.",
+        )
 
     new_board = PlayerBoard(
         user_id=user_id,
@@ -288,9 +313,18 @@ def create_manual_board_operation(
     session: Session,
 ) -> dict:
     """Crea un tablero de Lotería manualmente validando las cartas y cobrando 50 GAL."""
+    require_feature(settings.ENABLE_BOARD_ASSET_MUTATIONS, "board_asset_mutations")
     user_record = session.exec(
         select(User).where(User.privy_did == user_id)
     ).first()
+    if (
+        settings.PRODUCT_MODE != "legacy_simulation"
+        and (not user_record or not user_record.wallet_address)
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="Se requiere una wallet verificada para crear una tabla on-chain.",
+        )
     from app.core.auth import require_tutorial
     if user_record: require_tutorial(user_record)
     max_slots = (
@@ -343,8 +377,19 @@ def create_manual_board_operation(
             blockchain_token_id = Web3Service.get_token_id_from_tx(tx_blockchain)
         except Exception as e:
             logger.error("Error al crear tabla en Blockchain (manual): %s", e)
+            if settings.PRODUCT_MODE != "legacy_simulation":
+                raise HTTPException(
+                    status_code=503,
+                    detail="La cadena no confirmó la tabla; no se guardó estado local.",
+                ) from e
             import secrets
             tx_blockchain = f"0x_error_fallback_{secrets.token_hex(32)}"
+
+    if settings.PRODUCT_MODE != "legacy_simulation" and blockchain_token_id is None:
+        raise HTTPException(
+            status_code=503,
+            detail="No se obtuvo un tokenId confirmado para la tabla.",
+        )
 
     new_board = PlayerBoard(
         user_id=user_id,
@@ -435,6 +480,7 @@ def edit_board_operation(
 
 def delete_board_operation(board_id: int, user_id: str, session: Session) -> dict:
     """Desarma la tabla: devuelve las 16 cartas, cobra 1 AXF y preserva 80% del XP en el slot."""
+    require_feature(settings.ENABLE_BOARD_ASSET_MUTATIONS, "board_asset_mutations")
     user = session.exec(select(User).where(User.privy_did == user_id)).first()
     from app.core.auth import require_tutorial
     if user: require_tutorial(user)
@@ -459,6 +505,14 @@ def delete_board_operation(board_id: int, user_id: str, session: Session) -> dic
             status_code=400,
             detail="No puedes desarmar una tabla que está rentada.",
         )
+    if (
+        settings.PRODUCT_MODE != "legacy_simulation"
+        and board.blockchain_token_id is None
+    ):
+        raise HTTPException(
+            status_code=409,
+            detail="La tabla no tiene identidad on-chain confirmada y no puede mutarse.",
+        )
     if board.is_listed_for_rent:
         raise HTTPException(
             status_code=400,
@@ -472,6 +526,11 @@ def delete_board_operation(board_id: int, user_id: str, session: Session) -> dic
         raise HTTPException(
             status_code=400,
             detail=f"No puedes desarmar una tabla asignada al Axolotito '{axo_assigned.name}'. Desasígnala primero.",
+        )
+    if board.origin_story is not None and settings.PRODUCT_MODE != "legacy_simulation":
+        raise HTTPException(
+            status_code=409,
+            detail="Las tablas forjadas requieren una ruta de disolución on-chain antes de mutarse.",
         )
 
     cost = CONSUMABLE_PRICES["solvente"]
@@ -527,6 +586,11 @@ def delete_board_operation(board_id: int, user_id: str, session: Session) -> dic
                 print(
                     f"⚠️ Error al disolver tabla en Blockchain de forma segura: {e}"
                 )
+                if settings.PRODUCT_MODE != "legacy_simulation":
+                    raise HTTPException(
+                        status_code=503,
+                        detail="La cadena no confirmó la disolución; no se modificó la tabla local.",
+                    ) from e
                 import secrets
                 tx_blockchain = f"0x_error_fallback_{secrets.token_hex(32)}"
 

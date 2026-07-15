@@ -11,15 +11,12 @@ import {
   Sparkles, 
   Trophy, 
   Egg, 
-  Gamepad2, 
   Layers, 
   ArrowRight, 
-  TrendingUp, 
   Users, 
   Zap, 
   Heart,
-  Gift,
-  Percent
+  Gift
 } from 'lucide-react';
 
 const CARDS = [
@@ -52,31 +49,39 @@ const CARDS = [
 function JoinPageInner() {
   const searchParams = useSearchParams();
   const codeFromUrl = searchParams.get('code') ?? '';
-  const showRewardFromUrl = searchParams.get('show_reward') ?? '';
+  const showStarterKitFromUrl = searchParams.get('show_reward') ?? '';
   const router = useRouter();
   const { ready, authenticated, login } = usePrivy();
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [panelMode, setPanelMode] = useState<'join' | 'redeem'>('join');
-  const [showRewardPreview, setShowRewardPreview] = useState(false);
+  const [showStarterKitPreview, setShowStarterKitPreview] = useState(false);
 
   // Si hay código en draft pendiente y ya está autenticado, abrir el panel de redeem
   useEffect(() => {
-    if (ready && authenticated) {
-      const draft = localStorage.getItem('corcholata_code_draft');
-      if (draft) {
-        setIsPanelOpen(true);
-        setPanelMode('redeem');
-      }
-    }
+    if (!ready || !authenticated) return;
+
+    const draft = localStorage.getItem('corcholata_code_draft');
+    if (!draft) return;
+
+    const timer = window.setTimeout(() => {
+      setPanelMode('redeem');
+      setIsPanelOpen(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [ready, authenticated]);
 
-  // Si viene de un reset de tutorial con premio dev, mostrar preview del premio
+  // Si viene de un reset de tutorial, mostrar el kit interno de prueba
   useEffect(() => {
-    if (ready && authenticated && showRewardFromUrl === '1') {
-      localStorage.removeItem('dev_show_reward');
-      setShowRewardPreview(true);
-    }
-  }, [ready, authenticated, showRewardFromUrl]);
+    if (!ready || !authenticated || showStarterKitFromUrl !== '1') return;
+
+    localStorage.removeItem('dev_show_reward');
+    const timer = window.setTimeout(() => {
+      setShowStarterKitPreview(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [ready, authenticated, showStarterKitFromUrl]);
 
   const handleOpenPanel = (mode: 'join' | 'redeem') => {
     setPanelMode(mode);
@@ -118,21 +123,21 @@ function JoinPageInner() {
       <section className="relative min-h-screen flex flex-col items-center justify-center px-6 overflow-hidden pt-24 pb-16 z-10">
         <div className="relative text-center space-y-8 max-w-3xl">
 
-          {/* ── Reward Preview (dev reset flow) ─────────────────────────────── */}
-          {showRewardPreview ? (
+          {/* ── Starter kit preview (dev reset flow) ───────────────────────── */}
+          {showStarterKitPreview ? (
             <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-3xl p-8 sm:p-12 space-y-6 max-w-lg mx-auto shadow-[0_0_50px_rgba(234,179,8,0.1)] backdrop-blur-md">
               <div className="text-7xl animate-bounce">🔒</div>
               <div className="inline-block px-4 py-1 bg-yellow-500/20 border border-yellow-500/40 rounded-full text-yellow-400 text-xs font-black tracking-wider uppercase">
-                ADMIN — PREMIO DE PRUEBA
+                ADMIN — KIT INTERNO DE PRUEBA
               </div>
               <h2 className="text-4xl sm:text-5xl font-black text-yellow-400 drop-shadow-[0_0_20px_rgba(234,179,8,0.3)]">
-                ¡Premio Listo!
+                ¡Kit de prueba listo!
               </h2>
               <p className="text-gray-300 text-base leading-relaxed">
-                Tu Kit de Bienvenida de Prueba está resguardado en el cofre. Se revelará en el inventario al terminar el tutorial.
+                Tu kit de bienvenida se mostrará en el inventario al terminar el tutorial. Su contenido sirve únicamente dentro del entorno de prueba.
               </p>
 
-              {/* Reward amounts */}
+              {/* Internal test credits */}
               <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-2xl p-5 space-y-3 text-left">
                 <div className="flex justify-between items-center py-1">
                   <span className="flex items-center gap-2 text-sm text-yellow-200 font-bold">🪙 Axofichas</span>
@@ -146,6 +151,9 @@ function JoinPageInner() {
                   <span className="flex items-center gap-2 text-sm text-yellow-200 font-bold">🎁 Ítem exclusivo</span>
                   <span className="font-black text-lg text-purple-400">1 und</span>
                 </div>
+                <p className="border-t border-yellow-500/10 pt-3 text-[10px] leading-relaxed text-yellow-200/70">
+                  AXF y FRJ son créditos internos de prueba: no son dinero, no se retiran y no tienen valor garantizado fuera del juego.
+                </p>
               </div>
 
               <button
@@ -166,7 +174,7 @@ function JoinPageInner() {
               </h1>
 
               <p className="text-lg sm:text-xl md:text-2xl text-gray-300 font-medium max-w-2xl mx-auto leading-relaxed">
-                El clásico juego de la <span className="text-[#FF8DA1] font-bold">lotería mexicana</span> reinventado en la blockchain. Colecciona Axolotitos únicos, críalos, monta tableros interactivos y gana premios reales.
+                El clásico juego de la <span className="text-[#FF8DA1] font-bold">lotería mexicana</span> convertido en una experiencia social gratuita. Colecciona Axolotitos, personaliza tus tableros y juega con tu comunidad sin pagar por entrar.
               </p>
 
               {codeFromUrl && (
@@ -210,7 +218,7 @@ function JoinPageInner() {
         <div className="text-center space-y-4 mb-16">
           <h2 className="text-4xl sm:text-5xl font-black tracking-tight">¿Cómo funciona Axolotto?</h2>
           <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Axolotto combina el coleccionismo digital, la cría de mascotas NFT y salas de juego activas las 24 horas del día.
+            Axolotto combina colección digital, cuidado de mascotas y partidas gratuitas de lotería mexicana.
           </p>
         </div>
 
@@ -219,19 +227,19 @@ function JoinPageInner() {
             {
               icon: <Egg className="w-8 h-8 text-[#FF8DA1]" />,
               title: '1. Cría Axolotitos',
-              desc: 'Adquiere un Webito, incúbalo dándole cuidados diarios y mira nacer un Axolotito único con DNA en la blockchain. Su naturaleza determina su carisma y suerte en las partidas.',
+              desc: 'Empieza con un Webito, cuídalo durante su incubación y descubre un Axolotito con apariencia y personalidad propias. El tutorial incluye una forma gratuita de comenzar.',
               glow: 'shadow-[0_0_20px_rgba(255,141,161,0.15)] border-[#FF8DA1]/20'
             },
             {
               icon: <Layers className="w-8 h-8 text-[#E4007C]" />,
               title: '2. Arma tus Tableros',
-              desc: 'Colecciona cartas oficiales y crea tableros de 16 posiciones. Súbelos de nivel jugando para generar rendimientos pasivos o réntalos a otros jugadores mediante contratos de beca.',
+              desc: 'Colecciona cartas y crea tableros de 16 posiciones. Combina estilos, variantes visuales y decoraciones para construir una identidad propia.',
               glow: 'shadow-[0_0_20px_rgba(228,0,124,0.15)] border-[#E4007C]/20'
             },
             {
               icon: <Trophy className="w-8 h-8 text-purple-400" />,
-              title: '3. Juega y Gana',
-              desc: 'Registra tus tableros en salas en vivo. Tu Axolotito jugará automáticamente en segundo plano según sus atributos. ¡Si canta Lotería antes que nadie, te llevas el bote!',
+              title: '3. Juega y Progresa',
+                desc: 'Juega gratis contra la CPU, completa patrones de lotería y avanza en misiones, niveles y colecciones. Los resultados no otorgan dinero ni saldos retirables.',
               glow: 'shadow-[0_0_20px_rgba(168,85,247,0.15)] border-purple-500/20'
             },
           ].map((item, idx) => (
@@ -249,13 +257,13 @@ function JoinPageInner() {
         </div>
       </section>
 
-      {/* Economía Dual */}
+      {/* Créditos internos */}
       <section className="py-20 px-6 bg-gradient-to-b from-transparent via-[#E4007C]/5 to-transparent border-y border-white/5 relative z-10">
         <div className="max-w-5xl mx-auto">
           <div className="text-center space-y-4 mb-16">
-            <h2 className="text-4xl sm:text-5xl font-black">Sistema de Economía Dual</h2>
+            <h2 className="text-4xl sm:text-5xl font-black">Créditos y catálogo transparentes</h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Diseñado con un bucle equilibrado que protege el juego de la inflación y premia el esfuerzo.
+              AXF y FRJ son créditos de uso interno: no son dinero, inversión ni saldo retirable. Jugar no requiere comprarlos.
             </p>
           </div>
 
@@ -268,22 +276,22 @@ function JoinPageInner() {
                 </div>
                 <div>
                   <h3 className="font-black text-2xl text-amber-400 tracking-tight">AXF</h3>
-                  <p className="text-xs text-amber-300/80 font-bold uppercase tracking-wider">Axofichas — Moneda Principal</p>
+                  <p className="text-xs text-amber-300/80 font-bold uppercase tracking-wider">Axofichas — Crédito interno de catálogo</p>
                 </div>
               </div>
               
               <ul className="space-y-4 text-sm text-gray-300">
                 <li className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-2 shrink-0" />
-                  <span><strong>Adquisición de Activos:</strong> Utilízala para comprar Webitos (huevos de Axolotito) y paquetes de cartas en la tienda.</span>
+                  <span><strong>Contenido opcional:</strong> Se usa para artículos digitales y cosméticos; las partidas principales siguen siendo gratuitas.</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-2 shrink-0" />
-                  <span><strong>Membresías VIP:</strong> Desbloquea los prestigiosos rangos Coral, Dorado y Axolite para obtener reembolsos y multiplicadores.</span>
+                  <span><strong>Precio claro:</strong> Cada artículo mostrará su contenido completo y precio fijo antes de cualquier confirmación.</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-amber-400 mt-2 shrink-0" />
-                  <span><strong>Fácil On-Ramp:</strong> Adquiere Axofichas directamente en el juego usando tu tarjeta de crédito o USDC vía MoonPay.</span>
+                  <span><strong>Sin azar comprado:</strong> No se venderán resultados aleatorios ni ventajas basadas en una compra incierta.</span>
                 </li>
               </ul>
             </div>
@@ -296,22 +304,22 @@ function JoinPageInner() {
                 </div>
                 <div>
                   <h3 className="font-black text-2xl text-emerald-400 tracking-tight">FRJ</h3>
-                  <p className="text-xs text-emerald-300/80 font-bold uppercase tracking-wider">Frijolitos — Moneda de Utilidad</p>
+                  <p className="text-xs text-emerald-300/80 font-bold uppercase tracking-wider">Frijolitos — Crédito interno de progresión</p>
                 </div>
               </div>
               
               <ul className="space-y-4 text-sm text-gray-300">
                 <li className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0" />
-                  <span><strong>Acceso a Salas:</strong> Paga el ticket de buy-in para inscribir a tus Axolotitos a competir en partidas multijugador.</span>
+                  <span><strong>Partidas gratuitas:</strong> Las salas principales no cobran cuota de entrada ni exigen arriesgar créditos.</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0" />
-                  <span><span><strong>Mantenimiento y Crafteo:</strong> Gástalos para alimentar a tus mascotas, deshacer tableros obsoletos o fundir cartas duplicadas (Card Melter).</span></span>
+                  <span><strong>Personalización y crafteo:</strong> Se usan dentro del juego para cuidados, recetas y transformación de duplicados.</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0" />
-                  <span><strong>Generación por Esfuerzo:</strong> Se obtienen ganando partidas, reclamando Jackpots, por staking pasivo o cobrando rentas.</span>
+                  <span><strong>Uso cerrado:</strong> Forman parte de la progresión interna; no se cambian por efectivo, no se retiran y no prometen valor futuro.</span>
                 </li>
               </ul>
             </div>
@@ -323,9 +331,9 @@ function JoinPageInner() {
       <section className="py-24 px-6 relative z-10">
         <div className="max-w-5xl mx-auto">
           <div className="text-center space-y-4 mb-16">
-            <h2 className="text-4xl sm:text-5xl font-black">Colecciona e Incrementa tu Yield</h2>
+            <h2 className="text-4xl sm:text-5xl font-black">Colecciona y personaliza tu estilo</h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Cada carta es una obra de arte digital en la blockchain. Consigue versiones brillantes (foil) y aumenta la rentabilidad de tu portafolio.
+              Cada carta es una pieza visual para jugar y crear tableros. Las rarezas describen su estilo y disponibilidad, no una rentabilidad financiera.
             </p>
           </div>
 
@@ -362,16 +370,16 @@ function JoinPageInner() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center text-sm mt-12 bg-white/[0.02] border border-white/5 rounded-3xl p-8 backdrop-blur-sm">
             <div className="space-y-1.5">
-              <div className="text-[#FF8DA1] font-black text-xl flex items-center justify-center gap-1.5"><Percent size={18} /> +80% Yield Bonus</div>
-              <p className="text-gray-400 text-xs">Las cartas holográficas (Shiny) multiplican sustancialmente el retorno pasivo de tus tableros en staking.</p>
+              <div className="text-[#FF8DA1] font-black text-xl flex items-center justify-center gap-1.5"><Sparkles size={18} /> Variantes visuales</div>
+              <p className="text-gray-400 text-xs">Las cartas Shiny aportan acabados holográficos y opciones de personalización, sin promesas de valor económico.</p>
             </div>
             <div className="space-y-1.5 border-y md:border-y-0 md:border-x border-white/5 py-4 md:py-0 md:px-4">
-              <div className="text-[#FF8DA1] font-black text-xl flex items-center justify-center gap-1.5"><TrendingUp size={18} /> Staking de Tablas</div>
-              <p className="text-gray-400 text-xs">Coloca tus tableros inactivos en staking para generar un flujo constante de Frijolitos (FRJ) cada hora.</p>
+              <div className="text-[#FF8DA1] font-black text-xl flex items-center justify-center gap-1.5"><Layers size={18} /> Tableros personales</div>
+              <p className="text-gray-400 text-xs">Ordena tus cartas, guarda composiciones y cambia la presentación de cada tablero para distintos eventos.</p>
             </div>
             <div className="space-y-1.5">
-              <div className="text-[#FF8DA1] font-black text-xl flex items-center justify-center gap-1.5"><Users size={18} /> Becas / Alquiler</div>
-              <p className="text-gray-400 text-xs">Renta tus tableros premium a otros jugadores. Reparte ganancias por victoria mediante contratos automáticos.</p>
+              <div className="text-[#FF8DA1] font-black text-xl flex items-center justify-center gap-1.5"><Users size={18} /> Creadores en el futuro</div>
+              <p className="text-gray-400 text-xs">Se estudia un mercado curado para creadores adultos verificados. Todavía no está disponible.</p>
             </div>
           </div>
         </div>
@@ -382,11 +390,11 @@ function JoinPageInner() {
         <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
           <div className="lg:col-span-6 space-y-6">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/10 border border-purple-500/25 rounded-full text-purple-300 text-xs font-bold uppercase tracking-wider">
-              <Zap size={12} /> Genética y Automatización
+              <Zap size={12} /> Genética y personalización
             </div>
-            <h2 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight">Axolotitos NFT Inteligentes</h2>
+            <h2 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight">Axolotitos digitales únicos</h2>
             <p className="text-gray-300 text-base leading-relaxed">
-              Cada Axolotito cuenta con un <span className="text-[#FF8DA1] font-bold">DNA de 256 bits</span> único on-chain. Esto no solo determina su color, tipo de branquias y cola, sino también estadísticas que alteran el curso de la lotería:
+              Cada Axolotito cuenta con un <span className="text-[#FF8DA1] font-bold">DNA digital</span> que determina su color, tipo de branquias, cola y rasgos de juego. La cadena puede registrar estos datos para hacerlos verificables, sin convertirlos en una inversión.
             </p>
             
             <div className="space-y-4 text-sm">
@@ -401,14 +409,14 @@ function JoinPageInner() {
                 <span className="text-xl">🍀</span>
                 <div>
                   <strong className="text-white block font-black">Suerte (Luck)</strong>
-                  <span className="text-gray-400">Aumenta las probabilidades de activar premios críticos y obtener cofres misteriosos al finalizar los eventos.</span>
+                  <span className="text-gray-400">Aporta variedad a reacciones y descubrimientos cosméticos; nunca representa una probabilidad de obtener dinero.</span>
                 </div>
               </div>
               <div className="flex gap-3">
                 <span className="text-xl">🔋</span>
                 <div>
                   <strong className="text-white block font-black">Estamina y Sueño</strong>
-                  <span className="text-gray-400">Determina el total de energía. Cuando tu Axolotito juega por ti y se cansa, entra en descanso y te reporta su boleta de ganancias netas.</span>
+                  <span className="text-gray-400">Determina la energía disponible. Al agotarse, el Axolotito descansa y muestra un resumen de actividad y progreso.</span>
                 </div>
               </div>
             </div>
@@ -416,8 +424,8 @@ function JoinPageInner() {
           
           <div className="lg:col-span-6 bg-gradient-to-br from-purple-500/5 via-[#E4007C]/5 to-transparent border border-white/10 rounded-3xl p-8 relative overflow-hidden backdrop-blur-md shadow-[0_0_50px_rgba(228,0,124,0.1)]">
             <div className="absolute top-0 right-0 w-28 h-28 bg-[#E4007C]/20 rounded-full blur-2xl pointer-events-none" />
-            <h3 className="font-black text-xl mb-4 text-[#FF8DA1] flex items-center gap-2">🦎 Boleta de Rendimiento (Settlement)</h3>
-            <p className="text-xs text-gray-400 mb-6">Ejemplo de cierre de sesión tras una ronda de juego automático por bot:</p>
+            <h3 className="font-black text-xl mb-4 text-[#FF8DA1] flex items-center gap-2">🦎 Resumen de actividad</h3>
+            <p className="text-xs text-gray-400 mb-6">Ejemplo de progreso después de una sesión gratuita:</p>
             
             <div className="space-y-3 bg-[#07070c]/60 border border-white/5 rounded-2xl p-5 font-mono text-xs">
               <div className="flex justify-between border-b border-white/5 pb-2 text-gray-500">
@@ -425,24 +433,24 @@ function JoinPageInner() {
                 <span className="text-gray-300">#4728 (Nature: Suertudo)</span>
               </div>
               <div className="flex justify-between py-1 text-gray-400">
-                <span>Partidas Jugadas:</span>
+                <span>Rondas completadas:</span>
                 <span className="text-white">18 de 20</span>
               </div>
               <div className="flex justify-between py-1 text-gray-400">
-                <span>Victorias (Hito 1 / 2):</span>
+                <span>Patrones completados:</span>
                 <span className="text-emerald-400">3 Lín. / 1 Tab. Llena</span>
               </div>
               <div className="flex justify-between py-1 text-gray-400">
-                <span>Costo Match Fees:</span>
-                <span className="text-red-400">-180 FRJ</span>
+                <span>Experiencia de compañero:</span>
+                <span className="text-cyan-300">+180 XP</span>
               </div>
               <div className="flex justify-between py-1 text-gray-400">
-                <span>Premios Acumulados:</span>
-                <span className="text-emerald-400">+480 FRJ</span>
+                <span>Fragmentos cosméticos:</span>
+                <span className="text-purple-300">4 descubiertos</span>
               </div>
               <div className="flex justify-between border-t border-white/5 pt-2.5 font-bold text-sm">
-                <span className="text-gray-300">Retorno Neto:</span>
-                <span className="text-[#FF8DA1]">+300 FRJ</span>
+                <span className="text-gray-300">Nivel de vínculo:</span>
+                <span className="text-[#FF8DA1]">7 · Amistoso</span>
               </div>
             </div>
             
@@ -451,20 +459,20 @@ function JoinPageInner() {
                 <Heart size={14} className="animate-pulse" /> ¡Gracias por el esfuerzo! ❤️
               </div>
               <p className="text-[10px] text-center text-gray-500 leading-normal">
-                Al liquidar, tus fondos acumulados viajan a tu cartera, el Axolotito gana Loyalty Points y se va a dormir para rellenar su energía.
+                Al terminar, el progreso se guarda en tu perfil y el Axolotito descansa para recuperar energía. No se genera un saldo retirable.
               </p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Lobbies y Jackpot */}
+      {/* Modos gratuitos y hoja de ruta de creadores */}
       <section className="py-24 px-6 relative z-10">
         <div className="max-w-5xl mx-auto">
           <div className="text-center space-y-4 mb-16">
-            <h2 className="text-4xl sm:text-5xl font-black">Salas Multijugador y Jackpot</h2>
+            <h2 className="text-4xl sm:text-5xl font-black">Modos gratuitos y comunidad</h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Inscríbete en tiempo real, compite contra bots y otros jugadores humanos, y caza el pozo acumulado.
+              Practica, compite y crea sin cuotas de entrada. Los resultados sirven para clasificación y progreso interno.
             </p>
           </div>
 
@@ -473,12 +481,12 @@ function JoinPageInner() {
               <div>
                 <span className="inline-block px-2.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-emerald-400 text-[10px] font-bold uppercase tracking-wider mb-4">Sala Inicial</span>
                 <h3 className="font-black text-xl mb-2 text-white">Charco de Novatos</h3>
-                <p className="text-gray-400 text-xs leading-relaxed mb-6">Perfecto para principiantes. Entrena tus Axolotitos recién nacidos y experimenta tus primeras victorias con apuestas bajas.</p>
+                <p className="text-gray-400 text-xs leading-relaxed mb-6">Perfecto para principiantes. Aprende las reglas, entrena a tus Axolotitos y prueba distintas composiciones sin arriesgar créditos.</p>
               </div>
               <div className="border-t border-white/5 pt-4">
                 <div className="flex justify-between items-center text-xs text-gray-400 font-bold">
-                  <span>Buy-In Entrada:</span>
-                  <span className="text-emerald-400">10 FRJ</span>
+                  <span>Acceso:</span>
+                  <span className="text-emerald-400">Gratis</span>
                 </div>
               </div>
             </div>
@@ -487,26 +495,26 @@ function JoinPageInner() {
               <div>
                 <span className="inline-block px-2.5 py-0.5 bg-red-500/10 border border-red-500/20 rounded-full text-red-400 text-[10px] font-bold uppercase tracking-wider mb-4">Sala Competitiva</span>
                 <h3 className="font-black text-xl mb-2 text-white">Fosa del Campeón</h3>
-                <p className="text-gray-400 text-xs leading-relaxed mb-6">Para jugadores experimentados. Entra con tableros de nivel alto y Axolotitos con alta estamina y concentración para maximizar tu ratio de ganancias.</p>
+                <p className="text-gray-400 text-xs leading-relaxed mb-6">Para jugadores experimentados. Usa tableros avanzados y coordina atributos para mejorar tu posición en la clasificación.</p>
               </div>
               <div className="border-t border-white/5 pt-4">
                 <div className="flex justify-between items-center text-xs text-gray-400 font-bold">
-                  <span>Buy-In Entrada:</span>
-                  <span className="text-[#FF8DA1]">50 FRJ</span>
+                  <span>Acceso:</span>
+                  <span className="text-[#FF8DA1]">Gratis</span>
                 </div>
               </div>
             </div>
 
             <div className="bg-gradient-to-br from-yellow-500/10 to-transparent border border-yellow-500/35 rounded-3xl p-6 shadow-[0_0_30px_rgba(234,179,8,0.06)] flex flex-col justify-between hover:border-yellow-500/50 transition-all">
               <div>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-yellow-500/20 border border-yellow-500/40 rounded-full text-yellow-400 text-[10px] font-bold uppercase tracking-wider mb-4 animate-pulse"><Trophy size={10} /> Premio Especial</span>
-                <h3 className="font-black text-xl mb-2 text-yellow-400">Jackpot de Oro</h3>
-                <p className="text-gray-300 text-xs leading-relaxed mb-6">Bolsa global acumulada que inicia con semilla de <strong>1,000 FRJ</strong>. Se entrega al jugador humano que logre completar una línea o cuadrito en las primeras 6 cartas cantadas.</p>
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-yellow-500/20 border border-yellow-500/40 rounded-full text-yellow-400 text-[10px] font-bold uppercase tracking-wider mb-4"><Users size={10} /> Hoja de ruta</span>
+                <h3 className="font-black text-xl mb-2 text-yellow-400">Mercado de Creadores</h3>
+                <p className="text-gray-300 text-xs leading-relaxed mb-6">Función futura en evaluación para que creadores adultos verificados publiquen artículos digitales revisados, con precio fijo y contenido conocido.</p>
               </div>
               <div className="border-t border-yellow-500/15 pt-4">
                 <div className="flex justify-between items-center text-xs text-yellow-200 font-bold">
-                  <span>Bolsa Acumulándose:</span>
-                  <span className="text-yellow-400 text-sm font-black">24/7 On-Chain</span>
+                  <span>Estado:</span>
+                  <span className="text-yellow-400 text-sm font-black">No disponible</span>
                 </div>
               </div>
             </div>
@@ -514,13 +522,13 @@ function JoinPageInner() {
         </div>
       </section>
 
-      {/* Membresías VIP */}
+      {/* Colecciones cosméticas de precio fijo */}
       <section className="py-24 px-6 bg-gradient-to-b from-transparent via-purple-950/10 to-transparent border-y border-white/5 relative z-10">
         <div className="max-w-5xl mx-auto">
           <div className="text-center space-y-4 mb-16">
-            <h2 className="text-4xl sm:text-5xl font-black">Club VIP de Axolotto</h2>
+            <h2 className="text-4xl sm:text-5xl font-black">Colecciones de personalización</h2>
             <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Adquiere una membresía para optimizar tu rendimiento y obtener ventajas fiscales dentro de la economía del cenote.
+              Cuando el catálogo se habilite, cada ficha mostrará el precio fijo, contenido y duración antes de confirmar. Nunca habrá contenido comprado al azar.
             </p>
           </div>
 
@@ -528,21 +536,21 @@ function JoinPageInner() {
             {[
               {
                 tier: 'Coral',
-                price: '100 AXF',
+                price: '100 AXF · PRECIO FIJO',
                 color: 'border-pink-500/20 bg-pink-500/[0.02] text-pink-300 hover:border-pink-500/40',
-                benefits: ['Reembolso de 2% en Buy-ins', '+10% XP ganado por Axolotito', '1 slot adicional de nido en criadero']
+                benefits: ['Paleta Coral para el perfil', 'Marco de avatar Coral', 'Paquete de 5 stickers identificados']
               },
               {
                 tier: 'Dorado',
-                price: '250 AXF',
+                price: '250 AXF · PRECIO FIJO',
                 color: 'border-yellow-500/30 bg-yellow-500/[0.02] text-yellow-300 hover:border-yellow-500/50 shadow-[0_0_25px_rgba(234,179,8,0.05)]',
-                benefits: ['Reembolso de 5% en Buy-ins', '+25% XP ganado por Axolotito', '2 slots de nido adicionales', 'Acceso a cosméticos exclusivos']
+                benefits: ['Tema Dorado para el perfil', 'Marco y placa Dorada', 'Paquete de 8 stickers identificados', '2 emotes cosméticos']
               },
               {
                 tier: 'Axolite',
-                price: '500 AXF',
+                price: '500 AXF · PRECIO FIJO',
                 color: 'border-purple-500/35 bg-purple-500/[0.03] text-purple-300 hover:border-purple-500/50 shadow-[0_0_35px_rgba(168,85,247,0.08)]',
-                benefits: ['Reembolso de 10% en Buy-ins', '+50% XP ganado por Axolotito', '4 slots de nido adicionales', 'Fusión de cartas con 15% de descuento', 'Soporte prioritario']
+                benefits: ['Tema Axolite para el perfil', 'Marco y placa Axolite', 'Paquete de 12 stickers identificados', '4 emotes cosméticos', 'Decoración de cueva Axolite']
               }
             ].map((club, idx) => (
               <div
@@ -563,7 +571,7 @@ function JoinPageInner() {
                   </ul>
                 </div>
                 <div className="mt-8 pt-4 border-t border-white/5">
-                  <span className="block text-center text-xs text-gray-500 uppercase tracking-widest font-bold">Membresía por 30 Días</span>
+                  <span className="block text-center text-xs text-gray-500 uppercase tracking-widest font-bold">Contenido fijo · sin azar · catálogo aún no habilitado</span>
                 </div>
               </div>
             ))}
@@ -579,7 +587,7 @@ function JoinPageInner() {
           </div>
           <h2 className="text-3xl sm:text-4xl font-black mb-4 tracking-tight">¿Listo para comenzar?</h2>
           <p className="text-gray-300 text-sm leading-relaxed mb-8">
-            Entra ahora, completa el tutorial gratuito y te obsequiamos un Webito de prueba. Experimenta la lotería Web3 de inmediato sin costo.
+            Entra, completa el tutorial gratuito y recibe un Webito de prueba para comenzar tu colección. No necesitas comprar créditos ni artículos.
           </p>
           <button
             onClick={() => handleOpenPanel('join')}
@@ -593,7 +601,7 @@ function JoinPageInner() {
             )}
           </button>
           <p className="text-gray-500 text-xs mt-5 font-medium">
-            Google · Apple · Email — Sin necesidad de tener wallet previa
+            Google · Apple · Email — Sin wallet, tarjeta ni compra inicial
           </p>
         </div>
       </section>
@@ -609,8 +617,8 @@ function JoinPageInner() {
               <h2 className="text-2xl sm:text-3xl font-black mb-3 tracking-tight">Regalo de Corcholata</h2>
               <p className="text-gray-400 text-sm leading-relaxed">
                 {codeFromUrl
-                  ? 'Tienes un código de promoción enlazado. Inicia sesión para desbloquear tu kit de Axofichas y Frijolitos de inmediato.'
-                  : 'Si tienes un código promocional único de nuestras corcholatas físicas (obtenido en eventos maker o tech), canjéalo aquí para recibir tu kit de inicio.'}
+                  ? 'Tienes un código promocional enlazado. Inicia sesión para ver su contenido interno antes de canjearlo.'
+                  : 'Si tienes un código promocional único de nuestras corcholatas físicas, canjéalo aquí para recibir un kit de inicio de uso exclusivo dentro del juego.'}
               </p>
             </div>
 
@@ -634,7 +642,7 @@ function JoinPageInner() {
       <footer className="py-16 px-6 border-t border-white/5 text-center bg-[#050509]/80 relative z-10">
         <div className="max-w-5xl mx-auto space-y-4">
           <h2 className="text-2xl font-black text-[#FF8DA1] tracking-tighter">AXOLOTTO</h2>
-          <p className="text-gray-500 text-sm">© 2026 axolot.to · La Lotería Mexicana del Futuro</p>
+          <p className="text-gray-500 text-sm">© 2026 axolot.to · Juego social gratuito de colección y creatividad</p>
           <div className="flex justify-center gap-6 text-xs text-gray-600 font-medium">
             <span className="hover:text-gray-400 cursor-pointer">Términos de Servicio</span>
             <span className="hover:text-gray-400 cursor-pointer">Política de Privacidad</span>

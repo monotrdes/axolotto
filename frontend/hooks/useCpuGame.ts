@@ -59,6 +59,9 @@ export interface UseCpuGameOptions {
   allCards: any[];
   selectedRoom: "rookie" | "champion";
   multiplier?: number;
+  /** Explicit server policy capabilities. Both default to denied at callers. */
+  paidEntriesEnabled: boolean;
+  freePlayEnabled: boolean;
   onDone: () => void;
   onResultReady?: (won: boolean) => void;
 }
@@ -167,6 +170,8 @@ export function useCpuGame(options: UseCpuGameOptions): UseCpuGameState {
     allCards,
     selectedRoom,
     multiplier = 1,
+    paidEntriesEnabled,
+    freePlayEnabled,
     onDone,
     onResultReady,
   } = options;
@@ -233,28 +238,37 @@ export function useCpuGame(options: UseCpuGameOptions): UseCpuGameState {
       if (isTutorial) {
         res = await axios.post(`${API_BASE}/tutorial/play-game`, {}, { headers });
       } else {
-        await axios.post(
-          `${API_BASE}/auth/axolotitos/${selectedAxo.id}/bot-config`,
-          {
-            user_id: userId,
-            bot_enabled: true,
-            bot_budget_axf: 100,
-            bot_loss_limit_axf: 100,
-            bot_profit_limit_axf: 10000,
-            assigned_board_id: selectedBoardId,
-          },
-          { headers }
-        );
+        if (!paidEntriesEnabled && !freePlayEnabled) {
+          setError("El servidor no confirmó un modo de juego disponible.");
+          return;
+        }
+
+        if (paidEntriesEnabled) {
+          await axios.post(
+            `${API_BASE}/auth/axolotitos/${selectedAxo.id}/bot-config`,
+            {
+              user_id: userId,
+              bot_enabled: true,
+              bot_budget_axf: 100,
+              bot_loss_limit_axf: 100,
+              bot_profit_limit_axf: 10000,
+              assigned_board_id: selectedBoardId,
+            },
+            { headers }
+          );
+        }
+
+        const freePlay = !paidEntriesEnabled && freePlayEnabled;
         res = await axios.post(
           `${API_BASE}/game/play`,
           {
             axolotito_id: selectedAxo.id,
             room_name: selectedRoom,
-            multiplier,
-            bot_enabled: true,
-            bot_budget_gal: 100,
-            bot_loss_limit_pct: 100,
-            bot_profit_limit_pct: 10000,
+            multiplier: freePlay ? 1 : multiplier,
+            bot_enabled: freePlay ? false : true,
+            bot_budget_gal: freePlay ? 0 : 100,
+            bot_loss_limit_pct: freePlay ? 0 : 100,
+            bot_profit_limit_pct: freePlay ? 0 : 10000,
           },
           { headers }
         );
@@ -274,7 +288,7 @@ export function useCpuGame(options: UseCpuGameOptions): UseCpuGameState {
     } catch (err: any) {
       setError(err.response?.data?.detail ?? "Error al obtener resultado. Intenta de nuevo.");
     }
-  }, [token, selectedAxo.id, selectedBoardId, selectedRoom, multiplier, onDone, isTutorial]);
+  }, [userId, token, selectedAxo.id, selectedBoardId, selectedRoom, multiplier, paidEntriesEnabled, freePlayEnabled, onDone, isTutorial]);
 
   useEffect(() => {
     fetchResult();

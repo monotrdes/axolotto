@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Coins } from 'lucide-react';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 interface ModeSelectScreenProps {
   onSelect: (mode: 'cpu' | 'multi') => void;
@@ -10,6 +11,26 @@ interface ModeSelectScreenProps {
 }
 
 export default function ModeSelectScreen({ onSelect, selectedAxo }: ModeSelectScreenProps) {
+  const { capabilities, loading } = useProductPolicy();
+  const canPlayCpu = capabilities.gameplay.free_play || capabilities.gameplay.paid_entries;
+  const canPlayMultiplayer = capabilities.gameplay.paid_entries;
+
+  if (!canPlayCpu && !canPlayMultiplayer) {
+    return (
+      <div className="py-12 text-center rounded-3xl border border-amber-500/20 bg-amber-950/20 px-6">
+        <div className="text-4xl mb-3">🛟</div>
+        <h2 className="text-xl font-black text-amber-200 uppercase tracking-tight">
+          Juego temporalmente en pausa
+        </h2>
+        <p className="mt-2 text-xs text-slate-400 max-w-md mx-auto">
+          {loading
+            ? 'Verificando el modo seguro del juego…'
+            : 'No iniciaremos partidas hasta que el servidor confirme un modo gratuito y sin premios monetarios.'}
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Title */}
@@ -26,7 +47,7 @@ export default function ModeSelectScreen({ onSelect, selectedAxo }: ModeSelectSc
       </div>
 
       {/* Mode cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className={`grid grid-cols-1 gap-4 ${canPlayMultiplayer ? 'md:grid-cols-2' : 'max-w-lg mx-auto'}`}>
 
         {/* CPU Card */}
         <button
@@ -56,15 +77,21 @@ export default function ModeSelectScreen({ onSelect, selectedAxo }: ModeSelectSc
           <div className="text-5xl mb-3 animate-axo-bob relative z-10">🤖</div>
           <h4 className="text-3xl font-black uppercase tracking-tighter text-white relative z-10">VS CPU</h4>
           <p className="text-xs text-slate-400 mt-1.5 relative z-10">
-            Partida rápida · Resultado en segundos
+            {capabilities.gameplay.paid_entries
+              ? 'Partida rápida · Resultado en segundos'
+              : 'Partida gratuita · Progreso y diversión sin arriesgar créditos'}
           </p>
           <div className="mt-5 flex items-center justify-center gap-1.5 text-[10px] font-black text-indigo-300 bg-indigo-950/60 border border-indigo-500/20 px-3 py-1 rounded-full mx-auto w-fit relative z-10">
-            <Coins size={10} /> Consumes FRJ
+            {capabilities.gameplay.paid_entries ? (
+              <><Coins size={10} /> Consume FRJ</>
+            ) : (
+              <>✓ Gratis · Sin premio FRJ</>
+            )}
           </div>
         </button>
 
         {/* Multiplayer Card */}
-        <button
+        {canPlayMultiplayer && <button
           onClick={() => onSelect('multi')}
           className="relative overflow-hidden text-center p-8 border border-[var(--brand-hot)]/25 bg-gradient-to-b from-pink-950 to-[var(--world-void)] hover:border-[var(--brand-hot)]/60 hover:shadow-[0_0_30px_var(--brand-glow)] transition-all duration-300 group"
           style={{
@@ -96,7 +123,7 @@ export default function ModeSelectScreen({ onSelect, selectedAxo }: ModeSelectSc
           <div className="mt-5 flex items-center justify-center gap-1.5 text-[10px] font-black text-pink-300 bg-pink-950/60 border border-pink-500/20 px-3 py-1 rounded-full mx-auto w-fit relative z-10">
             💰 Presupuesto por partida
           </div>
-        </button>
+        </button>}
       </div>
     </div>
   );

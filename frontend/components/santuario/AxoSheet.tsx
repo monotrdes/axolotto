@@ -7,6 +7,7 @@ import { traitNames, statNames, statColors } from '@/constants/santuario';
 import { setMainAxolotito, feedAxolotito, sleepAxolotito, wakeAxolotito, claimAxolotitoStaking, stakeAxolotito, unstakeAxolotito } from '@/services/santuarioService';
 import { API_BASE } from '@/lib/api';
 import type { StakingAxolotitoInfo } from '@/types/economy';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 const API = `${API_BASE}`;
 
@@ -24,6 +25,9 @@ interface AxoSheetProps {
 
 export default function AxoSheet({ axo, onClose, token, onSetMain, onOpenCave, stakingInfo, onStakingClaimed }: AxoSheetProps) {
   const { toast } = useToast();
+  const { capabilities } = useProductPolicy();
+  const passiveRewardsEnabled = capabilities.gameplay.passive_token_rewards;
+  const fixedSpendingEnabled = capabilities.gameplay.fixed_spending;
   const [settingMain, setSettingMain] = useState(false);
   const [claimingStaking, setClaimingStaking] = useState(false);
   const [staking, setStaking] = useState(false);
@@ -41,7 +45,7 @@ export default function AxoSheet({ axo, onClose, token, onSetMain, onOpenCave, s
   }, [remainingLock]);
 
   const handleStake = async (status: 'studying' | 'resting') => {
-    if (!token || staking) return;
+    if (!passiveRewardsEnabled || !token || staking) return;
     setStaking(true);
     setError(null);
     try {
@@ -62,7 +66,11 @@ export default function AxoSheet({ axo, onClose, token, onSetMain, onOpenCave, s
     setError(null);
     try {
       const res = await unstakeAxolotito(axo.id, token);
-      toast.ok(`🪙 Axolotito retirado de staking. Reclamado ${res.claimed_frj.toFixed(2)} FRJ`);
+      if (res.rewards_enabled === false) {
+        toast.ok('Axolotito liberado. La emisión pasiva permanece deshabilitada.');
+      } else {
+        toast.ok(`🪙 Axolotito retirado de staking. Reclamado ${res.claimed_frj.toFixed(2)} FRJ`);
+      }
       if (onStakingClaimed) onStakingClaimed();
       onClose();
     } catch (e: any) {
@@ -197,7 +205,7 @@ export default function AxoSheet({ axo, onClose, token, onSetMain, onOpenCave, s
             )}
 
             {/* ── STAKING SECTION ── */}
-            {stakingInfo && (axo.status === 'studying' || axo.status === 'resting') && (
+            {passiveRewardsEnabled && stakingInfo && (axo.status === 'studying' || axo.status === 'resting') && (
               <div className="mb-4 rounded-2xl bg-gradient-to-br from-amber-950/20 to-slate-900/60 border border-amber-500/25 p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
@@ -283,8 +291,28 @@ export default function AxoSheet({ axo, onClose, token, onSetMain, onOpenCave, s
               </div>
             )}
 
+            {/* Existing positions can always be unwound when passive rewards are disabled. */}
+            {!passiveRewardsEnabled && (axo.status === 'studying' || axo.status === 'resting') && (
+              <div className="mb-4 rounded-2xl bg-amber-950/20 border border-amber-500/25 p-4">
+                <p className="text-[10px] font-black text-amber-300 uppercase tracking-wider">
+                  Actividad pasiva deshabilitada
+                </p>
+                <p className="mt-1 text-[9px] text-slate-400 leading-relaxed">
+                  Puedes devolver este Axolotito a la Cueva. Esta salida no emitirá recompensas.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleUnstake}
+                  disabled={unstaking || !token}
+                  className="w-full mt-3 py-2.5 rounded-xl font-black text-[9px] uppercase tracking-wider bg-slate-800/80 border border-slate-700/60 text-slate-200 hover:bg-slate-700/80 transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {unstaking ? 'Liberando…' : 'Volver a la Cueva sin recompensa'}
+                </button>
+              </div>
+            )}
+
             {/* Invite to stake when idle */}
-            {stakingInfo && axo.status === 'idle' && (
+            {passiveRewardsEnabled && stakingInfo && axo.status === 'idle' && (
               <div className="mb-4 rounded-2xl bg-gradient-to-br from-slate-900/60 to-slate-950/40 border border-slate-800 p-4">
                 <div className="flex items-center gap-1.5 mb-2.5">
                   <span className="text-sm">📈</span>
@@ -342,7 +370,7 @@ export default function AxoSheet({ axo, onClose, token, onSetMain, onOpenCave, s
             <div className="grid grid-cols-2 gap-2 mb-2">
               <button
                 onClick={async () => {
-                  if (axo.status === 'playing') return;
+                  if (!fixedSpendingEnabled || axo.status === 'playing') return;
                   try {
                     await feedAxolotito(axo.id, 'pellet', token);
                     toast.ok('🍥 +15 energía (Alga Pellet)');
@@ -350,10 +378,11 @@ export default function AxoSheet({ axo, onClose, token, onSetMain, onOpenCave, s
                     onClose();
                   } catch (e: any) { toast.error(e.response?.data?.detail || 'Error al alimentar'); }
                 }}
-                disabled={axo.status === 'playing' || axo.status === 'sleeping'}
+                disabled={!fixedSpendingEnabled || axo.status === 'playing' || axo.status === 'sleeping'}
+                title={!fixedSpendingEnabled ? 'Alimentación en revisión' : undefined}
                 className="py-2.5 rounded-xl font-black text-[9px] uppercase tracking-wider bg-emerald-900/40 hover:bg-emerald-800/40 border border-emerald-500/30 text-emerald-300 transition-all active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center gap-1"
               >
-                🍥 Alimentar
+                {fixedSpendingEnabled ? '🍥 Alimentar' : '🍥 En revisión'}
               </button>
               {axo.status === 'sleeping' ? (
                 <button

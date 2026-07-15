@@ -703,6 +703,14 @@ class Web3Service:
         return Web3Service._send_tx(contract.functions.transferirAxolotito(from_addr, to_addr, axolotito_token_id), w3)
 
     @staticmethod
+    def _dev_payment_mock_allowed() -> bool:
+        return (
+            settings.PRODUCT_MODE == "legacy_simulation"
+            and settings.BLOCKCHAIN_MODE == "local"
+            and settings.ALLOW_DEV_PAYMENTS
+        )
+
+    @staticmethod
     def verify_usdc_payment(
         tx_hash: str,
         expected_recipient: str,
@@ -717,12 +725,12 @@ class Web3Service:
         En modo dev (mock hashes) siempre devuelve True.
         """
         if not tx_hash:
-            if settings.ALLOW_DEV_PAYMENTS:
+            if Web3Service._dev_payment_mock_allowed():
                 return True
             return False
 
         if tx_hash.startswith("0x_mock"):
-            if settings.ALLOW_DEV_PAYMENTS:
+            if Web3Service._dev_payment_mock_allowed():
                 return True
             return False
 
@@ -730,7 +738,7 @@ class Web3Service:
             return False
 
         if not settings.USDC_ADDRESS:
-            if settings.ALLOW_DEV_PAYMENTS:
+            if Web3Service._dev_payment_mock_allowed():
                 print("⚠️ USDC_ADDRESS no configurado. Asumiendo pago válido (ALLOW_DEV_PAYMENTS=True).")
                 return True
             else:
@@ -807,6 +815,19 @@ class Web3Service:
     _ESCROW_STATUS_LISTED = 1  # enum Status { None, Listed, Released, Refunded }
 
     @staticmethod
+    def _escrow_mock_allowed() -> bool:
+        """Allow synthetic escrow receipts only in the explicit local sandbox.
+
+        A missing escrow address must never silently become a successful
+        transaction in the non-gambling product mode.
+        """
+        return (
+            settings.PRODUCT_MODE == "legacy_simulation"
+            and settings.BLOCKCHAIN_MODE == "local"
+            and settings.ALLOW_DEV_PAYMENTS
+        )
+
+    @staticmethod
     def _listing_id_bytes32(listing_id: str) -> bytes:
         """bytes32 determinístico desde el uuid del backend (conciliación 1:1 DB↔chain)."""
         return Web3.keccak(text=listing_id)
@@ -823,6 +844,8 @@ class Web3Service:
                                 nft_contract: str, token_id: int, price_axf: int) -> str:
         """Deposita el NFT del vendedor en el MarketEscrow y abre el listing."""
         if settings.IS_MOCK_WEB3 or not settings.MARKET_ESCROW_ADDRESS:
+            if not Web3Service._escrow_mock_allowed():
+                raise RuntimeError("MarketEscrow no está desplegado/configurado.")
             import secrets
             return f"0x_mock_escrow_deposit_{secrets.token_hex(16)}"
         w3 = Web3Service._get_w3()
@@ -839,6 +862,8 @@ class Web3Service:
     def escrow_release(listing_id: str, buyer_address: str, payment_ref: str) -> str:
         """Libera el NFT al comprador registrando el paymentRef fiat (auditoría)."""
         if settings.IS_MOCK_WEB3 or not settings.MARKET_ESCROW_ADDRESS:
+            if not Web3Service._escrow_mock_allowed():
+                raise RuntimeError("MarketEscrow no está desplegado/configurado.")
             import secrets
             return f"0x_mock_escrow_release_{secrets.token_hex(16)}"
         w3 = Web3Service._get_w3()
@@ -853,6 +878,8 @@ class Web3Service:
     def escrow_refund(listing_id: str) -> str:
         """Devuelve el NFT en custodia al vendedor original."""
         if settings.IS_MOCK_WEB3 or not settings.MARKET_ESCROW_ADDRESS:
+            if not Web3Service._escrow_mock_allowed():
+                raise RuntimeError("MarketEscrow no está desplegado/configurado.")
             import secrets
             return f"0x_mock_escrow_refund_{secrets.token_hex(16)}"
         w3 = Web3Service._get_w3()
@@ -869,6 +896,8 @@ class Web3Service:
         NFT, y que el contrato de escrow sea el owner actual del token.
         """
         if settings.IS_MOCK_WEB3 or not settings.MARKET_ESCROW_ADDRESS:
+            if not Web3Service._escrow_mock_allowed():
+                raise RuntimeError("No se puede verificar custodia sin MarketEscrow.")
             return True
         try:
             w3 = Web3Service._get_w3()

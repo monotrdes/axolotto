@@ -4,7 +4,19 @@ import { X, ChevronRight } from 'lucide-react';
 import HoldButton from '@/components/ui/HoldButton';
 import BottomSheet from '@/components/ui/BottomSheet';
 import CryptoCheckout from '@/components/CryptoCheckout';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 import type { StoreItem } from '@/types/store';
+
+interface CaveLevelPath {
+  type: string;
+  cost_axg?: number;
+}
+
+interface CaveLevel {
+  name: string;
+  spots: number;
+  paths?: CaveLevelPath[];
+}
 
 interface OfficialTabProps {
   items: StoreItem[];
@@ -26,7 +38,7 @@ interface OfficialTabProps {
   maxNidos?: number;
   totalEggsInInventory?: number;
   totalAxolotitosHatched?: number;
-  nextCaveLevel?: any;
+  nextCaveLevel?: CaveLevel;
 }
 
 export default function OfficialTab({
@@ -48,6 +60,15 @@ export default function OfficialTab({
   totalAxolotitosHatched,
   nextCaveLevel,
 }: OfficialTabProps) {
+  const { capabilities, loading: productPolicyLoading } = useProductPolicy();
+  const creditsCommerceEnabled =
+    capabilities.commerce.fiat_payments || capabilities.commerce.crypto_checkout;
+  const cryptoCheckoutEnabled = capabilities.commerce.crypto_checkout;
+  const randomizedPurchasesEnabled =
+    creditsCommerceEnabled && capabilities.commerce.purchased_random_rewards;
+  const playerMarketplaceEnabled = capabilities.commerce.player_marketplace;
+  const reciclonEnabled = capabilities.assets.reciclon;
+
   // Bazar del Cenote: decoraciones de cueva comprables con FRJ
   const [decorDrawerAbierto, setDecorDrawerAbierto] = useState(false);
   const decoraciones = items.filter((i) => i.item_type?.toUpperCase() === 'CAVE_ITEM');
@@ -58,6 +79,19 @@ export default function OfficialTab({
     totalEggsInInventory !== undefined &&
     totalAxolotitosHatched !== undefined &&
     ocupadosTotal >= maxNidos;
+  const paidCavePath = nextCaveLevel?.paths?.find((path) => path.type === 'pago');
+
+  const requestPurchase = (
+    itemId: number,
+    currency: string,
+    requiresRandomReward = false,
+  ): boolean => {
+    if (!creditsCommerceEnabled) return false;
+    if (requiresRandomReward && !randomizedPurchasesEnabled) return false;
+
+    void comprarItem(itemId, currency);
+    return true;
+  };
 
   return (
     <div className="max-w-xl mx-auto flex flex-col">
@@ -91,41 +125,52 @@ export default function OfficialTab({
           </div>
           <div>
             <h3 className="text-xl font-black text-yellow-400 tracking-tight uppercase">
-              El Banco
+              Créditos internos
             </h3>
-            <p className="text-xs text-slate-450">Compra AXF aquí, gana FRJ jugando</p>
+            <p className="text-xs text-slate-450">Para personalización y progresión dentro del juego</p>
           </div>
         </div>
 
-        {/* Recargar AXF con cripto — único botón en El Banco */}
-        <button
-          onClick={() => setCryptoCheckoutOpen(true)}
-          className="w-full flex items-center justify-between bg-gradient-to-r from-purple-950/40 via-[#1a0a2e]/60 to-purple-950/40 hover:via-purple-950/50 border border-purple-500/25 hover:border-purple-500/50 rounded-2xl p-3.5 transition-all duration-300 group active:scale-[0.98]"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center text-xl shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform shrink-0">
-              💎
-            </div>
-            <div className="text-left">
-              <div className="text-[11px] font-black text-white uppercase tracking-wide">
-                Recargar AXF con cripto
+        {cryptoCheckoutEnabled ? (
+          <button
+            onClick={() => setCryptoCheckoutOpen(true)}
+            className="w-full flex items-center justify-between bg-gradient-to-r from-purple-950/40 via-[#1a0a2e]/60 to-purple-950/40 hover:via-purple-950/50 border border-purple-500/25 hover:border-purple-500/50 rounded-2xl p-3.5 transition-all duration-300 group active:scale-[0.98]"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl flex items-center justify-center text-xl shadow-md shadow-purple-500/20 group-hover:scale-105 transition-transform shrink-0">
+                💎
               </div>
-              <div className="text-[9px] text-slate-500">
-                Paga USDC · Recibe Axofichas al instante
+              <div className="text-left">
+                <div className="text-[11px] font-black text-white uppercase tracking-wide">
+                  Recargar créditos internos con USDC
+                </div>
+                <div className="text-[9px] text-slate-500">
+                  Solo para uso dentro de Axolotto · sin retiro
+                </div>
               </div>
             </div>
+            <div className="w-7 h-7 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-all shrink-0">
+              <ChevronRight size={14} />
+            </div>
+          </button>
+        ) : (
+          <div
+            role="status"
+            className="w-full rounded-2xl border border-slate-700/60 bg-slate-900/50 p-3.5 text-center"
+          >
+            <p className="text-[11px] font-black uppercase tracking-wide text-slate-300">
+              {productPolicyLoading ? 'Verificando disponibilidad segura' : 'Recargas desactivadas'}
+            </p>
+            <p className="mt-1 text-[9px] text-slate-500">
+              Puedes explorar y progresar sin comprar créditos.
+            </p>
           </div>
-          <div className="w-7 h-7 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-all shrink-0">
-            <ChevronRight size={14} />
-          </div>
-        </button>
+        )}
 
-        {/* Los FRJ ya no se compran — se ganan jugando */}
         <div className="mt-3 rounded-xl bg-amber-950/20 border border-amber-500/20 p-3">
           <p className="text-[10px] text-amber-300/80 font-bold leading-relaxed text-center">
-            🪙 Los Frijolitos (FRJ) ya no están a la venta.
-            Gánalos participando en partidas, reclamando tu recompensa diaria
-            o mediante el staking de tus Axolotitos en el Cenote.
+            AXF y FRJ son créditos de uso interno. No representan dinero, una inversión,
+            un saldo retirable ni un valor futuro garantizado.
           </p>
         </div>
       </div>
@@ -134,8 +179,13 @@ export default function OfficialTab({
       <div className="flex flex-col gap-4">
         {/* ROW 1: LOS SOBRES */}
         <button
-          onClick={() => setSobresDrawerAbierto(true)}
-          className="w-full text-left bg-gradient-to-r from-slate-950 via-purple-950/20 to-slate-950 hover:via-purple-950/40 border border-purple-500/20 hover:border-purple-500/50 rounded-3xl p-4 flex items-center justify-between transition-all duration-300 group shadow-[0_0_20px_rgba(0,0,0,0.4)] active:scale-[0.98] cursor-pointer"
+          disabled={!randomizedPurchasesEnabled}
+          onClick={() => randomizedPurchasesEnabled && setSobresDrawerAbierto(true)}
+          className={`w-full text-left bg-gradient-to-r from-slate-950 via-purple-950/20 to-slate-950 border border-purple-500/20 rounded-3xl p-4 flex items-center justify-between transition-all duration-300 group shadow-[0_0_20px_rgba(0,0,0,0.4)] ${
+            randomizedPurchasesEnabled
+              ? 'hover:via-purple-950/40 hover:border-purple-500/50 active:scale-[0.98] cursor-pointer'
+              : 'opacity-55 cursor-not-allowed'
+          }`}
         >
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300 shrink-0">
@@ -147,10 +197,14 @@ export default function OfficialTab({
                   Los Sobres
                 </h4>
                 <span className="bg-gradient-to-r from-pink-500 to-[#E4007C] text-white font-black text-[8px] tracking-wider px-2 py-0.5 rounded-full shadow-md uppercase">
-                  OFERTA
+                  {randomizedPurchasesEnabled ? 'Contenido aleatorio' : 'Pausado'}
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Booster packs de cartas</p>
+              <p className="text-xs text-slate-400">
+                {randomizedPurchasesEnabled
+                  ? 'Sobres de cartas con contenido aleatorio'
+                  : 'Las compras aleatorias no están habilitadas'}
+              </p>
             </div>
           </div>
           <div className="w-8 h-8 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-400 group-hover:bg-purple-500 group-hover:text-white transition-all">
@@ -160,11 +214,14 @@ export default function OfficialTab({
 
         {/* ROW 2: LOS WEBITOS */}
         <button
-          onClick={() => setWebitosDrawerAbierto(true)}
-          className={`w-full text-left bg-gradient-to-r from-slate-950 to-slate-950 rounded-3xl p-4 flex items-center justify-between transition-all duration-300 group shadow-[0_0_20px_rgba(0,0,0,0.4)] active:scale-[0.98] cursor-pointer ${
-            sinNidosGlobal
+          disabled={!creditsCommerceEnabled}
+          onClick={() => creditsCommerceEnabled && setWebitosDrawerAbierto(true)}
+          className={`w-full text-left bg-gradient-to-r from-slate-950 to-slate-950 rounded-3xl p-4 flex items-center justify-between transition-all duration-300 group shadow-[0_0_20px_rgba(0,0,0,0.4)] ${
+            !creditsCommerceEnabled
+              ? 'via-slate-900/20 border border-slate-700/40 opacity-55 cursor-not-allowed'
+              : sinNidosGlobal
               ? 'via-red-950/20 hover:via-red-950/30 border border-red-500/25 hover:border-red-500/40'
-              : 'via-pink-950/20 hover:via-pink-950/40 border border-pink-500/20 hover:border-pink-500/50'
+              : 'via-pink-950/20 hover:via-pink-950/40 border border-pink-500/20 hover:border-pink-500/50 active:scale-[0.98] cursor-pointer'
           }`}
         >
           <div className="flex items-center gap-4">
@@ -181,8 +238,17 @@ export default function OfficialTab({
                     🔒 Sin nidos
                   </span>
                 )}
+                {!creditsCommerceEnabled && (
+                  <span className="bg-slate-700/50 border border-slate-600/40 text-slate-300 font-black text-[7px] px-2 py-0.5 rounded-full uppercase tracking-wider">
+                    Pausado
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-slate-440">Adopta un axolotito</p>
+              <p className="text-xs text-slate-440">
+                {creditsCommerceEnabled
+                  ? 'Adopta un axolotito con créditos internos'
+                  : 'El catálogo de adopción no está habilitado'}
+              </p>
             </div>
           </div>
           <div className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all ${
@@ -197,8 +263,13 @@ export default function OfficialTab({
         {/* ROW 2.5: BAZAR DEL CENOTE (decoración de cueva, FRJ) */}
         {decoraciones.length > 0 && (
           <button
-            onClick={() => setDecorDrawerAbierto(true)}
-            className="w-full text-left bg-gradient-to-r from-slate-950 via-teal-950/20 to-slate-950 hover:via-teal-950/40 border border-teal-500/20 hover:border-teal-500/50 rounded-3xl p-4 flex items-center justify-between transition-all duration-300 group shadow-[0_0_20px_rgba(0,0,0,0.4)] active:scale-[0.98] cursor-pointer"
+            disabled={!creditsCommerceEnabled}
+            onClick={() => creditsCommerceEnabled && setDecorDrawerAbierto(true)}
+            className={`w-full text-left bg-gradient-to-r from-slate-950 via-teal-950/20 to-slate-950 border border-teal-500/20 rounded-3xl p-4 flex items-center justify-between transition-all duration-300 group shadow-[0_0_20px_rgba(0,0,0,0.4)] ${
+              creditsCommerceEnabled
+                ? 'hover:via-teal-950/40 hover:border-teal-500/50 active:scale-[0.98] cursor-pointer'
+                : 'opacity-55 cursor-not-allowed'
+            }`}
           >
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 bg-gradient-to-br from-teal-500 to-emerald-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg shadow-teal-500/20 group-hover:scale-105 transition-transform duration-300 shrink-0">
@@ -213,7 +284,11 @@ export default function OfficialTab({
                     FRJ
                   </span>
                 </div>
-                <p className="text-xs text-slate-400">Decoración para tu cueva del Santuario</p>
+                <p className="text-xs text-slate-400">
+                  {creditsCommerceEnabled
+                    ? 'Decoración cosmética con créditos internos'
+                    : 'Las compras cosméticas no están habilitadas'}
+                </p>
               </div>
             </div>
             <div className="w-8 h-8 rounded-xl bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400 group-hover:bg-teal-500 group-hover:text-white transition-all">
@@ -224,8 +299,13 @@ export default function OfficialTab({
 
         {/* ROW 3: EL CENOTE MÍSTICO */}
         <button
-          onClick={() => setStoreTab('reciclon')}
-          className="w-full text-left bg-gradient-to-r from-slate-950 via-emerald-950/20 to-slate-950 hover:via-emerald-950/40 border border-emerald-500/20 hover:border-emerald-500/50 rounded-3xl p-4 flex items-center justify-between transition-all duration-300 group shadow-[0_0_20px_rgba(0,0,0,0.4)] active:scale-[0.98] cursor-pointer"
+          disabled={!reciclonEnabled}
+          onClick={() => reciclonEnabled && setStoreTab('reciclon')}
+          className={`w-full text-left bg-gradient-to-r from-slate-950 via-emerald-950/20 to-slate-950 border rounded-3xl p-4 flex items-center justify-between transition-all duration-300 group shadow-[0_0_20px_rgba(0,0,0,0.4)] ${
+            reciclonEnabled
+              ? 'hover:via-emerald-950/40 border-emerald-500/20 hover:border-emerald-500/50 active:scale-[0.98] cursor-pointer'
+              : 'border-slate-700/40 opacity-55 cursor-not-allowed'
+          }`}
         >
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-300 shrink-0">
@@ -237,7 +317,7 @@ export default function OfficialTab({
                   El Reciclón
                 </h4>
                 <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-black text-[8px] tracking-wider px-2 py-0.5 rounded-full shadow-md uppercase">
-                  NUEVO
+                  {reciclonEnabled ? 'NUEVO' : 'EN PAUSA'}
                 </span>
               </div>
               <p className="text-xs text-slate-400">Recicla duplicados por cartas</p>
@@ -250,8 +330,13 @@ export default function OfficialTab({
 
         {/* ROW 4: EL TRUEQUE */}
         <button
-          onClick={() => setStoreTab('market')}
-          className="w-full text-left bg-gradient-to-r from-slate-950 via-orange-950/20 to-slate-950 hover:via-orange-950/40 border border-orange-500/20 hover:border-orange-500/50 rounded-3xl p-4 flex items-center justify-between transition-all duration-300 group shadow-[0_0_20px_rgba(0,0,0,0.4)] active:scale-[0.98] cursor-pointer relative overflow-hidden"
+          disabled={!playerMarketplaceEnabled}
+          onClick={() => playerMarketplaceEnabled && setStoreTab('market')}
+          className={`w-full text-left bg-gradient-to-r from-slate-950 via-orange-950/20 to-slate-950 border border-orange-500/20 rounded-3xl p-4 flex items-center justify-between transition-all duration-300 group shadow-[0_0_20px_rgba(0,0,0,0.4)] relative overflow-hidden ${
+            playerMarketplaceEnabled
+              ? 'hover:via-orange-950/40 hover:border-orange-500/50 active:scale-[0.98] cursor-pointer'
+              : 'opacity-55 cursor-not-allowed'
+          }`}
         >
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-gradient-to-br from-orange-400 to-amber-600 rounded-2xl flex items-center justify-center text-3xl shadow-lg shadow-orange-500/20 group-hover:scale-105 transition-transform duration-300 shrink-0">
@@ -263,11 +348,13 @@ export default function OfficialTab({
                   El Trueque
                 </h4>
                 <span className="bg-gradient-to-r from-orange-500 to-amber-500 text-white font-black text-[7px] tracking-wider px-2 py-0.5 rounded-full shadow-md uppercase">
-                  P2P · ENTRE MARCHANTES
+                  {playerMarketplaceEnabled ? 'P2P · ENTRE USUARIOS' : 'PRÓXIMAMENTE'}
                 </span>
               </div>
               <p className="text-xs text-slate-400 text-ellipsis overflow-hidden whitespace-nowrap max-w-[240px] sm:max-w-xs">
-                ¿Buscas comprar o cambalachear con otros marchantes? Acá tienes tablas, axolotitos, cartas sueltas y skins.
+                {playerMarketplaceEnabled
+                  ? 'Intercambia artículos digitales bajo las reglas del mercado.'
+                  : 'El mercado entre usuarios permanece desactivado.'}
               </p>
             </div>
           </div>
@@ -278,7 +365,7 @@ export default function OfficialTab({
       </div>
 
       {/* === BOTTOM SHEET: BAZAR DEL CENOTE (decoraciones) === */}
-      <BottomSheet open={decorDrawerAbierto} onClose={() => setDecorDrawerAbierto(false)} accent="#14b8a6">
+      <BottomSheet open={decorDrawerAbierto && creditsCommerceEnabled} onClose={() => setDecorDrawerAbierto(false)} accent="#14b8a6">
         <div className="p-6">
           <div className="flex justify-between items-center mb-2">
             <h3 className="text-xl sm:text-2xl font-black text-teal-400 tracking-tight uppercase flex items-center gap-2">
@@ -332,11 +419,11 @@ export default function OfficialTab({
                   <HoldButton
                     variant="amber"
                     label={agotado ? 'Agotado' : `🪙 ${precioFrj} FRJ`}
-                    sublabel={agotado ? 'Máximo alcanzado' : 'Mantén para comprar'}
-                    disabled={agotado}
+                    sublabel={agotado ? 'Máximo alcanzado' : 'Créditos internos · sin retiro'}
+                    disabled={agotado || !creditsCommerceEnabled}
                     className="shrink-0"
                     onConfirm={() => {
-                      void comprarItem(deco.id, 'frijolito');
+                      requestPurchase(deco.id, 'frijolito');
                     }}
                   />
                 </div>
@@ -347,7 +434,7 @@ export default function OfficialTab({
       </BottomSheet>
 
       {/* === BOTTOM SHEET: SOBRES === */}
-      <BottomSheet open={sobresDrawerAbierto} onClose={() => setSobresDrawerAbierto(false)} accent="#818CF8">
+      <BottomSheet open={sobresDrawerAbierto && randomizedPurchasesEnabled} onClose={() => setSobresDrawerAbierto(false)} accent="#818CF8">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl sm:text-2xl font-black text-purple-400 tracking-tight uppercase flex items-center gap-2">
@@ -457,22 +544,26 @@ export default function OfficialTab({
                           <HoldButton
                             variant="primary"
                             label={`💎 ${booster.price_axg} AXF`}
-                            sublabel="Mantén para confirmar"
+                            sublabel="Créditos internos · contenido aleatorio"
+                            disabled={!randomizedPurchasesEnabled}
                             className="flex-1"
                             onConfirm={() => {
-                              setSobresDrawerAbierto(false);
-                              comprarItem(booster.id, 'axoficha');
+                              if (requestPurchase(booster.id, 'axoficha', true)) {
+                                setSobresDrawerAbierto(false);
+                              }
                             }}
                           />
                           {booster.price_gal && (
                             <HoldButton
                               variant="amber"
                               label={`🪙 ${booster.price_gal} FRJ`}
-                              sublabel="Mantén para confirmar"
+                              sublabel="Créditos internos · contenido aleatorio"
+                              disabled={!randomizedPurchasesEnabled}
                               className="flex-1"
                               onConfirm={() => {
-                                setSobresDrawerAbierto(false);
-                                comprarItem(booster.id, 'frijolito');
+                                if (requestPurchase(booster.id, 'frijolito', true)) {
+                                  setSobresDrawerAbierto(false);
+                                }
                               }}
                             />
                           )}
@@ -487,7 +578,7 @@ export default function OfficialTab({
       </BottomSheet>
 
       {/* === BOTTOM SHEET: WEBITOS === */}
-      <BottomSheet open={webitosDrawerAbierto} onClose={() => setWebitosDrawerAbierto(false)} accent="#E4007C">
+      <BottomSheet open={webitosDrawerAbierto && creditsCommerceEnabled} onClose={() => setWebitosDrawerAbierto(false)} accent="#E4007C">
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl sm:text-2xl font-black text-[#E4007C] tracking-tight uppercase flex items-center gap-2">
@@ -542,10 +633,10 @@ export default function OfficialTab({
                       y obtén{' '}
                       <span className="text-emerald-300 font-bold">{nextCaveLevel.spots} nidos</span>.
                     </p>
-                    {nextCaveLevel.paths?.find((p: any) => p.type === 'pago') ? (
+                    {paidCavePath ? (
                       <div className="flex items-center justify-between">
                         <span className="text-yellow-400 font-black text-sm">
-                          💎 {nextCaveLevel.paths.find((p: any) => p.type === 'pago').cost_axg} AXF
+                          💎 {paidCavePath.cost_axg} AXF
                         </span>
                         <button
                           onClick={() => {
@@ -726,11 +817,13 @@ export default function OfficialTab({
                       <HoldButton
                         variant={isAstral ? 'amber' : 'primary'}
                         label={`Adoptar por ${egg.price_axg} AXF`}
-                        sublabel="Mantén para confirmar"
+                        sublabel="Créditos internos · sin retiro"
+                        disabled={!creditsCommerceEnabled}
                         className="w-full max-w-xs"
                         onConfirm={() => {
-                          setWebitosDrawerAbierto(false);
-                          comprarItem(egg.id, 'axoficha');
+                          if (requestPurchase(egg.id, 'axoficha')) {
+                            setWebitosDrawerAbierto(false);
+                          }
                         }}
                       />
                     )}
@@ -742,7 +835,7 @@ export default function OfficialTab({
       </BottomSheet>
 
       {/* CryptoCheckout */}
-      {cryptoCheckoutOpen && (
+      {cryptoCheckoutOpen && cryptoCheckoutEnabled && (
         <CryptoCheckout
           userId={userId}
           token={token}

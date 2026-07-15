@@ -90,7 +90,9 @@ export default function ActHatching({ webito, onComplete }: Props) {
   }, [webito.token, webito.tutorialId]);
 
   const handleCryDismiss = useCallback(() => setPhase("stats"), []);
-  const handleStatsDismiss = useCallback(() => onComplete(axoNameRef.current), [onComplete]);
+  const handleStatsDismiss = useCallback(() => {
+    if (apiOk === true) onComplete(axoNameRef.current);
+  }, [apiOk, onComplete]);
 
   // ── Helper: axolotito name display ──────────────────────────────────────────
   const nameDisplay = axolotitoName || axoNameRef.current;
@@ -158,7 +160,7 @@ export default function ActHatching({ webito, onComplete }: Props) {
         {/* API failed warning */}
         {phase !== "bursting" && apiOk === false && (
           <p className="text-amber-400 text-xs font-bold animate-pulse">
-            ⚠️ No se pudo conectar con el servidor. El nombre se asignará al reconectar.
+            ⚠️ No se completó el alta. Recarga para reintentar; no perderás tu progreso.
           </p>
         )}
       </div>
@@ -233,11 +235,19 @@ export default function ActHatching({ webito, onComplete }: Props) {
           )}
 
           {/* Dialogue + dismiss */}
-          <WebitoDialogue
-            text={ACT9_STATS_LOCKED[webito.nature]}
-            speaker="axo"
-            onDismiss={handleStatsDismiss}
-          />
+          {apiOk === true ? (
+            <WebitoDialogue
+              text={ACT9_STATS_LOCKED[webito.nature]}
+              speaker="axo"
+              onDismiss={handleStatsDismiss}
+            />
+          ) : (
+            <p className="text-xs font-bold text-amber-300">
+              {apiOk === null
+                ? 'Confirmando tu starter de práctica con el servidor…'
+                : 'El alta no fue confirmada. Recarga para reintentar antes de continuar.'}
+            </p>
+          )}
         </div>
       )}
     </div>

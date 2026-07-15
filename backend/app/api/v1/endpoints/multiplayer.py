@@ -10,7 +10,8 @@ from sqlmodel import Session, select
 from app.database import get_session
 from app.core.prices import MULTIPLAYER_FEES
 from app.core.auth import get_verified_user_id
-from app.core.config import frj_to_internal, frj_to_display, FRJ_DECIMALS_BACKEND
+from app.core.config import frj_to_internal, frj_to_display, FRJ_DECIMALS_BACKEND, settings
+from app.core.product_policy import require_feature
 from app.models.axolotito import Axolotito
 from app.models.board import PlayerBoard
 from app.models.economy import Wallet, CurrencyType, TransactionType, TransactionLedger
@@ -118,6 +119,7 @@ def register_axolotito(
     verified_user_id: str = Depends(get_verified_user_id)
 ):
     """Inscribe a un Axolotito y sus tablas en una sala de espera, reteniendo su presupuesto en escrow."""
+    require_feature(settings.ENABLE_PAID_GAMEPLAY, "paid_gameplay")
     # 0. Obtener el objeto User
     user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
     if not user:
@@ -359,6 +361,7 @@ def get_lobby_status(session: Session = Depends(get_session)):
 @router.get("/jackpot")
 def get_jackpot_status(session: Session = Depends(get_session)):
     """Retorna el acumulado del Jackpot de Oro e historial de ganadores recientes."""
+    require_feature(settings.ENABLE_JACKPOT, "jackpot")
     jackpot = session.exec(select(JackpotVault)).first()
     if not jackpot:
         _jp_seed = 1000 * (10 ** FRJ_DECIMALS_BACKEND)
@@ -418,6 +421,7 @@ def create_player_room(
     Crea una sala hosted por un jugador desde su mesa de la cueva.
     La sala aparece en el lobby bajo "Salas de Jugadores".
     """
+    require_feature(settings.ENABLE_PAID_GAMEPLAY, "paid_gameplay")
     user = session.exec(select(User).where(User.privy_did == verified_user_id)).first()
     if not user:
         raise HTTPException(status_code=404, detail="Usuario no encontrado.")
@@ -552,6 +556,7 @@ def join_player_room(
     Unirse a una sala hosted por un jugador.
     Valida contraseña si la sala tiene una.
     """
+    require_feature(settings.ENABLE_PAID_GAMEPLAY, "paid_gameplay")
     room = session.get(GameRoom, room_id)
     if not room:
         raise HTTPException(status_code=404, detail="Sala no encontrada.")

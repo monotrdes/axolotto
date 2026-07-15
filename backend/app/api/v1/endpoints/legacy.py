@@ -9,6 +9,8 @@ from app.models.items import LegacyBacker, PlayerInventory, ItemCatalog, ItemTyp
 from app.models.user import User
 from app.services.web3_service import Web3Service
 from app.core.auth import get_verified_user_id
+from app.core.config import settings
+from app.core.product_policy import require_feature
 
 router = APIRouter()
 
@@ -64,6 +66,10 @@ def claim_legacy_egg(
     Reclama un Webito Fundador (Fase 1) gratis para el backer de 2021.
     Mintea on-chain, añade al inventario y actualiza eggs_claimed.
     """
+    require_feature(
+        settings.ENABLE_LEGACY_ASSET_CLAIMS,
+        "legacy_asset_claims",
+    )
     if user_id != verified_user_id:
         raise HTTPException(status_code=403, detail="No autorizado.")
 
@@ -96,14 +102,14 @@ def claim_legacy_egg(
     if not egg_item:
         raise HTTPException(status_code=500, detail="No se encontró el ítem de huevo en el catálogo.")
 
-    # Mintear on-chain (gratis para el backer)
-    tx_hash = ""
-    try:
-        target_wallet = user.wallet_address or "0x0000000000000000000000000000000000000000"
-        tx_hash = Web3Service.mint_webito_onchain(target_wallet)
-    except Exception as e:
-        print(f"⚠️ Error al mintear Webito Fundador on-chain: {e}")
-        tx_hash = "0x_legacy_airdrop_error"
+    if not user.wallet_address:
+        raise HTTPException(
+            status_code=400,
+            detail="Necesitas una wallet verificada para reclamar este activo.",
+        )
+
+    # La cadena es autoritativa: un fallo aborta antes de tocar inventario.
+    tx_hash = Web3Service.mint_webito_onchain(user.wallet_address)
 
     # Agregar al inventario
     inv = session.exec(

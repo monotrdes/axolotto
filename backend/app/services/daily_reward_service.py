@@ -18,6 +18,8 @@ from datetime import datetime, timedelta, timezone
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
+from app.core.config import settings
+from app.core.product_policy import require_feature
 from app.models.economy import (
     CurrencyType,
     TransactionLedger,
@@ -117,6 +119,11 @@ class DailyRewardService:
         Returns:
             dict with keys: amount, streak, is_streak_max
         """
+        require_feature(
+            settings.ENABLE_GAMEPLAY_TOKEN_REWARDS,
+            "gameplay_token_rewards",
+        )
+
         # Calculate reward (may raise 429 if already claimed today)
         reward = self.calculate_daily_reward(user)
 

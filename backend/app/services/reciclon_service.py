@@ -14,6 +14,7 @@ from app.models.items import ItemCatalog, ItemType, Rarity, PlayerInventory
 from app.models.economy import Wallet, CurrencyType, TransactionType, TransactionLedger, ChainOutbox
 from app.models.user import User
 from app.core.config import settings
+from app.core.product_policy import require_feature
 from app.services.bank_service import BankService
 
 logger = logging.getLogger("reciclon_service")
@@ -47,6 +48,7 @@ def recycle_cards(session: Session, user_id: str, items: list[dict]) -> dict:
         {"success": True, "tickets_earned": int, "total_tickets": int,
          "cards_recycled": int, "details": [...]}
     """
+    require_feature(settings.ENABLE_RECICLON, "reciclon")
     # 0. Verificar tutorial completado
     user = session.exec(select(User).where(User.privy_did == user_id)).first()
     if user:
@@ -180,6 +182,7 @@ def redeem_ticket(session: Session, user_id: str, target_card_id: int) -> dict:
         {"success": True, "redeemed_card": {...}, "tickets_spent": int,
          "total_tickets": int}
     """
+    require_feature(settings.ENABLE_RECICLON, "reciclon")
     # 0. Verificar tutorial completado
     user = session.exec(select(User).where(User.privy_did == user_id)).first()
     if user:

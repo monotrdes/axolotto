@@ -8,6 +8,7 @@ from app.services.bank_service import BankService
 from app.database import get_session
 from app.core.auth import get_verified_user_id, require_admin, verify_no_active_game
 from app.core.config import settings, axf_to_internal, frj_to_internal, axf_to_display, frj_to_display
+from app.core.product_policy import require_feature
 from app.core.economy_types import AxfAmount, FrjAmount
 from app.core.limiter import limiter
 
@@ -68,6 +69,7 @@ def admin_deposit_funds(
     _: str = Depends(require_admin)
 ) -> Any:
     """Ventanilla oculta: Deposita dinero de la nada (Para pruebas y recargas SPEI)."""
+    require_feature(settings.ENABLE_ADMIN_TOKEN_MINTS, "admin_token_mints")
     if not settings.TRIDY_API_KEY:
         raise HTTPException(
             status_code=500,
@@ -100,6 +102,10 @@ def transfer_funds(
     verified_user_id: str = Depends(verify_no_active_game)
 ) -> Any:
     """Transfiere fondos a un amigo cobrando la comisión de la casa."""
+    require_feature(
+        settings.ENABLE_PLAYER_TOKEN_TRANSFERS,
+        "player_token_transfers",
+    )
     if req.sender_id != verified_user_id:
         raise HTTPException(status_code=403, detail="No puedes transferir fondos de otro usuario.")
     # VULN-06: convertir monto humano → unidad mínima entera

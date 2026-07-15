@@ -21,7 +21,8 @@ from typing import Optional
 from fastapi import HTTPException
 from sqlmodel import Session, select
 
-from app.core.config import FRJ_DECIMALS_BACKEND, frj_to_display
+from app.core.config import FRJ_DECIMALS_BACKEND, frj_to_display, settings
+from app.core.product_policy import require_feature
 from app.models.economy import (
     CurrencyType,
     TransactionLedger,
@@ -46,6 +47,26 @@ PHASE_ROUNDS = 5
 LUCKY_GAL_BONUS = 50 * (10 ** FRJ_DECIMALS_BACKEND)
 # Display para frontend
 LUCKY_GAL_BONUS_DISPLAY = frj_to_display(LUCKY_GAL_BONUS)
+
+
+def is_free_tutorial_mode() -> bool:
+    """Free onboarding creates DB-only, non-transferable practice starters."""
+    return settings.ENABLE_FREE_GAMEPLAY and not settings.ENABLE_PAID_GAMEPLAY
+
+
+def require_tutorial_features() -> None:
+    """Preflight every value-bearing tutorial capability before mutations."""
+    if is_free_tutorial_mode():
+        return
+    require_feature(
+        settings.ENABLE_GAMEPLAY_TOKEN_REWARDS,
+        "gameplay_token_rewards",
+    )
+    require_feature(settings.ENABLE_HATCHING, "hatching")
+    require_feature(
+        settings.ENABLE_BOARD_ASSET_MUTATIONS,
+        "board_asset_mutations",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -96,6 +117,7 @@ class TutorialService:
         Inicia el tutorial (fase 0 → 1).
         Solo puede llamarse una vez por huevo (phase == 0).
         """
+        require_tutorial_features()
         if incubation.tutorial_phase != 0:
             raise HTTPException(
                 status_code=400,
@@ -153,6 +175,7 @@ class TutorialService:
         Avanza una fase del tutorial.
         Fase 1→2, 2→3, 3→4 (karma), 4→5 (completado + bonus).
         """
+        require_tutorial_features()
         current = incubation.tutorial_phase
 
         if current == 0:
@@ -342,6 +365,7 @@ class TutorialService:
         Aplica el bonus de karma, marca tutorial_completed=True en el User,
         y mueve la incubación a phase=5 si no estaba ya.
         """
+        require_tutorial_features()
         print(f"🐣 complete_tutorial llamado: incubation_id={incubation.id}, user_id={user_id}", flush=True)
 
         if incubation.tutorial_phase < 4:
@@ -369,10 +393,24 @@ class TutorialService:
             session.add(incubation)
 
         # Marcar tutorial completado en el usuario
-        user = session.exec(select(User).where(User.privy_did == user_id)).first()
+        user = session.exec(
+            select(User).where(User.privy_did == user_id).with_for_update()
+        ).first()
         if user and not user.tutorial_completed:
             user.tutorial_completed = True
             session.add(user)
+
+        if not user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+
+        if is_free_tutorial_mode():
+            return TutorialService._complete_free_tutorial(
+                session=session,
+                user=user,
+                incubation=incubation,
+                karma=karma,
+                karma_bonus=karma_bonus,
+            )
 
         session.commit()
 
@@ -386,9 +424,6 @@ class TutorialService:
         # Auto-eclosión: el axolotito nace al instante al terminar el tutorial.
         # Import diferido para evitar import circular (incubation importa servicios).
         from app.api.v1.endpoints.incubation import _perform_hatch
-
-        if not user:
-            raise HTTPException(status_code=404, detail="Usuario no encontrado.")
 
         # Capturar tutorial_board_card_ids antes del hatch: _perform_hatch
         # hace session.delete(incubation) + commit() → el objeto queda inválido.
@@ -446,6 +481,150 @@ class TutorialService:
             "has_pending_reward": has_pending,
         }
 
+    @staticmethod
+    def _complete_free_tutorial(
+        session: Session,
+        user: User,
+        incubation: WebitoIncubation,
+        karma: str,
+        karma_bonus: Optional[dict],
+    ) -> dict:
+        """Create practice-only starter records without minting or token rewards."""
+        locked_user = session.exec(
+            select(User)
+            .where(User.privy_did == user.privy_did)
+            .with_for_update()
+        ).first()
+        if not locked_user:
+            raise HTTPException(status_code=404, detail="Usuario no encontrado.")
+        user = locked_user
+        if incubation.item_id != 0:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "code": "REAL_INCUBATION_NOT_A_FREE_STARTER",
+                    "message": "Una incubación real no puede convertirse en starter gratuito.",
+                },
+            )
+        card_ids = list(incubation.tutorial_board_card_ids or [])
+        valid_card_ids = session.exec(
+            select(ItemCatalog.id).where(ItemCatalog.id.in_(card_ids))
+        ).all() if card_ids else []
+        if (
+            len(card_ids) != 16
+            or len(set(card_ids)) != 16
+            or set(card_ids) != set(valid_card_ids)
+        ):
+            raise HTTPException(
+                status_code=503,
+                detail={
+                    "code": "FREE_STARTER_CATALOG_NOT_READY",
+                    "message": "El catálogo necesita 16 cartas para crear la tabla de práctica.",
+                },
+            )
+
+        candidates = session.exec(
+            select(Axolotito)
+            .where(Axolotito.user_id == user.privy_did)
+            .where(Axolotito.is_tutorial == True)
+            .where(Axolotito.blockchain_token_id.is_(None))
+            .with_for_update()
+        ).all()
+
+        existing = None
+        for candidate in candidates:
+            existing_board = session.get(PlayerBoard, candidate.assigned_board_id)
+            if (
+                existing_board
+                and existing_board.user_id == user.privy_did
+                and existing_board.is_tutorial
+                and existing_board.blockchain_token_id is None
+            ):
+                existing = candidate
+                break
+
+        if existing:
+            starter = existing
+        else:
+            starter_board = PlayerBoard(
+                user_id=user.privy_did,
+                name="Tabla de Práctica",
+                card_ids=card_ids,
+                card_first_editions=[False] * 16,
+                is_tutorial=True,
+            )
+            session.add(starter_board)
+            session.flush()
+
+            nature = _engine.infer_personality_from_incubation(
+                bonus_luck=incubation.bonus_luck,
+                bonus_focus=incubation.bonus_focus,
+                bonus_stamina=incubation.bonus_stamina,
+            )
+            stamina = max(50, min(200, int(incubation.bonus_stamina or 100)))
+            starter = Axolotito(
+                user_id=user.privy_did,
+                name="Axo de Práctica",
+                stat_salinity=max(0.0, min(100.0, incubation.bonus_salinity_adj)),
+                stat_luck=max(0.0, min(100.0, incubation.bonus_luck)),
+                stat_focus=max(0.0, min(100.0, incubation.bonus_focus)),
+                stat_stamina=stamina,
+                stat_agility=max(0.0, min(100.0, incubation.bonus_agility)),
+                energy_current=stamina,
+                assigned_board_id=starter_board.id,
+                blockchain_token_id=None,
+                dna_sequence=f"practice:{user.privy_did}:{incubation.id}",
+                nature=nature,
+                status="idle",
+                is_tutorial=True,
+                is_main=True,
+            )
+            session.add(starter)
+            session.flush()
+
+        session.delete(incubation)
+        session.commit()
+        session.refresh(starter)
+
+        stats = {
+            "suerte": starter.stat_luck,
+            "ojo": starter.stat_focus,
+            "pila": starter.stat_stamina,
+            "sal": starter.stat_salinity,
+            "salinity": starter.stat_salinity,
+            "luck": starter.stat_luck,
+            "focus": starter.stat_focus,
+            "stamina": starter.stat_stamina,
+        }
+        return {
+            "completed": True,
+            "karma": karma,
+            "bonus": karma_bonus,
+            "dialogue": _engine.get_karma_line(karma),
+            "next_step": "play_free",
+            "axolotito_name": starter.name,
+            "axolotito_id": starter.id,
+            "axolotito": {
+                "id": starter.id,
+                "name": starter.name,
+                "blockchain_token_id": None,
+                "dna": starter.dna_sequence,
+                "tx_hash": None,
+                "traits": {
+                    "skin_color": starter.skin_color,
+                    "gill_type": starter.gill_type,
+                    "eye_type": starter.eye_type,
+                    "mouth_type": starter.mouth_type,
+                    "tail_type": starter.tail_type,
+                    "forehead_type": starter.forehead_type,
+                    "limb_type": starter.limb_type,
+                },
+                "stats": stats,
+                "asset_scope": "offchain_non_transferable_practice",
+            },
+            "has_pending_reward": False,
+        }
+
     # ------------------------------------------------------------------ #
     # Métodos internos
     # ------------------------------------------------------------------ #
@@ -480,6 +659,9 @@ class TutorialService:
         salty  → +15.0 FRJ
         En ambos casos escribe en TransactionLedger.
         """
+        require_tutorial_features()
+        if is_free_tutorial_mode():
+            return {"type": "none", "amount": 0, "currency": None}
         if karma == "lucky":
             wallet = BankService.get_or_create_wallet(session, user_id, for_update=True)
             wallet.frijolitos += LUCKY_GAL_BONUS

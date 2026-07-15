@@ -10,6 +10,7 @@ from typing import Optional
 from sqlmodel import Session, select, or_, and_
 from fastapi import HTTPException
 
+from app.core.config import settings
 from app.models.social import (
     FriendRelation,
     FriendStatus,
@@ -462,24 +463,33 @@ class SocialService:
         rel.updated_at = datetime.utcnow()
         session.add(rel)
 
-        # Award +1 FRJ (unidad mínima) to both
-        from app.models.economy import Wallet
-        from app.services.bank_service import BankService
+        actor_frj = None
+        target_frj = None
+        rewarded = settings.ENABLE_GAMEPLAY_TOKEN_REWARDS
+        if rewarded:
+            # Legacy reward path. Public non-gambling mode keeps the social
+            # interaction but never creates wallets or changes token balances.
+            from app.services.bank_service import BankService
 
-        actor_wallet = BankService.get_or_create_wallet(session, actor_id)
-        target_wallet = BankService.get_or_create_wallet(session, target_id)
-
-        actor_wallet.frijolitos += 1
-        target_wallet.frijolitos += 1
-
-        session.add(actor_wallet)
-        session.add(target_wallet)
+            actor_wallet = BankService.get_or_create_wallet(session, actor_id)
+            target_wallet = BankService.get_or_create_wallet(session, target_id)
+            actor_wallet.frijolitos += 1
+            target_wallet.frijolitos += 1
+            actor_frj = actor_wallet.frijolitos
+            target_frj = target_wallet.frijolitos
+            session.add(actor_wallet)
+            session.add(target_wallet)
         session.commit()
 
         return {
-            "message": "Like enviado. +1 FRJ para ambos.",
-            "actor_frj": actor_wallet.frijolitos,
-            "target_frj": target_wallet.frijolitos,
+            "message": (
+                "Like enviado. +1 FRJ para ambos."
+                if rewarded
+                else "Like enviado."
+            ),
+            "rewarded": rewarded,
+            "actor_frj": actor_frj,
+            "target_frj": target_frj,
         }
 
     @staticmethod

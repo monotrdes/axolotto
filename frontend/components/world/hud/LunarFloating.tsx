@@ -4,6 +4,7 @@ import { useToast } from '@/context/ToastContext';
 import BottomSheet from '@/components/ui/BottomSheet';
 import { fetchLunarStatus, claimLunarDay } from '@/services/rewardsService';
 import type { LunarStatus } from '@/types/economy';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 interface LunarFloatingProps {
   token: string | null;
@@ -26,6 +27,8 @@ const DAILY_FRJ = [50, 65, 80, 95, 110, 130];
 
 export default function LunarFloating({ token, onSuccess }: LunarFloatingProps) {
   const { toast } = useToast();
+  const { capabilities } = useProductPolicy();
+  const passiveRewardsEnabled = capabilities.gameplay.passive_token_rewards;
   const [status, setStatus] = useState<LunarStatus | null>(null);
   const [claiming, setClaiming] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -33,21 +36,26 @@ export default function LunarFloating({ token, onSuccess }: LunarFloatingProps) 
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const loadStatus = useCallback(async () => {
-    if (!token) return;
+    if (!passiveRewardsEnabled || !token) {
+      setStatus(null);
+      return;
+    }
     try {
       const data = await fetchLunarStatus(token);
       setStatus(data);
     } catch { /* silent */ }
-  }, [token]);
+  }, [passiveRewardsEnabled, token]);
 
   useEffect(() => { loadStatus(); }, [loadStatus]);
 
   // Listen for open-lunar-sheet from gashapon
   useEffect(() => {
-    const handler = () => setSheetOpen(true);
+    const handler = () => {
+      if (passiveRewardsEnabled) setSheetOpen(true);
+    };
     window.addEventListener('open-lunar-sheet', handler);
     return () => window.removeEventListener('open-lunar-sheet', handler);
-  }, []);
+  }, [passiveRewardsEnabled]);
 
   // Countdown
   useEffect(() => {
@@ -70,7 +78,7 @@ export default function LunarFloating({ token, onSuccess }: LunarFloatingProps) 
   }, [status?.can_claim, status?.next_claim_at, loadStatus]);
 
   const handleClaim = async () => {
-    if (!token || claiming || !status?.can_claim) return;
+    if (!passiveRewardsEnabled || !token || claiming || !status?.can_claim) return;
     setClaiming(true);
     try {
       const res = await claimLunarDay(token);
@@ -89,7 +97,7 @@ export default function LunarFloating({ token, onSuccess }: LunarFloatingProps) 
     } finally { setClaiming(false); }
   };
 
-  if (!token || !status) return null;
+  if (!passiveRewardsEnabled || !token || !status) return null;
 
   // Only show floating button when there's something to claim
   if (!status.can_claim) return null;

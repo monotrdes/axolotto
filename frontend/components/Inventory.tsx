@@ -15,6 +15,7 @@ import AxolotitoCard from '@/components/inventory/AxolotitoCard';
 import ItemList from '@/components/inventory/ItemList';
 import type { MochilaTab } from '@/types/inventory';
 import { PAPER_WORLD } from '@/lib/paperWorld';
+import { useProductPolicy } from '@/hooks/useProductPolicy';
 
 function renderPortal(content: React.ReactNode) {
   if (typeof window === 'undefined') return null;
@@ -45,6 +46,12 @@ export default function Inventory({
   initialTab?: MochilaTab;
   recargarSaldos?: () => void;
 }) {
+  const { capabilities } = useProductPolicy();
+  const passiveRewardsEnabled = capabilities.gameplay.passive_token_rewards;
+  const playerMarketplaceEnabled = capabilities.commerce.player_marketplace;
+  const randomRewardsEnabled = capabilities.commerce.purchased_random_rewards;
+  const boardMutationsEnabled = capabilities.assets.board_mutations;
+  const randomBoardCreationEnabled = boardMutationsEnabled && randomRewardsEnabled;
   const resolvedInitial: MochilaTab = initialTab ?? (mode === 'tablas' ? 'tablas' : 'cartas');
   const [activeTab, setActiveTab] = useState<MochilaTab>(resolvedInitial);
 
@@ -90,7 +97,9 @@ export default function Inventory({
       case 'tablas':
         return {
           title: "MIS TABLAS",
-          desc: "Tus tablas 4×4 de Lotería. Armadas con tus cartas, generan FRJ pasivos.",
+          desc: passiveRewardsEnabled
+            ? "Tus tablas 4×4 de Lotería. Armadas con tus cartas, generan FRJ pasivos."
+            : "Tus tablas 4×4 de Lotería para jugar, organizar y personalizar tus cartas.",
           gradient: "from-emerald-400 to-teal-500",
           shadow: "shadow-[0_0_40px_rgba(16,185,129,0.15)]",
           border: "border-emerald-500/30",
@@ -115,7 +124,9 @@ export default function Inventory({
   ];
 
   // ── Computed values for tablas ──
-  const totalAccrued = playerBoards.reduce((sum: number, b: any) => sum + (b.accrued_staking_gal || 0), 0);
+  const totalAccrued = passiveRewardsEnabled
+    ? playerBoards.reduce((sum: number, b: any) => sum + (b.accrued_staking_gal || 0), 0)
+    : 0;
   const numUnlocked = slotsStatus ? Number(slotsStatus.unlocked_slots || 0) : 0;
   const numBoards = playerBoards.length;
   const emptySlotsCount = Math.max(0, numUnlocked - numBoards);
@@ -173,8 +184,12 @@ export default function Inventory({
             sealedSobrecitos={sealedSobrecitos}
             sobrecitosSheetOpen={sobrecitosSheetOpen}
             setSobrecitosSheetOpen={setSobrecitosSheetOpen}
-            onStartUnboxing={handleStartUnboxing}
+            onStartUnboxing={(booster) => {
+              if (randomRewardsEnabled) handleStartUnboxing(booster);
+            }}
             onOpenSellModal={handleOpenSellModal}
+            marketplaceEnabled={playerMarketplaceEnabled}
+            randomRewardsEnabled={randomRewardsEnabled}
             getBoosterStyles={getBoosterStyles}
           />
           <CardGrid
@@ -188,6 +203,7 @@ export default function Inventory({
             setCardShinyFilter={setCardShinyFilter}
             setCardOwnedFilter={setCardOwnedFilter}
             onOpenSellModal={handleOpenSellModal}
+            marketplaceEnabled={playerMarketplaceEnabled}
             cambiarTab={cambiarTab}
           />
         </>
@@ -217,16 +233,22 @@ export default function Inventory({
                 <span className="text-6xl mb-4 animate-bounce">📋</span>
                 <h3 className="text-xl font-black text-white uppercase tracking-tight mb-2">No tienes Tablas</h3>
                 <p className="text-slate-400 text-sm max-w-sm mb-6 leading-relaxed">
-                  Crea tu primera tabla de Lotería para empezar a generar FRJ pasivos con tus cartas.
+                  {passiveRewardsEnabled
+                    ? 'Crea tu primera tabla de Lotería para empezar a generar FRJ pasivos con tus cartas.'
+                    : 'Crea tu primera tabla de Lotería para jugar y organizar tus cartas.'}
                 </p>
                 <div className="flex flex-wrap gap-3 justify-center">
-                  <button onClick={() => { setShowCreateModal(true); setCreateError(null); }}
-                    className="px-6 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 hover:border-emerald-500 text-slate-200 hover:text-emerald-300 font-black rounded-xl text-xs uppercase tracking-widest transition-all active:scale-95">
-                    🎲 Crear Aleatoria (25 FRJ)
+                  <button onClick={() => { if (randomBoardCreationEnabled) { setShowCreateModal(true); setCreateError(null); } }}
+                    disabled={!randomBoardCreationEnabled}
+                    title={!randomBoardCreationEnabled ? 'Creación aleatoria en revisión' : undefined}
+                    className="px-6 py-3 bg-slate-800 hover:bg-slate-700 border border-slate-600 hover:border-emerald-500 text-slate-200 hover:text-emerald-300 font-black rounded-xl text-xs uppercase tracking-widest transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
+                    {randomBoardCreationEnabled ? '🎲 Crear Aleatoria (25 FRJ)' : '🎲 Aleatoria · En revisión'}
                   </button>
-                  <button onClick={() => { setBoardToEdit(null); setShowBoardEditor(true); }}
-                    className="px-6 py-3 bg-gradient-to-r from-emerald-700 to-teal-600 hover:from-emerald-600 hover:to-teal-500 text-white font-black rounded-xl text-xs uppercase tracking-widest transition-all shadow-md active:scale-95">
-                    🎨 Diseñar Manual (50 FRJ)
+                  <button onClick={() => { if (boardMutationsEnabled) { setBoardToEdit(null); setShowBoardEditor(true); } }}
+                    disabled={!boardMutationsEnabled}
+                    title={!boardMutationsEnabled ? 'Diseño de tablas en revisión' : undefined}
+                    className="px-6 py-3 bg-gradient-to-r from-emerald-700 to-teal-600 hover:from-emerald-600 hover:to-teal-500 text-white font-black rounded-xl text-xs uppercase tracking-widest transition-all shadow-md active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
+                    {boardMutationsEnabled ? '🎨 Diseñar Manual (50 FRJ)' : '🎨 Diseño · En revisión'}
                   </button>
                 </div>
               </div>
@@ -234,7 +256,7 @@ export default function Inventory({
               <>
                 {/* ── HUD strip ── */}
                 <div className="flex flex-wrap items-center gap-2 mb-4 bg-slate-900/50 border border-white/5 rounded-2xl px-3 py-2.5">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                  {passiveRewardsEnabled && <div className="flex items-center gap-2 flex-1 min-w-0">
                     <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest whitespace-nowrap">🪙 FRJ</span>
                     <span className="text-sm font-black text-white tabular-nums">{totalAccrued.toFixed(2)}</span>
                     <button
@@ -246,7 +268,7 @@ export default function Inventory({
                     >
                       {reclamandoTodo ? '...' : 'Cobrar todo'}
                     </button>
-                  </div>
+                  </div>}
                   {slotsStatus && (
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Espacios</span>
@@ -303,7 +325,7 @@ export default function Inventory({
                           isShiny={isBoardShiny(board.card_ids || [], allCards)}
                         />
 
-                        {board.user_id === userId && board.accrued_staking_gal > 0 && (
+                        {passiveRewardsEnabled && board.user_id === userId && board.accrued_staking_gal > 0 && (
                           <div className="flex items-center gap-1 bg-amber-950/60 border border-amber-500/20 rounded-lg px-2 py-1">
                             <span className="text-[9px] text-amber-500 font-black">🪙 {board.accrued_staking_gal} FRJ</span>
                           </div>
@@ -328,16 +350,18 @@ export default function Inventory({
                         </span>
                       )}
                       <button
-                        onClick={() => { setShowCreateModal(true); setCreateError(null); setCreateSuccess(null); }}
-                        className="w-full py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-emerald-300 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all active:scale-95"
+                        onClick={() => { if (randomBoardCreationEnabled) { setShowCreateModal(true); setCreateError(null); setCreateSuccess(null); } }}
+                        disabled={!randomBoardCreationEnabled}
+                        className="w-full py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500 text-slate-300 hover:text-emerald-300 rounded-lg text-[9px] font-black uppercase tracking-wide transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
-                        🎲 Aleatoria
+                        {randomBoardCreationEnabled ? '🎲 Aleatoria' : '🎲 En revisión'}
                       </button>
                       <button
-                        onClick={() => { setBoardToEdit(null); setShowBoardEditor(true); }}
-                        className="w-full py-1.5 bg-emerald-800/60 hover:bg-emerald-700/80 text-emerald-200 hover:text-white rounded-lg text-[9px] font-black uppercase tracking-wide transition-all active:scale-95 border border-emerald-600/30"
+                        onClick={() => { if (boardMutationsEnabled) { setBoardToEdit(null); setShowBoardEditor(true); } }}
+                        disabled={!boardMutationsEnabled}
+                        className="w-full py-1.5 bg-emerald-800/60 hover:bg-emerald-700/80 text-emerald-200 hover:text-white rounded-lg text-[9px] font-black uppercase tracking-wide transition-all active:scale-95 border border-emerald-600/30 disabled:opacity-40 disabled:cursor-not-allowed"
                       >
-                        🎨 Manual
+                        {boardMutationsEnabled ? '🎨 Manual' : '🎨 En revisión'}
                       </button>
                     </div>
                   ))}
@@ -381,12 +405,12 @@ export default function Inventory({
                         </div>
                         <HoldButton
                           onConfirm={handleUnlockSlot}
-                          disabled={unlockingSlot || !req.can_unlock}
+                          disabled={!boardMutationsEnabled || unlockingSlot || !req.can_unlock}
                           variant="amber"
                           duration={1200}
                           className="w-full mt-auto"
-                          label={unlockingSlot ? '...' : req.can_unlock ? '🔓 Desbloquear' : 'Bloqueado'}
-                          sublabel={req.can_unlock ? 'Mantén pulsado' : undefined}
+                          label={!boardMutationsEnabled ? 'En revisión' : unlockingSlot ? '...' : req.can_unlock ? '🔓 Desbloquear' : 'Bloqueado'}
+                          sublabel={boardMutationsEnabled && req.can_unlock ? 'Mantén pulsado' : undefined}
                           style={{ width: '100%', padding: '0.375rem 0.5rem', borderRadius: '0.5rem', fontSize: '9px' }}
                         />
                       </div>
@@ -448,7 +472,7 @@ export default function Inventory({
                         isShiny={isBoardShiny(selectedBoard.card_ids || [], allCards)}
                       />
 
-                      {selectedBoard.user_id === userId && (
+                      {passiveRewardsEnabled && selectedBoard.user_id === userId && (
                         <div className="bg-slate-950/60 border border-white/5 rounded-2xl p-3">
                           <div className="flex justify-between items-center mb-1">
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">🪙 Frijolitos acumulados</span>
@@ -475,7 +499,7 @@ export default function Inventory({
                         </div>
                       )}
 
-                      {showRentForm === selectedBoard.id && (
+                      {playerMarketplaceEnabled && showRentForm === selectedBoard.id && (
                         <div className="bg-slate-950/80 border border-emerald-500/20 rounded-2xl p-4 space-y-3 animate-in fade-in duration-200">
                           <h5 className="text-xs font-black text-slate-300 uppercase tracking-widest">📢 Publicar en Mercado de Rentas</h5>
                           <p className="text-[10px] text-slate-500">Mercado actual: <span className="text-amber-500 font-bold">~10 FRJ/día</span> · <span className="text-amber-400 font-bold">~30% split</span></p>
@@ -512,9 +536,11 @@ export default function Inventory({
 
                       {selectedBoard.user_id === userId && !selectedBoard.is_rented && (
                         <div className="flex flex-wrap gap-2 w-full">
-                          <button onClick={() => { setBoardToEdit(selectedBoard); setShowBoardEditor(true); setSelectedBoard(null); }}
-                            className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 border border-slate-700">
-                            ✏️ Editar
+                          <button onClick={() => { if (boardMutationsEnabled) { setBoardToEdit(selectedBoard); setShowBoardEditor(true); setSelectedBoard(null); } }}
+                            disabled={!boardMutationsEnabled}
+                            title={!boardMutationsEnabled ? 'Edición de tablas en revisión' : undefined}
+                            className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 border border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                            {boardMutationsEnabled ? '✏️ Editar' : '✏️ En revisión'}
                           </button>
                           {selectedBoard.is_tutorial ? (
                             <div className="flex-1 py-2.5 flex items-center justify-center bg-amber-950/20 text-amber-500 rounded-xl text-[10px] font-black uppercase tracking-wider border border-amber-800/30">
@@ -522,18 +548,23 @@ export default function Inventory({
                             </div>
                           ) : (
                             <>
-                              {!selectedBoard.is_listed_for_rent ? (
+                              {!selectedBoard.is_listed_for_rent && playerMarketplaceEnabled ? (
                                 <button onClick={() => { setShowRentForm(selectedBoard.id); setRentFee('10'); setRentSplit('30'); }}
                                   className="flex-1 py-2.5 bg-indigo-900/60 hover:bg-indigo-800/60 text-indigo-300 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 border border-indigo-700/50">
                                   📢 Publicar
                                 </button>
-                              ) : (
+                              ) : selectedBoard.is_listed_for_rent ? (
                                 <button onClick={() => handleCancelarListado(selectedBoard.id)} disabled={cancelando === selectedBoard.id}
                                   className="flex-1 py-2.5 bg-orange-900/60 hover:bg-orange-800/60 text-orange-300 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 border border-orange-700/50 disabled:opacity-50">
                                   {cancelando === selectedBoard.id ? '...' : '❌ Retirar'}
                                 </button>
+                              ) : (
+                                <div className="flex-1 py-2.5 flex items-center justify-center bg-slate-900/60 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-wider border border-slate-800">
+                                  Rentas en pausa
+                                </div>
                               )}
-                              <button onClick={() => { handleDesarmar(selectedBoard); setSelectedBoard(null); }} disabled={desarmando === selectedBoard.id}
+                              <button onClick={() => { if (boardMutationsEnabled) { handleDesarmar(selectedBoard); setSelectedBoard(null); } }} disabled={!boardMutationsEnabled || desarmando === selectedBoard.id}
+                                title={!boardMutationsEnabled ? 'Desarmado de tablas en revisión' : undefined}
                                 className="py-2.5 px-3 bg-red-950/40 hover:bg-red-900/40 text-red-400 hover:text-red-200 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all active:scale-95 border border-red-800/30 disabled:opacity-50">
                                 {desarmando === selectedBoard.id ? '...' : '🗑️'}
                               </button>
@@ -553,7 +584,7 @@ export default function Inventory({
       {/* ══════════════════════════════════════════════════════════ */}
       {/* MODAL: CREAR ALEATORIA */}
       {/* ══════════════════════════════════════════════════════════ */}
-      {showCreateModal && renderPortal(
+      {randomBoardCreationEnabled && showCreateModal && renderPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-200">
           <div className="bg-[#0D0D1F] border-2 border-emerald-500/50 rounded-[2.5rem] p-6 sm:p-8 max-w-sm w-full shadow-[0_0_50px_rgba(16,185,129,0.3)] flex flex-col gap-5 animate-in zoom-in-95 duration-150">
             <div>
@@ -603,7 +634,7 @@ export default function Inventory({
       {/* ══════════════════════════════════════════════════════════ */}
       {/* MODAL: CONFIRMAR ELIMINACIÓN DE TABLA */}
       {/* ══════════════════════════════════════════════════════════ */}
-      {boardToDelete && renderPortal(
+      {boardMutationsEnabled && boardToDelete && renderPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4 animate-in fade-in duration-200">
           <div className="bg-[#0D0D1F] border-2 border-red-500/60 rounded-[2.5rem] p-6 sm:p-8 max-w-md w-full shadow-[0_0_50px_rgba(239,68,68,0.3)] flex flex-col gap-5 relative overflow-hidden animate-in zoom-in-95 duration-150">
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-red-500 to-orange-500" />
@@ -672,7 +703,7 @@ export default function Inventory({
       {/* ══════════════════════════════════════════════════════════ */}
       {/* EDITOR DRAG & DROP */}
       {/* ══════════════════════════════════════════════════════════ */}
-      {showBoardEditor && (
+      {boardMutationsEnabled && showBoardEditor && (
         <BoardEditor
           userId={userId}
           token={token}
@@ -889,7 +920,7 @@ export default function Inventory({
       {/* ══════════════════════════════════════════════════════════ */}
       {/* MODAL: LISTAR ITEM EN MERCADO P2P */}
       {/* ══════════════════════════════════════════════════════════ */}
-      {showListModal && selectedBoosterForAction && renderPortal(
+      {playerMarketplaceEnabled && showListModal && selectedBoosterForAction && renderPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4"
           onClick={(e) => { if (e.target === e.currentTarget && !listLoading) setShowListModal(false); }}>
           <div className="bg-[#0D0D1F] border-2 border-pink-500/50 rounded-[2.5rem] p-6 w-full max-w-sm flex flex-col gap-4 animate-in zoom-in-95 duration-150 shadow-[0_0_50px_rgba(244,63,94,0.25)]">
